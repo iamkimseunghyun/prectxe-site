@@ -1,0 +1,199 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { venueCreateSchema, VenueFormData } from '@/lib/validations/venues';
+import { useGalleryImages } from '@/hooks/use-gallery-images';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import React from 'react';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { MapPin } from 'lucide-react';
+import { createVenue, updateVenue } from '@/app/venues/actions';
+import GalleryImageSection from '@/components/image/gallery-image-section';
+import { GalleryImage, GalleryPreview } from '@/lib/validations/gallery-image';
+
+type VenueFormProps = {
+  mode: 'create' | 'edit';
+  initialData?: VenueFormData;
+  venueId?: string;
+};
+
+const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
+  const router = useRouter();
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<VenueFormData>({
+    resolver: zodResolver(venueCreateSchema),
+    defaultValues: initialData || {
+      name: '',
+      description: '',
+      address: '',
+      galleryImageUrls: [],
+    },
+  });
+
+  // 갤러리 이미지 훅
+  const {
+    galleryPreviews,
+    fileError: galleryError,
+    handleGalleryImageChange,
+    removeGalleryImage,
+  } = useGalleryImages({
+    initialImages: initialData?.galleryImageUrls,
+    onGalleryChange: (galleryData) => {
+      setValue('galleryImageUrls', galleryData);
+    },
+  });
+
+  const uploadGalleryImages = async (previews: GalleryPreview[]) => {
+    return Promise.all(
+      previews.map(async (preview) => {
+        const formData = new FormData();
+        formData.append('file', preview.file!);
+        const response = await fetch(preview.uploadURL, {
+          method: 'POST',
+          body: formData,
+        });
+        if (response.status !== 200) {
+          throw new Error(`Failed to upload: ${preview.alt}`);
+        }
+      })
+    );
+  };
+
+  const prepareFormData = (
+    data: VenueFormData,
+    galleryData: GalleryImage[]
+  ) => {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('description', data.description);
+    formData.append('address', data.address);
+    formData.append('galleryImageUrls', JSON.stringify(galleryData));
+    return formData;
+  };
+
+  const onSubmit = handleSubmit(async (data: VenueFormData) => {
+    try {
+      await uploadGalleryImages(galleryPreviews);
+      const formData = prepareFormData(data, data.galleryImageUrls);
+
+      const result =
+        mode === 'edit'
+          ? await updateVenue(formData, venueId!)
+          : await createVenue(formData);
+
+      if (!result.ok) throw new Error(result.error);
+      router.push(`/venues/${result.data?.id}`);
+    } catch (error) {
+      console.error('Error: ', error);
+      alert(error instanceof Error ? error.message : '장소 등록 실패');
+    }
+  });
+  const onValid = async () => {
+    await onSubmit();
+  };
+  return (
+    <div className="mx-auto max-w-2xl p-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>{mode === 'create' ? '장소 등록' : '장소 수정'}</CardTitle>
+        </CardHeader>
+        <form action={onValid}>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">장소 이름</label>
+              <Input
+                placeholder="장소 이름을 입력하세요."
+                {...register('name')}
+                type="text"
+              />
+              {errors.name && (
+                <p id="name-error" className="text-sm text-destructive">
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">소개</label>
+              <Textarea
+                {...register('description')}
+                placeholder="장소에 대해 간단히 설명해주세요."
+                rows={4}
+              />
+              {errors.description && (
+                <span className="text-sm text-red-500">
+                  {errors.description.message}
+                </span>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">주소</Label>
+              <div className="flex gap-2">
+                <Input
+                  {...register('address')}
+                  placeholder="주소를 입력해주세요."
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    /* Implement map selection */
+                  }}
+                >
+                  <MapPin className="h-4 w-4" />
+                </Button>
+              </div>
+              {errors.address && (
+                <span className="text-sm text-red-500">
+                  {errors.address.message}
+                </span>
+              )}
+            </div>
+
+            {/* 갤러리 이미지 섹션 */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">장소 사진</label>
+              <GalleryImageSection
+                register={register}
+                galleryPreviews={galleryPreviews}
+                handleGalleryImageChange={handleGalleryImageChange}
+                removeGalleryImage={removeGalleryImage}
+                galleryError={galleryError}
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+            >
+              취소
+            </Button>
+            <Button type="submit">
+              {mode === 'edit' ? '수정하기' : '등록하기'}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
+  );
+};
+
+export default VenueForm;

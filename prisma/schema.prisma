@@ -1,0 +1,136 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Project {
+  id               String            @id @default(cuid())
+  title            String
+  description      String
+  content          String
+  year             Int
+  startDate        DateTime
+  endDate          DateTime
+  category         String
+  mainImageUrl     String
+  galleryImageUrls GalleryImageUrl[]
+  projectArtists   ProjectArtist[]
+  projectArtworks  ProjectArtwork[]
+  venues           ProjectVenue[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model GalleryImageUrl {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  alt       String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String?
+  artist    Artist?  @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artistId  String?
+  artwork   Artwork? @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  artworkId String?
+  venue     Venue?   @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  venueId   String?
+}
+
+model ProjectArtist {
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  artist    Artist  @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artistId  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([projectId, artistId])
+}
+
+model ProjectArtwork {
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  artworkId String
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([artworkId, projectId])
+}
+
+model ProjectVenue {
+  venue   Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  venueId String
+
+  Project   Project? @relation(fields: [projectId], references: [id])
+  projectId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([projectId, venueId])
+}
+
+model Artist {
+  id               String            @id @default(cuid())
+  name             String
+  mainImageUrl     String
+  birth            DateTime
+  nationality      String
+  city             String
+  country          String
+  email            String            @unique
+  homepage         String
+  biography        String
+  cv               String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  artistArtworks   ArtistArtwork[]
+  projectArtists   ProjectArtist[]
+  galleryImageUrls GalleryImageUrl[]
+}
+
+model ArtistArtwork {
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artistId  String
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  artworkId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([artistId, artworkId])
+}
+
+model Artwork {
+  id               String            @id @default(cuid())
+  title            String
+  size             String
+  media            String
+  year             Int
+  description      String
+  style            String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  galleryImageUrls GalleryImageUrl[]
+  artists          ArtistArtwork[]
+  projectArtWorks  ProjectArtwork[]
+}
+
+model Venue {
+  id               String            @id @default(cuid())
+  address          String
+  name             String
+  description      String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  galleryImageUrls GalleryImageUrl[]
+  projectVenue     ProjectVenue[]
+}
