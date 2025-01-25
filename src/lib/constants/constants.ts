@@ -12,6 +12,8 @@ export const ALLOWED_FILE_TYPES = [
   'image/png',
   'image/webp',
   'image/gif',
+  'image/heic',
+  'image/heif',
 ];
 
 // Cloud Flare Upload Image Url
