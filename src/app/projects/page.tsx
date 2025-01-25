@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { ProjectGrid } from '@/components/project/project-grid';
 import ProjectFilterWrapper from '@/components/project/project-filter-wrapper';
+import { Suspense } from 'react';
 
 export const revalidate = 60; // 1분마다 재검증
 
@@ -28,16 +29,16 @@ async function getProjects(
   });
 }
 
-interface Props {
+const Page = async ({
+  searchParams,
+}: {
   searchParams: Promise<{
     year?: string;
     category?: string;
     sort?: string;
     search?: string;
   }>;
-}
-
-const Page = async ({ searchParams }: Props) => {
+}) => {
   // searchParams의 각 값을 const로 추출
   const params = await searchParams;
   const year = params?.year ?? 'all-year';
@@ -69,11 +70,13 @@ const Page = async ({ searchParams }: Props) => {
         </p>
       </div>
 
-      <div className="mb-8">
-        <ProjectFilterWrapper years={years} categories={categories} />
-      </div>
+      <Suspense>
+        <div className="mb-8">
+          <ProjectFilterWrapper years={years} categories={categories} />
+        </div>
 
-      <ProjectGrid projects={projects} />
+        <ProjectGrid projects={projects} />
+      </Suspense>
     </div>
   );
 };

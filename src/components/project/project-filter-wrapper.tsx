@@ -2,8 +2,9 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import ProjectFilter from '@/components/project/project-filter';
-import { useTransition } from 'react';
+import { Suspense, useTransition } from 'react';
 import ProjectGridSkeleton from '@/components/project/project-grid-skeleton';
+import Loading from '@/app/projects/loading';
 
 interface ProjectFilterWrapperProps {
   years: number[];
@@ -47,21 +48,23 @@ const ProjectFilterWrapper = ({
 
   return (
     <>
-      <ProjectFilter
-        years={years}
-        categories={categories}
-        selectedYear={searchParams.get('year') ?? 'all-year'}
-        selectedCategory={searchParams.get('category') ?? 'all-category'}
-        selectedSort={searchParams.get('sort') ?? 'latest'}
-        onYearChange={onYearChange}
-        onCategoryChange={onCategoryChange}
-        onSortChange={onSortChange}
-      />
-      {isPending && (
-        <div className="mt-8">
-          <ProjectGridSkeleton />
-        </div>
-      )}
+      <Suspense fallback={<Loading />}>
+        <ProjectFilter
+          years={years}
+          categories={categories}
+          selectedYear={searchParams.get('year') ?? 'all-year'}
+          selectedCategory={searchParams.get('category') ?? 'all-category'}
+          selectedSort={searchParams.get('sort') ?? 'latest'}
+          onYearChange={onYearChange}
+          onCategoryChange={onCategoryChange}
+          onSortChange={onSortChange}
+        />
+        {isPending && (
+          <div className="mt-8">
+            <ProjectGridSkeleton />
+          </div>
+        )}
+      </Suspense>
     </>
   );
 };

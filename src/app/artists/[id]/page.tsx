@@ -13,15 +13,11 @@ import { getArtist } from '@/app/artists/[id]/actions';
 import WorksList from '@/components/artwork/works-list';
 import ArtistAdminButton from '@/components/artist/artist-admin-button';
 
-interface PageProps {
-  params: {
-    id: string;
-  };
-}
-
 export async function generateMetadata({
   params,
-}: PageProps): Promise<Metadata> {
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
   const id = (await params).id;
   const { data: artist } = await getArtist(id);
 

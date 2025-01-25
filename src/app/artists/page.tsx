@@ -3,7 +3,6 @@ import PageHeader from '@/components/layout/page-header';
 import { ArtistSearch } from '@/components/artist/artist-search';
 import { ArtistFilter } from '@/components/artist/artist-filter';
 import { ArtistGrid } from '@/components/artist/artist-grid';
-import { ArtistGridSkeleton } from '@/components/artist/artist-grid-skeleton';
 
 export default function ArtistsPage() {
   return (
@@ -14,13 +13,15 @@ export default function ArtistsPage() {
       />
 
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <ArtistSearch />
-        <ArtistFilter />
+        <Suspense fallback={<div>검색 중...</div>}>
+          <ArtistSearch />
+        </Suspense>
+        <Suspense fallback={<div>검색 중...</div>}>
+          <ArtistFilter />
+        </Suspense>
       </div>
 
-      <Suspense fallback={<ArtistGridSkeleton />}>
-        <ArtistGrid />
-      </Suspense>
+      <ArtistGrid />
     </div>
   );
 }
