@@ -35,7 +35,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   return (
     <div className="container mx-auto px-4 py-12">
       {/* Gallery Section */}
-      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg">
+      <div className="relative mb-4 aspect-[16/9] w-full overflow-hidden rounded-lg">
         <CarouselGallery images={venue.galleryImageUrls} />
       </div>
 

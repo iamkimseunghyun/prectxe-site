@@ -23,7 +23,7 @@ export async function createProject(
       startDate: formData.get('startDate'),
       endDate: formData.get('endDate'),
       galleryImageUrls: JSON.parse(
-        (formData.get('galleryImageUrls') as string) || '[]'
+        formData.get('galleryImageUrls')?.toString() || '[]'
       ),
     };
 

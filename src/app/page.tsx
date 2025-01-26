@@ -2,25 +2,10 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { prisma } from '@/lib/prisma';
 import { HeroSection } from '@/components/motion/hero-section';
+import { getProjects } from '@/app/projects/actions';
 
 export const revalidate = 60; // 1분마다 재검증
-
-async function getProjects() {
-  return prisma.project.findMany({
-    orderBy: {
-      createdAt: 'desc',
-    },
-    include: {
-      galleryImageUrls: {
-        orderBy: {
-          order: 'asc',
-        },
-      },
-    },
-  });
-}
 
 export default async function Home() {
   const projects = await getProjects();

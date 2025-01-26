@@ -24,7 +24,7 @@ const CarouselGallery = ({ images }: CarouselProps) => {
                   src={getImageUrl(image.imageUrl, 'public')}
                   alt={image.alt || '장소 이미지'}
                   fill
-                  className="object-cover"
+                  className="rounded-lg object-cover"
                   priority={index === 0}
                 />
               </div>

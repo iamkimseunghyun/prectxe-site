@@ -16,6 +16,7 @@ import {
 import { getImageUrl } from '@/lib/utils';
 import ProjectAdminButton from '@/components/project/project-admin-button';
 import React from 'react';
+import CarouselGallery from '@/hooks/carousel-gallery';
 
 async function getProject(id: string) {
   const project = await prisma.project.findUnique({
@@ -71,7 +72,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
     <div className="container mx-auto px-4 py-12">
       {/* 메인 섹션 */}
       <div className="mb-8">
-        <div className="relative mb-4 aspect-video w-full overflow-hidden rounded-lg">
+        <div className="relative mb-4 aspect-video overflow-hidden rounded-lg">
           <Image
             src={getImageUrl(project.mainImageUrl, 'public')}
             alt={project.title}
@@ -114,32 +115,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             갤러리
           </h2>
           <div className="mx-auto">
-            <Carousel>
-              <CarouselContent>
-                {project.galleryImageUrls.map((image) => (
-                  <CarouselItem
-                    key={image.id}
-                    className="md:basis-1/2 lg:basis-1/3"
-                  >
-                    <div
-                      key={image.id}
-                      className="relative aspect-square w-full overflow-hidden rounded-lg"
-                    >
-                      <Image
-                        src={`${image.imageUrl}/public`}
-                        alt={image.alt}
-                        fill
-                        sizes="200"
-                        priority={true}
-                        className="object-cover"
-                      />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
+            <CarouselGallery images={project.galleryImageUrls} />
           </div>
         </section>
       )}

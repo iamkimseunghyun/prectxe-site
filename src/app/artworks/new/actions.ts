@@ -20,12 +20,13 @@ export async function createArtwork(
       year: Number(formData.get('year')),
       description: formData.get('description'),
       style: formData.get('style'),
-      galleryImageUrls: JSON.parse(formData.get('galleryImageUrls') as string),
+      galleryImageUrls: JSON.parse(
+        formData.get('galleryImageUrls')?.toString() || '[]'
+      ),
     };
 
     // Validate input
     const validatedData = artworkCreateSchema.safeParse(rawData);
-
     if (!validatedData.success) {
       return { ok: false, error: '입력값이 올바르지 않습니다.' };
     }
