@@ -1,33 +1,9 @@
-import { prisma } from '@/lib/prisma';
 import { ProjectGrid } from '@/components/project/project-grid';
 import ProjectFilterWrapper from '@/components/project/project-filter-wrapper';
 import { Suspense } from 'react';
+import { getProjects } from '@/app/projects/actions';
 
 export const revalidate = 60; // 1분마다 재검증
-
-async function getProjects(
-  year?: string,
-  category?: string,
-  sort?: string,
-  search?: string
-) {
-  const where = {
-    ...(year && year !== 'all-year' && { year: parseInt(year) }),
-    ...(category && category !== 'all-category' && { category }),
-    ...(search && {
-      OR: [{ title: { contains: search } }],
-    }),
-  };
-
-  const orderBy = {
-    createdAt: sort === 'oldest' ? 'asc' : 'desc',
-  } as const;
-
-  return prisma.project.findMany({
-    where,
-    orderBy,
-  });
-}
 
 const Page = async ({
   searchParams,
@@ -70,13 +46,13 @@ const Page = async ({
         </p>
       </div>
 
-      <Suspense>
+      <Suspense fallback={<div>loading...</div>}>
         <div className="mb-8">
           <ProjectFilterWrapper years={years} categories={categories} />
         </div>
-
-        <ProjectGrid projects={projects} />
       </Suspense>
+
+      <ProjectGrid projects={projects} />
     </div>
   );
 };

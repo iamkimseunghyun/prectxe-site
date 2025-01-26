@@ -1,5 +1,6 @@
 import ProjectFilterWrapper from '@/components/project/project-filter-wrapper';
 import ProjectGridSkeleton from '@/components/project/project-grid-skeleton';
+import { Suspense } from 'react';
 
 const Loading = () => {
   const categories = [
@@ -24,9 +25,11 @@ const Loading = () => {
         </p>
       </div>
 
-      <div className="mb-8">
-        <ProjectFilterWrapper years={years} categories={categories} />
-      </div>
+      <Suspense fallback={<div>loading...</div>}>
+        <div className="mb-8">
+          <ProjectFilterWrapper years={years} categories={categories} />
+        </div>
+      </Suspense>
 
       <ProjectGridSkeleton />
     </div>

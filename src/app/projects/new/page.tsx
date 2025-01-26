@@ -1,11 +1,11 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import ProjectForm from '@/components/project/project-form';
 
 const Page = () => {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <div>
       <ProjectForm mode={'create'} />
-    </Suspense>
+    </div>
   );
 };
 
