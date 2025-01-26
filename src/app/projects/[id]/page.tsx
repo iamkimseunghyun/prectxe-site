@@ -103,7 +103,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             </>
           )}
         </div>
-        <p className="mt-4 text-lg text-muted-foreground">
+        <p className="mt-4 whitespace-pre-wrap text-lg text-muted-foreground">
           {project.description}
         </p>
       </div>
