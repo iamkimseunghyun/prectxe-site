@@ -6,7 +6,13 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Users, Image as ImageIcon, MapPin } from 'lucide-react';
+import {
+  PlusCircle,
+  Users,
+  Image as ImageIcon,
+  MapPin,
+  Archive,
+} from 'lucide-react';
 import Link from 'next/link';
 
 const Page = () => {
@@ -19,7 +25,7 @@ const Page = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-6 w-6" />
+              <Archive className="h-6 w-6" />
               Projects
             </CardTitle>
             <CardDescription>
