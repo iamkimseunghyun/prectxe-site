@@ -4,6 +4,36 @@ import { Button } from '@/components/ui/button';
 import CarouselGallery from '@/hooks/carousel-gallery';
 import { prisma } from '@/lib/prisma';
 import VenueAdminButton from '@/components/venue/venue-admin-button';
+import { Metadata } from 'next';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const id = (await params).id;
+  const venue = await getVenueDetails(id);
+
+  if (!venue) {
+    return {
+      title: '장소를 찾을 수 없습니다',
+      robots: { index: false },
+    };
+  }
+
+  return {
+    title: venue.name,
+    description: venue.description.substring(0, 155) + '...',
+    openGraph: {
+      title: `${venue.name} - PRECTXE 전시 공간`,
+      description: venue.description.substring(0, 155) + '...',
+      images: venue.galleryImageUrls.map((img) => ({
+        url: img.imageUrl,
+        alt: img.alt,
+      })),
+    },
+  };
+}
 
 const getVenueDetails = async (venueId: string) => {
   const result = await prisma.venue.findUnique({

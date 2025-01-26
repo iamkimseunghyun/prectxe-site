@@ -6,17 +6,42 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel';
 import { getImageUrl } from '@/lib/utils';
 import ProjectAdminButton from '@/components/project/project-admin-button';
 import React from 'react';
 import CarouselGallery from '@/hooks/carousel-gallery';
+import { Metadata } from 'next';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const id = (await params).id;
+  const project = await getProject(id);
+
+  const categoryLabel = {
+    exhibition: '전시',
+    performance: '공연',
+    festival: '페스티벌',
+    workshop: '워크숍',
+  }[project.category];
+
+  return {
+    title: project.title,
+    description: project.description.substring(0, 155) + '...',
+    openGraph: {
+      title: `${project.title} - ${categoryLabel} | PRECTXE`,
+      description: project.description.substring(0, 155) + '...',
+      images: [
+        {
+          url: getImageUrl(project.mainImageUrl, 'public'),
+          alt: project.title,
+        },
+      ],
+    },
+  };
+}
 
 async function getProject(id: string) {
   const project = await prisma.project.findUnique({

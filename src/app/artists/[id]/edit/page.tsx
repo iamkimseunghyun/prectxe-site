@@ -1,5 +1,14 @@
 import ArtistForm from '@/components/artist/artist-form';
 import { getArtistById } from '@/app/artists/[id]/edit/actions';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: '아티스트 등록',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;

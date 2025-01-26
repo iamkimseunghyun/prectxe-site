@@ -6,6 +6,29 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'About PRECTXE | 디지털 아트 플랫폼',
+  description:
+    'PRECTXE는 디지털 아트와 현실을 잇는 플랫폼입니다. 온/오프라인을 넘나드는 새로운 예술 경험을 제공합니다.',
+  openGraph: {
+    title: 'About PRECTXE | 디지털 아트 플랫폼',
+    description: '디지털 아트와 현실을 잇는 혁신적인 예술 플랫폼',
+    type: 'website',
+    url: 'https://prectxe-demo-site.vercel.app/about',
+  },
+  keywords: [
+    'PRECTXE',
+    '디지털 아트',
+    '예술 플랫폼',
+    '아트 페스티벌',
+    '온라인 갤러리',
+  ],
+  alternates: {
+    canonical: 'https://prectxe-demo-site.vercel.app/about',
+  },
+};
 
 const Page = () => {
   return (

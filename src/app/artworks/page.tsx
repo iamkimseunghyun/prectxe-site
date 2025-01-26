@@ -6,6 +6,16 @@ import Link from 'next/link';
 import { getArtworks } from '@/app/artworks/actions';
 
 import ArtworkGrid from '@/components/artwork/artwork-grid';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: '작품 목록 | PRECTXE',
+  description: 'PRECTXE에서 선보이는 모든 디지털 아트 작품들을 만나보세요.',
+  openGraph: {
+    title: '작품 목록 | PRECTXE',
+    description: 'PRECTXE에서 선보이는 모든 디지털 아트 작품들을 만나보세요.',
+  },
+};
 
 const Page = async ({
   searchParams,

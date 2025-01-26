@@ -13,6 +13,29 @@ import {
 import Image from 'next/image';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import ArtworkAdminButton from '@/components/artwork/artwork-admin-button';
+import { Metadata } from 'next';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const id = (await params).id;
+  const artwork = await getArtworkById(id);
+
+  return {
+    title: artwork.title,
+    description: artwork.description.substring(0, 155) + '...',
+    openGraph: {
+      title: `${artwork.title} - ${artwork.year} | PRECTXE 작품`,
+      description: artwork.description.substring(0, 155) + '...',
+      images: artwork.galleryImageUrls.map((img) => ({
+        url: `${img.imageUrl}/public`,
+        alt: img.alt,
+      })),
+    },
+  };
+}
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;

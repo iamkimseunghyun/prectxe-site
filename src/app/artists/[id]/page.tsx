@@ -24,12 +24,25 @@ export async function generateMetadata({
   if (!artist) {
     return {
       title: '아티스트를 찾을 수 없습니다',
+      description: '요청하신 아티스트 정보를 찾을 수 없습니다.',
     };
   }
 
   return {
-    title: `${artist.name} - PRECTXE`,
-    description: artist.biography,
+    title: artist.name,
+    description: artist.biography.substring(0, 155) + '...', // SEO 권장 길이
+    openGraph: {
+      title: `${artist.name} - PRECTXE 아티스트`,
+      description: artist.biography.substring(0, 155) + '...',
+      images: [
+        {
+          url: `${artist.mainImageUrl}/public`,
+          width: 1200,
+          height: 630,
+          alt: artist.name,
+        },
+      ],
+    },
   };
 }
 

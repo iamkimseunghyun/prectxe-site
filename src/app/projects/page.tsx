@@ -2,8 +2,21 @@ import { ProjectGrid } from '@/components/project/project-grid';
 import ProjectFilterWrapper from '@/components/project/project-filter-wrapper';
 import { Suspense } from 'react';
 import { getProjects } from '@/app/projects/actions';
+import { Metadata } from 'next';
 
 export const revalidate = 60; // 1분마다 재검증
+
+export const metadata: Metadata = {
+  title: 'PRECTXE 프로젝트',
+  description:
+    '2018년부터 이어온 PRECTXE의 전시, 공연, 워크숍 등 다양한 프로젝트들을 만나보세요.',
+  openGraph: {
+    type: 'website',
+    title: 'PRECTXE 프로젝트',
+    description:
+      '2018년부터 이어온 PRECTXE의 전시, 공연, 워크숍 등 다양한 프로젝트들을 만나보세요.',
+  },
+};
 
 const Page = async ({
   searchParams,

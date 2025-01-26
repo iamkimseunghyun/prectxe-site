@@ -7,12 +7,22 @@ import { Plus } from 'lucide-react';
 import VenuesListSkeleton from '@/app/venues/venues-list-skeleton';
 import VenueList from '@/app/venues/vene-list';
 import { getVenuesAction } from '@/app/venues/actions';
+import { Metadata } from 'next';
 
-export default async function VenuesPage({
+export const metadata: Metadata = {
+  title: '장소 목록',
+  description: 'PRECTXE 페스티벌과 전시가 열리는 모든 공간을 확인하세요',
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
+
+const VenuesPage = async ({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string }>;
-}) {
+}) => {
   const params = await searchParams;
   const currentPage = Number(params.page) || 1;
   const initialData = await getVenuesAction(currentPage);
@@ -34,4 +44,6 @@ export default async function VenuesPage({
       </Suspense>
     </div>
   );
-}
+};
+
+export default VenuesPage;

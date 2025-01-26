@@ -1,5 +1,14 @@
 import VenueForm from '@/components/venue/venue-form';
 import { getVenue } from '@/app/venues/actions';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: '장소 프로필 수정',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;

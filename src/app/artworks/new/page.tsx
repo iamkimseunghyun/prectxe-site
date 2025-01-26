@@ -1,4 +1,10 @@
 import ArtworkForm from '@/components/artwork/artwork-form';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: '작품 등록',
+  robots: { index: false, follow: false },
+};
 
 const Page = () => {
   return (
