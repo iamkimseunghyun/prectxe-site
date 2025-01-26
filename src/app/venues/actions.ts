@@ -4,6 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { venueCreateSchema } from '@/lib/validations/venues';
+import { GalleryImage } from '@/lib/validations/gallery-image';
 
 export async function getVenue(venueId: string) {
   return prisma.venue.findUnique({
@@ -98,20 +99,38 @@ export async function createVenue(data: FormData) {
   }
 }
 
+interface VenueUpdateData {
+  name: string;
+  description: string;
+  address: string;
+  galleryImageUrls: {
+    deleteMany: Record<string, never>;
+    createMany: {
+      data: Array<{
+        imageUrl: string;
+        alt: string;
+        order: number;
+      }>;
+    };
+  };
+}
+
 export async function updateVenue(formData: FormData, venueId: string) {
   try {
-    const galleryData =
-      JSON.parse(formData.get('galleryImageUrls') as string) || '[]';
+    // 더 안전한 방식
+    const galleryData = JSON.parse(
+      formData.get('galleryImageUrls')?.toString() || '[]'
+    );
 
-    const updateData: any = {
+    const updateData: VenueUpdateData = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
       address: formData.get('address') as string,
-      galleryImageUrl: {
+      galleryImageUrls: {
         deleteMany: {},
         createMany: {
-          data: galleryData.map((image: any) => ({
-            imageUrl: image.url,
+          data: galleryData.map((image: GalleryImage) => ({
+            imageUrl: image.imageUrl,
             alt: image.alt || '',
             order: image.order,
           })),
@@ -125,7 +144,7 @@ export async function updateVenue(formData: FormData, venueId: string) {
       },
       data: {
         ...updateData,
-        updateAt: new Date(),
+        updatedAt: new Date(),
       },
     });
 

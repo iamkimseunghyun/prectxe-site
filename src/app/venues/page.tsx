@@ -30,7 +30,7 @@ export default async function VenuesPage({
       </div>
 
       <Suspense fallback={<VenuesListSkeleton />}>
-        <VenueList initialData={initialData} currentPage={currentPage} />
+        <VenueList initialData={initialData} />
       </Suspense>
     </div>
   );

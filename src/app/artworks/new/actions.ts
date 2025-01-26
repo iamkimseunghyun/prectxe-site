@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { artworkCreateSchema } from '@/lib/validations/artwork';
+import { GalleryImage } from '@/lib/validations/gallery-image';
 
 export type CreateArtworkResponse =
   | { ok: true; data: { id: string } }
@@ -82,7 +83,7 @@ export async function updateArtwork(
       galleryImageUrls: {
         deleteMany: {},
         createMany: {
-          data: galleryData.map((image: any) => ({
+          data: galleryData.map((image: GalleryImage) => ({
             imageUrl: image.imageUrl,
             alt: image.alt || '',
             order: image.order,

@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 
-export async function getArtworkById(id: string): Promise<any> {
+export async function getArtworkById(id: string) {
   const artwork = await prisma.artwork.findUnique({
     where: { id },
     include: {

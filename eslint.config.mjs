@@ -10,6 +10,7 @@ const __dirname = dirname(__filename);
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
+  recommendedConfig: js.configs.recommended,
 });
 
 const eslintConfig = [
@@ -22,7 +23,13 @@ const eslintConfig = [
       '**/public/**',
     ],
   },
-  ...compat.extends('next/core-web-vitals', 'next/typescript', 'prettier'),
+  ...compat.extends(
+    'next/core-web-vitals',
+    'next/typescript',
+    'prettier',
+    'eslint:recommended',
+    'next'
+  ),
   js.configs.recommended,
   {
     languageOptions: {

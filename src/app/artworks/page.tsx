@@ -5,7 +5,6 @@ import Link from 'next/link';
 
 import { getArtworks } from '@/app/artworks/actions';
 
-import Pagination from '@/components/layout/pagination';
 import ArtworkGrid from '@/components/artwork/artwork-grid';
 
 const Page = async ({
@@ -15,7 +14,7 @@ const Page = async ({
 }) => {
   const params = await searchParams;
   const currentPage = Number(params.page) || 1;
-  const { artworks, pagination } = await getArtworks(currentPage);
+  const { artworks } = await getArtworks(currentPage);
   return (
     <div className="container mx-auto py-10">
       <div className="mb-8 flex items-center justify-between">
@@ -28,10 +27,6 @@ const Page = async ({
       <Suspense fallback={<div>작품 목록을 불러오는 중...</div>}>
         <ArtworkGrid artworks={artworks} />
       </Suspense>
-
-      <div className="mt-8">
-        <Pagination {...pagination} />
-      </div>
     </div>
   );
 };

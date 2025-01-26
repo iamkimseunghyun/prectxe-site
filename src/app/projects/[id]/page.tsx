@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { Calendar, ImageIcon, Info, MapPin, Users } from 'lucide-react';
+import { Calendar, House, ImageIcon, Info, MapPin, Users } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/carousel';
 import { getImageUrl } from '@/lib/utils';
 import ProjectAdminButton from '@/components/project/project-admin-button';
+import React from 'react';
 
 async function getProject(id: string) {
   const project = await prisma.project.findUnique({
@@ -105,7 +106,6 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           {project.description}
         </p>
       </div>
-
       {/* 갤러리 탭 */}
       {project.galleryImageUrls.length > 0 && (
         <section className="mb-12">
@@ -143,33 +143,33 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           </div>
         </section>
       )}
-
       {/* 아티스트 탭 */}
       <section className="mb-12">
         <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold">
           <Users className="h-5 w-5" />
           참여 아티스트
         </h2>
-        <ul className="flex flex-col gap-6 sm:flex-row sm:flex-wrap">
-          {project.projectArtists.map(({ artist }) => (
-            <li key={artist.id}>
-              <Link
-                href={`/artists/${artist.id}`}
-                className="flex items-center gap-4 hover:underline"
-              >
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={artist.mainImageUrl} alt={artist.name} />
-                  <AvatarFallback>{artist.name[0]}</AvatarFallback>
-                </Avatar>
-                <span className="text-lg font-medium hover:underline">
-                  {artist.name}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {project.projectArtists && project.projectArtists.length > 0 && (
+          <ul className="flex flex-col gap-6 sm:flex-row sm:flex-wrap">
+            {project.projectArtists.map(({ artist }) => (
+              <li key={artist.id}>
+                <Link
+                  href={`/artists/${artist.id}`}
+                  className="flex items-center gap-4 hover:underline"
+                >
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={artist.mainImageUrl} alt={artist.name} />
+                    <AvatarFallback>{artist.name[0]}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-lg font-medium hover:underline">
+                    {artist.name}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
-
       {/* 작품 탭 */}
       <section className="mb-12">
         <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold">
@@ -189,9 +189,13 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           ))}
         </ul>
       </section>
-
       {/* 장소 탭 */}
-
+      <section className="mb-12">
+        <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold">
+          <House className="h-5 w-5" />
+          장소
+        </h2>
+      </section>
       {/* 상세 정보 탭 */}
       <section className="mb-12">
         <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold">
@@ -200,7 +204,9 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
         </h2>
         <div className="prose max-w-none pt-6">{project.content}</div>
       </section>
-      <ProjectAdminButton projectId={project.id} />
+      <div className="mt-6 flex justify-end gap-x-2">
+        <ProjectAdminButton projectId={project.id} />
+      </div>
     </div>
   );
 };

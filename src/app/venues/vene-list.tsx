@@ -15,13 +15,11 @@ interface VenueListProps {
       galleryImageUrls: GalleryImage[];
     })[];
     total: number;
-    page: number;
     totalPages: number;
   };
-  currentPage: number;
 }
 
-const VenueList = ({ initialData, currentPage }: VenueListProps) => {
+const VenueList = ({ initialData }: VenueListProps) => {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">

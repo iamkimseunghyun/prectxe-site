@@ -3,6 +3,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { projectCreateSchema } from '@/lib/validations/project';
+import { GalleryImage } from '@/lib/validations/gallery-image';
 
 export type CreateProjectResult =
   | { ok: true; data: { id: string } }
@@ -64,27 +65,47 @@ export async function createProject(
   }
 }
 
+interface ProjectUpdateData {
+  title: string;
+  year: number;
+  category: string;
+  description: string;
+  content: string;
+  startDate: Date;
+  endDate: Date;
+  mainImageUrl?: string;
+  galleryImageUrls: {
+    deleteMany: Record<string, never>;
+    createMany: {
+      data: Array<{
+        imageUrl: string;
+        alt: string;
+        order: number;
+      }>;
+    };
+  };
+}
+
 export async function updateProject(formData: FormData, projectId: string) {
   try {
-    const mainImageUrl = formData.get('mainImageUrl');
-    const galleryData =
-      JSON.parse(formData.get('galleryImageUrls') as string) || '[]';
+    const mainImageUrl = formData.get('mainImageUrl')?.toString();
+    // 더 안전한 방식
+    const galleryData = JSON.parse(
+      formData.get('galleryImageUrls')?.toString() || '[]'
+    );
 
-    const updateData: any = {
-      title: formData.get('title') as string,
-      year: parseInt(formData.get('year') as string),
-      category: formData.get('category') as string,
-      description: formData.get('description') as string,
-      content: formData.get('content') as string,
-      mainImageUrl: formData.get('mainImageUrl') as string,
-      startDate: new Date(formData.get('startDate') as string),
-      endDate: new Date(formData.get('endDate') as string),
-      // galleryImageUrls 관계 업데이트
+    const updateData: ProjectUpdateData = {
+      title: formData.get('title')?.toString() || '',
+      year: parseInt(formData.get('year')?.toString() || '0'),
+      category: formData.get('category')?.toString() || '',
+      description: formData.get('description')?.toString() || '',
+      content: formData.get('content')?.toString() || '',
+      startDate: new Date(formData.get('startDate')?.toString() || ''),
+      endDate: new Date(formData.get('endDate')?.toString() || ''),
       galleryImageUrls: {
-        deleteMany: {}, // 기존 이미지 모두 삭제
+        deleteMany: {},
         createMany: {
-          // 새 이미지 데이터 생성
-          data: galleryData.map((image: any) => ({
+          data: galleryData.map((image: GalleryImage) => ({
             imageUrl: image.imageUrl,
             alt: image.alt || '',
             order: image.order,
