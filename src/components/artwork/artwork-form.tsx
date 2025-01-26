@@ -41,6 +41,7 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
     register,
     handleSubmit,
     setValue,
+    setError,
     formState: { errors },
   } = useForm<ArtworkFormData>({
     resolver: zodResolver(artworkCreateSchema),
@@ -52,6 +53,10 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
       description: '',
       style: '',
       galleryImageUrls: [],
+    },
+    resetOptions: {
+      keepDirtyValues: true,
+      keepErrors: true,
     },
   });
 
@@ -116,13 +121,11 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
       router.push(`/artworks/${result.data?.id}`);
     } catch (error) {
       console.error(error);
-      alert(error instanceof Error ? error.message : '작품 등록 실패');
+      setError('root', {
+        message: error instanceof Error ? error.message : '작품 등록 실패',
+      });
     }
   });
-
-  const onValid = async () => {
-    await onSubmit();
-  };
 
   return (
     <div className="mx-auto max-w-3xl p-4">
@@ -134,7 +137,7 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
           <CardDescription>새로운 작품의 정보를 입력해주세요.</CardDescription>
         </CardHeader>
 
-        <form action={onValid}>
+        <form onSubmit={onSubmit}>
           <CardContent className="space-y-6">
             <div className="space-y-6">
               <div className="space-y-2">
@@ -231,6 +234,9 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
               {mode === 'edit' ? '수정하기' : '등록하기'}
             </Button>
           </CardFooter>
+          {errors.root && (
+            <p className="text-sm text-red-500">{errors.root.message}</p>
+          )}
         </form>
       </Card>
     </div>

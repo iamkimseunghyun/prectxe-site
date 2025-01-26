@@ -36,6 +36,7 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
     register,
     handleSubmit,
     setValue,
+    setError,
     formState: { errors },
   } = useForm<ArtistFormData>({
     resolver: zodResolver(artistCreateSchema),
@@ -51,6 +52,10 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
       biography: '',
       cv: '',
       galleryImageUrls: [],
+    },
+    resetOptions: {
+      keepErrors: true,
+      keepDirtyValues: true,
     },
   });
 
@@ -155,13 +160,12 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
       router.push(`/artists/${result.data?.id}`);
     } catch (error) {
       console.error('Error: ', error);
-      alert(error instanceof Error ? error.message : '아티스트 등록 실패');
+      setError('root', {
+        message: error instanceof Error ? error.message : '아티스트 등록 실패',
+      });
     }
   });
 
-  const onValid = async () => {
-    await onSubmit();
-  };
   return (
     <div className="container mx-auto py-10">
       <Card>
@@ -170,7 +174,7 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
             {mode === 'create' ? '아티스트 등록' : '아티스트 수정'}
           </CardTitle>
         </CardHeader>
-        <form action={onValid} className="space-y-8">
+        <form onSubmit={onSubmit} className="space-y-8">
           <CardContent>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
@@ -259,6 +263,9 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
               {mode === 'edit' ? '수정하기' : '등록하기'}
             </Button>
           </CardFooter>
+          {errors.root && (
+            <p className="text-sm text-red-500">{errors.root.message}</p>
+          )}
         </form>
       </Card>
     </div>

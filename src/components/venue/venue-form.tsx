@@ -34,6 +34,8 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
   const {
     register,
     handleSubmit,
+    setError,
+    reset,
     setValue,
     formState: { errors },
   } = useForm<VenueFormData>({
@@ -43,6 +45,10 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
       description: '',
       address: '',
       galleryImageUrls: [],
+    },
+    resetOptions: {
+      keepErrors: true,
+      keepDirtyValues: true, // 변경된 값 유지
     },
   });
 
@@ -101,19 +107,21 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
       router.push(`/venues/${result.data?.id}`);
     } catch (error) {
       console.error('Error: ', error);
-      alert(error instanceof Error ? error.message : '장소 등록 실패');
+      setError('root', {
+        message: error instanceof Error ? error.message : '장소 등록 실패',
+      });
     }
   });
-  const onValid = async () => {
+  /*  const onValid = async () => {
     await onSubmit();
-  };
+  };*/
   return (
     <div className="mx-auto max-w-2xl p-4">
       <Card>
         <CardHeader>
           <CardTitle>{mode === 'create' ? '장소 등록' : '장소 수정'}</CardTitle>
         </CardHeader>
-        <form action={onValid}>
+        <form onSubmit={onSubmit}>
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium">장소 이름</label>
@@ -190,6 +198,9 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
               {mode === 'edit' ? '수정하기' : '등록하기'}
             </Button>
           </CardFooter>
+          {errors.root && (
+            <p className="text-sm text-red-500">{errors.root.message}</p>
+          )}
         </form>
       </Card>
     </div>

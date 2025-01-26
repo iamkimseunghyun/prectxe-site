@@ -49,6 +49,7 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
     handleSubmit,
     watch,
     setValue,
+    setError,
     formState: { errors },
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectCreateSchema),
@@ -62,6 +63,10 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
       startDate: formatDate(new Date()),
       endDate: formatDate(new Date()),
       galleryImageUrls: [],
+    },
+    resetOptions: {
+      keepDirtyValues: true,
+      keepErrors: true,
     },
   });
 
@@ -161,13 +166,11 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
       router.push(`/projects/${result.data?.id}`);
     } catch (error) {
       console.error(error);
-      alert(error instanceof Error ? error.message : '프로젝트 등록 실패');
+      setError('root', {
+        message: error instanceof Error ? error.message : '프로젝트 등록 실패',
+      });
     }
   });
-
-  const onValid = async () => {
-    await onSubmit();
-  };
 
   return (
     <div className="mx-auto max-w-3xl p-4">
@@ -181,7 +184,7 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
           </CardDescription>
         </CardHeader>
 
-        <form action={onValid}>
+        <form onSubmit={onSubmit}>
           <CardContent className="space-y-6">
             <SingleImageSection
               register={register}
@@ -331,6 +334,9 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
               {mode === 'edit' ? '수정하기' : '등록하기'}
             </Button>
           </CardFooter>
+          {errors.root && (
+            <p className="text-sm text-red-500">{errors.root.message}</p>
+          )}
         </form>
       </Card>
     </div>

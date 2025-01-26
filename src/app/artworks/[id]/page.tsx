@@ -55,7 +55,6 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           </section>
         )}
         {/* 작품 정보 섹션 */}
-
         <Card className="p-6">
           <h1 className="mb-2 text-3xl font-bold">{artwork.title}</h1>
           <div className="mb-4 flex gap-2">

@@ -178,7 +178,9 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           <Info className="h-5 w-5" />
           상세 정보
         </h2>
-        <div className="prose max-w-none pt-6">{project.content}</div>
+        <div className="prose max-w-none whitespace-pre-wrap pt-6">
+          {project.content}
+        </div>
       </section>
       <div className="mt-6 flex justify-end gap-x-2">
         <ProjectAdminButton projectId={project.id} />
