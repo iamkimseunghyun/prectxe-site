@@ -8,7 +8,6 @@ export const galleryImageSchema = z.object({
 });
 
 export type GalleryImage = z.infer<typeof galleryImageSchema>;
-
 export type GalleryPreview = {
   preview: string;
   file: File | null;
@@ -17,3 +16,8 @@ export type GalleryPreview = {
   alt: string;
   order: number;
 };
+
+export interface ImagePreview {
+  url: string;
+  type: 'cloudflare' | 'local';
+}

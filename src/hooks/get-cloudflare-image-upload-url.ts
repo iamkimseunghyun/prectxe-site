@@ -13,20 +13,16 @@ export async function getUploadedProductImageURL() {
     );
 
     if (!response.ok) {
-      console.error('API Error:', {
+      console.error('Cloudflare API Error:', {
         status: response.status,
         statusText: response.statusText,
       });
-      const errorData = await response.json();
-      console.error('Error details:', errorData);
-      return { success: false, error: errorData };
     }
 
     const data = await response.json();
-    console.log('API Response:', data);
     return data;
   } catch (error) {
-    console.error('API Request failed:', error);
+    console.error('Cloudflare API Request failed:', error);
     return { success: false, error };
   }
 }

@@ -2,40 +2,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { HeroSection } from '@/components/layout/hero-section';
-
-import { Metadata } from 'next';
 import { getAllProjects } from '@/app/projects/actions';
 
 export const revalidate = 60; // 1분마다 재검증
-export const metadata: Metadata = {
-  title: 'PRECTXE - 디지털 아트 플랫폼',
-  description:
-    '2018년부터 이어온 디지털 아트 플랫폼 PRECTXE에서 전시, 공연, 워크샵을 통해 새로운 예술 경험을 만나보세요.',
-  openGraph: {
-    title: 'PRECTXE - 디지털 아트 플랫폼',
-    description: '전시, 공연, 워크샵을 통한 새로운 예술 경험',
-    images: [
-      {
-        url: '/og-image.jpg', // OG 이미지 경로 추가 필요
-        width: 1200,
-        height: 630,
-        alt: 'PRECTXE 디지털 아트 페스티벌',
-      },
-    ],
-  },
-  keywords: [
-    '디지털 아트',
-    '예술',
-    '전시',
-    '공연',
-    '워크샵',
-    'PRECTXE',
-    '페스티벌',
-  ],
-  alternates: {
-    canonical: 'https://prectxe-demo-site.vercel.app',
-  },
-};
+
 export default async function Home() {
   const projects = await getAllProjects();
   return (

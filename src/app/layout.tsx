@@ -1,4 +1,3 @@
-import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
@@ -17,33 +16,6 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
 });
-
-export const metadata: Metadata = {
-  title: {
-    default: 'PRECTXE - Digital Art Festival',
-    template: '%s | PRECTXE',
-  },
-  description:
-    'PRECTXE is a digital art festival combining online and offline experiences',
-  keywords: ['digital art', 'festival', 'art', 'performance', 'workshop'],
-  authors: [{ name: 'PRECTXE' }],
-  openGraph: {
-    title: 'PRECTXE - Digital Art Festival',
-    description: 'Experience digital art through performances and workshops',
-    url: 'https://prectxe-demo-site.vercel.app',
-    siteName: 'PRECTXE',
-    type: 'website',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'PRECTXE - Digital Art Festival',
-    description: 'Experience digital art through performances and workshops',
-  },
-};
 
 export default function RootLayout({
   children,
