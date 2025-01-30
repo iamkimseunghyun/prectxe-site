@@ -13,16 +13,20 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import React from 'react';
-import { GalleryImage, GalleryPreview } from '@/lib/validations/gallery-image';
+
 import { artistCreateSchema, ArtistFormData } from '@/lib/validations/artist';
-import { useImageUpload } from '@/hooks/use-image-upload';
-import SingleImageSection from '@/components/image/single-image-section';
+import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
+import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
 
-import { useGalleryImages } from '@/hooks/use-gallery-images';
-import GalleryImageSection from '@/components/image/gallery-image-section';
+import MultiImageBox, { BaseImage } from '@/components/image/multi-image-box';
 import { formatDate } from '@/lib/utils';
 import { createArtist, updateArtist } from '@/app/artists/actions';
+import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import {
+  uploadGalleryImages,
+  uploadSingleImage,
+} from '@/app/actions/upload-image';
 
 type ArtistFormProps = {
   mode: 'create' | 'edit';
@@ -64,12 +68,12 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
   const {
     preview,
     imageFile,
-    fileError,
+    error: fileError,
     uploadURL,
     handleImageChange,
     imageUrl,
     displayUrl,
-  } = useImageUpload({
+  } = useSingleImageUpload({
     initialImage: initialData?.mainImageUrl,
     onImageUrlChange: (url) => {
       setValue('mainImageUrl', url);
@@ -77,52 +81,15 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
   });
 
   // 갤러리 이미지 훅
-  const {
-    galleryPreviews,
-    fileError: galleryError,
-    handleGalleryImageChange,
-    removeGalleryImage,
-  } = useGalleryImages({
-    initialImages: initialData?.images,
-    onGalleryChange: (galleryData) => {
-      setValue('images', galleryData);
-    },
-  });
+  const { multiImagePreview, error, handleMultiImageChange, removeMultiImage } =
+    useMultiImageUpload({
+      initialImages: initialData?.images,
+      onGalleryChange: (galleryData) => {
+        setValue('images', galleryData);
+      },
+    });
 
-  const uploadSingleImage = async (imageFile: File) => {
-    if (imageFile) {
-      const cloudFlareForm = new FormData();
-      cloudFlareForm.append('file', imageFile);
-      const response = await fetch(uploadURL, {
-        method: 'POST',
-        body: cloudFlareForm,
-      });
-      if (response.status !== 200) {
-        throw new Error('Failed to upload main image');
-      }
-    }
-  };
-
-  const uploadGalleryImages = async (previews: GalleryPreview[]) => {
-    return Promise.all(
-      previews.map(async (preview) => {
-        const formData = new FormData();
-        formData.append('file', preview.file!);
-        const response = await fetch(preview.uploadURL, {
-          method: 'POST',
-          body: formData,
-        });
-        if (response.status !== 200) {
-          throw new Error(`Failed to upload: ${preview.alt}`);
-        }
-      })
-    );
-  };
-
-  const prepareFormData = (
-    data: ArtistFormData,
-    galleryData: GalleryImage[]
-  ) => {
+  const prepareFormData = (data: ArtistFormData, multiImage: BaseImage[]) => {
     const formData = new FormData();
     formData.append('name', data.name);
     formData.append('mainImageUrl', imageUrl);
@@ -134,17 +101,17 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
     formData.append('homepage', data.homepage);
     formData.append('biography', data.biography);
     formData.append('cv', data.cv);
-    formData.append('images', JSON.stringify(galleryData));
+    formData.append('images', JSON.stringify(multiImage));
     return formData;
   };
 
   const onSubmit = handleSubmit(async (data: ArtistFormData) => {
     try {
       if (imageFile) {
-        await uploadSingleImage(imageFile);
+        await uploadSingleImage(imageFile, uploadURL);
       }
-      if (galleryPreviews.length > 0) {
-        await uploadGalleryImages(galleryPreviews);
+      if (multiImagePreview.length > 0) {
+        await uploadGalleryImages(multiImagePreview);
       }
 
       const formData = prepareFormData(data, data.images);
@@ -187,19 +154,19 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
                   </p>
                 )}
               </div>
-              <SingleImageSection<ArtistFormData>
-                register={register}
+              <SingleImageBox
+                register={register('mainImageUrl')}
                 preview={preview}
-                fileError={fileError}
+                error={fileError}
                 displayUrl={displayUrl}
                 handleImageChange={handleImageChange}
               />
-              <GalleryImageSection
-                register={register}
-                galleryPreviews={galleryPreviews}
-                handleGalleryImageChange={handleGalleryImageChange}
-                removeGalleryImage={removeGalleryImage}
-                galleryError={galleryError}
+              <MultiImageBox
+                register={register('images')}
+                previews={multiImagePreview}
+                handleMultiImageChange={handleMultiImageChange}
+                removeMultiImage={removeMultiImage}
+                error={error}
               />
               <div className="space-y-2">
                 <label>생년월일</label>

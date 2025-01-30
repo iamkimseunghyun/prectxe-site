@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { galleryImageSchema } from '@/lib/validations/gallery-image';
+import { baseImageSchema } from '@/lib/validations/image';
 
 export const venueCreateSchema = z.object({
   name: z
@@ -13,7 +13,7 @@ export const venueCreateSchema = z.object({
   address: z
     .string()
     .nonempty({ message: '지도 버튼을 클릭해 주소를 입력해주세요.' }),
-  images: z.array(galleryImageSchema).min(1, {
+  images: z.array(baseImageSchema).min(1, {
     message: '갤러리 이미지를 1개 이상 등록해주세요.',
   }),
 });

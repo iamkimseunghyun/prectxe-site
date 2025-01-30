@@ -28,7 +28,7 @@ export default async function Home() {
                 <Button variant="outline">View All</Button>
               </Link>
             </div>
-            6{/* 프로젝트 그리드 */}
+            {/* 프로젝트 그리드 */}
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
               {projects.map((project) => (
                 <Link

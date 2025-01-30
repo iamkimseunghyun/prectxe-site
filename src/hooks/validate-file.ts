@@ -21,4 +21,6 @@ export default function validateImageFile(file: File) {
   if (file.size > MAX_FILE_SIZE) {
     throw new Error('파일 크기는 5MB를 초과할 수 없습니다.');
   }
+
+  return null;
 }

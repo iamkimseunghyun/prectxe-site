@@ -29,12 +29,12 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
-import { useImageUpload } from '@/hooks/use-image-upload';
-import { useGalleryImages } from '@/hooks/use-gallery-images';
-import GalleryImageSection from '@/components/image/gallery-image-section';
-import SingleImageSection from '@/components/image/single-image-section';
-import { GalleryImage, GalleryPreview } from '@/lib/validations/gallery-image';
+import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
+import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import MultiImageBox, { BaseImage } from '@/components/image/multi-image-box';
+import SingleImageBox from '@/components/image/single-image-box';
 import { createProject, updateProject } from '@/app/projects/actions';
+import { uploadGalleryImages } from '@/app/actions/upload-image';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';
@@ -75,12 +75,11 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
   const {
     preview,
     imageFile,
-    fileError,
     uploadURL,
     handleImageChange,
     imageUrl,
     displayUrl,
-  } = useImageUpload({
+  } = useSingleImageUpload({
     initialImage: initialData?.mainImageUrl,
     onImageUrlChange: (url) => {
       setValue('mainImageUrl', url);
@@ -89,11 +88,11 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
 
   // 갤러리 이미지 훅
   const {
-    galleryPreviews,
-    fileError: galleryError,
-    handleGalleryImageChange,
-    removeGalleryImage,
-  } = useGalleryImages({
+    multiImagePreview,
+    error: fileError,
+    handleMultiImageChange,
+    removeMultiImage,
+  } = useMultiImageUpload({
     initialImages: initialData?.images,
     onGalleryChange: (galleryData) => {
       setValue('images', galleryData);
@@ -114,26 +113,7 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
     }
   };
 
-  const uploadGalleryImages = async (previews: GalleryPreview[]) => {
-    return Promise.all(
-      previews.map(async (preview) => {
-        const formData = new FormData();
-        formData.append('file', preview.file!);
-        const response = await fetch(preview.uploadURL, {
-          method: 'POST',
-          body: formData,
-        });
-        if (response.status !== 200) {
-          throw new Error(`Failed to upload: ${preview.alt}`);
-        }
-      })
-    );
-  };
-
-  const prepareFormData = (
-    data: ProjectFormData,
-    galleryData: GalleryImage[]
-  ) => {
+  const prepareFormData = (data: ProjectFormData, galleryData: BaseImage[]) => {
     const formData = new FormData();
     formData.append('title', data.title);
     formData.append('year', data.year.toString());
@@ -152,8 +132,8 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
       if (imageFile) {
         await uploadSingleImage(imageFile);
       }
-      if (galleryPreviews.length > 0) {
-        await uploadGalleryImages(galleryPreviews);
+      if (multiImagePreview.length > 0) {
+        await uploadGalleryImages(multiImagePreview);
       }
 
       const formData = prepareFormData(data, data.images);
@@ -187,10 +167,10 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
 
         <form onSubmit={onSubmit}>
           <CardContent className="space-y-6">
-            <SingleImageSection
-              register={register}
+            <SingleImageBox
+              register={register('mainImageUrl')}
               preview={preview}
-              fileError={fileError}
+              error={fileError}
               displayUrl={displayUrl}
               handleImageChange={handleImageChange}
             />
@@ -288,12 +268,12 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
               </div>
             </div>
             {/* 갤러리 이미지 섹션 */}
-            <GalleryImageSection
-              register={register}
-              galleryPreviews={galleryPreviews}
-              galleryError={galleryError}
-              handleGalleryImageChange={handleGalleryImageChange}
-              removeGalleryImage={removeGalleryImage}
+            <MultiImageBox
+              register={register('images')}
+              previews={multiImagePreview}
+              error={fileError}
+              handleMultiImageChange={handleMultiImageChange}
+              removeMultiImage={removeMultiImage}
             />
             <div className="space-y-2">
               <label className="text-sm font-medium">설명</label>

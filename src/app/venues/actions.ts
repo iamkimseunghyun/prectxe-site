@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/prisma';
 import { venueCreateSchema } from '@/lib/validations/venues';
-import { GalleryImage } from '@/lib/validations/gallery-image';
+import { Image } from '@/lib/validations/image';
 
 export async function getVenueById(venueId: string) {
   const result = prisma.venue.findUnique({
@@ -126,7 +126,7 @@ export async function updateVenue(formData: FormData, venueId: string) {
       venueImages: {
         deleteMany: {},
         createMany: {
-          data: galleryData.map((image: GalleryImage) => ({
+          data: galleryData.map((image: Image) => ({
             imageUrl: image.imageUrl,
             alt: image.alt || '',
             order: image.order,

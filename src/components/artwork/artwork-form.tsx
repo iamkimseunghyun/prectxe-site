@@ -15,9 +15,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useGalleryImages } from '@/hooks/use-gallery-images';
-import GalleryImageSection from '@/components/image/gallery-image-section';
-import { GalleryImage, GalleryPreview } from '@/lib/validations/gallery-image';
+import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import MultiImageBox, { BaseImage } from '@/components/image/multi-image-box';
+
 import {
   artworkCreateSchema,
   ArtworkFormData,
@@ -27,6 +27,7 @@ import {
   CreateArtworkResponse,
   updateArtwork,
 } from '@/app/artworks/actions';
+import { uploadGalleryImages } from '@/app/actions/upload-image';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';
@@ -62,37 +63,18 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
 
   // 갤러리 이미지 훅
   const {
-    galleryPreviews,
-    fileError: galleryError,
-    handleGalleryImageChange,
-    removeGalleryImage,
-  } = useGalleryImages({
+    multiImagePreview,
+    error: fileError,
+    handleMultiImageChange,
+    removeMultiImage,
+  } = useMultiImageUpload({
     initialImages: initialData?.images,
     onGalleryChange: (galleryData) => {
       setValue('images', galleryData);
     },
   });
 
-  const uploadGalleryImages = async (previews: GalleryPreview[]) => {
-    return Promise.all(
-      previews.map(async (preview) => {
-        const formData = new FormData();
-        formData.append('file', preview.file!);
-        const response = await fetch(preview.uploadURL, {
-          method: 'POST',
-          body: formData,
-        });
-        if (response.status !== 200) {
-          throw new Error(`Failed to upload: ${preview.alt}`);
-        }
-      })
-    );
-  };
-
-  const prepareFormData = (
-    data: ArtworkFormData,
-    galleryData: GalleryImage[]
-  ) => {
+  const prepareFormData = (data: ArtworkFormData, galleryData: BaseImage[]) => {
     const formData = new FormData();
     formData.append('title', data.title);
     formData.append('size', data.size);
@@ -106,8 +88,8 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
 
   const onSubmit = handleSubmit(async (data: ArtworkFormData) => {
     try {
-      if (galleryPreviews.length > 0) {
-        await uploadGalleryImages(galleryPreviews);
+      if (multiImagePreview.length > 0) {
+        await uploadGalleryImages(multiImagePreview);
       }
 
       const formData = prepareFormData(data, data.images);
@@ -200,12 +182,12 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
               </div>
             </div>
             {/* 갤러리 이미지 섹션 */}
-            <GalleryImageSection
-              register={register}
-              galleryPreviews={galleryPreviews}
-              galleryError={galleryError}
-              handleGalleryImageChange={handleGalleryImageChange}
-              removeGalleryImage={removeGalleryImage}
+            <MultiImageBox
+              register={register('images')}
+              previews={multiImagePreview}
+              error={fileError}
+              handleMultiImageChange={handleMultiImageChange}
+              removeMultiImage={removeMultiImage}
             />
             <div className="space-y-2">
               <label className="text-sm font-medium">설명</label>

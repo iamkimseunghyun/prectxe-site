@@ -84,11 +84,16 @@ export type CreateArtistResult =
   | { ok: true; data: { id: string } }
   | { ok: false; error: string };
 
+export type ActionResult<T> = {
+  ok: boolean;
+  data?: T;
+  error?: string;
+};
+
 export async function createArtist(
   formData: FormData
-): Promise<CreateArtistResult> {
+): Promise<ActionResult<{ id: string }>> {
   // FormData에서 galleryImageUrls를 파싱
-  const galleryImageUrls = JSON.parse(formData.get('images') as string);
   try {
     const rawData = {
       name: formData.get('name'), // title -> name 수정
@@ -101,7 +106,7 @@ export async function createArtist(
       homepage: formData.get('homepage'),
       biography: formData.get('biography'),
       cv: formData.get('cv'),
-      images: galleryImageUrls,
+      images: JSON.parse(formData.get('images') as string),
     };
 
     // Zod 검증 실패 시 구체적인 에러 반환
@@ -136,14 +141,16 @@ export async function createArtist(
     });
 
     revalidatePath('/artists');
-    revalidatePath('/');
     return { ok: true, data: { id: artist.id } };
   } catch (error) {
     console.error('Artist creation error:', error);
-    if (error instanceof Error) {
-      return { ok: false, error: error.message };
-    }
-    return { ok: false, error: '서버 에러가 발생했습니다.' };
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : '아티스트 등록에 실패했습니다.',
+    };
   }
 }
 
@@ -176,23 +183,50 @@ export async function updateArtist(formData: FormData, artistId: string) {
       biography: formData.get('biography')?.toString() || '',
       cv: formData.get('cv')?.toString() || '',
     };
-
     // mainImageUrl이 있을 때만 업데이트 데이터에 포함
     if (mainImageUrl) {
       updateData.mainImageUrl = mainImageUrl;
     }
 
-    const artist = await prisma.artist.update({
-      where: { id: artistId },
-      data: {
-        ...updateData,
-        updatedAt: new Date(),
-      },
-    });
-    return { ok: true, data: artist };
+    const validatedData = artistCreateSchema.safeParse(updateData);
+    if (!validatedData.success) {
+      const errorMessage = validatedData.error.issues
+        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+        .join(', ');
+      return { ok: false, error: errorMessage };
+    }
+    // 기존 이미지 삭제 후 새로 생성
+    await prisma.$transaction([
+      prisma.artistImage.deleteMany({
+        where: { artistId },
+      }),
+      prisma.artist.update({
+        where: { id: artistId },
+        data: {
+          ...validatedData.data,
+          birth: new Date(validatedData.data.birth),
+          images: {
+            create: validatedData.data.images.map((image) => ({
+              imageUrl: image.imageUrl,
+              alt: image.alt,
+              order: image.order,
+            })),
+          },
+        },
+      }),
+    ]);
+    revalidatePath('/artists');
+    revalidatePath(`/artists/${artistId}`);
+    return { ok: true, data: { id: artistId } };
   } catch (error) {
-    console.error('Failed to update project:', error);
-    return { ok: false, error: 'Failed to update project' };
+    console.error('Artist update error:', error);
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : '아티스트 수정에 실패했습니다.',
+    };
   }
 }
 

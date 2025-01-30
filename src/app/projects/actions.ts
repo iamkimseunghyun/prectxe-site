@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
 import { projectCreateSchema } from '@/lib/validations/project';
-import { GalleryImage } from '@/lib/validations/gallery-image';
+import { Image } from '@/lib/validations/image';
 
 export async function getAllProjects(
   year?: string,
@@ -173,7 +173,7 @@ export async function updateProject(formData: FormData, projectId: string) {
       images: {
         deleteMany: {},
         createMany: {
-          data: galleryData.map((image: GalleryImage) => ({
+          data: galleryData.map((image: Image) => ({
             imageUrl: image.imageUrl,
             alt: image.alt || '',
             order: image.order,

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { getImageUrl } from '@/lib/utils';
 import ProjectAdminButton from '@/components/project/project-admin-button';
 import React from 'react';
-import CarouselGallery from '@/hooks/carousel-gallery';
+import CarouselGallery from '@/components/image/carousel-gallery';
 import { Metadata } from 'next';
 import { getProjectById } from '@/app/projects/actions';
 

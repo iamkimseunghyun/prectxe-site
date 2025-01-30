@@ -1,6 +1,6 @@
 // lib/validations/project.ts
 import { z } from 'zod';
-import { galleryImageSchema } from '@/lib/validations/gallery-image';
+import { baseImageSchema } from '@/lib/validations/image';
 
 export const projectCreateSchema = z.object({
   mainImageUrl: z.string({
@@ -30,7 +30,7 @@ export const projectCreateSchema = z.object({
   endDate: z.string({
     required_error: '종료일을 선택해주세요.',
   }),
-  images: z.array(galleryImageSchema).min(1, {
+  images: z.array(baseImageSchema).min(1, {
     message: '갤러리 이미지를 1개 이상 등록해주세요.',
   }),
 });

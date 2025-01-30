@@ -11,7 +11,7 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import Image from 'next/image';
-import { GalleryImage } from '@/lib/validations/gallery-image';
+import { Image } from '@/lib/validations/image';
 import ArtworkAdminButton from '@/components/artwork/artwork-admin-button';
 import { Metadata } from 'next';
 import { getArtworkById } from '@/app/artworks/actions';
@@ -54,7 +54,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             <div className="mx-auto">
               <Carousel>
                 <CarouselContent>
-                  {artwork.images.map((image: GalleryImage) => (
+                  {artwork.images.map((image: Image) => (
                     <CarouselItem
                       key={image.id}
                       className="md:basis-1/2 lg:basis-1/3"

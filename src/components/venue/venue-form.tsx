@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { venueCreateSchema, VenueFormData } from '@/lib/validations/venues';
-import { useGalleryImages } from '@/hooks/use-gallery-images';
+import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import {
   Card,
   CardContent,
@@ -19,8 +19,8 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
 import { createVenue, updateVenue } from '@/app/venues/actions';
-import GalleryImageSection from '@/components/image/gallery-image-section';
-import { GalleryImage, GalleryPreview } from '@/lib/validations/gallery-image';
+import MultiImageBox, { BaseImage } from '@/components/image/multi-image-box';
+import { uploadGalleryImages } from '@/app/actions/upload-image';
 
 type VenueFormProps = {
   mode: 'create' | 'edit';
@@ -53,37 +53,18 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
 
   // 갤러리 이미지 훅
   const {
-    galleryPreviews,
-    fileError: galleryError,
-    handleGalleryImageChange,
-    removeGalleryImage,
-  } = useGalleryImages({
+    multiImagePreview,
+    error: fileError,
+    handleMultiImageChange,
+    removeMultiImage,
+  } = useMultiImageUpload({
     initialImages: initialData?.images,
     onGalleryChange: (galleryData) => {
       setValue('images', galleryData);
     },
   });
 
-  const uploadGalleryImages = async (previews: GalleryPreview[]) => {
-    return Promise.all(
-      previews.map(async (preview) => {
-        const formData = new FormData();
-        formData.append('file', preview.file!);
-        const response = await fetch(preview.uploadURL, {
-          method: 'POST',
-          body: formData,
-        });
-        if (response.status !== 200) {
-          throw new Error(`Failed to upload: ${preview.alt}`);
-        }
-      })
-    );
-  };
-
-  const prepareFormData = (
-    data: VenueFormData,
-    galleryData: GalleryImage[]
-  ) => {
+  const prepareFormData = (data: VenueFormData, galleryData: BaseImage[]) => {
     const formData = new FormData();
     formData.append('name', data.name);
     formData.append('description', data.description);
@@ -94,7 +75,7 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
 
   const onSubmit = handleSubmit(async (data: VenueFormData) => {
     try {
-      await uploadGalleryImages(galleryPreviews);
+      await uploadGalleryImages(multiImagePreview);
       const formData = prepareFormData(data, data.images);
 
       const result =
@@ -176,12 +157,12 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
             {/* 갤러리 이미지 섹션 */}
             <div className="space-y-2">
               <label className="text-sm font-medium">장소 사진</label>
-              <GalleryImageSection
-                register={register}
-                galleryPreviews={galleryPreviews}
-                handleGalleryImageChange={handleGalleryImageChange}
-                removeGalleryImage={removeGalleryImage}
-                galleryError={galleryError}
+              <MultiImageBox
+                register={register('images')}
+                previews={multiImagePreview}
+                handleMultiImageChange={handleMultiImageChange}
+                removeMultiImage={removeMultiImage}
+                error={fileError}
               />
             </div>
           </CardContent>

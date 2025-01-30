@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db/prisma';
 import { notFound } from 'next/navigation';
 import { artworkCreateSchema } from '@/lib/validations/artwork';
 import { revalidatePath } from 'next/cache';
-import { GalleryImage } from '@/lib/validations/gallery-image';
+import { Image } from '@/lib/validations/image';
 
 export async function getArtworkById(id: string) {
   const artwork = await prisma.artwork.findUnique({
@@ -114,7 +114,7 @@ export async function updateArtwork(
       images: {
         deleteMany: {},
         createMany: {
-          data: galleryData.map((image: GalleryImage) => ({
+          data: galleryData.map((image: Image) => ({
             imageUrl: image.imageUrl,
             alt: image.alt || '',
             order: image.order,

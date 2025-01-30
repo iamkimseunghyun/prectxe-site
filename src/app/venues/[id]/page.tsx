@@ -1,7 +1,7 @@
 import { Calendar, MapPin, Share2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import CarouselGallery from '@/hooks/carousel-gallery';
+import CarouselGallery from '@/components/image/carousel-gallery';
 import VenueAdminButton from '@/components/venue/venue-admin-button';
 import { Metadata } from 'next';
 import { getVenueById } from '@/app/venues/actions';

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { galleryImageSchema } from '@/lib/validations/gallery-image';
+import { baseImageSchema } from '@/lib/validations/image';
 
 // 아트웍 등록 폼 스키마 정의
 export const artworkCreateSchema = z.object({
@@ -20,7 +20,7 @@ export const artworkCreateSchema = z.object({
   style: z.string().min(2, {
     message: '국가를 입력해주세요.',
   }),
-  images: z.array(galleryImageSchema).min(1, {
+  images: z.array(baseImageSchema).min(1, {
     message: '갤러리 이미지를 1개 이상 등록해주세요.',
   }),
 });

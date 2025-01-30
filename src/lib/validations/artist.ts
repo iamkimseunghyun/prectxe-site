@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { galleryImageSchema } from '@/lib/validations/gallery-image';
+import { baseImageSchema } from '@/lib/validations/image';
 
 // 아티스트 등록 폼 스키마 정의
 export const artistCreateSchema = z.object({
@@ -31,7 +31,7 @@ export const artistCreateSchema = z.object({
   cv: z.string().min(10, {
     message: '이력서는 10자 이상 입력해주세요.',
   }),
-  images: z.array(galleryImageSchema).min(1, {
+  images: z.array(baseImageSchema).min(1, {
     message: '갤러리 이미지를 1개 이상 등록해주세요.',
   }),
 });
