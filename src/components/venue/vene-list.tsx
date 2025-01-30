@@ -12,7 +12,7 @@ import { getImageUrl } from '@/lib/utils';
 interface VenueListProps {
   initialData: {
     venues: (Venue & {
-      galleryImageUrls: GalleryImage[];
+      images: GalleryImage[];
     })[];
     total: number;
     totalPages: number;
@@ -27,14 +27,11 @@ const VenueList = ({ initialData }: VenueListProps) => {
           <Link href={`/venues/${venue.id}`} key={venue.id}>
             <Card className="transition-shadow hover:shadow-lg">
               <CardContent className="p-0">
-                {venue.galleryImageUrls?.[0] ? (
+                {venue.images?.[0] ? (
                   <div className="relative h-48 w-full">
                     <Image
-                      src={getImageUrl(
-                        venue.galleryImageUrls[0].imageUrl,
-                        'public'
-                      )}
-                      alt={venue.galleryImageUrls[0].alt}
+                      src={getImageUrl(venue.images[0].imageUrl, 'public')}
+                      alt={venue.images[0].alt}
                       fill
                       priority
                       sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"

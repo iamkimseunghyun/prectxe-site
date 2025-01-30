@@ -6,12 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Edit, MapPin, Mail, Globe, Calendar } from 'lucide-react';
+import { Calendar, Edit, Globe, Mail, MapPin } from 'lucide-react';
 
 import Link from 'next/link';
-import { getArtist } from '@/app/artists/[id]/actions';
+
 import WorksList from '@/components/artwork/works-list';
 import ArtistAdminButton from '@/components/artist/artist-admin-button';
+import { getArtistById } from '@/app/artists/actions';
 
 export async function generateMetadata({
   params,
@@ -19,7 +20,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const id = (await params).id;
-  const { data: artist } = await getArtist(id);
+  const artist = await getArtistById(id);
 
   if (!artist) {
     return {
@@ -48,9 +49,9 @@ export async function generateMetadata({
 
 const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
-  const { success, data: artist } = await getArtist(id);
+  const artist = await getArtistById(id);
 
-  if (!success || !artist) {
+  if (!artist) {
     notFound();
   }
 
@@ -151,7 +152,7 @@ const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
             </div>
           </CardHeader>
           <CardContent>
-            <WorksList works={artist.artistArtworks} />
+            <WorksList />
           </CardContent>
         </Card>
 
@@ -173,7 +174,7 @@ const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
         </Card>
       </div>
       <div className="mt-6 flex justify-end gap-x-2">
-        <ArtistAdminButton artistId={artist.id} />
+        <ArtistAdminButton artistId={id} />
       </div>
     </div>
   );

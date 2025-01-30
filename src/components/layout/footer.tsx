@@ -1,11 +1,20 @@
-// components/layout/footer.tsx
+'use client';
 import Link from 'next/link';
+import { InstagramIcon, TwitterIcon, Youtube } from 'lucide-react';
 
 export function Footer() {
   const socials = [
-    { name: 'Instagram', href: '#' },
-    { name: 'Twitter', href: '#' },
-    { name: 'YouTube', href: '#' },
+    {
+      name: 'Instagram',
+      href: 'https://www.instagram.com/prectxe/',
+      icon: InstagramIcon,
+    },
+    {
+      name: 'YouTube',
+      href: 'https://www.youtube.com/@prectxe',
+      icon: Youtube,
+    },
+    { name: 'Twitter', href: '#', icon: TwitterIcon },
   ];
 
   return (
@@ -33,8 +42,11 @@ export function Footer() {
                     <Link
                       href={social.href}
                       className="text-gray-600 transition-colors hover:text-black"
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
-                      {social.name}
+                      <social.icon className="size-5" />
+                      <span className="sr-only"> {social.name}</span>
                     </Link>
                   </li>
                 ))}
@@ -44,7 +56,7 @@ export function Footer() {
             {/* 연락처 */}
             <div>
               <h3 className="mb-3 text-sm font-semibold">Contact</h3>
-              <p className="text-gray-600">contact@prectxe.kr</p>
+              <p className="text-gray-600">info@laaf.io</p>
             </div>
           </div>
         </div>

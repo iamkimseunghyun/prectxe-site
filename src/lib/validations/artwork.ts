@@ -20,7 +20,7 @@ export const artworkCreateSchema = z.object({
   style: z.string().min(2, {
     message: '국가를 입력해주세요.',
   }),
-  galleryImageUrls: z.array(galleryImageSchema).min(1, {
+  images: z.array(galleryImageSchema).min(1, {
     message: '갤러리 이미지를 1개 이상 등록해주세요.',
   }),
 });

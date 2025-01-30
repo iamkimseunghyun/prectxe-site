@@ -1,6 +1,7 @@
 import ArtistForm from '@/components/artist/artist-form';
-import { getArtistById } from '@/app/artists/[id]/edit/actions';
+
 import { Metadata } from 'next';
+import { getArtistById } from '@/app/artists/actions';
 
 export const metadata: Metadata = {
   title: '아티스트 등록',

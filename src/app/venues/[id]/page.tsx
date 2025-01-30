@@ -2,9 +2,9 @@ import { Calendar, MapPin, Share2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import CarouselGallery from '@/hooks/carousel-gallery';
-import { prisma } from '@/lib/prisma';
 import VenueAdminButton from '@/components/venue/venue-admin-button';
 import { Metadata } from 'next';
+import { getVenueById } from '@/app/venues/actions';
 
 export async function generateMetadata({
   params,
@@ -12,7 +12,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const id = (await params).id;
-  const venue = await getVenueDetails(id);
+  const venue = await getVenueById(id);
 
   if (!venue) {
     return {
@@ -27,7 +27,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${venue.name} - PRECTXE 전시 공간`,
       description: venue.description.substring(0, 155) + '...',
-      images: venue.galleryImageUrls.map((img) => ({
+      images: venue.images.map((img) => ({
         url: img.imageUrl,
         alt: img.alt,
       })),
@@ -35,38 +35,17 @@ export async function generateMetadata({
   };
 }
 
-const getVenueDetails = async (venueId: string) => {
-  const result = await prisma.venue.findUnique({
-    where: {
-      id: venueId,
-    },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      address: true,
-      galleryImageUrls: {
-        select: {
-          imageUrl: true,
-          alt: true,
-        },
-      },
-    },
-  });
-  return result;
-};
-
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
 
-  const venue = await getVenueDetails(id);
+  const venue = await getVenueById(id);
   if (!venue) return;
 
   return (
     <div className="container mx-auto px-4 py-12">
       {/* Gallery Section */}
       <div className="relative mb-4 aspect-[16/9] w-full overflow-hidden rounded-lg">
-        <CarouselGallery images={venue.galleryImageUrls} />
+        <CarouselGallery images={venue.images} />
       </div>
 
       {/* Main Info Card */}

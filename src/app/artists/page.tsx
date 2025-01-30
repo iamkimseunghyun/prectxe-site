@@ -20,7 +20,7 @@ export default function ArtistsPage() {
         description="PRECTXE의 모든 아티스트들을 만나보세요"
       />
 
-      <Suspense fallback={<div>loading...</div>}>
+      <Suspense>
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <ArtistSearch />
           <ArtistFilter />

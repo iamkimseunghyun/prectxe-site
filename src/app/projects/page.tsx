@@ -1,8 +1,9 @@
 import { ProjectGrid } from '@/components/project/project-grid';
 import ProjectFilterWrapper from '@/components/project/project-filter-wrapper';
 import { Suspense } from 'react';
-import { getProjects } from '@/app/projects/actions';
+
 import { Metadata } from 'next';
+import { getAllProjects } from '@/app/projects/actions';
 
 export const revalidate = 60; // 1분마다 재검증
 
@@ -47,7 +48,7 @@ const Page = async ({
     (_, i) => new Date().getFullYear() - i
   );
 
-  const projects = await getProjects(year, category, sort, search);
+  const projects = await getAllProjects(year, category, sort, search);
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -59,7 +60,7 @@ const Page = async ({
         </p>
       </div>
 
-      <Suspense fallback={<div>loading...</div>}>
+      <Suspense>
         <div className="mb-8">
           <ProjectFilterWrapper years={years} categories={categories} />
         </div>

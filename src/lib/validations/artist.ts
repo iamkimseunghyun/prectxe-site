@@ -31,7 +31,7 @@ export const artistCreateSchema = z.object({
   cv: z.string().min(10, {
     message: '이력서는 10자 이상 입력해주세요.',
   }),
-  galleryImageUrls: z.array(galleryImageSchema).min(1, {
+  images: z.array(galleryImageSchema).min(1, {
     message: '갤러리 이미지를 1개 이상 등록해주세요.',
   }),
 });

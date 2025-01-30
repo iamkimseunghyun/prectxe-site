@@ -1,6 +1,6 @@
 import { ChangeEvent, useState } from 'react';
 import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from '@/lib/constants/constants';
-import { getUploadedProductImageURL } from '@/app/actions/actions';
+import { getUploadedProductImageURL } from '@/hooks/get-cloudflare-image-upload-url';
 import { getImageUrl } from '@/lib/utils';
 
 type PreviewType = {
@@ -62,7 +62,7 @@ export function useImageUpload({
     // 파일 타입 검증
     if (!ALLOWED_FILE_TYPES.includes(localFile.type)) {
       setFileError(
-        '지원되지 않는 이미지 형식입니다. JPG, PNG, GIF, WEBP만 가능합니다.'
+        '지원되지 않는 이미지 형식입니다. JPG, PNG, GIF, WEBP, HEIC만 가능합니다.'
       );
       return;
     }

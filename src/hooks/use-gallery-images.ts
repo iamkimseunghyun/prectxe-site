@@ -1,6 +1,6 @@
 import { ChangeEvent, useState } from 'react';
 import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from '@/lib/constants/constants';
-import { getUploadedProductImageURL } from '@/app/actions/actions';
+import { getUploadedProductImageURL } from '@/hooks/get-cloudflare-image-upload-url';
 import { GalleryImage, GalleryPreview } from '@/lib/validations/gallery-image';
 
 interface UseGalleryImagesProps {

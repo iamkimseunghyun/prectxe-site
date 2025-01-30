@@ -18,10 +18,11 @@ import { artistCreateSchema, ArtistFormData } from '@/lib/validations/artist';
 import { useImageUpload } from '@/hooks/use-image-upload';
 import SingleImageSection from '@/components/image/single-image-section';
 import { Button } from '@/components/ui/button';
-import { createArtist, updateArtist } from '@/app/artists/new/actions';
+
 import { useGalleryImages } from '@/hooks/use-gallery-images';
 import GalleryImageSection from '@/components/image/gallery-image-section';
 import { formatDate } from '@/lib/utils';
+import { createArtist, updateArtist } from '@/app/artists/actions';
 
 type ArtistFormProps = {
   mode: 'create' | 'edit';
@@ -51,7 +52,7 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
       homepage: '',
       biography: '',
       cv: '',
-      galleryImageUrls: [],
+      images: [],
     },
     resetOptions: {
       keepErrors: true,
@@ -82,9 +83,9 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
     handleGalleryImageChange,
     removeGalleryImage,
   } = useGalleryImages({
-    initialImages: initialData?.galleryImageUrls,
+    initialImages: initialData?.images,
     onGalleryChange: (galleryData) => {
-      setValue('galleryImageUrls', galleryData);
+      setValue('images', galleryData);
     },
   });
 
@@ -133,7 +134,7 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
     formData.append('homepage', data.homepage);
     formData.append('biography', data.biography);
     formData.append('cv', data.cv);
-    formData.append('galleryImageUrls', JSON.stringify(galleryData));
+    formData.append('images', JSON.stringify(galleryData));
     return formData;
   };
 
@@ -146,7 +147,7 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
         await uploadGalleryImages(galleryPreviews);
       }
 
-      const formData = prepareFormData(data, data.galleryImageUrls);
+      const formData = prepareFormData(data, data.images);
 
       console.log('Form data:', Object.fromEntries(formData.entries()));
 

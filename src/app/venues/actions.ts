@@ -1,25 +1,27 @@
-// actions/venue.ts
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db/prisma';
 import { venueCreateSchema } from '@/lib/validations/venues';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 
-export async function getVenue(venueId: string) {
-  return prisma.venue.findUnique({
+export async function getVenueById(venueId: string) {
+  const result = prisma.venue.findUnique({
     where: {
       id: venueId,
     },
-    include: {
-      galleryImageUrls: {
-        orderBy: { order: 'asc' },
-      },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      address: true,
+      images: true,
     },
   });
+  return result;
 }
 
-export async function getVenuesAction(page: number = 1, limit: number = 9) {
+export async function getAllVenues(page: number = 1, limit: number = 9) {
   try {
     const skip = (page - 1) * limit;
 
@@ -28,7 +30,7 @@ export async function getVenuesAction(page: number = 1, limit: number = 9) {
         skip,
         take: limit,
         include: {
-          galleryImageUrls: true,
+          images: true,
         },
         orderBy: {
           createdAt: 'desc',
@@ -55,9 +57,7 @@ export async function createVenue(data: FormData) {
       name: data.get('name') as string,
       description: data.get('description') as string,
       address: data.get('address') as string,
-      galleryImageUrls: JSON.parse(
-        (data.get('galleryImageUrls') as string) || '[]'
-      ),
+      images: JSON.parse(data.get('images') as string) || '[]',
     };
     console.log('Server received data:', data);
 
@@ -76,11 +76,10 @@ export async function createVenue(data: FormData) {
       },
       select: { id: true },
     });
-
-    // galleryImageUrls 별도 생성
-    if (validatedData.data.galleryImageUrls.length > 0) {
-      await prisma.galleryImageUrl.createMany({
-        data: validatedData.data.galleryImageUrls.map((image) => ({
+    // venueImageUrls 별도 생성
+    if (validatedData.data.images.length > 0) {
+      await prisma.venueImage.createMany({
+        data: validatedData.data.images.map((image) => ({
           venueId: venue.id,
           imageUrl: image.imageUrl,
           alt: image.alt || '',
@@ -103,7 +102,7 @@ interface VenueUpdateData {
   name: string;
   description: string;
   address: string;
-  galleryImageUrls: {
+  venueImages: {
     deleteMany: Record<string, never>;
     createMany: {
       data: Array<{
@@ -118,15 +117,13 @@ interface VenueUpdateData {
 export async function updateVenue(formData: FormData, venueId: string) {
   try {
     // 더 안전한 방식
-    const galleryData = JSON.parse(
-      formData.get('galleryImageUrls')?.toString() || '[]'
-    );
+    const galleryData = JSON.parse(formData.get('images')?.toString() || '[]');
 
     const updateData: VenueUpdateData = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
       address: formData.get('address') as string,
-      galleryImageUrls: {
+      venueImages: {
         deleteMany: {},
         createMany: {
           data: galleryData.map((image: GalleryImage) => ({

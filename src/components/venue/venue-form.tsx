@@ -35,7 +35,6 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
     register,
     handleSubmit,
     setError,
-    reset,
     setValue,
     formState: { errors },
   } = useForm<VenueFormData>({
@@ -44,7 +43,7 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
       name: '',
       description: '',
       address: '',
-      galleryImageUrls: [],
+      images: [],
     },
     resetOptions: {
       keepErrors: true,
@@ -59,9 +58,9 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
     handleGalleryImageChange,
     removeGalleryImage,
   } = useGalleryImages({
-    initialImages: initialData?.galleryImageUrls,
+    initialImages: initialData?.images,
     onGalleryChange: (galleryData) => {
-      setValue('galleryImageUrls', galleryData);
+      setValue('images', galleryData);
     },
   });
 
@@ -89,14 +88,14 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
     formData.append('name', data.name);
     formData.append('description', data.description);
     formData.append('address', data.address);
-    formData.append('galleryImageUrls', JSON.stringify(galleryData));
+    formData.append('images', JSON.stringify(galleryData));
     return formData;
   };
 
   const onSubmit = handleSubmit(async (data: VenueFormData) => {
     try {
       await uploadGalleryImages(galleryPreviews);
-      const formData = prepareFormData(data, data.galleryImageUrls);
+      const formData = prepareFormData(data, data.images);
 
       const result =
         mode === 'edit'

@@ -1,6 +1,7 @@
 import ArtworkForm from '@/components/artwork/artwork-form';
-import { getArtworkById } from '@/app/artworks/[id]/actions';
+
 import { Metadata } from 'next';
+import { getArtworkById } from '@/app/artworks/actions';
 export const metadata: Metadata = {
   title: '작품 수정',
   robots: { index: false, follow: false },

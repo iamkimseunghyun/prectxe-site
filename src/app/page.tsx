@@ -1,10 +1,10 @@
-// app/search-project.tsx
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { HeroSection } from '@/components/motion/hero-section';
-import { getProjects } from '@/app/projects/actions';
+import { HeroSection } from '@/components/layout/hero-section';
+
 import { Metadata } from 'next';
+import { getAllProjects } from '@/app/projects/actions';
 
 export const revalidate = 60; // 1분마다 재검증
 export const metadata: Metadata = {
@@ -37,13 +37,13 @@ export const metadata: Metadata = {
   },
 };
 export default async function Home() {
-  const projects = await getProjects();
+  const projects = await getAllProjects();
   return (
     <>
       {/* 히어로 섹션 */}
       <HeroSection />
+      {/* 최근 프로젝트 섹션 */}
       <div className="container mx-auto">
-        {/* 최근 프로젝트 섹션 */}
         <section className="bg-white py-20">
           <div className="container px-4">
             <div className="mb-12 flex items-end justify-between">
@@ -58,8 +58,7 @@ export default async function Home() {
                 <Button variant="outline">View All</Button>
               </Link>
             </div>
-
-            {/* 프로젝트 그리드 */}
+            6{/* 프로젝트 그리드 */}
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
               {projects.map((project) => (
                 <Link
@@ -111,7 +110,7 @@ export default async function Home() {
               </p>
               <div>
                 <Link href="/about">
-                  <Button variant="outline">Learn More</Button>
+                  <Button variant="outline">더 보기</Button>
                 </Link>
               </div>
             </div>

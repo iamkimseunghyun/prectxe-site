@@ -28,12 +28,13 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { createProject, updateProject } from '@/app/projects/new/project';
+
 import { useImageUpload } from '@/hooks/use-image-upload';
 import { useGalleryImages } from '@/hooks/use-gallery-images';
 import GalleryImageSection from '@/components/image/gallery-image-section';
 import SingleImageSection from '@/components/image/single-image-section';
 import { GalleryImage, GalleryPreview } from '@/lib/validations/gallery-image';
+import { createProject, updateProject } from '@/app/projects/actions';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';
@@ -62,7 +63,7 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
       mainImageUrl: '',
       startDate: formatDate(new Date()),
       endDate: formatDate(new Date()),
-      galleryImageUrls: [],
+      images: [],
     },
     resetOptions: {
       keepDirtyValues: true,
@@ -93,9 +94,9 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
     handleGalleryImageChange,
     removeGalleryImage,
   } = useGalleryImages({
-    initialImages: initialData?.galleryImageUrls,
+    initialImages: initialData?.images,
     onGalleryChange: (galleryData) => {
-      setValue('galleryImageUrls', galleryData);
+      setValue('images', galleryData);
     },
   });
 
@@ -142,7 +143,7 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
     formData.append('mainImageUrl', imageUrl);
     formData.append('startDate', data.startDate);
     formData.append('endDate', data.endDate);
-    formData.append('galleryImageUrls', JSON.stringify(galleryData));
+    formData.append('images', JSON.stringify(galleryData));
     return formData;
   };
 
@@ -155,7 +156,7 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
         await uploadGalleryImages(galleryPreviews);
       }
 
-      const formData = prepareFormData(data, data.galleryImageUrls);
+      const formData = prepareFormData(data, data.images);
 
       const result =
         mode === 'edit'

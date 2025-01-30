@@ -26,7 +26,7 @@ import {
   createArtwork,
   CreateArtworkResponse,
   updateArtwork,
-} from '@/app/artworks/new/actions';
+} from '@/app/artworks/actions';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';
@@ -52,7 +52,7 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
       year: new Date().getFullYear(),
       description: '',
       style: '',
-      galleryImageUrls: [],
+      images: [],
     },
     resetOptions: {
       keepDirtyValues: true,
@@ -67,9 +67,9 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
     handleGalleryImageChange,
     removeGalleryImage,
   } = useGalleryImages({
-    initialImages: initialData?.galleryImageUrls,
+    initialImages: initialData?.images,
     onGalleryChange: (galleryData) => {
-      setValue('galleryImageUrls', galleryData);
+      setValue('images', galleryData);
     },
   });
 
@@ -100,7 +100,7 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
     formData.append('year', data.year.toString());
     formData.append('description', data.description);
     formData.append('style', data.style);
-    formData.append('galleryImageUrls', JSON.stringify(galleryData));
+    formData.append('images', JSON.stringify(galleryData));
     return formData;
   };
 
@@ -110,7 +110,7 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
         await uploadGalleryImages(galleryPreviews);
       }
 
-      const formData = prepareFormData(data, data.galleryImageUrls);
+      const formData = prepareFormData(data, data.images);
 
       const result: CreateArtworkResponse =
         mode === 'edit'

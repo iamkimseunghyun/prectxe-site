@@ -25,9 +25,7 @@ export default function Header() {
           </Link>
 
           {/* 검색 */}
-          <div className="hidden md:block">
-            <SearchCommand />
-          </div>
+          <div className="hidden md:block"></div>
 
           {/* 네비게이션 */}
           <ul className="flex items-center gap-8">

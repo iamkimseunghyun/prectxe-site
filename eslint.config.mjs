@@ -41,7 +41,15 @@ const eslintConfig = [
       '@typescript-eslint': typescriptPlugin,
     },
     rules: {
-      '@typescript-eslint/no-unused-vars': 'warn',
+      'no-unused-vars': 'off', // 기본 규칙 비활성화
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-empty-function': 'warn',
       'react/no-unescaped-entities': 'off',

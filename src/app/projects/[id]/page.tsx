@@ -1,7 +1,5 @@
 import { Badge } from '@/components/ui/badge';
 import { Calendar, House, ImageIcon, Info, MapPin, Users } from 'lucide-react';
-import { prisma } from '@/lib/prisma';
-import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,6 +9,7 @@ import ProjectAdminButton from '@/components/project/project-admin-button';
 import React from 'react';
 import CarouselGallery from '@/hooks/carousel-gallery';
 import { Metadata } from 'next';
+import { getProjectById } from '@/app/projects/actions';
 
 export async function generateMetadata({
   params,
@@ -18,73 +17,36 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const id = (await params).id;
-  const project = await getProject(id);
+  const project = await getProjectById(id);
 
   const categoryLabel = {
     exhibition: '전시',
     performance: '공연',
     festival: '페스티벌',
     workshop: '워크숍',
-  }[project.category];
+  }[project!.category];
 
   return {
-    title: project.title,
-    description: project.description.substring(0, 155) + '...',
+    title: project!.title,
+    description: project!.description.substring(0, 155) + '...',
     openGraph: {
-      title: `${project.title} - ${categoryLabel} | PRECTXE`,
-      description: project.description.substring(0, 155) + '...',
+      title: `${project!.title} - ${categoryLabel} | PRECTXE`,
+      description: project!.description.substring(0, 155) + '...',
       images: [
         {
-          url: getImageUrl(project.mainImageUrl, 'public'),
-          alt: project.title,
+          url: getImageUrl(project!.mainImageUrl, 'public'),
+          alt: project!.title,
         },
       ],
     },
   };
 }
 
-async function getProject(id: string) {
-  const project = await prisma.project.findUnique({
-    where: { id },
-    include: {
-      projectArtists: {
-        include: {
-          artist: true,
-        },
-      },
-      projectArtworks: {
-        include: {
-          artwork: {
-            include: {
-              galleryImageUrls: true,
-            },
-          },
-        },
-      },
-      venues: {
-        include: {
-          venue: {
-            include: {
-              galleryImageUrls: true,
-            },
-          },
-        },
-      },
-      galleryImageUrls: {
-        orderBy: {
-          order: 'asc',
-        },
-      },
-    },
-  });
-
-  if (!project) notFound();
-  return project;
-}
-
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
-  const project = await getProject(id);
+  const project = await getProjectById(id);
+
+  if (!project) return null;
 
   const categoryLabel = {
     exhibition: '전시',
@@ -121,8 +83,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             <>
               <MapPin className="h-4 w-4" />
               <span>
-                {project.venues.map(({ venue }) => (
-                  <span key={venue.id}>{venue.name}</span>
+                {project.venues.map(({ venueId, venue }) => (
+                  <span key={venueId}>{venue.name}</span>
                 ))}
               </span>
             </>
@@ -133,14 +95,14 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
         </p>
       </div>
       {/* 갤러리 탭 */}
-      {project.galleryImageUrls.length > 0 && (
+      {project.images.length > 0 && (
         <section className="mb-12">
           <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold">
             <ImageIcon className="h-5 w-5" />
             갤러리
           </h2>
           <div className="mx-auto">
-            <CarouselGallery images={project.galleryImageUrls} />
+            <CarouselGallery images={project.images} />
           </div>
         </section>
       )}

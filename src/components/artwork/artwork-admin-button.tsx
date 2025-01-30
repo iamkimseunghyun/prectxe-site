@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { deleteArtwork } from '@/app/artists/[id]/edit/actions';
+import { deleteArtwork } from '@/app/artists/actions';
 
 const ArtworkAdminButton = ({ artworkId }: { artworkId: string }) => {
   const router = useRouter();

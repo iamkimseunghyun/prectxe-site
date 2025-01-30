@@ -1,13 +1,10 @@
-// app/venues/search-project.tsx
-import { Suspense } from 'react';
-
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
-import VenuesListSkeleton from '@/app/venues/venues-list-skeleton';
-import VenueList from '@/app/venues/vene-list';
-import { getVenuesAction } from '@/app/venues/actions';
+import VenueList from '@/components/venue/vene-list';
+
 import { Metadata } from 'next';
+import { getAllVenues } from '@/app/venues/actions';
 
 export const metadata: Metadata = {
   title: '장소 목록',
@@ -25,7 +22,7 @@ const VenuesPage = async ({
 }) => {
   const params = await searchParams;
   const currentPage = Number(params.page) || 1;
-  const initialData = await getVenuesAction(currentPage);
+  const initialData = await getAllVenues(currentPage);
 
   return (
     <div className="container mx-auto py-8">
@@ -39,9 +36,7 @@ const VenuesPage = async ({
         </Link>
       </div>
 
-      <Suspense fallback={<VenuesListSkeleton />}>
-        <VenueList initialData={initialData} />
-      </Suspense>
+      <VenueList initialData={initialData} />
     </div>
   );
 };

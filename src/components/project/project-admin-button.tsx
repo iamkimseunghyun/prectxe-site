@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteProject } from '@/app/projects/actions/actions';
+import { deleteProject } from '@/app/projects/actions';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProjectAdminButtonProps {

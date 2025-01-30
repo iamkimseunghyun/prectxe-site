@@ -1,6 +1,7 @@
 import VenueForm from '@/components/venue/venue-form';
-import { getVenue } from '@/app/venues/actions';
+
 import { Metadata } from 'next';
+import { getVenueById } from '@/app/venues/actions';
 
 export const metadata: Metadata = {
   title: '장소 프로필 수정',
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
-  const initialData = await getVenue(id);
+  const initialData = await getVenueById(id);
   if (!initialData) {
     return <div>Venue not found</div>;
   }

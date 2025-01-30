@@ -1,16 +1,14 @@
 // app/artworks/artwork-grid.tsx
-'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArtworkWithImages } from '@/app/artworks/actions';
 import { getImageUrl } from '@/lib/utils';
+import { getAllArtworks } from '@/app/artworks/actions';
 
-interface ArtworkGridProps {
-  artworks: ArtworkWithImages[];
-}
-const ArtworkGrid = ({ artworks }: ArtworkGridProps) => {
+const artworks = await getAllArtworks();
+
+const ArtworkGrid = () => {
   if (artworks.length === 0) {
     return (
       <div className="py-10 text-center">
@@ -29,14 +27,11 @@ const ArtworkGrid = ({ artworks }: ArtworkGridProps) => {
             </CardHeader>
 
             <CardContent>
-              {artwork.galleryImageUrls[0] && (
+              {artwork.images[0] && (
                 <div className="relative aspect-video w-full overflow-hidden rounded-lg">
                   <Image
-                    src={getImageUrl(
-                      `${artwork.galleryImageUrls[0].imageUrl}`,
-                      'public'
-                    )}
-                    alt={artwork.galleryImageUrls[0].alt}
+                    src={getImageUrl(`${artwork.images[0].imageUrl}`, 'public')}
+                    alt={artwork.images[0].alt}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

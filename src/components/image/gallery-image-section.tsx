@@ -14,9 +14,7 @@ interface GalleryImage {
 }
 
 // 제네릭 인터페이스로 수정
-interface GalleryImageSectionProps<
-  T extends { galleryImageUrls: GalleryImage[] },
-> {
+interface GalleryImageSectionProps<T extends { images: GalleryImage[] }> {
   register: UseFormRegister<T>;
   galleryPreviews: GalleryPreview[];
   galleryError?: string;
@@ -25,7 +23,7 @@ interface GalleryImageSectionProps<
 }
 
 // 제네릭 컴포넌트로 수정
-const GalleryImageSection = <T extends { galleryImageUrls: GalleryImage[] }>({
+const GalleryImageSection = <T extends { images: GalleryImage[] }>({
   register,
   galleryPreviews,
   galleryError,
@@ -58,23 +56,23 @@ const GalleryImageSection = <T extends { galleryImageUrls: GalleryImage[] }>({
             </button>
             <input
               type="hidden"
-              {...register(`galleryImageUrls.${index}.imageUrl` as Path<T>)}
+              {...register(`images.${index}.imageUrl` as Path<T>)}
               value={preview.imageUrl}
             />
             <input
               type="hidden"
-              {...register(`galleryImageUrls.${index}.alt` as Path<T>)}
+              {...register(`images.${index}.alt` as Path<T>)}
               value={preview.alt}
             />
             <input
               type="hidden"
-              {...register(`galleryImageUrls.${index}.order` as Path<T>)}
+              {...register(`images.${index}.order` as Path<T>)}
               value={preview.order}
             />
           </div>
         ))}
         <label
-          htmlFor="gallery-images"
+          htmlFor="images"
           className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-neutral-300"
         >
           <ImagePlus className="h-8 w-8 text-neutral-300" />
@@ -85,7 +83,7 @@ const GalleryImageSection = <T extends { galleryImageUrls: GalleryImage[] }>({
       </div>
       <input
         type="file"
-        id="gallery-images"
+        id="images"
         multiple
         accept="image/*"
         onChange={handleGalleryImageChange}

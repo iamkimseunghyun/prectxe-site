@@ -1,14 +1,13 @@
-// components/artists/ArtistGrid.tsx
 import Image from 'next/image';
 import Link from 'next/link';
-import { getArtists } from '@/app/artists/actions';
+import { getAllArtists } from '@/app/artists/actions';
 
 export async function ArtistGrid({
   searchParams,
 }: {
   searchParams?: { search?: string; category?: string };
 }) {
-  const artists = await getArtists(
+  const artists = await getAllArtists(
     searchParams?.search
     // searchParams?.category
   );

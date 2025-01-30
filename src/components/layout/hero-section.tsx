@@ -3,7 +3,8 @@
 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { MotionDiv } from '@/components/motion/motion';
+import { motion } from 'framer-motion';
+const MotionDiv = motion.div;
 
 export function HeroSection() {
   return (

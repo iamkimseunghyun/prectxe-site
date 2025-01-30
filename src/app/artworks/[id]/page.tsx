@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@radix-ui/react-select';
-import { getArtworkById } from '@/app/artworks/[id]/actions';
+
 import { ImageIcon } from 'lucide-react';
 import {
   Carousel,
@@ -14,6 +14,7 @@ import Image from 'next/image';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import ArtworkAdminButton from '@/components/artwork/artwork-admin-button';
 import { Metadata } from 'next';
+import { getArtworkById } from '@/app/artworks/actions';
 
 export async function generateMetadata({
   params,
@@ -29,7 +30,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${artwork.title} - ${artwork.year} | PRECTXE 작품`,
       description: artwork.description.substring(0, 155) + '...',
-      images: artwork.galleryImageUrls.map((img) => ({
+      images: artwork.images.map((img) => ({
         url: `${img.imageUrl}/public`,
         alt: img.alt,
       })),
@@ -44,7 +45,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
     <div className="container mx-auto py-10">
       <div className="mb-8">
         {/* 이미지 갤러리 섹션 */}
-        {artwork.galleryImageUrls.length > 0 && (
+        {artwork.images.length > 0 && (
           <section className="mb-12">
             <h2 className="images-center mb-4 flex gap-2 text-2xl font-semibold">
               <ImageIcon className="size-5" />
@@ -53,7 +54,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             <div className="mx-auto">
               <Carousel>
                 <CarouselContent>
-                  {artwork.galleryImageUrls.map((image: GalleryImage) => (
+                  {artwork.images.map((image: GalleryImage) => (
                     <CarouselItem
                       key={image.id}
                       className="md:basis-1/2 lg:basis-1/3"

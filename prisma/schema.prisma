@@ -1,9 +1,3 @@
-// prisma/schema.prisma
-// datasource db {
-//   provider = "sqlite"
-//   url      = "file:./dev.db"
-// }
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -13,39 +7,126 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Project {
-  id               String            @id @default(cuid())
-  title            String
-  description      String
-  content          String
-  year             Int
-  startDate        DateTime
-  endDate          DateTime
-  category         String
-  mainImageUrl     String
-  galleryImageUrls GalleryImageUrl[]
-  projectArtists   ProjectArtist[]
-  projectArtworks  ProjectArtwork[]
-  venues           ProjectVenue[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+enum ProjectCategory {
+  exhibition
+  performance
+  festival
+  workshop
 }
 
-model GalleryImageUrl {
-  id        String   @id @default(cuid())
+model Project {
+  id              String           @id @default(cuid())
+  title           String
+  description     String
+  content         String
+  year            Int
+  startDate       DateTime
+  endDate         DateTime
+  category        ProjectCategory
+  mainImageUrl    String
+  images          ProjectImage[]
+  projectArtists  ProjectArtist[]
+  projectArtworks ProjectArtwork[]
+  venues          ProjectVenue[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model ProjectImage {
+  id        String  @id @default(cuid())
   imageUrl  String
   alt       String
-  order     Int      @default(0)
+  order     Int     @default(0)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId String?
-  artist    Artist?  @relation(fields: [artistId], references: [id], onDelete: Cascade)
-  artistId  String?
-  artwork   Artwork? @relation(fields: [artworkId], references: [id], onDelete: Cascade)
-  artworkId String?
-  venue     Venue?   @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  venueId   String?
+}
+
+model Artist {
+  id             String          @id @default(cuid())
+  name           String
+  mainImageUrl   String
+  images         ArtistImage[]
+  birth          DateTime
+  nationality    String
+  city           String
+  country        String
+  email          String          @unique
+  homepage       String
+  biography      String
+  cv             String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  artistArtworks ArtistArtwork[]
+  projectArtists ProjectArtist[]
+  ArtworkImage   ArtworkImage[]
+}
+
+model ArtistImage {
+  id       String @id @default(cuid())
+  imageUrl String
+  alt      String
+  order    Int    @default(0)
+  artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artistId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Artwork {
+  id              String           @id @default(cuid())
+  title           String
+  size            String
+  media           String
+  year            Int
+  description     String
+  images          ArtworkImage[]
+  style           String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  artists         ArtistArtwork[]
+  projectArtWorks ProjectArtwork[]
+}
+
+model ArtworkImage {
+  id        String  @id @default(cuid())
+  imageUrl  String
+  alt       String
+  order     Int     @default(0)
+  artwork   Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  artworkId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Artist   Artist? @relation(fields: [artistId], references: [id])
+  artistId String?
+}
+
+model Venue {
+  id           String         @id @default(cuid())
+  address      String
+  name         String
+  description  String
+  images       VenueImage[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  projectVenue ProjectVenue[]
+}
+
+model VenueImage {
+  id       String @id @default(cuid())
+  imageUrl String
+  alt      String
+  order    Int    @default(0)
+  venue    Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  venueId  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ProjectArtist {
@@ -84,25 +165,6 @@ model ProjectVenue {
   @@id([projectId, venueId])
 }
 
-model Artist {
-  id               String            @id @default(cuid())
-  name             String
-  mainImageUrl     String
-  birth            DateTime
-  nationality      String
-  city             String
-  country          String
-  email            String            @unique
-  homepage         String
-  biography        String
-  cv               String
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  artistArtworks   ArtistArtwork[]
-  projectArtists   ProjectArtist[]
-  galleryImageUrls GalleryImageUrl[]
-}
-
 model ArtistArtwork {
   artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
   artistId  String
@@ -112,30 +174,4 @@ model ArtistArtwork {
   updatedAt DateTime @updatedAt
 
   @@id([artistId, artworkId])
-}
-
-model Artwork {
-  id               String            @id @default(cuid())
-  title            String
-  size             String
-  media            String
-  year             Int
-  description      String
-  style            String
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  galleryImageUrls GalleryImageUrl[]
-  artists          ArtistArtwork[]
-  projectArtWorks  ProjectArtwork[]
-}
-
-model Venue {
-  id               String            @id @default(cuid())
-  address          String
-  name             String
-  description      String
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  galleryImageUrls GalleryImageUrl[]
-  projectVenue     ProjectVenue[]
 }
