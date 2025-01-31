@@ -27,6 +27,7 @@ import {
   CreateArtworkResponse,
   updateArtwork,
 } from '@/app/artworks/actions';
+import { uploadGalleryImages } from '@/lib/utils';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';
@@ -73,6 +74,7 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
     },
   });
 
+  /*
   const uploadGalleryImages = async (previews: GalleryPreview[]) => {
     return Promise.all(
       previews.map(async (preview) => {
@@ -88,6 +90,7 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
       })
     );
   };
+*/
 
   const prepareFormData = (
     data: ArtworkFormData,

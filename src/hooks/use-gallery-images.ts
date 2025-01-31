@@ -1,7 +1,7 @@
 import { ChangeEvent, useState } from 'react';
-import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from '@/lib/constants/constants';
 import { getUploadedProductImageURL } from '@/hooks/get-cloudflare-image-upload-url';
 import { GalleryImage, GalleryPreview } from '@/lib/validations/gallery-image';
+import { validateFile } from '@/lib/validateFile';
 
 interface UseGalleryImagesProps {
   initialImages?: {
@@ -35,17 +35,6 @@ export function useGalleryImages({
   );
 
   const [fileError, setFileError] = useState('');
-
-  const validateFile = (file: File) => {
-    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      throw new Error(
-        '지원되지 않는 이미지 형식입니다. JPG, PNG, GIF, WEBP만 가능합니다.'
-      );
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      throw new Error('파일 크기는 5MB를 초과할 수 없습니다.');
-    }
-  };
 
   // handleSingleFileUpload 함수 추가
   const handleSingleFileUpload = async (

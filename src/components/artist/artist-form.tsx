@@ -13,7 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import React from 'react';
-import { GalleryImage, GalleryPreview } from '@/lib/validations/gallery-image';
+import { GalleryImage } from '@/lib/validations/gallery-image';
 import { artistCreateSchema, ArtistFormData } from '@/lib/validations/artist';
 import { useImageUpload } from '@/hooks/use-image-upload';
 import SingleImageSection from '@/components/image/single-image-section';
@@ -21,7 +21,11 @@ import { Button } from '@/components/ui/button';
 
 import { useGalleryImages } from '@/hooks/use-gallery-images';
 import GalleryImageSection from '@/components/image/gallery-image-section';
-import { formatDate } from '@/lib/utils';
+import {
+  formatDate,
+  uploadGalleryImages,
+  uploadSingleImage,
+} from '@/lib/utils';
 import { createArtist, updateArtist } from '@/app/artists/actions';
 
 type ArtistFormProps = {
@@ -89,36 +93,6 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
     },
   });
 
-  const uploadSingleImage = async (imageFile: File) => {
-    if (imageFile) {
-      const cloudFlareForm = new FormData();
-      cloudFlareForm.append('file', imageFile);
-      const response = await fetch(uploadURL, {
-        method: 'POST',
-        body: cloudFlareForm,
-      });
-      if (response.status !== 200) {
-        throw new Error('Failed to upload main image');
-      }
-    }
-  };
-
-  const uploadGalleryImages = async (previews: GalleryPreview[]) => {
-    return Promise.all(
-      previews.map(async (preview) => {
-        const formData = new FormData();
-        formData.append('file', preview.file!);
-        const response = await fetch(preview.uploadURL, {
-          method: 'POST',
-          body: formData,
-        });
-        if (response.status !== 200) {
-          throw new Error(`Failed to upload: ${preview.alt}`);
-        }
-      })
-    );
-  };
-
   const prepareFormData = (
     data: ArtistFormData,
     galleryData: GalleryImage[]
@@ -141,7 +115,7 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
   const onSubmit = handleSubmit(async (data: ArtistFormData) => {
     try {
       if (imageFile) {
-        await uploadSingleImage(imageFile);
+        await uploadSingleImage(imageFile, uploadURL);
       }
       if (galleryPreviews.length > 0) {
         await uploadGalleryImages(galleryPreviews);

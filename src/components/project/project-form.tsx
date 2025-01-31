@@ -8,7 +8,11 @@ import {
   projectCreateSchema,
   ProjectFormData,
 } from '@/lib/validations/project';
-import { formatDate } from '@/lib/utils';
+import {
+  formatDate,
+  uploadGalleryImages,
+  uploadSingleImage,
+} from '@/lib/utils';
 import { categories } from '@/lib/constants/constants';
 import {
   Card,
@@ -100,36 +104,6 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
     },
   });
 
-  const uploadSingleImage = async (imageFile: File) => {
-    if (imageFile) {
-      const cloudFlareForm = new FormData();
-      cloudFlareForm.append('file', imageFile);
-      const response = await fetch(uploadURL, {
-        method: 'POST',
-        body: cloudFlareForm,
-      });
-      if (response.status !== 200) {
-        throw new Error('Failed to upload main image');
-      }
-    }
-  };
-
-  const uploadGalleryImages = async (previews: GalleryPreview[]) => {
-    return Promise.all(
-      previews.map(async (preview) => {
-        const formData = new FormData();
-        formData.append('file', preview.file!);
-        const response = await fetch(preview.uploadURL, {
-          method: 'POST',
-          body: formData,
-        });
-        if (response.status !== 200) {
-          throw new Error(`Failed to upload: ${preview.alt}`);
-        }
-      })
-    );
-  };
-
   const prepareFormData = (
     data: ProjectFormData,
     galleryData: GalleryImage[]
@@ -150,7 +124,7 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
   const onSubmit = handleSubmit(async (data: ProjectFormData) => {
     try {
       if (imageFile) {
-        await uploadSingleImage(imageFile);
+        await uploadSingleImage(imageFile, uploadURL);
       }
       if (galleryPreviews.length > 0) {
         await uploadGalleryImages(galleryPreviews);

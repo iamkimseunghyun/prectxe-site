@@ -1,7 +1,7 @@
 import { ChangeEvent, useState } from 'react';
-import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from '@/lib/constants/constants';
 import { getUploadedProductImageURL } from '@/hooks/get-cloudflare-image-upload-url';
 import { getImageUrl } from '@/lib/utils';
+import { validateFile } from '@/lib/validateFile';
 
 type PreviewType = {
   url: string;
@@ -39,39 +39,14 @@ export function useImageUpload({
     const {
       target: { files },
     } = e;
-    setFileError('');
 
     if (!files || files.length === 0) {
-      console.log('파일이 선택되지 않았습니다.');
       return;
     }
 
     const localFile = files[0];
 
-    // 파일 접근 가능 여부 확인
-    try {
-      await localFile.slice(0, 1).arrayBuffer();
-    } catch (e) {
-      console.error(e);
-      setFileError(
-        '파일에 접근할 수 없습니다. 파일이 사용 가능한 상태인지 확인해주세요.'
-      );
-      return;
-    }
-
-    // 파일 타입 검증
-    if (!ALLOWED_FILE_TYPES.includes(localFile.type)) {
-      setFileError(
-        '지원되지 않는 이미지 형식입니다. JPG, PNG, GIF, WEBP, HEIC만 가능합니다.'
-      );
-      return;
-    }
-
-    // 파일 크기 검증
-    if (localFile.size > MAX_FILE_SIZE) {
-      setFileError('파일 크기는 5MB를 초과할 수 없습니다.');
-      return;
-    }
+    await validateFile(localFile);
 
     try {
       const previewURL = URL.createObjectURL(localFile);

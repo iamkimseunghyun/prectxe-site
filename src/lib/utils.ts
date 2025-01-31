@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { GalleryPreview } from '@/lib/validations/gallery-image';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -18,4 +19,34 @@ export const getImageUrl = (
 ) => {
   if (!url) return '';
   return `${url}/${variant}`;
+};
+
+export const uploadSingleImage = async (imageFile: File, uploadURL: string) => {
+  if (imageFile) {
+    const cloudFlareForm = new FormData();
+    cloudFlareForm.append('file', imageFile);
+    const response = await fetch(uploadURL, {
+      method: 'POST',
+      body: cloudFlareForm,
+    });
+    if (response.status !== 200) {
+      throw new Error('Failed to upload main image');
+    }
+  }
+};
+
+export const uploadGalleryImages = async (previews: GalleryPreview[]) => {
+  return Promise.all(
+    previews.map(async (preview) => {
+      const formData = new FormData();
+      formData.append('file', preview.file!);
+      const response = await fetch(preview.uploadURL, {
+        method: 'POST',
+        body: formData,
+      });
+      if (response.status !== 200) {
+        throw new Error(`Failed to upload: ${preview.alt}`);
+      }
+    })
+  );
 };

@@ -20,7 +20,8 @@ import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
 import { createVenue, updateVenue } from '@/app/venues/actions';
 import GalleryImageSection from '@/components/image/gallery-image-section';
-import { GalleryImage, GalleryPreview } from '@/lib/validations/gallery-image';
+import { GalleryImage } from '@/lib/validations/gallery-image';
+import { uploadGalleryImages } from '@/lib/utils';
 
 type VenueFormProps = {
   mode: 'create' | 'edit';
@@ -63,22 +64,6 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
       setValue('images', galleryData);
     },
   });
-
-  const uploadGalleryImages = async (previews: GalleryPreview[]) => {
-    return Promise.all(
-      previews.map(async (preview) => {
-        const formData = new FormData();
-        formData.append('file', preview.file!);
-        const response = await fetch(preview.uploadURL, {
-          method: 'POST',
-          body: formData,
-        });
-        if (response.status !== 200) {
-          throw new Error(`Failed to upload: ${preview.alt}`);
-        }
-      })
-    );
-  };
 
   const prepareFormData = (
     data: VenueFormData,
