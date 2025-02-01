@@ -3,7 +3,6 @@
 import { prisma } from '@/lib/db/prisma';
 import { artistCreateSchema, ArtistFormData } from '@/lib/validations/artist';
 import { revalidatePath } from 'next/cache';
-import { formatDate } from '@/lib/utils';
 
 export async function getArtistById(
   artistId: string
@@ -36,7 +35,7 @@ export async function getArtistById(
     return {
       name: artist.name,
       mainImageUrl: artist.mainImageUrl,
-      birth: formatDate(artist.birth),
+      birth: artist.birth.toISOString(),
       nationality: artist.nationality,
       country: artist.country,
       city: artist.city,

@@ -1,5 +1,7 @@
 'use server';
 
+import { CLOUD_FLARE_UPLOAD_IMAGE_URL } from '@/lib/constants/constants';
+
 export async function getUploadedProductImageURL() {
   try {
     const response = await fetch(
@@ -13,20 +15,29 @@ export async function getUploadedProductImageURL() {
     );
 
     if (!response.ok) {
-      console.error('API Error:', {
+      console.error('Cloudflare API Error:', {
         status: response.status,
         statusText: response.statusText,
       });
-      const errorData = await response.json();
-      console.error('Error details:', errorData);
-      return { success: false, error: errorData };
     }
 
     const data = await response.json();
-    console.log('API Response:', data);
     return data;
   } catch (error) {
-    console.error('API Request failed:', error);
+    console.error('Cloudflare API Request failed:', error);
     return { success: false, error };
   }
+}
+
+export async function getCloudflareImageUrl() {
+  const { success, result } = await getUploadedProductImageURL();
+
+  if (!success) {
+    throw new Error('Failed to get upload URL');
+  }
+
+  return {
+    uploadURL: result.uploadURL,
+    imageUrl: `${CLOUD_FLARE_UPLOAD_IMAGE_URL}/${result.id}`,
+  };
 }

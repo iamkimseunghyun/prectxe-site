@@ -32,14 +32,12 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-
-import { useImageUpload } from '@/hooks/use-image-upload';
-import { useGalleryImages } from '@/hooks/use-gallery-images';
-import GalleryImageSection from '@/components/image/gallery-image-section';
-import SingleImageSection from '@/components/image/single-image-section';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import { createProject, updateProject } from '@/app/projects/actions';
-import {} from '@/app/actions/actions';
+import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
+import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import SingleImageBox from '@/components/image/single-image-box';
+import MultiImageBox from '@/components/image/multi-image-box';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';
@@ -64,7 +62,7 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
       year: new Date().getFullYear(),
       category: undefined,
       description: '',
-      content: '',
+      about: '',
       mainImageUrl: '',
       startDate: formatDate(new Date()),
       endDate: formatDate(new Date()),
@@ -112,8 +110,8 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
     formData.append('title', data.title);
     formData.append('year', data.year.toString());
     formData.append('category', data.category);
+    formData.append('about', data.about);
     formData.append('description', data.description);
-    formData.append('content', data.content);
     formData.append('mainImageUrl', imageUrl);
     formData.append('startDate', data.startDate);
     formData.append('endDate', data.endDate);
@@ -270,28 +268,28 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
               removeMultiImage={removeMultiImage}
             />
             <div className="space-y-2">
-              <label className="text-sm font-medium">설명</label>
+              <label className="text-sm font-medium">간단 소개</label>
               <Textarea
-                {...register('description')}
+                {...register('about')}
                 placeholder="프로젝트에 대한 간단한 설명을 입력하세요"
                 rows={3}
               />
-              {errors?.description && (
+              {errors?.about && (
                 <p id="description-error" className="text-sm text-destructive">
-                  {errors.description?.message}
+                  {errors.about?.message}
                 </p>
               )}
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">내용</label>
+              <label className="text-sm font-medium">상세 내용</label>
               <Textarea
-                {...register('content')}
+                {...register('description')}
                 placeholder="프로젝트의 상세 내용을 입력하세요"
                 rows={8}
               />
-              {errors?.content && (
+              {errors?.description && (
                 <p id="content-error" className="text-sm text-destructive">
-                  {errors.content?.message}
+                  {errors.description?.message}
                 </p>
               )}
             </div>

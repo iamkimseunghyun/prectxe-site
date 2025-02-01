@@ -19,9 +19,9 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
 import { createVenue, updateVenue } from '@/app/venues/actions';
-import GalleryImageSection from '@/components/image/gallery-image-section';
 import { GalleryImage } from '@/lib/validations/gallery-image';
-import { uploadGalleryImages } from '@/app/actions/actions';
+import { uploadGalleryImages } from '@/lib/utils';
+import MultiImageBox from '@/components/image/multi-image-box';
 
 type VenueFormProps = {
   mode: 'create' | 'edit';

@@ -92,7 +92,7 @@ export async function createProject(
       year: Number(formData.get('year')),
       category: formData.get('category'),
       description: formData.get('description'),
-      content: formData.get('content'),
+      about: formData.get('about'),
       mainImageUrl: formData.get('mainImageUrl'),
       startDate: formData.get('startDate'),
       endDate: formData.get('endDate'),
@@ -108,7 +108,7 @@ export async function createProject(
       data: {
         title: validatedData.data.title,
         description: validatedData.data.description,
-        content: validatedData.data.content,
+        about: validatedData.data.about,
         year: validatedData.data.year,
         category: validatedData.data.category,
         mainImageUrl: validatedData.data.mainImageUrl,
@@ -142,7 +142,7 @@ interface ProjectUpdateData {
   year: number;
   category: ProjectCategory;
   description: string;
-  content: string;
+  about: string;
   startDate: Date;
   endDate: Date;
   mainImageUrl?: string;
@@ -169,13 +169,13 @@ export async function updateProject(formData: FormData, projectId: string) {
       year: parseInt(formData.get('year')?.toString() || '0'),
       category: (formData.get('category')?.toString() as ProjectCategory) || '',
       description: formData.get('description')?.toString() || '',
-      content: formData.get('content')?.toString() || '',
+      about: formData.get('about')?.toString() || '',
       startDate: new Date(formData.get('startDate')?.toString() || ''),
       endDate: new Date(formData.get('endDate')?.toString() || ''),
       images: {
         deleteMany: {},
         createMany: {
-          data: galleryData.map((image: Image) => ({
+          data: galleryData.map((image: GalleryImage) => ({
             imageUrl: image.imageUrl,
             alt: image.alt || '',
             order: image.order,

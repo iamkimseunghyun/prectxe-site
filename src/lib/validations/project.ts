@@ -14,7 +14,7 @@ export const projectCreateSchema = z.object({
     .string()
     .min(10, '설명은 최소 10자 이상 입력해주세요')
     .max(500, '설명은 500자 이내로 입력해주세요'),
-  content: z.string().min(10, '내용은 최소 10자 이상 입력해주세요'),
+  about: z.string().min(10, '내용은 최소 10자 이상 입력해주세요'),
   year: z
     .number()
     .min(2018, '2018년 이후의 연도를 선택해주세요')

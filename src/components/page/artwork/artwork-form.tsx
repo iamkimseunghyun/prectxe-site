@@ -15,8 +15,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useGalleryImages } from '@/hooks/use-gallery-images';
-import GalleryImageSection from '@/components/image/gallery-image-section';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import {
   artworkCreateSchema,
@@ -27,7 +25,9 @@ import {
   CreateArtworkResponse,
   updateArtwork,
 } from '@/app/artworks/actions';
-import { uploadGalleryImages } from '@/app/actions/actions';
+import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import { uploadGalleryImages } from '@/lib/utils';
+import MultiImageBox from '@/components/image/multi-image-box';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';
