@@ -20,11 +20,7 @@ import {
   artworkCreateSchema,
   ArtworkFormData,
 } from '@/lib/validations/artwork';
-import {
-  createArtwork,
-  CreateArtworkResponse,
-  updateArtwork,
-} from '@/app/artworks/actions';
+import { createArtwork, updateArtwork } from '@/app/artworks/actions';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { uploadGalleryImages } from '@/lib/utils';
 import MultiImageBox from '@/components/image/multi-image-box';
@@ -91,13 +87,31 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
 
   const onSubmit = handleSubmit(async (data: ArtworkFormData) => {
     try {
+      // 데이터 로깅 추가
+      console.log('Form submission data:', {
+        title: data.title,
+        size: data.size,
+        media: data.media,
+        year: data.year,
+        description: data.description,
+        style: data.style,
+        images: data.images,
+      });
+
       if (multiImagePreview.length > 0) {
         await uploadGalleryImages(multiImagePreview);
       }
 
       const formData = prepareFormData(data, data.images);
 
-      const result: CreateArtworkResponse =
+      // FormData 내용 로깅
+      const formDataLog: any = {};
+      formData.forEach((value, key) => {
+        formDataLog[key] = value;
+      });
+      console.log('Prepared FormData:', formDataLog);
+
+      const result =
         mode === 'edit'
           ? await updateArtwork(formData, artworkId!)
           : await createArtwork(formData);

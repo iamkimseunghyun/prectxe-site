@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { formatDate } from '@/lib/utils';
+import { formatDate, getImageUrl } from '@/lib/utils';
 import Image from 'next/image';
 import { getAllArtworks } from '@/app/artworks/actions';
 
@@ -23,7 +23,10 @@ export default function WorksList() {
           className="group relative aspect-square overflow-hidden rounded-lg"
         >
           <Image
-            src={work.images?.[0]?.imageUrl || '/api/placeholder/400/400'}
+            src={
+              `${getImageUrl(work.images?.[0]?.imageUrl, 'public')}` ||
+              '/api/placeholder/400/400'
+            }
             alt={work.title}
             fill
             className="object-cover transition-transform group-hover:scale-105"

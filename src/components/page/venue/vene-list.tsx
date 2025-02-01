@@ -5,14 +5,15 @@ import { MapPin } from 'lucide-react';
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Image } from '@/lib/validations/image';
+
 import { Venue } from '@prisma/client';
 import { getImageUrl } from '@/lib/utils';
+import { GalleryImage } from '@/lib/validations/gallery-image';
 
 interface VenueListProps {
   initialData: {
     venues: (Venue & {
-      images: Image[];
+      images: GalleryImage[];
     })[];
     total: number;
     totalPages: number;

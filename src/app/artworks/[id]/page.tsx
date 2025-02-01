@@ -31,7 +31,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             <div className="mx-auto">
               <Carousel>
                 <CarouselContent>
-                  {artwork.images.map((image: Image) => (
+                  {artwork.images.map((image: GalleryImage) => (
                     <CarouselItem
                       key={image.id}
                       className="md:basis-1/2 lg:basis-1/3"

@@ -13,6 +13,13 @@ export const formatDate = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
+export const formatDateForInput = (
+  isoString: string | null | undefined
+): string => {
+  if (!isoString) return formatDate(new Date());
+  return isoString.split('T')[0]; // "2024-02-01T00:00:00.000Z" -> "2024-02-01"
+};
+
 export const getImageUrl = (
   url: string | null | undefined,
   variant: 'thumbnail' | 'public'

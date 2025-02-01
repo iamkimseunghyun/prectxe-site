@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db/prisma';
 import { artistCreateSchema, ArtistFormData } from '@/lib/validations/artist';
 import { revalidatePath } from 'next/cache';
+import { GalleryImage } from '@/lib/validations/gallery-image';
 
 export async function getArtistById(
   artistId: string
@@ -31,24 +32,13 @@ export async function getArtistById(
     });
     if (!artist) return null;
 
-    // DB 데이터를 ArtistFormData 형식으로 변환
-    return {
-      name: artist.name,
-      mainImageUrl: artist.mainImageUrl,
-      birth: artist.birth.toISOString(),
-      nationality: artist.nationality,
-      country: artist.country,
-      city: artist.city,
-      email: artist.email,
-      homepage: artist.homepage,
-      biography: artist.biography,
-      cv: artist.cv,
-      images: artist.images.map((image, index) => ({
-        imageUrl: image.imageUrl,
-        alt: image.alt || `Gallery image ${index + 1}`,
-        order: image.order,
-      })),
+    const formattedData = {
+      ...artist,
+      birth: artist?.birth.toISOString(),
     };
+
+    // DB 데이터를 ArtistFormData 형식으로 변환
+    return formattedData;
   } catch (error) {
     console.error(error);
     throw error;
@@ -151,70 +141,46 @@ export async function createArtist(
   }
 }
 
-interface ArtistUpdateData {
-  name: string;
-  mainImageUrl?: string; // optional
-  nationality: string;
-  country: string;
-  birth: Date;
-  city: string;
-  email: string;
-  homepage: string;
-  biography: string;
-  cv: string;
-}
-
 export async function updateArtist(formData: FormData, artistId: string) {
   try {
     const mainImageUrl = formData.get('mainImageUrl')?.toString() || '';
-    const updateData: ArtistUpdateData = {
+    const galleryData = JSON.parse(formData.get('images')?.toString() || '[]');
+
+    const updateData = {
       // formEntry 객체로 들어오면 스트링 | 널 값으로 타입이 결정되기 때문에 데이터 변환을 해줘야 한다.
       name: formData.get('name')?.toString() || '',
-      // mainImageUrl: formData.get('mainImageUrl')?.toString() || '',
       nationality: formData.get('nationality')?.toString() || '',
       country: formData.get('country')?.toString() || '',
-      birth: new Date(formData.get('birth')?.toString() || ''),
+      birth: formData.get('birth')?.toString() || '',
       city: formData.get('city')?.toString() || '',
       email: formData.get('email')?.toString() || '',
       homepage: formData.get('homepage')?.toString() || '',
       biography: formData.get('biography')?.toString() || '',
       cv: formData.get('cv')?.toString() || '',
+      images: galleryData,
+      ...(mainImageUrl && { mainImageUrl }),
     };
-    // mainImageUrl이 있을 때만 업데이트 데이터에 포함
-    if (mainImageUrl) {
-      updateData.mainImageUrl = mainImageUrl;
-    }
 
-    const validatedData = artistCreateSchema.safeParse(updateData);
-    if (!validatedData.success) {
-      const errorMessage = validatedData.error.issues
-        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-        .join(', ');
-      return { ok: false, error: errorMessage };
-    }
-    // 기존 이미지 삭제 후 새로 생성
-    await prisma.$transaction([
-      prisma.artistImage.deleteMany({
-        where: { artistId },
-      }),
-      prisma.artist.update({
-        where: { id: artistId },
-        data: {
-          ...validatedData.data,
-          birth: new Date(validatedData.data.birth),
-          images: {
-            create: validatedData.data.images.map((image) => ({
-              imageUrl: image.imageUrl,
-              alt: image.alt,
-              order: image.order,
-            })),
-          },
+    const artist = await prisma.artist.update({
+      where: { id: artistId },
+      data: {
+        ...updateData,
+        birth: new Date(updateData.birth),
+        updatedAt: new Date(),
+        images: {
+          deleteMany: {},
+          create: updateData.images.map((image: GalleryImage) => ({
+            imageUrl: image.imageUrl,
+            alt: image.alt,
+            order: image.order,
+          })),
         },
-      }),
-    ]);
+      },
+    });
+
     revalidatePath('/artists');
     revalidatePath(`/artists/${artistId}`);
-    return { ok: true, data: { id: artistId } };
+    return { ok: true, data: artist };
   } catch (error) {
     console.error('Artist update error:', error);
     return {

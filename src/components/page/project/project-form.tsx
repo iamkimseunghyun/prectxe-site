@@ -10,6 +10,7 @@ import {
 } from '@/lib/validations/project';
 import {
   formatDate,
+  formatDateForInput,
   uploadGalleryImages,
   uploadSingleImage,
 } from '@/lib/utils';
@@ -48,6 +49,25 @@ type ProjectFormProps = {
 const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
   const router = useRouter();
 
+  // initialData가 있으면 날짜 형식만 변환
+  const defaultValues = initialData
+    ? {
+        ...initialData,
+        startDate: formatDateForInput(initialData.startDate),
+        endDate: formatDateForInput(initialData.endDate),
+      }
+    : {
+        title: '',
+        year: new Date().getFullYear(),
+        category: undefined,
+        description: '',
+        about: '',
+        mainImageUrl: '',
+        startDate: formatDate(new Date()),
+        endDate: formatDate(new Date()),
+        images: [],
+      };
+
   const {
     register,
     handleSubmit,
@@ -57,21 +77,7 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
     formState: { errors },
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectCreateSchema),
-    defaultValues: initialData || {
-      title: '',
-      year: new Date().getFullYear(),
-      category: undefined,
-      description: '',
-      about: '',
-      mainImageUrl: '',
-      startDate: formatDate(new Date()),
-      endDate: formatDate(new Date()),
-      images: [],
-    },
-    resetOptions: {
-      keepDirtyValues: true,
-      keepErrors: true,
-    },
+    defaultValues,
   });
 
   // 싱글 이미지 업로드 훅
@@ -230,11 +236,7 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">시작일</label>
-                  <Input
-                    type="date"
-                    {...register('startDate')}
-                    defaultValue={formatDate(new Date())}
-                  />
+                  <Input type="date" {...register('startDate')} />
                   {errors.startDate && (
                     <p
                       id="startDate-error"
@@ -246,11 +248,7 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">종료일</label>
-                  <Input
-                    type="date"
-                    {...register('endDate')}
-                    defaultValue={formatDate(new Date())}
-                  />
+                  <Input type="date" {...register('endDate')} />
                   {errors.endDate && (
                     <p id="endDate-error" className="text-sm text-destructive">
                       {errors.endDate?.message}

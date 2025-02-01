@@ -4,7 +4,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import SearchCommand from '@/components/search/search-command';
 
 export default function Header() {
   const pathname = usePathname();

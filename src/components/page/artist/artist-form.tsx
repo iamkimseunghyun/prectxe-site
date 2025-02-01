@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import MultiImageBox from '@/components/image/multi-image-box';
 import {
   formatDate,
+  formatDateForInput,
   uploadGalleryImages,
   uploadSingleImage,
 } from '@/lib/utils';
@@ -37,6 +38,24 @@ type ArtistFormProps = {
 const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
   const router = useRouter();
 
+  const defaultValues = initialData
+    ? {
+        ...initialData,
+        birth: formatDateForInput(initialData.birth),
+      }
+    : {
+        name: '',
+        mainImageUrl: '',
+        birth: formatDate(new Date()),
+        nationality: '',
+        city: '',
+        country: '',
+        email: '',
+        homepage: '',
+        biography: '',
+        cv: '',
+        images: [],
+      };
   const {
     register,
     handleSubmit,
@@ -45,23 +64,7 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
     formState: { errors },
   } = useForm<ArtistFormData>({
     resolver: zodResolver(artistCreateSchema),
-    defaultValues: initialData || {
-      name: '',
-      mainImageUrl: '',
-      birth: formatDate(new Date()),
-      nationality: '',
-      city: '',
-      country: '',
-      email: '',
-      homepage: '',
-      biography: '',
-      cv: '',
-      images: [],
-    },
-    resetOptions: {
-      keepErrors: true,
-      keepDirtyValues: true,
-    },
+    defaultValues,
   });
 
   // 싱글 이미지 업로드 훅
@@ -119,8 +122,6 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
 
       const formData = prepareFormData(data, data.images);
 
-      console.log('Form data:', Object.fromEntries(formData.entries()));
-
       const result =
         mode === 'edit'
           ? await updateArtist(formData, artistId!)
@@ -173,22 +174,36 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
               />
               <div className="space-y-2">
                 <label>생년월일</label>
-                <Input
-                  type="date"
-                  {...register('birth')}
-                  defaultValue={formatDate(new Date())}
-                />
+                <Input type="date" {...register('birth')} />
+                {errors.birth && (
+                  <p id="birth-error" className="text-sm text-destructive">
+                    {errors.birth.message}
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label>국적</label>
                   <Input placeholder="국적" {...register('nationality')} />
                 </div>
+                {errors.nationality && (
+                  <p
+                    id="nationality-error"
+                    className="text-sm text-destructive"
+                  >
+                    {errors.nationality.message}
+                  </p>
+                )}
 
                 <div className="space-y-2">
                   <label>국가</label>
                   <Input placeholder="국가" {...register('country')} />
                 </div>
+                {errors.country && (
+                  <p id="country-error" className="text-sm text-destructive">
+                    {errors.country.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <label>도시</label>

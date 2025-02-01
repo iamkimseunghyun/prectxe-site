@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/prisma';
 import { venueCreateSchema } from '@/lib/validations/venues';
-import { Image } from '@/lib/validations/image';
 
 export async function getVenueById(venueId: string) {
   const result = prisma.venue.findUnique({
@@ -98,35 +97,37 @@ export async function createVenue(data: FormData) {
   }
 }
 
-interface VenueUpdateData {
-  name: string;
-  description: string;
-  address: string;
-  venueImages: {
-    deleteMany: Record<string, never>;
-    createMany: {
-      data: Array<{
-        imageUrl: string;
-        alt: string;
-        order: number;
-      }>;
-    };
-  };
-}
-
 export async function updateVenue(formData: FormData, venueId: string) {
   try {
     // 더 안전한 방식
     const galleryData = JSON.parse(formData.get('images')?.toString() || '[]');
 
-    const updateData: VenueUpdateData = {
-      name: formData.get('name') as string,
-      description: formData.get('description') as string,
-      address: formData.get('address') as string,
-      venueImages: {
+    // Validation data
+    const validationData = {
+      name: formData.get('name')?.toString() || '',
+      description: formData.get('description')?.toString() || '',
+      address: formData.get('address')?.toString() || '',
+      images: galleryData,
+    };
+
+    const validatedResult = venueCreateSchema.safeParse(validationData);
+
+    if (!validatedResult.success) {
+      console.error('Validation errors:', validatedResult.error);
+      return {
+        ok: false,
+        error: `입력값이 올바르지 않습니다: ${validatedResult.error.errors.map((e) => e.message).join(', ')}`,
+      };
+    }
+
+    const updateData = {
+      name: validatedResult.data.name,
+      description: validatedResult.data.description,
+      address: validatedResult.data.address,
+      images: {
         deleteMany: {},
         createMany: {
-          data: galleryData.map((image: Image) => ({
+          data: validatedResult.data.images.map((image) => ({
             imageUrl: image.imageUrl,
             alt: image.alt || '',
             order: image.order,
@@ -143,9 +144,13 @@ export async function updateVenue(formData: FormData, venueId: string) {
         ...updateData,
         updatedAt: new Date(),
       },
+      include: {
+        images: true,
+      },
     });
 
     revalidatePath('/venues');
+    revalidatePath(`/venues/${venueId}`);
     return { ok: true, data: venue };
   } catch (error) {
     console.error('Failed to update venue:', error);

@@ -1,4 +1,3 @@
-import { Metadata } from 'next';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 
@@ -13,39 +12,6 @@ import Link from 'next/link';
 import WorksList from '@/components/page/artwork/works-list';
 import { getArtistById } from '@/app/artists/actions';
 import AdminButton from '@/components/AdminButton';
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-  const id = (await params).id;
-  const artist = await getArtistById(id);
-
-  if (!artist) {
-    return {
-      title: '아티스트를 찾을 수 없습니다',
-      description: '요청하신 아티스트 정보를 찾을 수 없습니다.',
-    };
-  }
-
-  return {
-    title: artist.name,
-    description: artist.biography.substring(0, 155) + '...', // SEO 권장 길이
-    openGraph: {
-      title: `${artist.name} - PRECTXE 아티스트`,
-      description: artist.biography.substring(0, 155) + '...',
-      images: [
-        {
-          url: `${artist.mainImageUrl}/public`,
-          width: 1200,
-          height: 630,
-          alt: artist.name,
-        },
-      ],
-    },
-  };
-}
 
 const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -144,7 +110,7 @@ const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>작품</CardTitle>
-              <Link href={`/artists/${id}/works/new`}>
+              <Link href={`/artists/new`}>
                 <Button variant="outline" size="sm">
                   작품 등록
                 </Button>
@@ -168,9 +134,6 @@ const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
               </Link>
             </div>
           </CardHeader>
-          {/* <CardContent>
-            <EventsList events={artist.events} />
-          </CardContent>*/}
         </Card>
       </div>
       <div className="mt-6 flex justify-end gap-x-2">
