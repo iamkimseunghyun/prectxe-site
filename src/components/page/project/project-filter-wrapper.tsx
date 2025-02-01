@@ -1,9 +1,9 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import ProjectFilter from '@/components/project/project-filter';
+import ProjectFilter from '@/components/page/project/project-filter';
 import { useTransition } from 'react';
-import ProjectGridSkeleton from '@/components/project/project-grid-skeleton';
+import ProjectGridSkeleton from '@/components/page/project/project-grid-skeleton';
 
 interface ProjectFilterWrapperProps {
   years: number[];

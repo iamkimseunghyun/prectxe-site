@@ -1,4 +1,4 @@
-import ProjectCardSkeleton from '@/components/project/project-card-skeleton';
+import ProjectCardSkeleton from '@/components/page/project/project-card-skeleton';
 
 const ProjectGridSkeleton = () => {
   return (

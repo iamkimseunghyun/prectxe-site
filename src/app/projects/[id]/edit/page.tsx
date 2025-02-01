@@ -1,4 +1,4 @@
-import ProjectForm from '@/components/project/project-form';
+import ProjectForm from '@/components/page/project/project-form';
 import React from 'react';
 import { getProjectById } from '@/app/projects/actions';
 import { Metadata } from 'next';

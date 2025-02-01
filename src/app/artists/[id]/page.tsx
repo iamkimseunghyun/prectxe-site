@@ -10,9 +10,9 @@ import { Calendar, Edit, Globe, Mail, MapPin } from 'lucide-react';
 
 import Link from 'next/link';
 
-import WorksList from '@/components/artwork/works-list';
-import ArtistAdminButton from '@/components/artist/artist-admin-button';
+import WorksList from '@/components/page/artwork/works-list';
 import { getArtistById } from '@/app/artists/actions';
+import AdminButton from '@/components/AdminButton';
 
 export async function generateMetadata({
   params,
@@ -174,7 +174,7 @@ const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
         </Card>
       </div>
       <div className="mt-6 flex justify-end gap-x-2">
-        <ArtistAdminButton artistId={id} />
+        <AdminButton id={id} entityType="artist" />
       </div>
     </div>
   );

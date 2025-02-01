@@ -8,7 +8,11 @@ import {
   projectCreateSchema,
   ProjectFormData,
 } from '@/lib/validations/project';
-import { formatDate } from '@/lib/utils';
+import {
+  formatDate,
+  uploadGalleryImages,
+  uploadSingleImage,
+} from '@/lib/utils';
 import { categories } from '@/lib/constants/constants';
 import {
   Card,
@@ -29,12 +33,13 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
-import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
-import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
-import MultiImageBox, { BaseImage } from '@/components/image/multi-image-box';
-import SingleImageBox from '@/components/image/single-image-box';
+import { useImageUpload } from '@/hooks/use-image-upload';
+import { useGalleryImages } from '@/hooks/use-gallery-images';
+import GalleryImageSection from '@/components/image/gallery-image-section';
+import SingleImageSection from '@/components/image/single-image-section';
+import { GalleryImage } from '@/lib/validations/gallery-image';
 import { createProject, updateProject } from '@/app/projects/actions';
-import { uploadGalleryImages } from '@/app/actions/upload-image';
+import {} from '@/app/actions/actions';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';
@@ -99,21 +104,10 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
     },
   });
 
-  const uploadSingleImage = async (imageFile: File) => {
-    if (imageFile) {
-      const cloudFlareForm = new FormData();
-      cloudFlareForm.append('file', imageFile);
-      const response = await fetch(uploadURL, {
-        method: 'POST',
-        body: cloudFlareForm,
-      });
-      if (response.status !== 200) {
-        throw new Error('Failed to upload main image');
-      }
-    }
-  };
-
-  const prepareFormData = (data: ProjectFormData, galleryData: BaseImage[]) => {
+  const prepareFormData = (
+    data: ProjectFormData,
+    galleryData: GalleryImage[]
+  ) => {
     const formData = new FormData();
     formData.append('title', data.title);
     formData.append('year', data.year.toString());
@@ -130,7 +124,7 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
   const onSubmit = handleSubmit(async (data: ProjectFormData) => {
     try {
       if (imageFile) {
-        await uploadSingleImage(imageFile);
+        await uploadSingleImage(imageFile, uploadURL);
       }
       if (multiImagePreview.length > 0) {
         await uploadGalleryImages(multiImagePreview);

@@ -13,7 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import React from 'react';
-
+import { GalleryImage } from '@/lib/validations/gallery-image';
 import { artistCreateSchema, ArtistFormData } from '@/lib/validations/artist';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
@@ -22,11 +22,7 @@ import { Button } from '@/components/ui/button';
 import MultiImageBox, { BaseImage } from '@/components/image/multi-image-box';
 import { formatDate } from '@/lib/utils';
 import { createArtist, updateArtist } from '@/app/artists/actions';
-import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
-import {
-  uploadGalleryImages,
-  uploadSingleImage,
-} from '@/app/actions/upload-image';
+import { uploadGalleryImages, uploadSingleImage } from '@/app/actions/actions';
 
 type ArtistFormProps = {
   mode: 'create' | 'edit';
@@ -89,7 +85,10 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
       },
     });
 
-  const prepareFormData = (data: ArtistFormData, multiImage: BaseImage[]) => {
+  const prepareFormData = (
+    data: ArtistFormData,
+    galleryData: GalleryImage[]
+  ) => {
     const formData = new FormData();
     formData.append('name', data.name);
     formData.append('mainImageUrl', imageUrl);

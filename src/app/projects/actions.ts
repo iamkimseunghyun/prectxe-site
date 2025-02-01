@@ -3,7 +3,8 @@
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
 import { projectCreateSchema } from '@/lib/validations/project';
-import { Image } from '@/lib/validations/image';
+import { GalleryImage } from '@/lib/validations/gallery-image';
+import { ProjectCategory } from '@/lib/types';
 
 export async function getAllProjects(
   year?: string,
@@ -13,7 +14,8 @@ export async function getAllProjects(
 ) {
   const where = {
     ...(year && year !== 'all-year' && { year: parseInt(year) }),
-    ...(category && category !== 'all-category' && { category }),
+    ...(category &&
+      category !== 'all-category' && { category: category as ProjectCategory }),
     ...(search && {
       OR: [{ title: { contains: search } }],
     }),
@@ -138,7 +140,7 @@ export async function createProject(
 interface ProjectUpdateData {
   title: string;
   year: number;
-  category: string;
+  category: ProjectCategory;
   description: string;
   content: string;
   startDate: Date;
@@ -165,7 +167,7 @@ export async function updateProject(formData: FormData, projectId: string) {
     const updateData: ProjectUpdateData = {
       title: formData.get('title')?.toString() || '',
       year: parseInt(formData.get('year')?.toString() || '0'),
-      category: formData.get('category')?.toString() || '',
+      category: (formData.get('category')?.toString() as ProjectCategory) || '',
       description: formData.get('description')?.toString() || '',
       content: formData.get('content')?.toString() || '',
       startDate: new Date(formData.get('startDate')?.toString() || ''),
@@ -197,8 +199,8 @@ export async function updateProject(formData: FormData, projectId: string) {
 
     return { ok: true, data: project };
   } catch (error) {
-    console.error('Failed to update project:', error);
-    return { ok: false, error: 'Failed to update project' };
+    console.error('프로젝트 페이지 수정 실패:', error);
+    return { ok: false, error: '프로젝트 페이지 수정 실패' };
   }
 }
 

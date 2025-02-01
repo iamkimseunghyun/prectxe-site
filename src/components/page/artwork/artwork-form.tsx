@@ -15,9 +15,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
-import MultiImageBox, { BaseImage } from '@/components/image/multi-image-box';
-
+import { useGalleryImages } from '@/hooks/use-gallery-images';
+import GalleryImageSection from '@/components/image/gallery-image-section';
+import { GalleryImage } from '@/lib/validations/gallery-image';
 import {
   artworkCreateSchema,
   ArtworkFormData,
@@ -27,7 +27,7 @@ import {
   CreateArtworkResponse,
   updateArtwork,
 } from '@/app/artworks/actions';
-import { uploadGalleryImages } from '@/app/actions/upload-image';
+import { uploadGalleryImages } from '@/app/actions/actions';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';
@@ -74,7 +74,10 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
     },
   });
 
-  const prepareFormData = (data: ArtworkFormData, galleryData: BaseImage[]) => {
+  const prepareFormData = (
+    data: ArtworkFormData,
+    galleryData: GalleryImage[]
+  ) => {
     const formData = new FormData();
     formData.append('title', data.title);
     formData.append('size', data.size);

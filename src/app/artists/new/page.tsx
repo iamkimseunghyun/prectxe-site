@@ -1,5 +1,5 @@
 import React from 'react';
-import ArtistForm from '@/components/artist/artist-form';
+import ArtistForm from '@/components/page/artist/artist-form';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {

@@ -17,8 +17,8 @@ enum ProjectCategory {
 model Project {
   id              String           @id @default(cuid())
   title           String
+  about           String
   description     String
-  content         String
   year            Int
   startDate       DateTime
   endDate         DateTime
