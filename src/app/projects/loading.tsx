@@ -1,4 +1,4 @@
-import ProjectGridSkeleton from '@/components/project/project-grid-skeleton';
+import ProjectGridSkeleton from '@/components/page/project/project-grid-skeleton';
 
 const Loading = () => {
   return (

@@ -1,4 +1,4 @@
-import ArtistForm from '@/components/artist/artist-form';
+import ArtistForm from '@/components/page/artist/artist-form';
 
 import { Metadata } from 'next';
 import { getArtistById } from '@/app/artists/actions';

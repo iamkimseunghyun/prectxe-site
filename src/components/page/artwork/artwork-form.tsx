@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useGalleryImages } from '@/hooks/use-gallery-images';
 import GalleryImageSection from '@/components/image/gallery-image-section';
-import { GalleryImage, GalleryPreview } from '@/lib/validations/gallery-image';
+import { GalleryImage } from '@/lib/validations/gallery-image';
 import {
   artworkCreateSchema,
   ArtworkFormData,
@@ -27,7 +27,7 @@ import {
   CreateArtworkResponse,
   updateArtwork,
 } from '@/app/artworks/actions';
-import { uploadGalleryImages } from '@/lib/utils';
+import { uploadGalleryImages } from '@/app/actions/actions';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';
@@ -73,24 +73,6 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
       setValue('images', galleryData);
     },
   });
-
-  /*
-  const uploadGalleryImages = async (previews: GalleryPreview[]) => {
-    return Promise.all(
-      previews.map(async (preview) => {
-        const formData = new FormData();
-        formData.append('file', preview.file!);
-        const response = await fetch(preview.uploadURL, {
-          method: 'POST',
-          body: formData,
-        });
-        if (response.status !== 200) {
-          throw new Error(`Failed to upload: ${preview.alt}`);
-        }
-      })
-    );
-  };
-*/
 
   const prepareFormData = (
     data: ArtworkFormData,

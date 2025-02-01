@@ -21,7 +21,7 @@ import { MapPin } from 'lucide-react';
 import { createVenue, updateVenue } from '@/app/venues/actions';
 import GalleryImageSection from '@/components/image/gallery-image-section';
 import { GalleryImage } from '@/lib/validations/gallery-image';
-import { uploadGalleryImages } from '@/lib/utils';
+import { uploadGalleryImages } from '@/app/actions/actions';
 
 type VenueFormProps = {
   mode: 'create' | 'edit';

@@ -12,31 +12,8 @@ import {
 } from '@/components/ui/carousel';
 import Image from 'next/image';
 import { GalleryImage } from '@/lib/validations/gallery-image';
-import ArtworkAdminButton from '@/components/artwork/artwork-admin-button';
-import { Metadata } from 'next';
 import { getArtworkById } from '@/app/artworks/actions';
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-  const id = (await params).id;
-  const artwork = await getArtworkById(id);
-
-  return {
-    title: artwork.title,
-    description: artwork.description.substring(0, 155) + '...',
-    openGraph: {
-      title: `${artwork.title} - ${artwork.year} | PRECTXE 작품`,
-      description: artwork.description.substring(0, 155) + '...',
-      images: artwork.images.map((img) => ({
-        url: `${img.imageUrl}/public`,
-        alt: img.alt,
-      })),
-    },
-  };
-}
+import AdminButton from '@/components/AdminButton';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -111,7 +88,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
         </Card>
       </div>
       <div className="mt-6 flex justify-end gap-x-2">
-        <ArtworkAdminButton artworkId={artwork.id} />
+        <AdminButton id={artwork.id} entityType="artwork" />
       </div>
     </div>
   );

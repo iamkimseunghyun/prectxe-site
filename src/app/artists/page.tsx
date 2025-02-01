@@ -1,7 +1,7 @@
 import PageHeader from '@/components/layout/page-header';
-import { ArtistSearch } from '@/components/artist/artist-search';
-import { ArtistFilter } from '@/components/artist/artist-filter';
-import { ArtistGrid } from '@/components/artist/artist-grid';
+import { ArtistSearch } from '@/components/page/artist/artist-search';
+import { ArtistFilter } from '@/components/page/artist/artist-filter';
+import { ArtistGrid } from '@/components/page/artist/artist-grid';
 import { Suspense } from 'react';
 import { Metadata } from 'next';
 

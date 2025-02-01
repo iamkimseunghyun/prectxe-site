@@ -1,4 +1,4 @@
-import VenueForm from '@/components/venue/venue-form';
+import VenueForm from '@/components/page/venue/venue-form';
 
 import { Metadata } from 'next';
 import { getVenueById } from '@/app/venues/actions';

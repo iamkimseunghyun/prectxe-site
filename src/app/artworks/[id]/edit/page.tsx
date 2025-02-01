@@ -1,4 +1,4 @@
-import ArtworkForm from '@/components/artwork/artwork-form';
+import ArtworkForm from '@/components/page/artwork/artwork-form';
 
 import { Metadata } from 'next';
 import { getArtworkById } from '@/app/artworks/actions';

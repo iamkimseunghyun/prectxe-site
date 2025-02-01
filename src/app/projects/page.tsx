@@ -1,5 +1,5 @@
-import { ProjectGrid } from '@/components/project/project-grid';
-import ProjectFilterWrapper from '@/components/project/project-filter-wrapper';
+import { ProjectGrid } from '@/components/page/project/project-grid';
+import ProjectFilterWrapper from '@/components/page/project/project-filter-wrapper';
 import { Suspense } from 'react';
 
 import { Metadata } from 'next';

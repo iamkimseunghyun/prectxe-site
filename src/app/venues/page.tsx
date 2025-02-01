@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
-import VenueList from '@/components/venue/vene-list';
+import VenueList from '@/components/page/venue/vene-list';
 
 import { Metadata } from 'next';
 import { getAllVenues } from '@/app/venues/actions';

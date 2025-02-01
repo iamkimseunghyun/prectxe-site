@@ -21,12 +21,9 @@ import { Button } from '@/components/ui/button';
 
 import { useGalleryImages } from '@/hooks/use-gallery-images';
 import GalleryImageSection from '@/components/image/gallery-image-section';
-import {
-  formatDate,
-  uploadGalleryImages,
-  uploadSingleImage,
-} from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { createArtist, updateArtist } from '@/app/artists/actions';
+import { uploadGalleryImages, uploadSingleImage } from '@/app/actions/actions';
 
 type ArtistFormProps = {
   mode: 'create' | 'edit';

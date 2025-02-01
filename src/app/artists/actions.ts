@@ -56,11 +56,9 @@ export async function getArtistById(
   }
 }
 
-export async function deleteArtwork(id: string): Promise<{ delete: string }> {
+export async function deleteArtwork(id: string) {
   await prisma.artwork.delete({ where: { id: id } });
-  return {
-    delete: 'ok',
-  };
+  return { success: true };
 }
 
 export async function getAllArtists(search?: string) {
@@ -203,6 +201,6 @@ export async function deleteArtist(artistId: string) {
     },
   });
   return {
-    delete: 'ok',
+    success: true,
   };
 }

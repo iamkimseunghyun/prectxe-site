@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
-import ArtworkGrid from '@/components/artwork/artwork-grid';
+import ArtworkGrid from '@/components/page/artwork/artwork-grid';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {

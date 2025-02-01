@@ -1,10 +1,10 @@
 import { Calendar, MapPin, Share2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import CarouselGallery from '@/hooks/carousel-gallery';
-import VenueAdminButton from '@/components/venue/venue-admin-button';
+import CarouselGallery from '@/components/image/carousel-gallery';
 import { Metadata } from 'next';
 import { getVenueById } from '@/app/venues/actions';
+import AdminButton from '@/components/AdminButton';
 
 export async function generateMetadata({
   params,
@@ -90,7 +90,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
       </Card>
       <div className="mt-12 flex justify-end gap-x-2">
         {/* 섹션 */}
-        <VenueAdminButton venueId={venue.id} />
+        <AdminButton id={venue.id} entityType="venue" />
       </div>
     </div>
   );
