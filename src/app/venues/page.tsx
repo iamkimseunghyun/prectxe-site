@@ -2,18 +2,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import VenueList from '@/components/page/venue/vene-list';
-
-import { Metadata } from 'next';
 import { getAllVenues } from '@/app/venues/actions';
-
-export const metadata: Metadata = {
-  title: '장소 목록',
-  description: 'PRECTXE 페스티벌과 전시가 열리는 모든 공간을 확인하세요',
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
 
 const VenuesPage = async ({
   searchParams,

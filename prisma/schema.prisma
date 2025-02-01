@@ -14,6 +14,22 @@ enum ProjectCategory {
   workshop
 }
 
+enum EventStatus {
+  upcoming
+  ongoing
+  completed
+  cancelled
+}
+
+enum EventType {
+  exhibition
+  performance
+  workshop
+  talk
+  screening
+  other
+}
+
 model Project {
   id              String           @id @default(cuid())
   title           String
@@ -44,8 +60,75 @@ model ProjectImage {
   updatedAt DateTime @updatedAt
 }
 
+model Event {
+  id          String      @id @default(cuid())
+  title       String
+  subtitle    String?
+  description String      @db.Text
+  status      EventStatus @default(upcoming)
+  type        EventType
+  startDate   DateTime
+  endDate     DateTime
+  price       Int         @default(0)
+  capacity    Int?
+
+  // 이벤트 이미지
+  mainImageUrl String
+  images       EventImage[]
+
+  // 이벤트 장소
+  venue   Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  venueId String
+
+  // 이벤트 주최자/아티스트
+  organizers EventOrganizer[]
+
+  // 티켓/예약 정보
+  tickets EventTicket[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EventImage {
+  id       String @id @default(cuid())
+  imageUrl String
+  alt      String
+  order    Int    @default(0)
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EventOrganizer {
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId  String
+  artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artistId String
+  role     String // ex: "주최자", "큐레이터", "퍼포머" 등
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([eventId, artistId])
+}
+
+model EventTicket {
+  id       String @id @default(cuid())
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId  String
+  name     String // ex: "일반 입장권", "VIP 티켓" 등
+  price    Int
+  quantity Int // 남은 수량
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Artist {
-  id             String          @id @default(cuid())
+  id             String           @id @default(cuid())
   name           String
   mainImageUrl   String
   images         ArtistImage[]
@@ -53,15 +136,16 @@ model Artist {
   nationality    String
   city           String
   country        String
-  email          String          @unique
+  email          String           @unique
   homepage       String
   biography      String
   cv             String
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
   artistArtworks ArtistArtwork[]
   projectArtists ProjectArtist[]
   ArtworkImage   ArtworkImage[]
+  EventOrganizer EventOrganizer[]
 }
 
 model ArtistImage {
@@ -115,6 +199,7 @@ model Venue {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   projectVenue ProjectVenue[]
+  Event        Event[]
 }
 
 model VenueImage {

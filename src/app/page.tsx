@@ -65,7 +65,7 @@ export default async function Home() {
         </section>
 
         {/* About 섹션 */}
-        <section className="bg-gray-50 py-20">
+        <section className="mb-12 bg-gray-50 py-20">
           <div className="container px-4">
             <div className="mx-auto max-w-3xl space-y-6 text-center">
               <h2 className="text-3xl font-bold">About PRECTXE</h2>
