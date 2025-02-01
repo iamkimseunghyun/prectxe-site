@@ -79,7 +79,10 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
 
   const onSubmit = handleSubmit(async (data: VenueFormData) => {
     try {
-      await uploadGalleryImages(multiImagePreview);
+      if (multiImagePreview.length > 0) {
+        await uploadGalleryImages(multiImagePreview);
+      }
+      // 기존 이미지와 새 이미지를 합쳐서 FormData 생성
       const formData = prepareFormData(data, data.images);
 
       const result =

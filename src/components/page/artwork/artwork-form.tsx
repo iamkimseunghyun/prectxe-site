@@ -104,13 +104,6 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
 
       const formData = prepareFormData(data, data.images);
 
-      // FormData 내용 로깅
-      const formDataLog: any = {};
-      formData.forEach((value, key) => {
-        formDataLog[key] = value;
-      });
-      console.log('Prepared FormData:', formDataLog);
-
       const result =
         mode === 'edit'
           ? await updateArtwork(formData, artworkId!)
