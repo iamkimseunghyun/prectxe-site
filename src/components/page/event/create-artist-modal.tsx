@@ -1,0 +1,214 @@
+'use client';
+
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+
+import { Plus } from 'lucide-react';
+import { createSimpleArtist } from '@/app/artists/actions';
+import { toast } from '@/hooks/use-toast';
+
+const formSchema = z.object({
+  name: z.string().min(1, '이름을 입력해주세요'),
+  email: z
+    .string()
+    .email('유효한 이메일을 입력해주세요')
+    .optional()
+    .or(z.literal('')),
+  mainImageUrl: z
+    .string()
+    .url('유효한 URL을 입력해주세요')
+    .optional()
+    .or(z.literal('')),
+  nationality: z.string().optional(),
+  city: z.string().optional(),
+  country: z.string().optional(),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
+interface CreateArtistModalProps {
+  onSuccess: (artist: { id: string; name: string }) => void;
+}
+
+export function CreateArtistModal({ onSuccess }: CreateArtistModalProps) {
+  const [open, setOpen] = useState(false);
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      mainImageUrl: '',
+      nationality: '',
+      city: '',
+      country: '',
+    },
+  });
+
+  async function onSubmit(data: FormData) {
+    const result = await createSimpleArtist(data);
+
+    if (result.error) {
+      toast({
+        title: 'Error',
+        description: result.error,
+      });
+      return;
+    }
+
+    if (result.data) {
+      toast({
+        title: 'Success',
+        description: `아티스트 ${result.data.name}가 생성되었습니다.`,
+      });
+      onSuccess(result.data);
+      setOpen(false);
+      form.reset();
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Plus className="mr-2 h-4 w-4" />새 아티스트
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>새 아티스트 추가</DialogTitle>
+          <DialogDescription>
+            새로운 아티스트를 추가합니다. 나중에 추가 정보를 입력할 수 있습니다.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* 이름 (필수) */}
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>이름 *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="아티스트 이름" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 이메일 (선택) */}
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>이메일</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="artist@example.com"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 프로필 이미지 URL (선택) */}
+            <FormField
+              control={form.control}
+              name="mainImageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>프로필 이미지 URL</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 국적 (선택) */}
+            <FormField
+              control={form.control}
+              name="nationality"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>국적</FormLabel>
+                  <FormControl>
+                    <Input placeholder="예: Korean" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 도시 & 국가 (선택) */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>도시</FormLabel>
+                    <FormControl>
+                      <Input placeholder="예: Seoul" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>국가</FormLabel>
+                    <FormControl>
+                      <Input placeholder="예: South Korea" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+              >
+                취소
+              </Button>
+              <Button type="submit">추가하기</Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}

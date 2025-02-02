@@ -6,6 +6,7 @@ const EventTypeEnum = z.enum([
   'performance',
   'workshop',
   'talk',
+  'festival',
   'screening',
   'other',
 ]);
@@ -50,10 +51,10 @@ export const eventFormSchema = z
       .max(2000, '설명이 너무 깁니다'),
     type: EventTypeEnum,
     status: EventStatusEnum,
-    startDate: z.string().refine((date) => new Date(date) > new Date(), {
+    startDate: z.string({
       message: '시작일은 현재 시간 이후여야 합니다',
     }),
-    endDate: z.string().refine((date) => new Date(date) > new Date(), {
+    endDate: z.string({
       message: '종료일은 현재 시간 이후여야 합니다',
     }),
     price: z.number().min(0, '가격은 0원 이상이어야 합니다'),

@@ -24,6 +24,7 @@ enum EventStatus {
 enum EventType {
   exhibition
   performance
+  festival
   workshop
   talk
   screening
@@ -130,16 +131,16 @@ model EventTicket {
 model Artist {
   id             String           @id @default(cuid())
   name           String
-  mainImageUrl   String
+  mainImageUrl   String?
   images         ArtistImage[]
-  birth          DateTime
-  nationality    String
-  city           String
-  country        String
-  email          String           @unique
-  homepage       String
-  biography      String
-  cv             String
+  birth          DateTime?
+  nationality    String?
+  city           String?
+  country        String?
+  email          String?          @unique
+  homepage       String?
+  biography      String?
+  cv             String?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   artistArtworks ArtistArtwork[]

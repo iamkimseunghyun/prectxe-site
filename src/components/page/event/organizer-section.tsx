@@ -1,0 +1,162 @@
+import { Control, useFieldArray } from 'react-hook-form';
+import { Plus, Trash2 } from 'lucide-react';
+
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { EventFormType } from '@/lib/validations/event';
+import { CreateArtistModal } from '@/components/page/event/create-artist-modal';
+
+interface OrganizersSectionProps {
+  control: Control<EventFormType>;
+  artists: {
+    id: string;
+    name: string;
+  }[];
+}
+
+const OrganizersSection = ({ control, artists }: OrganizersSectionProps) => {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'organizers',
+  });
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">주최자</h3>
+            <div className="flex gap-2">
+              {/* 새 아티스트 생성 모달 */}
+              <CreateArtistModal
+                onSuccess={(artist) => {
+                  // 새로운 아티스트를 선택 목록에 추가
+                  append({ artistId: artist.id, role: '' });
+                }}
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => append({ artistId: '', role: '' })}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              주최자 추가
+            </Button>
+          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>아티스트</TableHead>
+                <TableHead>역할</TableHead>
+                <TableHead className="w-[100px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {fields.map((field, index) => (
+                <TableRow key={field.id}>
+                  <TableCell>
+                    <FormField
+                      control={control}
+                      name={`organizers.${index}.artistId`}
+                      render={({ field: artistField }) => (
+                        <FormItem>
+                          <FormLabel className="sr-only">
+                            아티스트 선택
+                          </FormLabel>
+                          <Select
+                            onValueChange={artistField.onChange}
+                            value={artistField.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="아티스트 선택" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {artists.map((artist) => (
+                                <SelectItem key={artist.id} value={artist.id}>
+                                  {artist.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <FormField
+                      control={control}
+                      name={`organizers.${index}.role`}
+                      render={({ field: roleField }) => (
+                        <FormItem>
+                          <FormLabel className="sr-only">역할</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="역할을 입력하세요 (예: 큐레이터)"
+                              {...roleField}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => remove(index)}
+                      className="text-destructive hover:text-destructive/90"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {fields.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={3}
+                    className="text-center text-muted-foreground"
+                  >
+                    주최자가 없습니다. 주최자를 추가해주세요.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+export default OrganizersSection;

@@ -1,9 +1,14 @@
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
-import { artistCreateSchema, ArtistFormData } from '@/lib/validations/artist';
+import {
+  artistCreateSchema,
+  ArtistFormData,
+  artistSimpleCreateSchema,
+} from '@/lib/validations/artist';
 import { revalidatePath } from 'next/cache';
 import { GalleryImage } from '@/lib/validations/gallery-image';
+import { z } from 'zod';
 
 export async function getArtistById(
   artistId: string
@@ -32,9 +37,23 @@ export async function getArtistById(
     });
     if (!artist) return null;
 
-    const formattedData = {
+    const formattedData: ArtistFormData = {
       ...artist,
-      birth: artist?.birth.toISOString(),
+      birth: artist.birth ? artist.birth.toISOString() : '', // undefined 방지
+      email: artist.email ?? undefined, // null 값을 undefined로 변환
+      nationality: artist.nationality ?? undefined,
+      city: artist.city ?? undefined,
+      country: artist.country ?? undefined,
+      homepage: artist.homepage ?? undefined,
+      biography: artist.biography ?? undefined,
+      cv: artist.cv ?? undefined,
+      mainImageUrl: artist.mainImageUrl ?? undefined,
+      images: artist.images.map(({ id, imageUrl, alt, order }) => ({
+        id,
+        imageUrl,
+        alt,
+        order,
+      })),
     };
 
     // DB 데이터를 ArtistFormData 형식으로 변환
@@ -67,9 +86,53 @@ export async function getAllArtists(search?: string) {
   return artists;
 }
 
-export type CreateArtistResult =
-  | { ok: true; data: { id: string } }
-  | { ok: false; error: string };
+export async function createSimpleArtist(
+  data: z.infer<typeof artistSimpleCreateSchema>
+): Promise<ActionResult<{ id: string; name: string }>> {
+  try {
+    const validatedData = artistSimpleCreateSchema.safeParse(data);
+
+    if (!validatedData.success) {
+      const errorMessage = validatedData.error.issues
+        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+        .join(', ');
+      return { ok: false, error: errorMessage };
+    }
+
+    // 이메일이 제공된 경우 중복 체크
+    if (validatedData.data.email) {
+      const existingArtist = await prisma.artist.findUnique({
+        where: { email: validatedData.data.email },
+      });
+
+      if (existingArtist) {
+        return { ok: false, error: '이미 등록된 이메일입니다.' };
+      }
+    }
+
+    const artist = await prisma.artist.create({
+      data: validatedData.data,
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    revalidatePath('/events/new', 'page');
+    revalidatePath('/events/[id]/edit', 'page');
+
+    return { ok: true, data: artist };
+  } catch (error) {
+    console.error('Simple artist creation error:', error);
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : '아티스트 생성 중 오류가 발생했습니다.',
+    };
+  }
+}
 
 export type ActionResult<T> = {
   ok: boolean;
@@ -110,7 +173,9 @@ export async function createArtist(
     const artist = await prisma.artist.create({
       data: {
         ...validatedData.data,
-        birth: new Date(validatedData.data.birth),
+        birth: validatedData.data.birth
+          ? new Date(validatedData.data.birth)
+          : null,
         images: {
           create: validatedData.data.images.map((image) => ({
             imageUrl: image.imageUrl,
