@@ -9,7 +9,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { getImageUrl } from '@/lib/utils';
 
-const Page = async ({ params }: { params: { id: string } }) => {
+const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
   const result = await getEventById(id);
 
