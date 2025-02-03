@@ -77,7 +77,7 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
     imageUrl,
     displayUrl,
   } = useSingleImageUpload({
-    initialImage: initialData?.mainImageUrl,
+    initialImage: initialData?.mainImageUrl ?? '',
     onImageUrlChange: (url) => {
       setValue('mainImageUrl', url);
     },
