@@ -1,14 +1,17 @@
 import { ChangeEvent } from 'react';
 import { ImagePlus } from 'lucide-react';
-import { UseFormRegisterReturn } from 'react-hook-form';
+import { ControllerRenderProps, UseFormRegisterReturn } from 'react-hook-form';
 
 interface ImagePreview {
   url: string;
   isCloudflare: boolean;
 }
 
+// Register 타입을 유니온 타입으로 변경
+type RegisterType = UseFormRegisterReturn | ControllerRenderProps<any, string>;
+
 interface SingleImageSectionProps {
-  register: UseFormRegisterReturn;
+  register: RegisterType;
   preview: ImagePreview;
   displayUrl: string | null;
   error?: string;
@@ -56,6 +59,13 @@ const SingleImageBox = ({
     ${getAspectRatioClass(aspectRatio)}
   `;
 
+  // register prop의 필요한 속성만 추출
+  const inputProps = {
+    name: register.name,
+    onBlur: register.onBlur,
+    ref: register.ref,
+  };
+
   return (
     <div className={containerClasses}>
       <label
@@ -69,7 +79,7 @@ const SingleImageBox = ({
       <input
         type="file"
         id={inputId}
-        {...register}
+        {...inputProps}
         onChange={handleImageChange}
         accept="image/*"
         className="hidden"

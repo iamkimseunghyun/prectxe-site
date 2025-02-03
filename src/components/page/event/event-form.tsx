@@ -1,20 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 
 import { eventFormSchema, type EventFormType } from '@/lib/validations/event';
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 
 import { useRouter } from 'next/navigation';
@@ -25,7 +18,7 @@ import BasicInfoSection from '@/components/page/event/basic-info-section';
 import DateVenueSection from '@/components/page/event/date-venue-section';
 import OrganizersSection from '@/components/page/event/organizer-section';
 import TicketsSection from '@/components/page/event/ticket-section';
-import { Input } from '@/components/ui/input';
+import ImageUploadFormField from '@/components/page/event/image-upload-form-field';
 
 interface EventFormProps {
   initialData?: FullEvent;
@@ -79,108 +72,94 @@ export function EventForm({
   });
 
   return (
-    <Form {...form}>
-      <form
-        action={async () => {
-          setIsSubmitting(true);
-          try {
-            const values = form.getValues();
-            console.log('Form values:', values); // 폼 데이터 확인
-            // 필수 필드 검증
-            if (!values.mainImageUrl) {
-              toast({
-                title: 'Error',
-                description: '이미지 URL을 입력해주세요.',
-              });
-              return;
-            }
-            if (!values.venueId) {
-              toast({
-                title: 'Error',
-                description: '장소를 선택해주세요.',
-              });
-              return;
-            }
-            const result = await onSubmit(values);
-
-            if (result.success) {
-              toast({
-                title: 'Success',
-                description: result.message,
-              });
-              if (result.id) {
-                router.push(`/events/${result.id}`);
-              } else {
-                router.push('/events');
+    <FormProvider {...form}>
+      <Form {...form}>
+        <form
+          action={async () => {
+            setIsSubmitting(true);
+            try {
+              const values = form.getValues();
+              console.log('Form values:', values); // 폼 데이터 확인
+              // 필수 필드 검증
+              if (!values.mainImageUrl) {
+                toast({
+                  title: 'Error',
+                  description: '이미지 URL을 입력해주세요.',
+                });
+                return;
               }
-            } else {
+              if (!values.venueId) {
+                toast({
+                  title: 'Error',
+                  description: '장소를 선택해주세요.',
+                });
+                return;
+              }
+              const result = await onSubmit(values);
+
+              if (result.success) {
+                toast({
+                  title: 'Success',
+                  description: result.message,
+                });
+                if (result.id) {
+                  router.push(`/events/${result.id}`);
+                } else {
+                  router.push('/events');
+                }
+              } else {
+                toast({
+                  title: 'Error',
+                  description: result.message,
+                });
+              }
+            } catch (error) {
               toast({
-                title: 'Error',
-                description: result.message,
+                title: '이벤트 저장 중 오류가 발생했습니다.',
+                description: 'Error',
               });
+              console.error(error);
+            } finally {
+              setIsSubmitting(false);
             }
-          } catch (error) {
-            toast({
-              title: '이벤트 저장 중 오류가 발생했습니다.',
-              description: 'Error',
-            });
-            console.error(error);
-          } finally {
-            setIsSubmitting(false);
-          }
-        }}
-        className="space-y-8"
-      >
-        <div className="space-y-6">
-          {/* 기본 정보 섹션 */}
-          <FormField
-            control={form.control}
-            name="mainImageUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>이미지 URL *</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="이미지 URL을 입력하세요"
-                    {...field}
-                    required
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <BasicInfoSection control={form.control} />
+          }}
+          className="space-y-8"
+        >
+          <div className="space-y-6">
+            {/* 기본 정보 섹션 */}
+            <ImageUploadFormField control={form.control} name="mainImageUrl" />
+            <BasicInfoSection control={form.control} />
 
-          {/* 일정 및 장소 섹션 */}
-          <DateVenueSection control={form.control} venues={venues} />
+            {/* 일정 및 장소 섹션 */}
+            <DateVenueSection control={form.control} venues={venues} />
 
-          {/* 주최자 섹션 */}
-          <OrganizersSection control={form.control} artists={artists} />
+            {/* 주최자 섹션 */}
+            <OrganizersSection control={form.control} artists={artists} />
 
-          {/* 티켓 섹션 */}
-          <TicketsSection control={form.control} />
+            {/* 티켓 섹션 */}
+            <TicketsSection control={form.control} />
 
-          {/* 제출 버튼 */}
-          <div className="flex justify-end gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-              disabled={isSubmitting}
-            >
-              취소
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting
-                ? '저장 중...'
-                : initialData
-                  ? '수정하기'
-                  : '등록하기'}
-            </Button>
+            {/* 제출 버튼 */}
+            <div className="flex justify-end gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                disabled={isSubmitting}
+              >
+                취소
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting
+                  ? '저장 중...'
+                  : initialData
+                    ? '수정하기'
+                    : '등록하기'}
+              </Button>
+            </div>
           </div>
-        </div>
-      </form>
-    </Form>
+        </form>
+      </Form>
+    </FormProvider>
   );
 }

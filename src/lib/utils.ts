@@ -42,6 +42,27 @@ export const uploadSingleImage = async (imageFile: File, uploadURL: string) => {
   }
 };
 
+// 이미지 업로드 함수 (클라이언트)
+export const uploadImage = async (
+  file: File,
+  uploadURL: string
+): Promise<boolean> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(uploadURL, {
+      method: 'POST',
+      body: formData,
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error('Failed to upload image:', error);
+    return false;
+  }
+};
+
 export const uploadGalleryImages = async (previews: GalleryPreview[]) => {
   return Promise.all(
     previews.map(async (preview) => {
