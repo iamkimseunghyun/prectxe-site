@@ -19,50 +19,61 @@ export const artistCreateSchema = z.object({
     .string({
       required_error: ' 사진 첨부는 필수입니다. 🥺',
     })
-    .optional(),
-  birth: z.string({ required_error: '생년월일을 선택해주세요.' }).optional(),
+    .optional()
+    .nullable(),
+  birth: z
+    .string({ required_error: '생년월일을 선택해주세요.' })
+    .optional()
+    .nullable(),
   nationality: z
     .string()
     .min(2, {
       message: '국적을 입력해주세요.',
     })
-    .optional(),
+    .optional()
+    .nullable(),
   city: z
     .string()
     .min(2, {
       message: '도시를 입력해주세요.',
     })
-    .optional(),
+    .optional()
+    .nullable(),
   country: z
     .string()
     .min(2, {
       message: '국가를 입력해주세요.',
     })
-    .optional(),
+    .optional()
+    .nullable(),
   email: z
     .string()
     .email({
       message: '올바른 이메일 주소를 입력해주세요.',
     })
-    .optional(),
+    .optional()
+    .nullable(),
   homepage: z
     .string()
     .url({
       message: '올바른 URL을 입력해주세요.',
     })
-    .optional(),
+    .optional()
+    .nullable(),
   biography: z
     .string()
     .min(10, {
       message: '약력은 10자 이상 입력해주세요.',
     })
-    .optional(),
+    .optional()
+    .nullable(),
   cv: z
     .string()
     .min(10, {
       message: '이력서는 10자 이상 입력해주세요.',
     })
-    .optional(),
+    .optional()
+    .nullable(),
   images: z.array(baseImageSchema).min(1, {
     message: '갤러리 이미지를 1개 이상 등록해주세요.',
   }),
