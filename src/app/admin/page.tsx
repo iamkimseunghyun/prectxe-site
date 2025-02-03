@@ -134,6 +134,33 @@ const Page = () => {
             </div>
           </CardContent>
         </Card>
+        {/* Events Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-6 w-6" />
+              Events
+            </CardTitle>
+            <CardDescription>
+              Manage festival events and locations
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4">
+              <Link href="/events/new">
+                <Button className="w-full" variant="outline">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add New Events
+                </Button>
+              </Link>
+              <Link href="/events">
+                <Button className="w-full" variant="outline">
+                  View All Events
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

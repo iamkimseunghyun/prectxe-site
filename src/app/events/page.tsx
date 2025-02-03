@@ -8,7 +8,10 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, Clock } from 'lucide-react';
+import { Calendar, Clock, MapPin } from 'lucide-react';
+import { prisma } from '@/lib/db/prisma';
+import { getImageUrl } from '@/lib/utils';
+import Link from 'next/link';
 
 type EventStatus = 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
 type EventType =
@@ -16,6 +19,7 @@ type EventType =
   | 'performance'
   | 'workshop'
   | 'talk'
+  | 'festival'
   | 'screening'
   | 'other';
 
@@ -26,7 +30,7 @@ interface Venue {
 
 interface Event {
   title: string;
-  subtitle?: string;
+  subtitle?: string | null;
   mainImageUrl: string;
   status: EventStatus;
   type: EventType;
@@ -60,7 +64,7 @@ const EventCard = ({ event }: { event: Event }) => (
   <Card className="w-full transition-shadow hover:shadow-lg">
     <div className="relative h-48 w-full">
       <img
-        src={event.mainImageUrl}
+        src={getImageUrl(`${event.mainImageUrl}`, 'public')}
         alt={event.title}
         className="h-full w-full rounded-t-lg object-cover"
       />
@@ -100,8 +104,8 @@ const EventCard = ({ event }: { event: Event }) => (
   </Card>
 );
 
-const Page = () => {
-  const sampleEvents: Event[] = [
+const Page = async () => {
+  /* const sampleEvents: Event[] = [
     {
       title: '디지털 아트 페스티벌 2025',
       subtitle: '기술과 예술의 만남',
@@ -147,7 +151,26 @@ const Page = () => {
         name: 'PRECTXE 스튜디오',
       },
     },
-  ];
+  ];*/
+
+  const events = await prisma.event.findMany({
+    include: {
+      venue: true,
+    },
+  });
+
+  // null 값을 undefined로 변환
+  const formattedEvents = events.map((event) => ({
+    ...event,
+    subtitle: event.subtitle ?? null,
+    startDate: event.startDate.toISOString(),
+    endDate: event.endDate.toISOString(),
+  }));
+
+  if (formattedEvents.length === 0) {
+    return null;
+  }
+
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
@@ -163,8 +186,10 @@ const Page = () => {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* 이벤트 카드들이 여기에 매핑됩니다 */}
-        {sampleEvents.map((event) => (
-          <EventCard key={event.venueId} event={event} />
+        {formattedEvents.map((event) => (
+          <Link href={`/events/${event.id}`} key={event.id}>
+            <EventCard event={event} />
+          </Link>
         ))}
       </div>
     </div>
