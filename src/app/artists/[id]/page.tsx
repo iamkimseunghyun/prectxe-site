@@ -63,7 +63,7 @@ const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
               <div className="flex items-center text-sm text-muted-foreground">
                 <Globe className="mr-2 h-4 w-4" />
                 <a
-                  href={artist.homepage}
+                  href={artist.homepage!}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:underline"
@@ -73,7 +73,7 @@ const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
                 <Calendar className="mr-2 h-4 w-4" />
-                {formatDate(new Date(artist.birth))}
+                {formatDate(new Date(artist.birth!))}
               </div>
             </div>
           </CardContent>
@@ -89,16 +89,16 @@ const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
               </TabsList>
               <TabsContent value="biography" className="space-y-4">
                 <div className="prose max-w-none">
-                  {artist.biography.split('\n').map((paragraph, index) => (
-                    <p key={index}>{paragraph}</p>
-                  ))}
+                  {artist.biography
+                    ?.split('\n')
+                    .map((paragraph, index) => <p key={index}>{paragraph}</p>)}
                 </div>
               </TabsContent>
               <TabsContent value="cv" className="space-y-4">
                 <div className="prose max-w-none">
-                  {artist.cv.split('\n').map((paragraph, index) => (
-                    <p key={index}>{paragraph}</p>
-                  ))}
+                  {artist.cv
+                    ?.split('\n')
+                    .map((paragraph, index) => <p key={index}>{paragraph}</p>)}
                 </div>
               </TabsContent>
             </Tabs>
