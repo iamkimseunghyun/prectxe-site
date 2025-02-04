@@ -126,8 +126,9 @@ export function EventForm({
           className="space-y-8"
         >
           <div className="space-y-6">
-            {/* 기본 정보 섹션 */}
+            {/* 이미지 업로드 섹션 */}
             <ImageUploadFormField control={form.control} name="mainImageUrl" />
+            {/* 기본 정보 섹션 */}
             <BasicInfoSection control={form.control} />
 
             {/* 일정 및 장소 섹션 */}
