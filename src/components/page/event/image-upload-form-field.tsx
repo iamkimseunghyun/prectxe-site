@@ -1,6 +1,5 @@
 import { Control, useFormContext } from 'react-hook-form';
 import { EventFormType } from '@/lib/validations/event';
-import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import {
   FormField,
   FormItem,

@@ -68,8 +68,8 @@ export const eventFormSchema = z
       .array(eventTicketSchema)
       .min(1, '최소 1개 이상의 티켓이 필요합니다'),
   })
-  .refine((data) => new Date(data.startDate) < new Date(data.endDate), {
-    message: '종료일은 시작일 이후여야 합니다',
+  .refine((data) => new Date(data.startDate) <= new Date(data.endDate), {
+    message: '종료일은 시작일과 같거나 이후여야 합니다',
     path: ['endDate'],
   });
 

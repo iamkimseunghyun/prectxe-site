@@ -1,5 +1,5 @@
 import { ChangeEvent, useState } from 'react';
-import { getImageUrl, uploadImage } from '@/lib/utils';
+import { uploadImage } from '@/lib/utils';
 import validateImageFile from '@/hooks/validate-file';
 import { getCloudflareImageUrl } from '@/app/actions/actions';
 
