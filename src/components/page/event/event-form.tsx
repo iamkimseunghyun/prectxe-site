@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
 
 import { eventFormSchema, type EventFormType } from '@/lib/validations/event';
 
@@ -19,6 +18,7 @@ import DateVenueSection from '@/components/page/event/date-venue-section';
 import OrganizersSection from '@/components/page/event/organizer-section';
 import TicketsSection from '@/components/page/event/ticket-section';
 import ImageUploadFormField from '@/components/page/event/image-upload-form-field';
+import { formatDate } from '@/lib/utils';
 
 interface EventFormProps {
   initialData?: FullEvent;
@@ -51,8 +51,8 @@ export function EventForm({
     defaultValues: initialData
       ? ({
           ...initialData,
-          startDate: format(new Date(initialData.startDate), 'yyyy-MM-dd'),
-          endDate: format(new Date(initialData.endDate), 'yyyy-MM-dd'),
+          startDate: formatDate(new Date(initialData.startDate)),
+          endDate: formatDate(new Date(initialData.endDate)),
         } as EventFormType)
       : {
           title: '',
@@ -60,8 +60,8 @@ export function EventForm({
           description: '',
           type: 'exhibition',
           status: 'upcoming',
-          startDate: format(new Date(), 'yyyy-MM-dd'),
-          endDate: format(new Date(), 'yyyy-MM-dd'),
+          startDate: formatDate(new Date()),
+          endDate: formatDate(new Date()),
           price: 0,
           capacity: undefined,
           mainImageUrl: '',
