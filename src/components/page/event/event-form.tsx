@@ -75,7 +75,7 @@ export function EventForm({
     <FormProvider {...form}>
       <Form {...form}>
         <form
-          action={async () => {
+          onSubmit={form.handleSubmit(async () => {
             setIsSubmitting(true);
             try {
               const values = form.getValues();
@@ -122,7 +122,7 @@ export function EventForm({
             } finally {
               setIsSubmitting(false);
             }
-          }}
+          })}
           className="space-y-8"
         >
           <div className="space-y-6">
