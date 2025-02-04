@@ -30,7 +30,7 @@ interface EventFormProps {
     id: string;
     name: string;
   }[];
-  onSubmit: (data: EventFormType) => Promise<{
+  onSubmitAction: (data: EventFormType) => Promise<{
     success: boolean;
     message: string | undefined;
     id?: string;
@@ -41,7 +41,7 @@ export function EventForm({
   initialData,
   venues,
   artists,
-  onSubmit,
+  onSubmitAction,
 }: EventFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,7 +95,7 @@ export function EventForm({
                 });
                 return;
               }
-              const result = await onSubmit(values);
+              const result = await onSubmitAction(values);
 
               if (result.success) {
                 toast({

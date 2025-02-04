@@ -29,7 +29,7 @@ const Page = async () => {
       <EventForm
         venues={venues}
         artists={artists}
-        onSubmit={async (data) => {
+        onSubmitAction={async (data) => {
           'use server';
           return handleEventSubmit(data, 'create');
         }}
