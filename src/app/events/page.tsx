@@ -12,6 +12,7 @@ import { Calendar, Clock, MapPin } from 'lucide-react';
 import { prisma } from '@/lib/db/prisma';
 import { getImageUrl } from '@/lib/utils';
 import Link from 'next/link';
+import Image from 'next/image';
 
 type EventStatus = 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
 type EventType =
@@ -63,9 +64,11 @@ const EventStatusBadge = ({ status }: EventStatusBadgeProps) => {
 const EventCard = ({ event }: { event: Event }) => (
   <Card className="w-full transition-shadow hover:shadow-lg">
     <div className="relative h-48 w-full">
-      <img
+      <Image
         src={getImageUrl(`${event.mainImageUrl}`, 'public')}
         alt={event.title}
+        width={300}
+        height={200}
         className="h-full w-full rounded-t-lg object-cover"
       />
       <div className="absolute right-4 top-4">
