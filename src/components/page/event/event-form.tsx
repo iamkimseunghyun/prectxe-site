@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import { eventFormSchema, type EventFormType } from '@/lib/validations/event';
 
-import { Form } from '@/components/ui/form';
+import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 
 import { useRouter } from 'next/navigation';
@@ -17,8 +17,9 @@ import BasicInfoSection from '@/components/page/event/basic-info-section';
 import DateVenueSection from '@/components/page/event/date-venue-section';
 import OrganizersSection from '@/components/page/event/organizer-section';
 import TicketsSection from '@/components/page/event/ticket-section';
-import ImageUploadFormField from '@/components/page/event/image-upload-form-field';
-import { formatDate } from '@/lib/utils';
+import { formatDate, uploadImage } from '@/lib/utils';
+import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
+import SingleImageBox from '@/components/image/single-image-box';
 
 interface EventFormProps {
   initialData?: FullEvent;
@@ -70,6 +71,23 @@ export function EventForm({
           tickets: [],
         },
   });
+  // const { setValue } = useFormContext<EventFormType>();
+  // 싱글 이미지 업로드 훅
+  const {
+    preview,
+    imageFile,
+    error: fileError,
+    uploadURL,
+    handleImageChange,
+    displayUrl,
+  } = useSingleImageUpload({
+    initialImage: initialData?.mainImageUrl ?? '',
+    onImageUrlChange: (url) => {
+      console.log('이미지 URL 설정:', url);
+      form.setValue('mainImageUrl', url);
+      console.log('현재 폼 값:', form.getValues());
+    },
+  });
 
   return (
     <FormProvider {...form}>
@@ -78,9 +96,15 @@ export function EventForm({
           onSubmit={form.handleSubmit(async () => {
             setIsSubmitting(true);
             try {
+              // 이미지 파일이 있는 경우에만 Cloudflare에 실제 업로드 진행
+              if (imageFile) {
+                await uploadImage(imageFile, uploadURL);
+              }
+
               const values = form.getValues();
-              console.log('Form values:', values); // 폼 데이터 확인
-              // 필수 필드 검증
+              console.log('Form values:', values);
+
+              // mainImageUrl은 이미 Cloudflare에서 받아온 URL이 설정되어 있음
               if (!values.mainImageUrl) {
                 toast({
                   title: 'Error',
@@ -127,7 +151,23 @@ export function EventForm({
         >
           <div className="space-y-6">
             {/* 이미지 업로드 섹션 */}
-            <ImageUploadFormField control={form.control} name="mainImageUrl" />
+            <FormField
+              control={form.control}
+              name="mainImageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <SingleImageBox
+                    register={field}
+                    preview={preview}
+                    displayUrl={displayUrl}
+                    error={fileError}
+                    handleImageChange={handleImageChange}
+                    aspectRatio="video"
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             {/* 기본 정보 섹션 */}
             <BasicInfoSection control={form.control} />
 

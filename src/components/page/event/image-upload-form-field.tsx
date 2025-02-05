@@ -1,8 +1,7 @@
-import { Control, useFormContext } from 'react-hook-form';
+import { Control } from 'react-hook-form';
 import { EventFormType } from '@/lib/validations/event';
 import { FormField, FormItem, FormMessage } from '@/components/ui/form';
 import SingleImageBox from '@/components/image/single-image-box';
-import { useFormSingleImageUpload } from '@/hooks/use-form-single-upload';
 
 interface ImageUploadFieldProps {
   control: Control<EventFormType>;
@@ -11,17 +10,6 @@ interface ImageUploadFieldProps {
 }
 
 const ImageUploadFormField = ({ control, name }: ImageUploadFieldProps) => {
-  const { setValue } = useFormContext<EventFormType>();
-  const {
-    preview,
-    error: uploadError,
-    handleImageChange,
-    displayUrl,
-  } = useFormSingleImageUpload({
-    onImageUrlChange: (url: string) => {
-      setValue(name, url, { shouldValidate: true, shouldDirty: true });
-    },
-  });
   return (
     <FormField
       control={control}
