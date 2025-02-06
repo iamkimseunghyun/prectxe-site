@@ -13,7 +13,7 @@ import {
 import Image from 'next/image';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import { getArtworkById } from '@/app/artworks/actions';
-import AdminButton from '@/components/AdminButton';
+import AdminButton from '@/components/admin-button';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;

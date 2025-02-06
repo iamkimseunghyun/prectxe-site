@@ -1,18 +1,9 @@
-// components/layout/header.tsx
-'use client';
-
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import NavBar from '@/components/layout/nav/nav-bar';
+import getSession from '@/lib/session';
 
-export default function Header() {
-  const pathname = usePathname();
-
-  const navigation = [
-    { name: 'Home', href: '/' },
-    { name: 'Projects', href: '/projects' },
-    { name: 'Admin', href: '/admin' },
-  ];
+const Header = async () => {
+  const session = await getSession();
 
   return (
     <header className="fixed top-0 z-50 h-[var(--header-height)] w-full border-b bg-white/80 backdrop-blur-md">
@@ -22,28 +13,12 @@ export default function Header() {
           <Link href="/" className="text-xl font-bold">
             PRECTXE
           </Link>
-
-          {/* 검색 */}
-          <div className="hidden md:block"></div>
-
           {/* 네비게이션 */}
-          <ul className="flex items-center gap-8">
-            {navigation.map((item) => (
-              <li key={item.name}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    'text-sm transition-colors hover:text-black/60',
-                    pathname === item.href ? 'text-black' : 'text-black/40'
-                  )}
-                >
-                  {item.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <NavBar sessionId={session?.id} />
         </nav>
       </div>
     </header>
   );
-}
+};
+
+export default Header;

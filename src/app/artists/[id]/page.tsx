@@ -11,7 +11,7 @@ import Link from 'next/link';
 
 import WorksList from '@/components/page/artwork/works-list';
 import { getArtistById } from '@/app/artists/actions';
-import AdminButton from '@/components/AdminButton';
+import AdminButton from '@/components/admin-button';
 
 const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;

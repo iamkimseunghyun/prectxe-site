@@ -25,10 +25,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="overflow-y-scroll">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen w-screen max-w-full flex-col antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
       >
         <Header />
-        <main className="flex-1 pt-[var(--header-height)]">
+        <main className="pt-[var(--header-height)]">
           {children}
           <Toaster />
         </main>

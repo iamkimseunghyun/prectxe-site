@@ -6,7 +6,7 @@ import { getImageUrl } from '@/lib/utils';
 import React from 'react';
 import CarouselGallery from '@/components/image/carousel-gallery';
 import { getProjectById } from '@/app/projects/actions';
-import AdminButton from '@/components/AdminButton';
+import AdminButton from '@/components/admin-button';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -50,15 +50,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           {project.about}
         </p>
       </div>
-      {/* 갤러리 탭 */}
-      {project.images.length > 0 && (
-        <section className="mb-12">
-          <div className="mx-auto">
-            <CarouselGallery images={project.images} />
-          </div>
-        </section>
-      )}
-      {/* 상세 정보 탭 */}
+
+      {/* 상세 정보 */}
       <section className="mb-12">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
           상세 정보
@@ -67,6 +60,17 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           {project.description}
         </div>
       </section>
+
+      {/* 갤러리 탭 */}
+      {project.images.length > 0 && (
+        <section className="mb-12">
+          <div className="mx-auto">
+            <CarouselGallery images={project.images} />
+          </div>
+        </section>
+      )}
+
+      {/* 어드민 버튼 */}
       <div className="mt-6 flex justify-end gap-x-2">
         <AdminButton id={project.id} entityType="project" />
       </div>

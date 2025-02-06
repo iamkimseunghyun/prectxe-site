@@ -31,6 +31,18 @@ enum EventType {
   other
 }
 
+model User {
+  id       String    @id @default(cuid())
+  username String    @unique
+  email    String?   @unique
+  password String
+  projects Project[]
+  events   Event[]
+  artists  Artist[]
+  artworks Artwork[]
+  venues   Venue[]
+}
+
 model Project {
   id              String           @id @default(cuid())
   title           String
@@ -41,6 +53,8 @@ model Project {
   endDate         DateTime
   category        ProjectCategory
   mainImageUrl    String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
   images          ProjectImage[]
   projectArtists  ProjectArtist[]
   projectArtworks ProjectArtwork[]
@@ -72,6 +86,9 @@ model Event {
   endDate     DateTime
   price       Int         @default(0)
   capacity    Int?
+  // 사용자
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
 
   // 이벤트 이미지
   mainImageUrl String
@@ -147,6 +164,8 @@ model Artist {
   projectArtists ProjectArtist[]
   ArtworkImage   ArtworkImage[]
   EventOrganizer EventOrganizer[]
+  user           User             @relation(fields: [userId], references: [id])
+  userId         String
 }
 
 model ArtistImage {
@@ -174,6 +193,8 @@ model Artwork {
   updatedAt       DateTime         @updatedAt
   artists         ArtistArtwork[]
   projectArtWorks ProjectArtwork[]
+  user            User             @relation(fields: [userId], references: [id])
+  userId          String
 }
 
 model ArtworkImage {
@@ -201,6 +222,8 @@ model Venue {
   updatedAt    DateTime       @updatedAt
   projectVenue ProjectVenue[]
   Event        Event[]
+  user         User           @relation(fields: [userId], references: [id])
+  userId       String
 }
 
 model VenueImage {

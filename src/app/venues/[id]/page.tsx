@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import CarouselGallery from '@/components/image/carousel-gallery';
 import { Metadata } from 'next';
 import { getVenueById } from '@/app/venues/actions';
-import AdminButton from '@/components/AdminButton';
+import AdminButton from '@/components/admin-button';
 
 export async function generateMetadata({
   params,
