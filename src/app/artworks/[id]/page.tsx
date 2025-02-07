@@ -89,7 +89,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           </CardContent>
         </Card>
       </div>
-      {session && (
+      {session.id && (
         <div className="mt-6 flex justify-end gap-x-2">
           <AdminButton id={artwork.id} entityType="artwork" />
         </div>

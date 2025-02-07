@@ -31,7 +31,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>{artist.name}</CardTitle>
-              {session && (
+              {session.id && (
                 <Link href={`/artists/${id}/edit`}>
                   <Button variant="outline" size="sm">
                     <Edit className="mr-2 h-4 w-4" />
