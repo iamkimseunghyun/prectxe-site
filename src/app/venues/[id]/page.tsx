@@ -5,6 +5,7 @@ import CarouselGallery from '@/components/image/carousel-gallery';
 import { Metadata } from 'next';
 import { getVenueById } from '@/app/venues/actions';
 import AdminButton from '@/components/admin-button';
+import getSession from '@/lib/session';
 
 export async function generateMetadata({
   params,
@@ -40,6 +41,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   const venue = await getVenueById(id);
   if (!venue) return;
+
+  const session = await getSession();
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -88,10 +91,12 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           </div>
         </CardContent>
       </Card>
-      <div className="mt-12 flex justify-end gap-x-2">
-        {/* 섹션 */}
-        <AdminButton id={venue.id} entityType="venue" />
-      </div>
+      {session && (
+        <div className="mt-12 flex justify-end gap-x-2">
+          {/* 섹션 */}
+          <AdminButton id={venue.id} entityType="venue" />
+        </div>
+      )}
     </div>
   );
 };

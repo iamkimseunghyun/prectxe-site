@@ -7,12 +7,15 @@ import React from 'react';
 import CarouselGallery from '@/components/image/carousel-gallery';
 import { getProjectById } from '@/app/projects/actions';
 import AdminButton from '@/components/admin-button';
+import getSession from '@/lib/session';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
   const project = await getProjectById(id);
 
   if (!project) return null;
+
+  const session = await getSession();
 
   const categoryLabel = {
     exhibition: '전시',
@@ -71,9 +74,11 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
       )}
 
       {/* 어드민 버튼 */}
-      <div className="mt-6 flex justify-end gap-x-2">
-        <AdminButton id={project.id} entityType="project" />
-      </div>
+      {session.id && (
+        <div className="mt-6 flex justify-end gap-x-2">
+          <AdminButton id={project.id} entityType="project" />
+        </div>
+      )}
     </div>
   );
 };

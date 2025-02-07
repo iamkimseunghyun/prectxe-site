@@ -12,10 +12,12 @@ import Link from 'next/link';
 import WorksList from '@/components/page/artwork/works-list';
 import { getArtistById } from '@/app/artists/actions';
 import AdminButton from '@/components/admin-button';
+import getSession from '@/lib/session';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
   const artist = await getArtistById(id);
+  const session = await getSession();
 
   if (!artist) {
     notFound();
@@ -152,9 +154,11 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           </CardHeader>
         </Card>
       </div>
-      <div className="mt-6 flex justify-end gap-x-2">
-        <AdminButton id={id} entityType="artist" />
-      </div>
+      {session.id && (
+        <div className="mt-6 flex justify-end gap-x-2">
+          <AdminButton id={id} entityType="artist" />
+        </div>
+      )}
     </div>
   );
 };

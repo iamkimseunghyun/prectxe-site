@@ -14,10 +14,12 @@ import Image from 'next/image';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import { getArtworkById } from '@/app/artworks/actions';
 import AdminButton from '@/components/admin-button';
+import getSession from '@/lib/session';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
   const artwork = await getArtworkById(id);
+  const session = await getSession();
   return (
     <div className="container mx-auto py-10">
       <div className="mb-8">
@@ -87,9 +89,11 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           </CardContent>
         </Card>
       </div>
-      <div className="mt-6 flex justify-end gap-x-2">
-        <AdminButton id={artwork.id} entityType="artwork" />
-      </div>
+      {session && (
+        <div className="mt-6 flex justify-end gap-x-2">
+          <AdminButton id={artwork.id} entityType="artwork" />
+        </div>
+      )}
     </div>
   );
 };
