@@ -35,7 +35,7 @@ model User {
   id       String    @id @default(cuid())
   username String    @unique
   email    String?   @unique
-  password String
+  password String?
   projects Project[]
   events   Event[]
   artists  Artist[]
@@ -164,8 +164,8 @@ model Artist {
   projectArtists ProjectArtist[]
   ArtworkImage   ArtworkImage[]
   EventOrganizer EventOrganizer[]
-  user           User             @relation(fields: [userId], references: [id])
-  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String           @unique
 }
 
 model ArtistImage {
@@ -183,12 +183,12 @@ model ArtistImage {
 model Artwork {
   id              String           @id @default(cuid())
   title           String
-  size            String
-  media           String
-  year            Int
-  description     String
+  size            String?
+  media           String?
+  year            Int?
+  description     String?
   images          ArtworkImage[]
-  style           String
+  style           String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   artists         ArtistArtwork[]

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/prisma';
-import { venueCreateSchema } from '@/lib/validations/venues';
+import { venueCreateSchema } from '@/app/venues/venues';
 
 export async function getVenueById(venueId: string) {
   const result = prisma.venue.findUnique({
@@ -50,7 +50,7 @@ export async function getAllVenues(page: number = 1, limit: number = 9) {
   }
 }
 
-export async function createVenue(data: FormData) {
+export async function createVenue(data: FormData, userId: string) {
   try {
     const formData = {
       name: data.get('name') as string,
@@ -72,6 +72,7 @@ export async function createVenue(data: FormData) {
         name: validatedData.data.name,
         description: validatedData.data.description,
         address: validatedData.data.address,
+        userId,
       },
       select: { id: true },
     });

@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { venueCreateSchema, VenueFormData } from '@/lib/validations/venues';
+import { venueCreateSchema, VenueFormData } from '@/app/venues/venues';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import {
   Card,
@@ -27,9 +27,10 @@ type VenueFormProps = {
   mode: 'create' | 'edit';
   initialData?: VenueFormData;
   venueId?: string;
+  userId?: string;
 };
 
-const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
+const VenueForm = ({ mode, initialData, venueId, userId }: VenueFormProps) => {
   const router = useRouter();
 
   const {
@@ -88,7 +89,7 @@ const VenueForm = ({ mode, initialData, venueId }: VenueFormProps) => {
       const result =
         mode === 'edit'
           ? await updateVenue(formData, venueId!)
-          : await createVenue(formData);
+          : await createVenue(formData, userId!);
 
       if (!result.ok) throw new Error(result.error);
       router.push(`/venues/${result.data?.id}`);

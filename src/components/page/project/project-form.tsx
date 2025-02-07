@@ -4,10 +4,7 @@ import { useRouter } from 'next/navigation';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  projectCreateSchema,
-  ProjectFormData,
-} from '@/lib/validations/project';
+import { projectCreateSchema, ProjectFormData } from '@/app/projects/project';
 import {
   formatDate,
   formatDateForInput,
@@ -44,9 +41,15 @@ type ProjectFormProps = {
   mode: 'create' | 'edit';
   initialData?: ProjectFormData;
   projectId?: string;
+  userId?: string;
 };
 
-const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
+const ProjectForm = ({
+  mode,
+  initialData,
+  projectId,
+  userId,
+}: ProjectFormProps) => {
   const router = useRouter();
 
   // initialData가 있으면 날짜 형식만 변환
@@ -139,7 +142,7 @@ const ProjectForm = ({ mode, initialData, projectId }: ProjectFormProps) => {
       const result =
         mode === 'edit'
           ? await updateProject(formData, projectId!)
-          : await createProject(formData);
+          : await createProject(formData, userId!);
 
       if (!result.ok) throw new Error(result.error);
       router.push(`/projects/${result.data?.id}`);

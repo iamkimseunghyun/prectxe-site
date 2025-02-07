@@ -16,7 +16,8 @@ type ActionResponse<T> = {
 };
 
 export async function createEvent(
-  input: z.infer<typeof eventFormSchema>
+  input: z.infer<typeof eventFormSchema>,
+  userId: string
 ): Promise<ActionResponse<{ id: string }>> {
   try {
     // 입력 값 검증
@@ -36,6 +37,7 @@ export async function createEvent(
         capacity: validatedData.capacity,
         mainImageUrl: validatedData.mainImageUrl,
         venueId: validatedData.venueId,
+        userId,
         // 주최자 정보 생성
         organizers: {
           createMany: {
@@ -250,7 +252,8 @@ export async function getAllEvents(
 export async function handleEventSubmit(
   data: EventFormType,
   mode: 'create' | 'edit',
-  eventId?: string
+  eventId?: string,
+  userId?: string
 ) {
   try {
     // create 모드일 때는 createEvent만 호출
@@ -269,7 +272,7 @@ export async function handleEventSubmit(
           message: '장소를 선택해주세요.',
         };
       }
-      const result = await createEvent(data);
+      const result = await createEvent(data, userId!);
       if ('error' in result) {
         return {
           success: false,

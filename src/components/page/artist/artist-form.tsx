@@ -14,14 +14,17 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import React from 'react';
 import { GalleryImage } from '@/lib/validations/gallery-image';
-import { artistCreateSchema, ArtistFormData } from '@/lib/validations/artist';
+import {
+  baseArtistCreateSchema,
+  CreateArtistType,
+  UpdateArtistType,
+} from '@/app/artists/artist';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
 
 import MultiImageBox from '@/components/image/multi-image-box';
 import {
-  formatDate,
   formatDateForInput,
   uploadGalleryImages,
   uploadSingleImage,
@@ -31,39 +34,41 @@ import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 
 type ArtistFormProps = {
   mode: 'create' | 'edit';
-  initialData?: ArtistFormData;
+  initialData?: CreateArtistType | UpdateArtistType;
   artistId?: string;
+  userId?: string;
 };
 
-const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
+const ArtistForm = ({
+  mode,
+  initialData,
+  artistId,
+  userId,
+}: ArtistFormProps) => {
   const router = useRouter();
 
-  const defaultValues = initialData
-    ? {
-        ...initialData,
-        birth: formatDateForInput(initialData.birth),
-      }
-    : {
-        name: '',
-        mainImageUrl: '',
-        birth: formatDate(new Date()),
-        nationality: '',
-        city: '',
-        country: '',
-        email: '',
-        homepage: '',
-        biography: '',
-        cv: '',
-        images: [],
-      };
+  const defaultValues = {
+    name: initialData?.name ?? '',
+    mainImageUrl: initialData?.mainImageUrl ?? '',
+    birth: initialData?.birth ? formatDateForInput(initialData.birth) : null,
+    nationality: initialData?.nationality ?? null,
+    city: initialData?.city ?? null,
+    country: initialData?.city ?? null,
+    email: initialData?.email ?? null,
+    homepage: initialData?.homepage ?? null,
+    biography: initialData?.biography ?? null,
+    cv: initialData?.cv ?? null,
+    images: initialData?.images ?? [],
+  };
+
   const {
     register,
     handleSubmit,
     setValue,
     setError,
     formState: { errors },
-  } = useForm<ArtistFormData>({
-    resolver: zodResolver(artistCreateSchema),
+  } = useForm<CreateArtistType>({
+    resolver: zodResolver(baseArtistCreateSchema),
     defaultValues,
   });
 
@@ -93,7 +98,7 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
     });
 
   const prepareFormData = (
-    data: ArtistFormData,
+    data: CreateArtistType,
     galleryData: GalleryImage[]
   ) => {
     const formData = new FormData();
@@ -111,7 +116,7 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
     return formData;
   };
 
-  const onSubmit = handleSubmit(async (data: ArtistFormData) => {
+  const onSubmit = handleSubmit(async (data: CreateArtistType) => {
     try {
       if (imageFile) {
         await uploadSingleImage(imageFile, uploadURL);
@@ -125,7 +130,7 @@ const ArtistForm = ({ mode, initialData, artistId }: ArtistFormProps) => {
       const result =
         mode === 'edit'
           ? await updateArtist(formData, artistId!)
-          : await createArtist(formData);
+          : await createArtist(formData, userId!);
 
       // 에러 처리 수정
       if (!result.ok) throw new Error(result.error);

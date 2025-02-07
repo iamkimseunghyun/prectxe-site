@@ -35,9 +35,14 @@ interface OrganizersSectionProps {
     id: string;
     name: string;
   }[];
+  userId: string;
 }
 
-const OrganizersSection = ({ control, artists }: OrganizersSectionProps) => {
+const OrganizersSection = ({
+  control,
+  artists,
+  userId,
+}: OrganizersSectionProps) => {
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'organizers',
@@ -56,6 +61,7 @@ const OrganizersSection = ({ control, artists }: OrganizersSectionProps) => {
                   // 새로운 아티스트를 선택 목록에 추가
                   append({ artistId: artist.id, role: '' });
                 }}
+                userId={userId}
               />
             </div>
             <Button

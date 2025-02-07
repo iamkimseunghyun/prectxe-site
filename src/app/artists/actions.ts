@@ -2,17 +2,15 @@
 
 import { prisma } from '@/lib/db/prisma';
 import {
-  artistCreateSchema,
-  ArtistFormData,
-  artistSimpleCreateSchema,
-} from '@/lib/validations/artist';
+  baseArtistCreateSchema,
+  createArtistSchema,
+  SimpleArtistType,
+  UpdateArtistType,
+} from '@/app/artists/artist';
 import { revalidatePath } from 'next/cache';
 import { GalleryImage } from '@/lib/validations/gallery-image';
-import { z } from 'zod';
 
-export async function getArtistById(
-  artistId: string
-): Promise<ArtistFormData | null> {
+export async function getArtistById(artistId: string) {
   try {
     const artist = await prisma.artist.findUnique({
       where: {
@@ -37,7 +35,7 @@ export async function getArtistById(
     });
     if (!artist) return null;
 
-    const formattedData: ArtistFormData = {
+    const formattedData: UpdateArtistType = {
       ...artist,
       birth: artist.birth ? artist.birth.toISOString() : '', // undefined 방지
       email: artist.email ?? undefined, // null 값을 undefined로 변환
@@ -87,10 +85,11 @@ export async function getAllArtists(search?: string) {
 }
 
 export async function createSimpleArtist(
-  data: z.infer<typeof artistSimpleCreateSchema>
-): Promise<ActionResult<{ id: string; name: string }>> {
+  data: SimpleArtistType,
+  userId: string
+) {
   try {
-    const validatedData = artistSimpleCreateSchema.safeParse(data);
+    const validatedData = createArtistSchema.safeParse(data);
 
     if (!validatedData.success) {
       const errorMessage = validatedData.error.issues
@@ -111,7 +110,15 @@ export async function createSimpleArtist(
     }
 
     const artist = await prisma.artist.create({
-      data: validatedData.data,
+      data: {
+        name: validatedData.data.name,
+        email: validatedData.data.email,
+        mainImageUrl: validatedData.data.mainImageUrl,
+        nationality: validatedData.data.nationality,
+        city: validatedData.data.city,
+        country: validatedData.data.country,
+        userId,
+      },
       select: {
         id: true,
         name: true,
@@ -140,13 +147,10 @@ export type ActionResult<T> = {
   error?: string;
 };
 
-export async function createArtist(
-  formData: FormData
-): Promise<ActionResult<{ id: string }>> {
-  // FormData에서 galleryImageUrls를 파싱
+export async function createArtist(formData: FormData, userId: string) {
   try {
     const rawData = {
-      name: formData.get('name'), // title -> name 수정
+      name: formData.get('name'),
       mainImageUrl: formData.get('mainImageUrl'),
       birth: formData.get('birth'),
       nationality: formData.get('nationality'),
@@ -156,11 +160,11 @@ export async function createArtist(
       homepage: formData.get('homepage'),
       biography: formData.get('biography'),
       cv: formData.get('cv'),
-      images: JSON.parse(formData.get('images') as string),
+      images: JSON.parse(formData.get('images')?.toString() || '[]'),
     };
 
     // Zod 검증 실패 시 구체적인 에러 반환
-    const validatedData = artistCreateSchema.safeParse(rawData);
+    const validatedData = baseArtistCreateSchema.safeParse(rawData);
 
     if (!validatedData.success) {
       const errorMessage = validatedData.error.issues
@@ -169,13 +173,21 @@ export async function createArtist(
       return { ok: false, error: errorMessage };
     }
 
-    // 데이터베이스에 저장
     const artist = await prisma.artist.create({
       data: {
-        ...validatedData.data,
+        name: validatedData.data.name,
+        mainImageUrl: validatedData.data.mainImageUrl,
         birth: validatedData.data.birth
           ? new Date(validatedData.data.birth)
           : null,
+        nationality: validatedData.data.nationality,
+        country: validatedData.data.country,
+        city: validatedData.data.city,
+        email: validatedData.data.email,
+        homepage: validatedData.data.homepage,
+        biography: validatedData.data.biography,
+        cv: validatedData.data.cv,
+        userId,
         images: {
           create: validatedData.data.images.map((image) => ({
             imageUrl: image.imageUrl,
@@ -188,14 +200,15 @@ export async function createArtist(
         id: true,
         name: true,
         mainImageUrl: true,
-        // ... 필요한 필드들 선택
       },
     });
 
     revalidatePath('/artists');
-    return { ok: true, data: { id: artist.id } };
+    revalidatePath(`/artists/${artist.id}`);
+
+    return { ok: true, data: artist };
   } catch (error) {
-    console.error('Artist creation error:', error);
+    console.error('아티스트 등록 중 서버 에러 발생:', error);
     return {
       ok: false,
       error:

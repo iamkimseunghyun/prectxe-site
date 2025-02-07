@@ -36,6 +36,7 @@ interface EventFormProps {
     message: string | undefined;
     id?: string;
   }>;
+  userId?: string;
 }
 
 export function EventForm({
@@ -43,6 +44,7 @@ export function EventForm({
   venues,
   artists,
   onSubmitAction,
+  userId,
 }: EventFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -175,7 +177,11 @@ export function EventForm({
             <DateVenueSection control={form.control} venues={venues} />
 
             {/* 주최자 섹션 */}
-            <OrganizersSection control={form.control} artists={artists} />
+            <OrganizersSection
+              control={form.control}
+              artists={artists}
+              userId={userId!}
+            />
 
             {/* 티켓 섹션 */}
             <TicketsSection control={form.control} />

@@ -17,9 +17,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import {
-  artworkCreateSchema,
-  ArtworkFormData,
-} from '@/lib/validations/artwork';
+  createArtworkSchema,
+  CreateArtworkType,
+  UpdateArtworkType,
+} from '@/app/artworks/artwork';
 import { createArtwork, updateArtwork } from '@/app/artworks/actions';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { uploadGalleryImages } from '@/lib/utils';
@@ -27,12 +28,28 @@ import MultiImageBox from '@/components/image/multi-image-box';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';
-  initialData?: ArtworkFormData;
+  initialData?: CreateArtworkType | UpdateArtworkType;
   artworkId?: string;
+  userId?: string;
 };
 
-const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
+const ArtWorkForm = ({
+  mode,
+  initialData,
+  artworkId,
+  userId,
+}: ArtworkFormProps) => {
   const router = useRouter();
+
+  const defaultValues = {
+    title: initialData?.title ?? '',
+    size: initialData?.size ?? null,
+    media: initialData?.media ?? null,
+    year: initialData?.year ?? null,
+    description: initialData?.description ?? null,
+    style: initialData?.style ?? null,
+    images: initialData?.images ?? [],
+  };
 
   const {
     register,
@@ -40,24 +57,15 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
     setValue,
     setError,
     formState: { errors },
-  } = useForm<ArtworkFormData>({
-    resolver: zodResolver(artworkCreateSchema),
-    defaultValues: initialData || {
-      title: '',
-      size: '',
-      media: '',
-      year: new Date().getFullYear(),
-      description: '',
-      style: '',
-      images: [],
-    },
+  } = useForm<CreateArtworkType>({
+    resolver: zodResolver(createArtworkSchema),
+    defaultValues,
     resetOptions: {
       keepDirtyValues: true,
       keepErrors: true,
     },
   });
 
-  // 갤러리 이미지 훅
   const {
     multiImagePreview,
     error: fileError,
@@ -71,21 +79,21 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
   });
 
   const prepareFormData = (
-    data: ArtworkFormData,
+    data: CreateArtworkType,
     galleryData: GalleryImage[]
   ) => {
     const formData = new FormData();
     formData.append('title', data.title);
-    formData.append('size', data.size);
-    formData.append('media', data.media);
-    formData.append('year', data.year.toString());
-    formData.append('description', data.description);
-    formData.append('style', data.style);
+    formData.append('size', data.size ?? '');
+    formData.append('media', data.media ?? '');
+    formData.append('year', data.year?.toString() ?? '');
+    formData.append('description', data.description ?? '');
+    formData.append('style', data.style ?? '');
     formData.append('images', JSON.stringify(galleryData));
     return formData;
   };
 
-  const onSubmit = handleSubmit(async (data: ArtworkFormData) => {
+  const onSubmit = handleSubmit(async (data: CreateArtworkType) => {
     try {
       // 데이터 로깅 추가
       console.log('Form submission data:', {
@@ -107,7 +115,7 @@ const ArtWorkForm = ({ mode, initialData, artworkId }: ArtworkFormProps) => {
       const result =
         mode === 'edit'
           ? await updateArtwork(formData, artworkId!)
-          : await createArtwork(formData);
+          : await createArtwork(formData, userId!);
 
       if (!result.ok) throw new Error(result.error);
       router.push(`/artworks/${result.data?.id}`);

@@ -48,9 +48,13 @@ type FormData = z.infer<typeof formSchema>;
 
 interface CreateArtistModalProps {
   onSuccess: (artist: { id: string; name: string }) => void;
+  userId: string;
 }
 
-export function CreateArtistModal({ onSuccess }: CreateArtistModalProps) {
+export function CreateArtistModal({
+  onSuccess,
+  userId,
+}: CreateArtistModalProps) {
   const [open, setOpen] = useState(false);
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -65,7 +69,7 @@ export function CreateArtistModal({ onSuccess }: CreateArtistModalProps) {
   });
 
   async function onSubmit(data: FormData) {
-    const result = await createSimpleArtist(data);
+    const result = await createSimpleArtist(data, userId);
 
     if (result.error) {
       toast({

@@ -13,7 +13,7 @@ import WorksList from '@/components/page/artwork/works-list';
 import { getArtistById } from '@/app/artists/actions';
 import AdminButton from '@/components/admin-button';
 
-const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
+const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
   const artist = await getArtistById(id);
 
@@ -38,43 +38,59 @@ const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="relative aspect-square overflow-hidden rounded-lg">
-              <Image
-                src={`${artist.mainImageUrl}/public`}
-                alt={artist.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 50vw"
-                priority
-              />
-            </div>
+            {artist.mainImageUrl && (
+              <div className="relative aspect-square overflow-hidden rounded-lg">
+                <Image
+                  src={`${artist.mainImageUrl}/public`}
+                  alt={artist.name!}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
-              <div className="flex items-center text-sm text-muted-foreground">
-                <MapPin className="mr-2 h-4 w-4" />
-                {artist.city}, {artist.country} ({artist.nationality})
-              </div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Mail className="mr-2 h-4 w-4" />
-                <a href={`mailto:${artist.email}`} className="hover:underline">
-                  {artist.email}
-                </a>
-              </div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Globe className="mr-2 h-4 w-4" />
-                <a
-                  href={artist.homepage!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                >
-                  {artist.homepage}
-                </a>
-              </div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Calendar className="mr-2 h-4 w-4" />
-                {formatDate(new Date(artist.birth!))}
-              </div>
+              {(artist.city || artist.country || artist.nationality) && (
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <MapPin className="mr-2 h-4 w-4" />
+                  {[artist.city, artist.country, artist.nationality]
+                    .filter(Boolean)
+                    .join(', ')}
+                </div>
+              )}
+              {artist.email && (
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Mail className="mr-2 h-4 w-4" />
+                  <a
+                    href={`mailto:${artist.email}`}
+                    className="hover:underline"
+                  >
+                    {artist.email}
+                  </a>
+                </div>
+              )}
+              {artist.homepage && (
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Globe className="mr-2 h-4 w-4" />
+                  <a
+                    href={artist.homepage!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    {artist.homepage}
+                  </a>
+                </div>
+              )}
+
+              {artist.birth && (
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {formatDate(new Date(artist.birth!))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -88,18 +104,18 @@ const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
                 <TabsTrigger value="cv">이력서</TabsTrigger>
               </TabsList>
               <TabsContent value="biography" className="space-y-4">
-                <div className="prose max-w-none">
-                  {artist.biography
-                    ?.split('\n')
-                    .map((paragraph, index) => <p key={index}>{paragraph}</p>)}
-                </div>
+                {artist.biography && (
+                  <div className="prose max-w-none whitespace-pre-line">
+                    {artist.biography}
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="cv" className="space-y-4">
-                <div className="prose max-w-none">
-                  {artist.cv
-                    ?.split('\n')
-                    .map((paragraph, index) => <p key={index}>{paragraph}</p>)}
-                </div>
+                {artist.cv && (
+                  <div className="prose max-w-none whitespace-pre-line">
+                    {artist.cv}
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
@@ -143,4 +159,4 @@ const ArtistPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   );
 };
 
-export default ArtistPage;
+export default Page;

@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
-import { projectCreateSchema } from '@/lib/validations/project';
+import { projectCreateSchema } from '@/app/projects/project';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import { ProjectCategory } from '@/lib/types';
 
@@ -84,7 +84,8 @@ export type CreateProjectResult =
   | { ok: false; error: string };
 
 export async function createProject(
-  formData: FormData
+  formData: FormData,
+  userId: string
 ): Promise<CreateProjectResult> {
   try {
     const rawData = {
@@ -114,6 +115,7 @@ export async function createProject(
         mainImageUrl: validatedData.data.mainImageUrl,
         startDate: new Date(validatedData.data.startDate),
         endDate: new Date(validatedData.data.endDate),
+        userId,
       },
       select: { id: true },
     });
