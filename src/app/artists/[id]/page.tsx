@@ -31,12 +31,14 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>{artist.name}</CardTitle>
-              <Link href={`/artists/${id}/edit`}>
-                <Button variant="outline" size="sm">
-                  <Edit className="mr-2 h-4 w-4" />
-                  프로필 수정
-                </Button>
-              </Link>
+              {session && (
+                <Link href={`/artists/${id}/edit`}>
+                  <Button variant="outline" size="sm">
+                    <Edit className="mr-2 h-4 w-4" />
+                    프로필 수정
+                  </Button>
+                </Link>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
