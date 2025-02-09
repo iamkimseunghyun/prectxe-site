@@ -1,3 +1,6 @@
+import InstagramIcon from '@/components/icons/instagram';
+import YoutubeIcon from '@/components/icons/youtube';
+
 export const categories = [
   { value: 'exhibition', label: '전시' },
   { value: 'performance', label: '공연' },
@@ -19,3 +22,17 @@ export const ALLOWED_FILE_TYPES = [
 // Cloud Flare Upload Image Url
 export const CLOUD_FLARE_UPLOAD_IMAGE_URL =
   'https://imagedelivery.net/UYdYeWsHCBBURfLH8Q-Ggw';
+
+// Social Icons
+export const socialIcons = [
+  {
+    name: 'Instagram',
+    href: 'https://www.instagram.com/prectxe/',
+    icon: InstagramIcon,
+  },
+  {
+    name: 'YouTube',
+    href: 'https://www.youtube.com/@prectxe',
+    icon: YoutubeIcon,
+  },
+];

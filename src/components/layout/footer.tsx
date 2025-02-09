@@ -1,22 +1,8 @@
 'use client';
 import Link from 'next/link';
-import { InstagramIcon, TwitterIcon, Youtube } from 'lucide-react';
+import { socialIcons } from '@/lib/constants/constants';
 
 export function Footer() {
-  const socials = [
-    {
-      name: 'Instagram',
-      href: 'https://www.instagram.com/prectxe/',
-      icon: InstagramIcon,
-    },
-    {
-      name: 'YouTube',
-      href: 'https://www.youtube.com/@prectxe',
-      icon: Youtube,
-    },
-    { name: 'Twitter', href: '#', icon: TwitterIcon },
-  ];
-
   return (
     <footer className="border-t bg-white">
       <div className="container mx-auto px-4 py-12">
@@ -37,7 +23,7 @@ export function Footer() {
             <div>
               <h3 className="mb-3 text-sm font-semibold">Follow Us</h3>
               <ul className="flex gap-4">
-                {socials.map((social) => (
+                {socialIcons.map((social) => (
                   <li key={social.name}>
                     <Link
                       href={social.href}
@@ -45,7 +31,7 @@ export function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <social.icon className="size-5" />
+                      <social.icon className="size-6" />
                       <span className="sr-only"> {social.name}</span>
                     </Link>
                   </li>
