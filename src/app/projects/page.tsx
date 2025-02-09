@@ -51,7 +51,7 @@ const Page = async ({
   const projects = await getAllProjects(year, category, sort, search);
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="mx-auto max-w-5xl px-4 py-12">
       <div className="mb-12">
         <h1 className="mb-4 text-4xl font-bold">프로젝트</h1>
         <p className="max-w-2xl text-gray-600">
