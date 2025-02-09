@@ -25,7 +25,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   }[project.category];
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="mx-auto max-w-5xl px-4 py-12">
       {/* 메인 섹션 */}
       <div className="mb-8">
         <div className="relative mb-4 aspect-video overflow-hidden rounded-lg">

@@ -45,7 +45,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const session = await getSession();
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="mx-auto max-w-5xl px-4 py-12">
       {/* Gallery Section */}
       <div className="relative mb-4 aspect-[16/9] w-full overflow-hidden rounded-lg">
         <CarouselGallery images={venue.images} />

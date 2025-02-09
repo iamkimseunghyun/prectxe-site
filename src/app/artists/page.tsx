@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function ArtistsPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       <PageHeader
         title="아티스트"
         description="PRECTXE의 모든 아티스트들을 만나보세요"

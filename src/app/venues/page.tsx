@@ -14,7 +14,7 @@ const VenuesPage = async ({
   const initialData = await getAllVenues(currentPage);
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="mx-auto max-w-5xl py-8">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Venues</h1>
         <Link href="/venues/new">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { projectCreateSchema, ProjectFormData } from '@/app/projects/project';
@@ -36,6 +36,7 @@ import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
 import MultiImageBox from '@/components/image/multi-image-box';
+import UploadProgress from '@/components/upload-progress';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';
@@ -51,6 +52,9 @@ const ProjectForm = ({
   userId,
 }: ProjectFormProps) => {
   const router = useRouter();
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState('');
 
   // initialData가 있으면 날짜 형식만 변환
   const defaultValues = initialData
@@ -130,12 +134,20 @@ const ProjectForm = ({
 
   const onSubmit = handleSubmit(async (data: ProjectFormData) => {
     try {
+      setIsUploading(true);
+      setUploadStatus('메인 이미지 업로드 중...');
+
       if (imageFile) {
         await uploadSingleImage(imageFile, uploadURL);
       }
       if (multiImagePreview.length > 0) {
+        setUploadStatus('갤러리 이미지 업로드 중...');
+        setUploadProgress(40);
         await uploadGalleryImages(multiImagePreview);
       }
+
+      setUploadStatus('프로젝트 정보 저장 중...');
+      setUploadProgress(70);
 
       const formData = prepareFormData(data, data.images);
 
@@ -143,6 +155,9 @@ const ProjectForm = ({
         mode === 'edit'
           ? await updateProject(formData, projectId!)
           : await createProject(formData, userId!);
+
+      setUploadProgress(100);
+      setUploadStatus('완료! 페이지 이동 중...');
 
       if (!result.ok) throw new Error(result.error);
       router.push(`/projects/${result.data?.id}`);
@@ -156,6 +171,11 @@ const ProjectForm = ({
 
   return (
     <div className="mx-auto max-w-3xl p-4">
+      <UploadProgress
+        isUploading={isUploading}
+        progress={uploadProgress}
+        status={uploadStatus}
+      />
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">

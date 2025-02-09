@@ -21,7 +21,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const artwork = await getArtworkById(id);
   const session = await getSession();
   return (
-    <div className="container mx-auto py-10">
+    <div className="mx-auto max-w-5xl py-10">
       <div className="mb-8">
         {/* 이미지 갤러리 섹션 */}
         {artwork.images.length > 0 && (

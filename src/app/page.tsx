@@ -13,7 +13,7 @@ export default async function Home() {
       {/* 히어로 섹션 */}
       <HeroSection />
       {/* 최근 프로젝트 섹션 */}
-      <div className="container mx-auto">
+      <div className="mx-auto max-w-5xl">
         <section className="bg-white py-20">
           <div className="container px-4">
             <div className="mb-12 flex items-end justify-between">

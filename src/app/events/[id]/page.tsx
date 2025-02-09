@@ -18,7 +18,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   }
 
   return (
-    <div className="container mx-auto px-12 py-6">
+    <div className="mx-auto max-w-5xl px-12 py-6">
       {/* 이벤트 헤더 섹션 */}
       <div className="mb-8">
         <div className="mb-4 flex items-center gap-2">

@@ -24,7 +24,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   }
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="mx-auto max-w-5xl py-10">
       <div className="grid gap-6 md:grid-cols-2">
         {/* 프로필 섹션 */}
         <Card>
