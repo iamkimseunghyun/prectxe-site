@@ -36,7 +36,7 @@ export default async function Home() {
                   href={`/projects/${project.id}`}
                   className="group relative overflow-hidden rounded-lg"
                 >
-                  <div className="relative aspect-[4/3] bg-gray-100">
+                  <div className="relative aspect-[4/3]">
                     {project.mainImageUrl ? (
                       <Image
                         src={`${project.mainImageUrl}/thumbnail`}
@@ -51,11 +51,15 @@ export default async function Home() {
                       </div>
                     )}
                   </div>
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold">{project.title}</h3>
-                    <p className="mt-1 text-sm text-gray-600">{project.year}</p>
-                    <p className="mt-2 line-clamp-2 text-sm text-gray-600">
-                      {project.description}
+                  <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 to-black/0 p-6 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    <p className="text-sm font-medium text-gray-200">
+                      {project.year}
+                    </p>
+                    <h3 className="mt-2 text-xl font-bold leading-tight">
+                      {project.title}
+                    </h3>
+                    <p className="mt-2 line-clamp-2 text-sm text-gray-200">
+                      {project.about}
                     </p>
                   </div>
                 </Link>
