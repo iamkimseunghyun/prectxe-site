@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import { eventFormSchema, type EventFormType } from '@/lib/validations/event';
+import { eventFormSchema, type EventFormType } from '@/app/events/event';
 
 import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';

@@ -1,6 +1,6 @@
 import { Control, useFieldArray } from 'react-hook-form';
 import { Plus, Trash2 } from 'lucide-react';
-import type { EventFormType } from '@/lib/validations/event';
+import type { EventFormType } from '@/app/events/event';
 
 import {
   FormControl,

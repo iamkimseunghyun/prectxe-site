@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { EventFormType } from '@/lib/validations/event';
+import { EventFormType } from '@/app/events/event';
 
 interface DateVenueSectionProps {
   control: Control<EventFormType>;

@@ -39,7 +39,7 @@ export default async function Home() {
                   <div className="relative aspect-[4/3]">
                     {project.mainImageUrl ? (
                       <Image
-                        src={`${project.mainImageUrl}/thumbnail`}
+                        src={`${project.mainImageUrl}/smaller`}
                         alt={project.title}
                         fill
                         sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"

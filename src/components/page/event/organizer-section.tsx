@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { EventFormType } from '@/lib/validations/event';
+import { EventFormType } from '@/app/events/event';
 import { CreateArtistModal } from '@/components/page/event/create-artist-modal';
 
 interface OrganizersSectionProps {

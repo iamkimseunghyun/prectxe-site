@@ -14,7 +14,7 @@ const Button = ({ text, isPending, action }: FormButtonProps) => {
     <button
       onClick={action}
       disabled={isPending}
-      className={`primary-btn h-10 disabled:cursor-not-allowed disabled:bg-neutral-400 disabled:text-neutral-300`}
+      className={`mt-4 h-10 rounded-lg bg-teal-500 px-2 text-white disabled:cursor-not-allowed disabled:bg-neutral-400 disabled:text-neutral-300`}
     >
       {isPending ? '로딩 중' : text}
     </button>

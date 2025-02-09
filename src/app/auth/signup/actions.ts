@@ -1,6 +1,6 @@
 'use server';
 
-import { signUpFormSchema } from '@/app/(auth)/signup/validation';
+import { signUpFormSchema } from '@/app/auth/signup/validation';
 import bcrypt from 'bcrypt';
 import { prisma } from '@/lib/db/prisma';
 import makeLogin from '@/lib/make-login';

@@ -4,7 +4,7 @@ import {
   eventFormSchema,
   EventFormType,
   eventQuerySchema,
-} from '@/lib/validations/event';
+} from '@/app/events/event';
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';

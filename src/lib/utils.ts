@@ -22,7 +22,7 @@ export const formatDateForInput = (
 
 export const getImageUrl = (
   url: string | null | undefined,
-  variant: 'thumbnail' | 'public'
+  variant: 'thumbnail' | 'public' | 'smaller'
 ) => {
   if (!url) return '';
   return `${url}/${variant}`;

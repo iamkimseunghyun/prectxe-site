@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { EventFormType } from '@/lib/validations/event';
+import { EventFormType } from '@/app/events/event';
 
 interface BasicInfoSectionProps {
   control: Control<EventFormType>;

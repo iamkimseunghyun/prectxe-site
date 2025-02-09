@@ -45,7 +45,7 @@ const Page = () => {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-4">
-              <Link href="/signup">
+              <Link href="/auth/signup">
                 <Button className="w-full" variant="outline">
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add New Manager
