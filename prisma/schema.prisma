@@ -95,7 +95,7 @@ model Event {
   images       EventImage[]
 
   // 이벤트 장소
-  venue   Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  venue   Venue? @relation(fields: [venueId], references: [id], onDelete: Cascade)
   venueId String
 
   // 이벤트 주최자/아티스트

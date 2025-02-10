@@ -44,7 +44,7 @@ export const eventFormSchema = z
       .string()
       .min(2, '제목은 최소 2글자 이상이어야 합니다')
       .max(100, '제목이 너무 깁니다'),
-    subtitle: z.string().max(200, '부제목이 너무 깁니다').optional(),
+    subtitle: z.string().max(200, '부제목이 너무 깁니다').nullable(),
     description: z
       .string()
       .min(10, '설명은 최소 10글자 이상이어야 합니다')
@@ -58,9 +58,9 @@ export const eventFormSchema = z
       message: '종료일은 현재 시간 이후여야 합니다',
     }),
     price: z.number().min(0, '가격은 0원 이상이어야 합니다'),
-    capacity: z.number().min(1, '수용 인원은 1명 이상이어야 합니다').optional(),
+    capacity: z.number().min(1, '수용 인원은 1명 이상이어야 합니다').nullable(),
     mainImageUrl: z.string().url('올바른 이미지 URL을 입력해주세요'),
-    venueId: z.string().min(1, '장소를 선택해주세요'),
+    venueId: z.string().min(1, '장소를 선택해주세요').nullable(),
     organizers: z
       .array(eventOrganizerSchema)
       .min(1, '최소 1명 이상의 주최자가 필요합니다'),
