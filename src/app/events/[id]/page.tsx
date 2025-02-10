@@ -7,7 +7,11 @@ import { Calendar, Clock, Info, MapPin } from 'lucide-react';
 import { getEventById } from '@/app/events/actions';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { getImageUrl } from '@/lib/utils';
+import {
+  formatEventDate,
+  getImageUrl,
+  isEventBookingClosed,
+} from '@/lib/utils';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
@@ -39,7 +43,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
               alt={result.data.title}
               width={300}
               height={300}
-              className="h-96 w-full rounded-lg object-cover"
+              className="h-96 w-full rounded-lg object-contain"
             />
           </div>
 
@@ -134,8 +138,10 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     <span className="font-semibold">일시</span>
                   </div>
                   <div className="ml-6">
-                    {new Date(result.data.startDate).toLocaleDateString()} -
-                    {new Date(result.data.endDate).toLocaleDateString()}
+                    {formatEventDate(
+                      new Date(result.data.startDate),
+                      new Date(result.data.endDate)
+                    )}
                   </div>
                 </div>
 
@@ -155,8 +161,9 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     <span className="font-semibold">운영 시간</span>
                   </div>
                   <div className="ml-6">
-                    {new Date(result.data.startDate).toLocaleTimeString()} -
-                    {new Date(result.data.endDate).toLocaleTimeString()}
+                    {/*{new Date(result.data.startDate).toLocaleTimeString()} -*/}
+                    {/*{new Date(result.data.endDate).toLocaleTimeString()}*/}
+                    18:00 - 20:30
                   </div>
                 </div>
 
@@ -170,16 +177,36 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     <div key={ticket.id} className="ml-6 rounded-lg border p-4">
                       <div className="mb-2 flex items-center justify-between">
                         <span className="font-medium">{ticket.name}</span>
-                        <span className="font-semibold">
-                          {ticket.price === 0
-                            ? '무료'
-                            : `₩${ticket.price.toLocaleString()}`}
-                        </span>
+                        {(() => {
+                          const bookingClosed = isEventBookingClosed(
+                            result.data.startDate
+                          );
+
+                          return bookingClosed ? (
+                            <Badge variant="default">CLOSED</Badge>
+                          ) : (
+                            <span className="font-semibold">
+                              {ticket.price === 0
+                                ? '무료'
+                                : `₩${ticket.price.toLocaleString()}`}
+                            </span>
+                          );
+                        })()}
                       </div>
-                      <div className="mb-4 text-sm text-gray-600">
-                        남은 수량: {ticket.quantity}매
-                      </div>
-                      <Button className="w-full">예매하기</Button>
+                      {/*</div>*/}
+                      <Button
+                        className="w-full border border-gray-400"
+                        disabled={isEventBookingClosed(result.data.startDate)}
+                        variant={
+                          isEventBookingClosed(result.data.startDate)
+                            ? 'secondary'
+                            : 'destructive'
+                        }
+                      >
+                        {isEventBookingClosed(result.data.startDate)
+                          ? '예매 마감'
+                          : '예매하기'}
+                      </Button>
                     </div>
                   ))}
                 </div>

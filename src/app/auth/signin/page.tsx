@@ -9,7 +9,7 @@ const Page = () => {
   const [state, action, isPending] = useActionState(signIn, null);
 
   return (
-    <div className="flex h-screen flex-col justify-center gap-10 px-6 py-8">
+    <div className="flex h-screen flex-col justify-start gap-10 px-6 py-8 pt-20">
       <div className="flex flex-col gap-2 text-center *:font-medium">
         <h1 className="text-2xl">안녕하세요!</h1>
         <h2 className="text-xl">Log in with email and password.</h2>
