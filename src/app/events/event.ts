@@ -57,8 +57,6 @@ export const eventFormSchema = z
     endDate: z.string({
       message: '종료일은 현재 시간 이후여야 합니다',
     }),
-    price: z.number().min(0, '가격은 0원 이상이어야 합니다'),
-    capacity: z.number().min(1, '수용 인원은 1명 이상이어야 합니다').optional(),
     mainImageUrl: z.string().url('올바른 이미지 URL을 입력해주세요'),
     venueId: z.string().min(1, '장소를 선택해주세요'),
     organizers: z

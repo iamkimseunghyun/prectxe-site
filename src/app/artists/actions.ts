@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/db/prisma';
 import {
   baseArtistCreateSchema,
-  createArtistSchema,
+  createSimpleArtistSchema,
   SimpleArtistType,
   UpdateArtistType,
 } from '@/app/artists/artist';
@@ -89,7 +89,7 @@ export async function createSimpleArtist(
   userId: string
 ) {
   try {
-    const validatedData = createArtistSchema.safeParse(data);
+    const validatedData = createSimpleArtistSchema.safeParse(data);
 
     if (!validatedData.success) {
       const errorMessage = validatedData.error.issues

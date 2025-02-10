@@ -34,8 +34,8 @@ enum EventType {
 model User {
   id       String    @id @default(cuid())
   username String    @unique
-  email    String?   @unique
-  password String?
+  email    String    @unique
+  password String
   projects Project[]
   events   Event[]
   artists  Artist[]
@@ -84,8 +84,6 @@ model Event {
   type        EventType
   startDate   DateTime
   endDate     DateTime
-  price       Int         @default(0)
-  capacity    Int?
   // 사용자
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
@@ -214,9 +212,9 @@ model ArtworkImage {
 
 model Venue {
   id           String         @id @default(cuid())
-  address      String
   name         String
   description  String
+  address      String
   images       VenueImage[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt

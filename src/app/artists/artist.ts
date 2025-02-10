@@ -13,9 +13,9 @@ export const simpleArtistCreateSchema = z.object({
     .url('유효한 URL을 입력해주세요')
     .optional()
     .or(z.literal('')),
-  nationality: z.string().optional(),
-  city: z.string().optional(),
-  country: z.string().optional(),
+  nationality: z.string().optional().or(z.literal('')),
+  city: z.string().optional().or(z.literal('')),
+  country: z.string().optional().or(z.literal('')),
 });
 
 // 아티스트 등록 폼 스키마 정의

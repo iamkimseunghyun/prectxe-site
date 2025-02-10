@@ -20,6 +20,7 @@ import TicketsSection from '@/components/page/event/ticket-section';
 import { formatDate, uploadImage } from '@/lib/utils';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
+import { handleNewEventSubmit } from '@/app/events/actions';
 
 interface EventFormProps {
   initialData?: FullEvent;
@@ -31,19 +32,13 @@ interface EventFormProps {
     id: string;
     name: string;
   }[];
-  onSubmitAction: (data: EventFormType) => Promise<{
-    success: boolean;
-    message: string | undefined;
-    id?: string;
-  }>;
-  userId?: string;
+  userId: string;
 }
 
 export function EventForm({
   initialData,
   venues,
   artists,
-  onSubmitAction,
   userId,
 }: EventFormProps) {
   const router = useRouter();
@@ -65,8 +60,6 @@ export function EventForm({
           status: 'upcoming',
           startDate: formatDate(new Date()),
           endDate: formatDate(new Date()),
-          price: 0,
-          capacity: undefined,
           mainImageUrl: '',
           venueId: '',
           organizers: [],
@@ -121,7 +114,7 @@ export function EventForm({
                 });
                 return;
               }
-              const result = await onSubmitAction(values);
+              const result = await handleNewEventSubmit(values, userId);
 
               if (result.success) {
                 toast({

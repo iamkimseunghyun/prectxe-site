@@ -20,42 +20,55 @@ export async function createEvent(
   userId: string
 ): Promise<ActionResponse<{ id: string }>> {
   try {
-    // 입력 값 검증
+    console.log('1. Raw input:', input); // 입력 데이터 확인
     const validatedData = eventFormSchema.parse(input);
+    console.log('2. Validated data:', validatedData); // 검증된 데이터 확인
 
-    // 이벤트 생성
-    const event = await prisma.event.create({
-      data: {
-        title: validatedData.title,
-        subtitle: validatedData.subtitle,
-        description: validatedData.description,
-        type: validatedData.type,
-        status: validatedData.status,
-        startDate: new Date(validatedData.startDate),
-        endDate: new Date(validatedData.endDate),
-        price: validatedData.price,
-        capacity: validatedData.capacity,
-        mainImageUrl: validatedData.mainImageUrl,
-        venueId: validatedData.venueId,
-        userId,
-        // 주최자 정보 생성
-        organizers: {
-          createMany: {
-            data: validatedData.organizers,
-          },
-        },
-        // 티켓 정보 생성
-        tickets: {
-          createMany: {
-            data: validatedData.tickets,
-          },
+    // 데이터 구조 explicitly 정의
+    const eventData = {
+      title: validatedData.title,
+      subtitle: validatedData.subtitle,
+      description: validatedData.description,
+      type: validatedData.type,
+      status: validatedData.status,
+      startDate: new Date(validatedData.startDate),
+      endDate: new Date(validatedData.endDate),
+      mainImageUrl: validatedData.mainImageUrl,
+      venueId: validatedData.venueId,
+      userId,
+      organizers: {
+        createMany: {
+          data: validatedData.organizers.map((org) => ({
+            artistId: org.artistId,
+            role: org.role,
+          })),
         },
       },
+      tickets: {
+        createMany: {
+          data: validatedData.tickets.map((ticket) => ({
+            name: ticket.name,
+            price: ticket.price,
+            quantity: ticket.quantity,
+          })),
+        },
+      },
+    };
+
+    console.log('3. Prisma input:', eventData); // Prisma에 전달되는 데이터 확인
+
+    const event = await prisma.event.create({
+      data: eventData,
     });
+
+    console.log('4. Created event:', event); // 생성된 이벤트 확인
+
     revalidatePath('/events', 'page');
     return { data: { id: event.id } };
   } catch (error) {
-    console.error('Event creation error: ', error);
+    // 에러 객체 자체를 출력
+    console.error('Event creation error full object:', error);
+
     if (error instanceof z.ZodError) {
       return { error: error.errors[0].message };
     }
@@ -65,7 +78,7 @@ export async function createEvent(
 
 export async function updateEvent(
   id: string,
-  input: z.infer<typeof eventFormSchema>
+  input: EventFormType
 ): Promise<ActionResponse<{ id: string }>> {
   try {
     // 입력 값 검증
@@ -107,7 +120,6 @@ export async function updateEvent(
           status: validatedData.status,
           startDate: new Date(validatedData.startDate),
           endDate: new Date(validatedData.endDate),
-          price: validatedData.capacity,
           mainImageUrl: validatedData.mainImageUrl,
           venueId: validatedData.venueId,
           // 새로운 주최자 정보 생성
@@ -246,6 +258,20 @@ export async function getAllEvents(
     }
     return { error: '이벤트 목록 조회 중 오류가 발생했습니다.' };
   }
+}
+
+export async function handleNewEventSubmit(
+  data: EventFormType,
+  userId: string
+) {
+  if (!userId) {
+    return {
+      success: false,
+      message: '사용자 정보가 없습니다.',
+    };
+  }
+
+  return handleEventSubmit(data, 'create', undefined, userId);
 }
 
 // onSubmit을 서버 액션으로 이름 변경

@@ -37,7 +37,6 @@ interface Event {
   type: EventType;
   startDate: string;
   endDate: string;
-  price: number;
   venueId: string;
   venue: Venue;
 }
@@ -46,7 +45,7 @@ interface EventStatusBadgeProps {
   status: EventStatus;
 }
 
-const EventStatusBadge = ({ status }: EventStatusBadgeProps) => {
+const EventStatusBadge = async ({ status }: EventStatusBadgeProps) => {
   const statusColors: Record<EventStatus, string> = {
     upcoming: 'bg-blue-500',
     ongoing: 'bg-green-500',
@@ -100,7 +99,7 @@ const EventCard = ({ event }: { event: Event }) => (
     </CardContent>
     <CardFooter className="justify-between">
       <div className="text-lg font-semibold">
-        {event.price === 0 ? '무료' : `₩${event.price.toLocaleString()}`}
+        {/*{event.price === 0 ? '무료' : `₩${event.price.toLocaleString()}`}*/}
       </div>
       <Badge variant="outline">자세히 보기</Badge>
     </CardFooter>
@@ -108,54 +107,6 @@ const EventCard = ({ event }: { event: Event }) => (
 );
 
 const Page = async () => {
-  /* const sampleEvents: Event[] = [
-    {
-      title: '디지털 아트 페스티벌 2025',
-      subtitle: '기술과 예술의 만남',
-      mainImageUrl: '/api/placeholder/800/600',
-      status: 'upcoming',
-      type: 'exhibition',
-      startDate: '2025-03-01',
-      endDate: '2025-03-15',
-      price: 15000,
-      venueId: '1',
-      venue: {
-        id: '1',
-        name: 'PRECTXE 갤러리',
-      },
-    },
-    {
-      title: '인터랙티브 미디어 퍼포먼스',
-      subtitle: '관객과 함께하는 새로운 경험',
-      mainImageUrl: '/api/placeholder/800/600',
-      status: 'upcoming',
-      type: 'performance',
-      startDate: '2025-04-01',
-      endDate: '2025-04-01',
-      price: 30000,
-      venueId: '2',
-      venue: {
-        id: '2',
-        name: 'PRECTXE 공연장',
-      },
-    },
-    {
-      title: 'NFT 아트 워크샵',
-      subtitle: '블록체인과 예술의 융합',
-      mainImageUrl: '/api/placeholder/800/600',
-      status: 'ongoing',
-      type: 'workshop',
-      startDate: '2025-02-01',
-      endDate: '2025-02-28',
-      price: 50000,
-      venueId: '3',
-      venue: {
-        id: '3',
-        name: 'PRECTXE 스튜디오',
-      },
-    },
-  ];*/
-
   const events = await prisma.event.findMany({
     include: {
       venue: true,

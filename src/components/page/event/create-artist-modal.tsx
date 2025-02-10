@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -26,25 +25,10 @@ import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
 import { createSimpleArtist } from '@/app/artists/actions';
 import { toast } from '@/hooks/use-toast';
-
-const formSchema = z.object({
-  name: z.string().min(1, '이름을 입력해주세요'),
-  email: z
-    .string()
-    .email('유효한 이메일을 입력해주세요')
-    .optional()
-    .or(z.literal('')),
-  mainImageUrl: z
-    .string()
-    .url('유효한 URL을 입력해주세요')
-    .optional()
-    .or(z.literal('')),
-  nationality: z.string().optional(),
-  city: z.string().optional(),
-  country: z.string().optional(),
-});
-
-type FormData = z.infer<typeof formSchema>;
+import {
+  simpleArtistCreateSchema,
+  SimpleArtistType,
+} from '@/app/artists/artist';
 
 interface CreateArtistModalProps {
   onSuccess: (artist: { id: string; name: string }) => void;
@@ -56,8 +40,8 @@ export function CreateArtistModal({
   userId,
 }: CreateArtistModalProps) {
   const [open, setOpen] = useState(false);
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<SimpleArtistType>({
+    resolver: zodResolver(simpleArtistCreateSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -68,7 +52,7 @@ export function CreateArtistModal({
     },
   });
 
-  async function onSubmit(data: FormData) {
+  async function onSubmit(data: SimpleArtistType) {
     const result = await createSimpleArtist(data, userId);
 
     if (result.error) {

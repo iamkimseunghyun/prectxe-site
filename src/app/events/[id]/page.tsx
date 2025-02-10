@@ -70,16 +70,24 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                         key={organizer.artistId}
                         className="flex items-center gap-4"
                       >
-                        <Image
-                          src={getImageUrl(
-                            `${organizer.artist.mainImageUrl!}`,
-                            'public'
-                          )}
-                          alt={organizer.artist.name}
-                          width={300}
-                          height={300}
-                          className="h-16 w-16 rounded-full object-cover"
-                        />
+                        {organizer.artist.mainImageUrl ? (
+                          <Image
+                            src={getImageUrl(
+                              organizer.artist.mainImageUrl,
+                              'public'
+                            )}
+                            alt={organizer.artist.name}
+                            width={300}
+                            height={300}
+                            className="h-16 w-16 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-200">
+                            <span className="text-xl font-semibold text-gray-600">
+                              {organizer.artist.name.charAt(0)}
+                            </span>
+                          </div>
+                        )}
                         <div>
                           <div className="font-semibold">
                             {organizer.artist.name}
