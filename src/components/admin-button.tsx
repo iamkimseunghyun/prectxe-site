@@ -6,13 +6,14 @@ import { deleteArtist, deleteArtwork } from '@/app/artists/actions';
 import { deleteProject } from '@/app/projects/actions';
 import { deleteVenue } from '@/app/venues/actions';
 import { Button } from '@/components/ui/button';
+import { deleteEvent } from '@/app/events/actions';
 
 const AdminButton = ({
   id,
   entityType,
 }: {
   id: string;
-  entityType: 'artwork' | 'artist' | 'project' | 'venue';
+  entityType: 'artwork' | 'artist' | 'project' | 'venue' | 'event';
 }) => {
   const router = useRouter();
   const { toast } = useToast();
@@ -22,6 +23,7 @@ const AdminButton = ({
     artist: deleteArtist,
     project: deleteProject,
     venue: deleteVenue,
+    event: deleteEvent,
   };
 
   const handleEdit = () => {

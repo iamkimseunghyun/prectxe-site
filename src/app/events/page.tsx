@@ -10,7 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, MapPin } from 'lucide-react';
 import { prisma } from '@/lib/db/prisma';
-import { getImageUrl } from '@/lib/utils';
+import { formatEventDate, getImageUrl } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -83,8 +83,10 @@ const EventCard = ({ event }: { event: Event }) => (
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4" />
           <span>
-            {new Date(event.startDate).toLocaleDateString()} -
-            {new Date(event.endDate).toLocaleDateString()}
+            {formatEventDate(
+              new Date(event.startDate),
+              new Date(event.endDate)
+            )}
           </span>
         </div>
         <div className="flex items-center gap-2">

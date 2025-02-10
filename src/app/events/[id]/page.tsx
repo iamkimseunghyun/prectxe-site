@@ -12,6 +12,8 @@ import {
   getImageUrl,
   isEventBookingClosed,
 } from '@/lib/utils';
+import AdminButton from '@/components/admin-button';
+import getSession from '@/lib/session';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
@@ -20,6 +22,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   if (!result.data) {
     notFound();
   }
+
+  const session = await getSession();
 
   return (
     <div className="mx-auto max-w-5xl px-12 py-6">
@@ -215,6 +219,12 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           </Card>
         </div>
       </div>
+      {/* 어드민 버튼 */}
+      {session.id && (
+        <div className="mt-6 flex justify-end gap-x-2">
+          <AdminButton id={id} entityType="event" />
+        </div>
+      )}
     </div>
   );
 };

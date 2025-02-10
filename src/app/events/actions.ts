@@ -147,28 +147,18 @@ export async function updateEvent(
   }
 }
 
-export async function deleteEvent(id: string): Promise<ActionResponse<void>> {
+export async function deleteEvent(id: string) {
   try {
-    // 이벤트 존재 여부 확인
-    const event = await prisma.event.findUnique({
-      where: { id },
-    });
-    if (!event) {
-      return { error: '이벤트를 찾을 수 없습니다.' };
-    }
-
-    // 이벤트 삭제 (관계된 데이터는 cascade로 자동 삭제)
     await prisma.event.delete({
-      where: { id: id },
+      where: {
+        id: id,
+      },
     });
-
-    revalidatePath('/events');
-    return { data: undefined };
+    revalidatePath('/');
+    return { success: true };
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { error: error.errors[0].message };
-    }
-    return { error: '이벤트 삭제 중 오류가 발생했습니다.' };
+    console.error(error);
+    return { success: false };
   }
 }
 
@@ -198,6 +188,15 @@ export async function getEventById(id: string) {
     }
     return { error: '이벤트 조회 중 오류가 발생했습니다.' };
   }
+}
+
+export async function getRecentEvents() {
+  const events = await prisma.event.findMany({
+    include: {
+      venue: true,
+    },
+  });
+  return events;
 }
 
 export async function getAllEvents(query: z.infer<typeof eventQuerySchema>) {
