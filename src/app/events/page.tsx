@@ -38,7 +38,7 @@ interface Event {
   startDate: string;
   endDate: string;
   venueId: string;
-  venue: Venue;
+  venue: Venue | null;
 }
 
 interface EventStatusBadgeProps {
@@ -89,7 +89,7 @@ const EventCard = ({ event }: { event: Event }) => (
         </div>
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4" />
-          <span>{event.venue.name}</span>
+          <span>{event.venue?.name}</span>
         </div>
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4" />

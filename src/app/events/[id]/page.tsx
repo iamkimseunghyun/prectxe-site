@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Clock, Info, MapPin, Users } from 'lucide-react';
+import { Calendar, Clock, Info, MapPin } from 'lucide-react';
 import { getEventById } from '@/app/events/actions';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -108,12 +108,12 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                 <CardContent className="pt-6">
                   <div className="space-y-4">
                     <h3 className="text-xl font-semibold">
-                      {result.data.venue.name}
+                      {result.data.venue?.name}
                     </h3>
-                    <p>{result.data.venue.description}</p>
+                    <p>{result.data.venue?.description}</p>
                     <p className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
-                      {result.data.venue.address}
+                      {result.data.venue?.address}
                     </p>
                   </div>
                 </CardContent>
@@ -145,7 +145,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     <MapPin className="h-4 w-4" />
                     <span className="font-semibold">장소</span>
                   </div>
-                  <div className="ml-6">{result.data.venue.name}</div>
+                  <div className="ml-6">{result.data.venue?.name}</div>
                 </div>
 
                 {/* 운영 시간 */}
@@ -159,17 +159,6 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     {new Date(result.data.endDate).toLocaleTimeString()}
                   </div>
                 </div>
-
-                {/* 수용 인원 */}
-                {result.data.capacity && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <span className="font-semibold">수용 인원</span>
-                    </div>
-                    <div className="ml-6">{result.data.capacity}명</div>
-                  </div>
-                )}
 
                 {/* 티켓 정보 */}
                 <div className="space-y-4">

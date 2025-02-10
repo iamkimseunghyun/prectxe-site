@@ -8,7 +8,6 @@ import {
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { FullEvent } from '@/lib/types';
 
 type ActionResponse<T> = {
   data?: T;
@@ -173,9 +172,7 @@ export async function deleteEvent(id: string): Promise<ActionResponse<void>> {
   }
 }
 
-export async function getEventById(
-  id: string
-): Promise<ActionResponse<FullEvent>> {
+export async function getEventById(id: string) {
   try {
     const event = await prisma.event.findUnique({
       where: { id },
@@ -203,9 +200,7 @@ export async function getEventById(
   }
 }
 
-export async function getAllEvents(
-  query: z.infer<typeof eventQuerySchema>
-): Promise<ActionResponse<{ events: FullEvent[]; total: number }>> {
+export async function getAllEvents(query: z.infer<typeof eventQuerySchema>) {
   try {
     // 쿼리 파라미터 검증
     const validatedQuery = eventQuerySchema.parse(query);
