@@ -28,7 +28,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
     <div className="mx-auto max-w-5xl px-4 py-12">
       {/* 메인 섹션 */}
       <div className="mb-8">
-        <div className="relative mb-4 aspect-video overflow-hidden rounded-lg">
+        <div className="relative mb-4 aspect-video overflow-hidden rounded-lg md:mb-8">
           <Image
             src={getImageUrl(project.mainImageUrl, 'public')}
             alt={project.title}
@@ -56,7 +56,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
       {/* 상세 정보 */}
       <section className="mb-12">
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
+        <h2 className="flex items-center gap-2 text-3xl font-semibold">
           상세 정보
         </h2>
         <div className="prose max-w-none whitespace-pre-wrap pt-6">
