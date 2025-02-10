@@ -180,7 +180,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                   {result.data.tickets.map((ticket) => (
                     <div key={ticket.id} className="ml-6 rounded-lg border p-4">
                       <div className="mb-2 flex items-center justify-between">
-                        <span className="font-medium">{ticket.name}</span>
+                        <span className="font-semibold">{ticket.name}</span>
                         {(() => {
                           const bookingClosed = isEventBookingClosed(
                             result.data.startDate
