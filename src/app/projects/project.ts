@@ -16,12 +16,12 @@ export const projectCreateSchema = z
     about: z
       .string()
       .min(10, '간단 소개는 최소 10자 이상 입력해주세요')
-      .max(200, '간단 소개는 200자 이하로 입력해주세요.'),
+      .max(200, '간단 소개는 500자 이하로 입력해주세요.'),
 
     description: z
       .string()
       .min(10, '상세 내용은 최소 200자 이상 입력해주세요')
-      .max(2000, '설명은 2000자 이내로 입력해주세요'),
+      .max(2000, '설명은 5000자 이내로 입력해주세요'),
 
     year: z
       .number()
