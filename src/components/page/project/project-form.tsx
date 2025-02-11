@@ -37,12 +37,14 @@ import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
 import MultiImageBox from '@/components/image/multi-image-box';
 import UploadProgress from '@/components/upload-progress';
+import ArtistSelect from '@/components/page/project/artist-select';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';
   initialData?: ProjectFormData;
   projectId?: string;
   userId?: string;
+  artists?: { mainImageUrl: string | null; id: string; name: string }[];
 };
 
 const ProjectForm = ({
@@ -50,6 +52,7 @@ const ProjectForm = ({
   initialData,
   projectId,
   userId,
+  artists,
 }: ProjectFormProps) => {
   const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
@@ -129,6 +132,7 @@ const ProjectForm = ({
     formData.append('startDate', data.startDate);
     formData.append('endDate', data.endDate);
     formData.append('images', JSON.stringify(galleryData));
+    formData.append('projectArtists', JSON.stringify(data.projectArtists));
     return formData;
   };
 
@@ -288,6 +292,13 @@ const ProjectForm = ({
               handleMultiImageChange={handleMultiImageChange}
               removeMultiImage={removeMultiImage}
             />
+            <div className="space-y-2">
+              <ArtistSelect
+                artists={artists!}
+                value={watch('projectArtists')}
+                onChange={(artists) => setValue('projectArtists', artists)}
+              />
+            </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">간단 소개</label>
               <Textarea

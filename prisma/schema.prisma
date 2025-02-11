@@ -144,26 +144,24 @@ model EventTicket {
 }
 
 model Artist {
-  id             String           @id @default(cuid())
-  name           String
-  mainImageUrl   String?
-  images         ArtistImage[]
-  birth          DateTime?
-  nationality    String?
-  city           String?
-  country        String?
-  email          String?          @unique
-  homepage       String?
-  biography      String?
-  cv             String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  artistArtworks ArtistArtwork[]
-  projectArtists ProjectArtist[]
-  ArtworkImage   ArtworkImage[]
-  EventOrganizer EventOrganizer[]
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId         String           @unique
+  id              String           @id @default(cuid())
+  name            String           @map("name_en")
+  nameKr          String           @map("name_kr")
+  mainImageUrl    String?
+  email           String?
+  city            String?
+  country         String?
+  homepage        String?
+  biography       String?
+  cv              String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  images          ArtistImage[]
+  artistArtworks  ArtistArtwork[]
+  projectArtists  ProjectArtist[]
+  eventOrganizers EventOrganizer[]
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
 }
 
 model ArtistImage {
@@ -185,10 +183,10 @@ model Artwork {
   media           String?
   year            Int?
   description     String?
-  images          ArtworkImage[]
   style           String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+  images          ArtworkImage[]
   artists         ArtistArtwork[]
   projectArtWorks ProjectArtwork[]
   user            User             @relation(fields: [userId], references: [id])
@@ -205,9 +203,6 @@ model ArtworkImage {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  Artist   Artist? @relation(fields: [artistId], references: [id])
-  artistId String?
 }
 
 model Venue {

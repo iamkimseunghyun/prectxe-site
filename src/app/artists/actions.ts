@@ -37,9 +37,7 @@ export async function getArtistById(artistId: string) {
 
     const formattedData: UpdateArtistType = {
       ...artist,
-      birth: artist.birth ? artist.birth.toISOString() : '', // undefined 방지
       email: artist.email ?? undefined, // null 값을 undefined로 변환
-      nationality: artist.nationality ?? undefined,
       city: artist.city ?? undefined,
       country: artist.country ?? undefined,
       homepage: artist.homepage ?? undefined,
@@ -67,6 +65,22 @@ export async function deleteArtwork(id: string) {
   return { success: true };
 }
 
+export async function getArtists() {
+  try {
+    const artists = await prisma.artist.findMany({
+      select: {
+        id: true,
+        name: true,
+        mainImageUrl: true,
+      },
+    });
+    return artists;
+  } catch (error) {
+    console.error(error);
+    throw new Error('아티스트 목록을 불러오는데 실패했습니다.');
+  }
+}
+
 export async function getAllArtists(search?: string) {
   const artists = await prisma.artist.findMany({
     where: {
@@ -75,10 +89,13 @@ export async function getAllArtists(search?: string) {
         : undefined,
       // category: category && category !== 'all' ? category : undefined,
     },
-    include: {
+    select: {
       _count: {
         select: { artistArtworks: true },
       },
+      id: true,
+      name: true,
+      mainImageUrl: true,
     },
   });
   return artists;
@@ -98,23 +115,12 @@ export async function createSimpleArtist(
       return { ok: false, error: errorMessage };
     }
 
-    // 이메일이 제공된 경우 중복 체크
-    if (validatedData.data.email) {
-      const existingArtist = await prisma.artist.findUnique({
-        where: { email: validatedData.data.email },
-      });
-
-      if (existingArtist) {
-        return { ok: false, error: '이미 등록된 이메일입니다.' };
-      }
-    }
-
     const artist = await prisma.artist.create({
       data: {
         name: validatedData.data.name,
+        nameKr: validatedData.data.nameKr,
         email: validatedData.data.email,
         mainImageUrl: validatedData.data.mainImageUrl,
-        nationality: validatedData.data.nationality,
         city: validatedData.data.city,
         country: validatedData.data.country,
         userId,
@@ -141,23 +147,16 @@ export async function createSimpleArtist(
   }
 }
 
-export type ActionResult<T> = {
-  ok: boolean;
-  data?: T;
-  error?: string;
-};
-
 export async function createArtist(formData: FormData, userId: string) {
   try {
     const rawData = {
       name: formData.get('name'),
+      nameKr: formData.get('nameKr'),
       mainImageUrl: formData.get('mainImageUrl'),
-      birth: formData.get('birth'),
-      nationality: formData.get('nationality'),
-      country: formData.get('country'),
-      city: formData.get('city'),
       email: formData.get('email'),
       homepage: formData.get('homepage'),
+      city: formData.get('city'),
+      country: formData.get('country'),
       biography: formData.get('biography'),
       cv: formData.get('cv'),
       images: JSON.parse(formData.get('images')?.toString() || '[]'),
@@ -176,18 +175,14 @@ export async function createArtist(formData: FormData, userId: string) {
     const artist = await prisma.artist.create({
       data: {
         name: validatedData.data.name,
+        nameKr: validatedData.data.nameKr,
         mainImageUrl: validatedData.data.mainImageUrl,
-        birth: validatedData.data.birth
-          ? new Date(validatedData.data.birth)
-          : null,
-        nationality: validatedData.data.nationality,
-        country: validatedData.data.country,
-        city: validatedData.data.city,
         email: validatedData.data.email,
+        city: validatedData.data.city,
+        country: validatedData.data.country,
         homepage: validatedData.data.homepage,
         biography: validatedData.data.biography,
         cv: validatedData.data.cv,
-        userId,
         images: {
           create: validatedData.data.images.map((image) => ({
             imageUrl: image.imageUrl,
@@ -195,10 +190,12 @@ export async function createArtist(formData: FormData, userId: string) {
             order: image.order,
           })),
         },
+        userId,
       },
       select: {
         id: true,
         name: true,
+        nameKr: true,
         mainImageUrl: true,
       },
     });
@@ -208,7 +205,11 @@ export async function createArtist(formData: FormData, userId: string) {
 
     return { ok: true, data: artist };
   } catch (error) {
-    console.error('아티스트 등록 중 서버 에러 발생:', error);
+    // 안전한 에러 로깅
+    console.error(
+      '아티스트 등록 중 서버 에러 발생:',
+      error instanceof Error ? error.message : String(error)
+    );
     return {
       ok: false,
       error:
@@ -227,11 +228,10 @@ export async function updateArtist(formData: FormData, artistId: string) {
     const updateData = {
       // formEntry 객체로 들어오면 스트링 | 널 값으로 타입이 결정되기 때문에 데이터 변환을 해줘야 한다.
       name: formData.get('name')?.toString() || '',
-      nationality: formData.get('nationality')?.toString() || '',
-      country: formData.get('country')?.toString() || '',
-      birth: formData.get('birth')?.toString() || '',
-      city: formData.get('city')?.toString() || '',
+      nameKr: formData.get('nameKr')?.toString() || '',
       email: formData.get('email')?.toString() || '',
+      city: formData.get('city')?.toString() || '',
+      country: formData.get('country')?.toString() || '',
       homepage: formData.get('homepage')?.toString() || '',
       biography: formData.get('biography')?.toString() || '',
       cv: formData.get('cv')?.toString() || '',
@@ -243,7 +243,6 @@ export async function updateArtist(formData: FormData, artistId: string) {
       where: { id: artistId },
       data: {
         ...updateData,
-        birth: new Date(updateData.birth),
         updatedAt: new Date(),
         images: {
           deleteMany: {},

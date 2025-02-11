@@ -34,6 +34,32 @@ export const baseArtworkFormSchema = z.object({
     })
     .nullable(),
   images: z.array(baseImageSchema).optional().default([]),
+  projectArtists: z
+    .array(
+      z.object({
+        artistId: z.string(),
+        artist: z.object({
+          id: z.string(),
+          name: z.string(),
+          mainImageUrl: z.string().nullable(),
+        }),
+      })
+    )
+    .optional()
+    .default([]),
+  artists: z
+    .array(
+      z.object({
+        artistId: z.string(),
+        artist: z.object({
+          id: z.string(),
+          name: z.string(),
+          mainImageUrl: z.string().nullable(),
+        }),
+      })
+    )
+    .optional()
+    .default([]),
 });
 
 // 등록/수정 스키마

@@ -11,6 +11,23 @@ import { revalidatePath } from 'next/cache';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 
 export async function getArtworkById(id: string) {
+  // 1. 먼저 ArtistArtwork 테이블 확인
+  // const artistArtworks = await prisma.artistArtwork.findMany({
+  //   where: {
+  //     artworkId: id,
+  //   },
+  //   include: {
+  //     artist: true,
+  //     artwork: true,
+  //   },
+  // });
+  // console.log('1. ArtistArtwork relationships:', JSON.stringify(artistArtworks, null, 2));
+
+  // 2. 직접 Artist 테이블 확인
+  // const artists = await prisma.artist.findMany();
+  // console.log('2. All Artists:', JSON.stringify(artists, null, 2));
+
+  // 3. 작품 데이터와 관계 확인
   const artwork = await prisma.artwork.findUnique({
     where: { id },
     include: {
@@ -19,8 +36,22 @@ export async function getArtworkById(id: string) {
           order: 'asc',
         },
       },
+      artists: {
+        include: {
+          artist: {
+            select: {
+              id: true,
+              name: true,
+              nameKr: true,
+              mainImageUrl: true,
+            },
+          },
+        },
+      },
     },
   });
+
+  // console.log('3. Full artwork data:', JSON.stringify(artwork, null, 2));
 
   if (!artwork) notFound();
 
@@ -50,6 +81,7 @@ export async function createArtwork(formData: FormData, userId: string) {
       description: formData.get('description'),
       style: formData.get('style'),
       images: JSON.parse(formData.get('images')?.toString() || '[]'),
+      artists: JSON.parse(formData.get('artists')?.toString() || '[]'),
     };
 
     const validatedData = createArtworkSchema.safeParse(rawData);
@@ -78,6 +110,21 @@ export async function createArtwork(formData: FormData, userId: string) {
             order: image.order,
           })),
         },
+        artists: {
+          create: validatedData.data.artists.map((artistData: any) => ({
+            artist: {
+              connect: { id: artistData.artistId },
+            },
+          })),
+        },
+      },
+      include: {
+        images: true,
+        artists: {
+          include: {
+            artist: true,
+          },
+        },
       },
     });
 
@@ -101,6 +148,7 @@ export async function createArtwork(formData: FormData, userId: string) {
 export async function updateArtwork(formData: FormData, artworkId: string) {
   try {
     const galleryData = JSON.parse(formData.get('images')?.toString() || '[]');
+    const artistsData = JSON.parse(formData.get('artists')?.toString() || '[]');
 
     const validationData = {
       title: formData.get('title')?.toString() || '',
@@ -109,7 +157,8 @@ export async function updateArtwork(formData: FormData, artworkId: string) {
       year: Number(formData.get('year')?.toString()) || '',
       description: formData.get('description')?.toString() || '',
       style: formData.get('style')?.toString() || '',
-      images: galleryData, // 이미지 배열 직접 전달
+      images: galleryData,
+      artists: artistsData,
     };
 
     const validatedData = updateArtworkSchema.safeParse(validationData);
@@ -127,18 +176,31 @@ export async function updateArtwork(formData: FormData, artworkId: string) {
         error: `입력 값이 올바르지 않습니다: ${errorMessages}`,
       };
     }
-    // Prisma 업데이트를 위한 데이터 구조
 
+    // Prisma 업데이트를 위한 데이터 구조
     const artwork = await prisma.artwork.update({
       where: { id: artworkId },
       data: {
-        ...validatedData,
+        title: validatedData.data.title,
+        size: validatedData.data.size,
+        media: validatedData.data.media,
+        year: validatedData.data.year,
+        description: validatedData.data.description,
+        style: validatedData.data.style,
         images: {
           deleteMany: {},
           create: validatedData.data.images?.map((image: GalleryImage) => ({
             imageUrl: image.imageUrl,
             alt: image.alt,
             order: image.order,
+          })),
+        },
+        artists: {
+          deleteMany: {},
+          create: validatedData.data.artists?.map((artistData) => ({
+            artist: {
+              connect: { id: artistData.artistId },
+            },
           })),
         },
       },

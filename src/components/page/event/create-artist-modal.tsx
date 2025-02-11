@@ -46,7 +46,6 @@ export function CreateArtistModal({
       name: '',
       email: '',
       mainImageUrl: '',
-      nationality: '',
       city: '',
       country: '',
     },
@@ -96,9 +95,24 @@ export function CreateArtistModal({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>이름 *</FormLabel>
+                  <FormLabel>영문 이름 *</FormLabel>
                   <FormControl>
-                    <Input placeholder="아티스트 이름" {...field} />
+                    <Input placeholder="아티스트 영문 이름" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 이름 (필수) */}
+            <FormField
+              control={form.control}
+              name="nameKr"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>한글 이름 *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="아티스트 한글 이름" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -133,21 +147,6 @@ export function CreateArtistModal({
                   <FormLabel>프로필 이미지 URL</FormLabel>
                   <FormControl>
                     <Input placeholder="https://..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* 국적 (선택) */}
-            <FormField
-              control={form.control}
-              name="nationality"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>국적</FormLabel>
-                  <FormControl>
-                    <Input placeholder="예: Korean" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -24,7 +24,7 @@ export const getImageUrl = (
   url: string | null | undefined,
   variant: 'thumbnail' | 'public' | 'smaller'
 ) => {
-  if (!url) return '';
+  if (!url) return '/images/placeholder.png'; // 빈 문자열 대신 기본 이미지 경로 반환
   return `${url}/${variant}`;
 };
 
@@ -135,3 +135,15 @@ export const formatEventDate = (startDate: Date, endDate: Date): string => {
 
   return `${formattedStart} - ${formatDate(endDate)}`;
 };
+
+export function nullToUndefined<T extends Record<string, any>>(obj: T): T {
+  const result = { ...obj };
+  (Object.keys(result) as Array<keyof T>).forEach((key) => {
+    if (result[key] === null) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      result[key] = undefined;
+    }
+  });
+  return result;
+}

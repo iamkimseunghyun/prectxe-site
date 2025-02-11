@@ -40,9 +40,24 @@ export const projectCreateSchema = z
       required_error: '종료일을 선택해주세요.',
     }),
 
-    images: z.array(baseImageSchema).min(1, {
-      message: '갤러리 이미지를 1개 이상 등록해주세요.',
-    }),
+    images: z
+      .array(baseImageSchema)
+      .min(1, {
+        message: '갤러리 이미지를 1개 이상 등록해주세요.',
+      })
+      .default([]),
+    projectArtists: z
+      .array(
+        z.object({
+          artistId: z.string(),
+          artist: z.object({
+            id: z.string(),
+            name: z.string(),
+            mainImageUrl: z.string().nullable(),
+          }),
+        })
+      )
+      .default([]),
   })
   .refine((data) => new Date(data.startDate) <= new Date(data.endDate), {
     message: '종료일은 시작일 이전 일 수 없습니다.',

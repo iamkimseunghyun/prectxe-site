@@ -2,6 +2,7 @@ import ProjectForm from '@/components/page/project/project-form';
 import React from 'react';
 import { getProjectById } from '@/app/projects/actions';
 import { Metadata } from 'next';
+import { getArtists } from '@/app/artists/actions';
 
 export const metadata: Metadata = {
   title: '프로젝트 수정',
@@ -16,6 +17,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
     return <div>Project not found</div>;
   }
 
+  const artists = await getArtists();
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="mx-auto max-w-3xl">
@@ -23,6 +26,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           mode={'edit'}
           projectId={projectId}
           initialData={projectData}
+          artists={artists}
         />
       </div>
     </div>

@@ -24,11 +24,7 @@ import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
 
 import MultiImageBox from '@/components/image/multi-image-box';
-import {
-  formatDateForInput,
-  uploadGalleryImages,
-  uploadSingleImage,
-} from '@/lib/utils';
+import { uploadGalleryImages, uploadSingleImage } from '@/lib/utils';
 import { createArtist, updateArtist } from '@/app/artists/actions';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 
@@ -49,15 +45,14 @@ const ArtistForm = ({
 
   const defaultValues = {
     name: initialData?.name ?? '',
+    nameKr: initialData?.nameKr ?? '',
     mainImageUrl: initialData?.mainImageUrl ?? '',
-    birth: initialData?.birth ? formatDateForInput(initialData.birth) : null,
-    nationality: initialData?.nationality ?? null,
-    city: initialData?.city ?? null,
-    country: initialData?.city ?? null,
-    email: initialData?.email ?? null,
-    homepage: initialData?.homepage ?? null,
-    biography: initialData?.biography ?? null,
-    cv: initialData?.cv ?? null,
+    email: initialData?.email ?? '',
+    city: initialData?.city ?? '',
+    country: initialData?.country ?? '',
+    homepage: initialData?.homepage ?? '',
+    biography: initialData?.biography ?? '',
+    cv: initialData?.cv ?? '',
     images: initialData?.images ?? [],
   };
 
@@ -103,12 +98,11 @@ const ArtistForm = ({
   ) => {
     const formData = new FormData();
     formData.append('name', data.name);
+    formData.append('nameKr', data.nameKr);
     formData.append('mainImageUrl', imageUrl);
-    formData.append('birth', data.birth ?? '');
-    formData.append('nationality', data.nationality ?? '');
+    formData.append('email', data.email ?? '');
     formData.append('city', data.city ?? '');
     formData.append('country', data.country ?? '');
-    formData.append('email', data.email ?? '');
     formData.append('homepage', data.homepage ?? '');
     formData.append('biography', data.biography ?? '');
     formData.append('cv', data.cv ?? '');
@@ -155,7 +149,7 @@ const ArtistForm = ({
           <CardContent>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <label>이름</label>
+                <label>영문 이름</label>
                 <Input placeholder="아티스트 이름" {...register('name')} />
                 {errors.name && (
                   <p id="name-error" className="text-sm text-destructive">
@@ -163,60 +157,23 @@ const ArtistForm = ({
                   </p>
                 )}
               </div>
-              <SingleImageBox
-                register={register('mainImageUrl')}
-                preview={preview}
-                error={fileError}
-                displayUrl={displayUrl}
-                handleImageChange={handleImageChange}
-              />
-              <MultiImageBox
-                register={register('images')}
-                previews={multiImagePreview}
-                handleMultiImageChange={handleMultiImageChange}
-                removeMultiImage={removeMultiImage}
-                error={error}
-              />
               <div className="space-y-2">
-                <label>생년월일</label>
-                <Input type="date" {...register('birth')} />
-                {errors.birth && (
-                  <p id="birth-error" className="text-sm text-destructive">
-                    {errors.birth.message}
+                <label>한글 이름</label>
+                <Input placeholder="아티스트 이름" {...register('nameKr')} />
+                {errors.nameKr && (
+                  <p id="nameKr-error" className="text-sm text-destructive">
+                    {errors.nameKr.message}
                   </p>
                 )}
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label>국적</label>
-                  <Input placeholder="국적" {...register('nationality')} />
-                </div>
-                {errors.nationality && (
-                  <p
-                    id="nationality-error"
-                    className="text-sm text-destructive"
-                  >
-                    {errors.nationality.message}
-                  </p>
-                )}
-
-                <div className="space-y-2">
-                  <label>국가</label>
-                  <Input placeholder="국가" {...register('country')} />
-                </div>
-                {errors.country && (
-                  <p id="country-error" className="text-sm text-destructive">
-                    {errors.country.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <label>도시</label>
-                <Input placeholder="도시" {...register('city')} />
               </div>
               <div className="space-y-2">
                 <label>이메일</label>
                 <Input placeholder="email@example.com" {...register('email')} />
+                {errors.email && (
+                  <p id="email-error" className="text-sm text-destructive">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <label>홈페이지</label>
@@ -224,6 +181,50 @@ const ArtistForm = ({
                   placeholder="https://example.com"
                   {...register('homepage')}
                 />
+                {errors.homepage && (
+                  <p id="homepage-error" className="text-sm text-destructive">
+                    {errors.homepage.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <p>프로필 사진</p>
+                <SingleImageBox
+                  register={register('mainImageUrl')}
+                  preview={preview}
+                  error={fileError}
+                  displayUrl={displayUrl}
+                  aspectRatio="square"
+                  handleImageChange={handleImageChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <p>추가 사진</p>
+                <MultiImageBox
+                  register={register('images')}
+                  previews={multiImagePreview}
+                  handleMultiImageChange={handleMultiImageChange}
+                  removeMultiImage={removeMultiImage}
+                  error={error}
+                />
+              </div>
+              <div className="space-y-2">
+                <label>도시</label>
+                <Input placeholder="도시" {...register('city')} />
+                {errors.city && (
+                  <p id="city-error" className="text-sm text-destructive">
+                    {errors.city.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <label>국가</label>
+                <Input placeholder="국가" {...register('country')} />
+                {errors.country && (
+                  <p id="country-error" className="text-sm text-destructive">
+                    {errors.country.message}
+                  </p>
+                )}
               </div>
             </div>
             <div className="mt-4 *:my-4">
@@ -233,6 +234,11 @@ const ArtistForm = ({
                 {...register('biography')}
                 rows={6}
               />
+              {errors.biography && (
+                <p id="biography-error" className="text-sm text-destructive">
+                  {errors.biography.message}
+                </p>
+              )}
 
               <label>C.V</label>
               <Textarea
@@ -240,6 +246,11 @@ const ArtistForm = ({
                 {...register('cv')}
                 rows={6}
               />
+              {errors.cv && (
+                <p id="cv-error" className="text-sm text-destructive">
+                  {errors.cv.message}
+                </p>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex justify-end gap-4">

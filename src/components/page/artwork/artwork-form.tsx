@@ -25,12 +25,14 @@ import { createArtwork, updateArtwork } from '@/app/artworks/actions';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { uploadGalleryImages } from '@/lib/utils';
 import MultiImageBox from '@/components/image/multi-image-box';
+import ArtistSelect from '@/components/page/project/artist-select';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';
   initialData?: CreateArtworkType | UpdateArtworkType;
   artworkId?: string;
   userId?: string;
+  artists?: { id: string; name: string; mainImageUrl: string | null }[];
 };
 
 const ArtWorkForm = ({
@@ -38,23 +40,26 @@ const ArtWorkForm = ({
   initialData,
   artworkId,
   userId,
+  artists,
 }: ArtworkFormProps) => {
   const router = useRouter();
 
   const defaultValues = {
     title: initialData?.title ?? '',
-    size: initialData?.size ?? null,
-    media: initialData?.media ?? null,
-    year: initialData?.year ?? null,
-    description: initialData?.description ?? null,
-    style: initialData?.style ?? null,
+    size: initialData?.size ?? '',
+    media: initialData?.media ?? '',
+    year: initialData?.year ?? new Date().getFullYear(),
+    description: initialData?.description ?? '',
+    style: initialData?.style ?? '',
     images: initialData?.images ?? [],
+    artists: initialData?.artists ?? [],
   };
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     setError,
     formState: { errors },
   } = useForm<CreateArtworkType>({
@@ -90,6 +95,7 @@ const ArtWorkForm = ({
     formData.append('description', data.description ?? '');
     formData.append('style', data.style ?? '');
     formData.append('images', JSON.stringify(galleryData));
+    formData.append('artists', JSON.stringify(data.artists));
     return formData;
   };
 
@@ -140,6 +146,14 @@ const ArtWorkForm = ({
         <form onSubmit={onSubmit}>
           <CardContent className="space-y-6">
             <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">작가 선택</label>
+                <ArtistSelect
+                  artists={artists}
+                  value={watch('artists')}
+                  onChange={(artists) => setValue('artists', artists)}
+                />
+              </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">작품 제목</label>
                 <Input

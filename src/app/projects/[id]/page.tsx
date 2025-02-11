@@ -8,6 +8,8 @@ import CarouselGallery from '@/components/image/carousel-gallery';
 import { getProjectById } from '@/app/projects/actions';
 import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Link from 'next/link';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -28,15 +30,19 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
     <div className="mx-auto max-w-5xl px-4 py-12">
       {/* 메인 섹션 */}
       <div className="mb-8">
-        <div className="relative mb-4 aspect-video overflow-hidden rounded-lg md:mb-8">
-          <Image
-            src={getImageUrl(project.mainImageUrl, 'public')}
-            alt={project.title}
-            fill
-            priority
-            className="object-cover"
-          />
-        </div>
+        {project.mainImageUrl ? (
+          <div className="relative mb-4 aspect-video overflow-hidden rounded-lg md:mb-8">
+            <Image
+              src={getImageUrl(project.mainImageUrl, 'public')}
+              alt={project.title}
+              fill
+              priority
+              className="object-cover"
+            />
+          </div>
+        ) : (
+          <p>No Image</p>
+        )}
         <div className="mb-2 flex items-center gap-2">
           <Badge variant="outline">{project.year}년</Badge>
           <Badge>{categoryLabel}</Badge>
@@ -53,6 +59,39 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           {project.about}
         </p>
       </div>
+
+      {/* 참여 아티스트 */}
+      {project.projectArtists.length > 0 && (
+        <section className="mb-12">
+          <h2 className="mb-6 text-3xl font-semibold">참여 아티스트</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+            {project.projectArtists.map(({ artist }) => (
+              <Link
+                key={artist.id}
+                href={`/artists/${artist.id}`}
+                className="group flex flex-col items-center gap-2 rounded-lg p-4 transition-colors hover:bg-accent"
+              >
+                <Avatar className="h-20 w-20">
+                  {artist.mainImageUrl &&
+                  getImageUrl(artist.mainImageUrl, 'thumbnail') ? (
+                    <AvatarImage
+                      src={getImageUrl(artist.mainImageUrl, 'thumbnail')!}
+                      alt={artist.name}
+                    />
+                  ) : (
+                    <AvatarFallback>
+                      {artist.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <span className="text-center font-medium group-hover:text-accent-foreground">
+                  {artist.name}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 상세 정보 */}
       <section className="mb-12">

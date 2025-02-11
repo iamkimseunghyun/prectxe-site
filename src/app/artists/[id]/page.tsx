@@ -3,16 +3,16 @@ import { notFound } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Calendar, Edit, Globe, Mail, MapPin } from 'lucide-react';
+import { Edit, Globe, Mail } from 'lucide-react';
 
 import Link from 'next/link';
 
-import WorksList from '@/components/page/artwork/works-list';
+import WorkList from '@/components/page/artwork/work-list';
 import { getArtistById } from '@/app/artists/actions';
 import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
+import EventList from '@/components/page/event/event-list';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -56,14 +56,6 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             )}
 
             <div className="space-y-2">
-              {(artist.city || artist.country || artist.nationality) && (
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <MapPin className="mr-2 h-4 w-4" />
-                  {[artist.city, artist.country, artist.nationality]
-                    .filter(Boolean)
-                    .join(', ')}
-                </div>
-              )}
               {artist.email && (
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Mail className="mr-2 h-4 w-4" />
@@ -86,13 +78,6 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                   >
                     {artist.homepage}
                   </a>
-                </div>
-              )}
-
-              {artist.birth && (
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {formatDate(new Date(artist.birth!))}
                 </div>
               )}
             </div>
@@ -130,15 +115,17 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>작품</CardTitle>
-              <Link href={`/artists/new`}>
-                <Button variant="outline" size="sm">
-                  작품 등록
-                </Button>
-              </Link>
+              {session.id && (
+                <Link href={`/artists/new`}>
+                  <Button variant="outline" size="sm">
+                    작품 등록
+                  </Button>
+                </Link>
+              )}
             </div>
           </CardHeader>
           <CardContent>
-            <WorksList />
+            <WorkList />
           </CardContent>
         </Card>
 
@@ -147,13 +134,11 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>이벤트</CardTitle>
-              <Link href={`/artists/${id}/events/new`}>
-                <Button variant="outline" size="sm">
-                  이벤트 등록
-                </Button>
-              </Link>
             </div>
           </CardHeader>
+          <CardContent>
+            <EventList />
+          </CardContent>
         </Card>
       </div>
       {session.id && (

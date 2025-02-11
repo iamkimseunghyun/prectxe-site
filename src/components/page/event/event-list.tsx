@@ -1,47 +1,40 @@
 import Link from 'next/link';
 import { formatDate, getImageUrl } from '@/lib/utils';
 import Image from 'next/image';
-import { getAllArtworks } from '@/app/artworks/actions';
+import { getRecentEvents } from '@/app/events/actions';
 
-const WorksList = async () => {
-  const works = await getAllArtworks();
+const EventList = async () => {
+  const events = await getRecentEvents();
 
-  if (works.length === 0) {
+  if (events.length === 0) {
     return (
       <div className="py-6 text-center text-muted-foreground">
-        등록된 작품이 없습니다.
-      </div>
-    );
-  }
-  if (works.length === 0) {
-    return (
-      <div className="py-6 text-center text-muted-foreground">
-        등록된 작품이 없습니다.
+        등록된 이벤트가 없습니다.
       </div>
     );
   }
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {works.map((work) => (
+      {events.map((event) => (
         <Link
-          key={work.id}
-          href={`/artworks/${work.id}`}
+          key={event.id}
+          href={`/artworks/${event.id}`}
           className="group relative aspect-square overflow-hidden rounded-lg"
         >
           <Image
             src={
-              `${getImageUrl(work.images?.[0]?.imageUrl, 'public')}` ||
+              `${getImageUrl(event.mainImageUrl, 'public')}` ||
               '/api/placeholder/400/400'
             }
-            alt={work.title}
+            alt={event.title}
             fill
             className="object-cover transition-transform group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
             <div className="absolute bottom-0 p-4 text-white">
-              <h3 className="font-medium">{work.title}</h3>
-              <p className="text-sm">{formatDate(new Date(work.createdAt))}</p>
+              <h3 className="font-medium">{event.title}</h3>
+              <p className="text-sm">{formatDate(new Date(event.createdAt))}</p>
             </div>
           </div>
         </Link>
@@ -50,4 +43,4 @@ const WorksList = async () => {
   );
 };
 
-export default WorksList;
+export default EventList;

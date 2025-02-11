@@ -15,6 +15,7 @@ import { GalleryImage } from '@/lib/validations/gallery-image';
 import { getArtworkById } from '@/app/artworks/actions';
 import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
+import Link from 'next/link';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -57,6 +58,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             </div>
           </section>
         )}
+
         {/* 작품 정보 섹션 */}
         <Card className="p-6">
           <h1 className="mb-2 text-3xl font-bold">{artwork.title}</h1>
@@ -71,6 +73,48 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
               <p className="whitespace-pre-wrap text-gray-600">
                 {artwork.description}
               </p>
+            </div>
+            <Separator className="my-4" />
+            {/* 작가 정보 */}
+            <div className="space-y-2">
+              <h3 className="font-semibold text-gray-900">작가 정보</h3>
+              <div className="flex flex-wrap gap-4">
+                {artwork.artists && artwork.artists.length > 0 ? (
+                  artwork.artists.map((artistRelation) => (
+                    <div key={artistRelation.artistId}>
+                      <Link
+                        href={`/artists/${artistRelation.artist.id}`}
+                        key={artistRelation.artist.id}
+                        className="flex items-center gap-3"
+                      >
+                        {artistRelation.artist.mainImageUrl && (
+                          <div className="relative h-12 w-12 overflow-hidden rounded-full">
+                            <Image
+                              src={`${artistRelation.artist.mainImageUrl}/public`}
+                              alt={
+                                artistRelation.artist.nameKr ||
+                                artistRelation.artist.name
+                              }
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium">
+                            {artistRelation.artist.nameKr ||
+                              artistRelation.artist.name}
+                          </p>
+                        </div>
+                      </Link>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    등록된 작가 정보가 없습니다.
+                  </p>
+                )}
+              </div>
             </div>
             <Separator className="my-4" />
             <div className="space-y-2">

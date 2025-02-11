@@ -2,18 +2,14 @@ import { z } from 'zod';
 import { baseImageSchema } from '@/lib/validations/image';
 
 export const simpleArtistCreateSchema = z.object({
-  name: z.string().min(1, '이름을 입력해주세요'),
-  email: z
-    .string()
-    .email('유효한 이메일을 입력해주세요')
-    .optional()
-    .or(z.literal('')),
+  name: z.string().min(1, '이름을 영어로 입력해주세요'),
+  nameKr: z.string().min(1, '이름을 한글로 입력해주세요'),
+  email: z.string().email().optional().or(z.literal('')),
   mainImageUrl: z
     .string()
     .url('유효한 URL을 입력해주세요')
     .optional()
     .or(z.literal('')),
-  nationality: z.string().optional().or(z.literal('')),
   city: z.string().optional().or(z.literal('')),
   country: z.string().optional().or(z.literal('')),
 });
@@ -23,52 +19,42 @@ export const baseArtistCreateSchema = z.object({
   name: z.string().min(2, {
     message: '이름은 2글자 이상이어야 합니다.',
   }),
+  nameKr: z.string().min(2, {
+    message: '이름은 2글자 이상이어야 합니다.',
+  }),
   mainImageUrl: z.string({
     required_error: ' 사진 첨부는 필수입니다. 🥺',
   }),
-  birth: z.string({ required_error: '생년월일을 선택해주세요.' }).nullable(),
-  nationality: z
-    .string()
-    .min(2, {
-      message: '국적을 입력해주세요.',
-    })
-    .nullable(),
   city: z
     .string()
     .min(2, {
       message: '도시를 입력해주세요.',
     })
+    .optional()
     .nullable(),
   country: z
     .string()
     .min(2, {
       message: '국가를 입력해주세요.',
     })
+    .optional()
     .nullable(),
   email: z
     .string()
     .email({
       message: '올바른 이메일 주소를 입력해주세요.',
     })
+    .optional()
     .nullable(),
   homepage: z
     .string()
     .url({
       message: '올바른 URL을 입력해주세요.',
     })
+    .optional()
     .nullable(),
-  biography: z
-    .string()
-    .min(10, {
-      message: '약력은 10자 이상 입력해주세요.',
-    })
-    .nullable(),
-  cv: z
-    .string()
-    .min(10, {
-      message: '이력서는 10자 이상 입력해주세요.',
-    })
-    .nullable(),
+  biography: z.string().optional().nullable(),
+  cv: z.string().optional().nullable(),
   images: z.array(baseImageSchema).optional().default([]),
 });
 
