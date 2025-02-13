@@ -13,7 +13,7 @@ export function Footer() {
             <p className="max-w-md text-gray-600">
               {/* Digital art festival showcasing innovative works at the
               intersection of technology and creativity.*/}
-              기술과 창의성이 만나는 곳에서 펼쳐지는 혁신적인 디지털 아트 플랫폼
+              기술과 창의성이 만나는 혁신적인 디지털 아트 플랫폼
             </p>
           </div>
 
