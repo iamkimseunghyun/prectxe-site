@@ -48,8 +48,7 @@ const SingleImageBox = ({
   placeholder = '사진을 추가해주세요.',
 }: SingleImageSectionProps) => {
   const containerClasses = `
-    flex items-center justify-center space-y-6
-    
+    flex items-center justify-center space-y-6 grid grid-cols-3 gap-4
   `;
 
   const labelClasses = `

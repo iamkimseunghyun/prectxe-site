@@ -5,7 +5,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import Link from 'next/link';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -40,7 +39,7 @@ const Page = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <section>
-            <h2 className="mb-3 text-2xl font-semibold">Our Vision</h2>
+            <h2 className="mb-3 text-2xl font-semibold">비전 Vision</h2>
             <p className="text-gray-600">
               PRECTXE는 디지털 아트와 현실 세계를 연결하는 플랫폼입니다.
               온라인과 오프라인의 경계를 넘어 새로운 예술 경험을 창조합니다.
@@ -52,15 +51,23 @@ const Page = () => {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg bg-gray-50 p-4">
                 <h3 className="mb-2 font-semibold">Digital Art Platform</h3>
-                <p className="text-sm text-gray-600">
-                  아티스트들의 작품을 전시하고 판매하는 온라인 갤러리 플랫폼
-                </p>
+                <ul className="text-sm text-gray-600 *:py-1">
+                  <li>
+                    아티스트들의 작품을 전시하고 판매하는 온라인 갤러리 플랫폼
+                  </li>
+                  <li>✔ 티켓팅, 작품, 굿즈 판매, 아티스트 후원</li>
+                  <li>✔ 아티스트가 직접 작품 판매, 프로젝트 펀딩 개설</li>
+                  <li>✔ 아티스트·크리에이터·기획자·팬과 연결</li>
+                </ul>
               </div>
               <div className="rounded-lg bg-gray-50 p-4">
                 <h3 className="mb-2 font-semibold">Art Festival</h3>
-                <p className="text-sm text-gray-600">
-                  디지털 아트와 퍼포먼스가 결합된 현장 축제 개최
-                </p>
+                <ul className="text-sm text-gray-600 *:py-1">
+                  <li>디지털 아트와 퍼포먼스가 결합된 현장 축제 개최</li>
+                  <li>✔ 전시, 라이브 공연, 인터랙티브 아트</li>
+                  <li>✔ 글로벌 아티스트와 협업, 교류하는 예술 콘텐츠</li>
+                  <li>✔ 온라인 & 오프라인 예술 생태계 구축</li>
+                </ul>
               </div>
             </div>
           </section>
@@ -71,12 +78,9 @@ const Page = () => {
               새로운 디지털 아트의 세계를 함께 만들어갈 아티스트와 관람객을
               기다립니다.
             </p>
-            <Link
-              href="/artists/new"
-              className="inline-block rounded-md bg-black px-4 py-2 text-white hover:bg-gray-800"
-            >
+            <div className="inline-block rounded-md bg-black px-4 py-2 text-white hover:bg-gray-800">
               아티스트 등록하기
-            </Link>
+            </div>
           </section>
         </CardContent>
       </Card>

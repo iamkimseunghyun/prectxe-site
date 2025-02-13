@@ -104,7 +104,7 @@ const VenueForm = ({ mode, initialData, venueId, userId }: VenueFormProps) => {
     await onSubmit();
   };*/
   return (
-    <div className="mx-auto max-w-2xl p-4">
+    <div className="mx-auto max-w-4xl px-4 py-10">
       <Card>
         <CardHeader>
           <CardTitle>{mode === 'create' ? '장소 등록' : '장소 수정'}</CardTitle>
