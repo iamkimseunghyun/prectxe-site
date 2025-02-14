@@ -53,7 +53,7 @@ const Page = () => {
           </section>
           <section>
             <h2 className="mb-3 text-2xl font-semibold">
-              창작 생태계 Creative Ecosystem
+              주요 활동 Impact Area
             </h2>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg bg-gray-50 p-4">
@@ -83,7 +83,7 @@ const Page = () => {
 
           <section>
             <h2 className="mb-3 text-2xl font-semibold">
-              새로운 창작의 세계를 Create with Us
+              함께 만들어요 Create with Us
             </h2>
             <p className="mb-4 text-gray-600">
               새로운 디지털 아트의 세계를 함께 만들어갈 아티스트와 관람객을

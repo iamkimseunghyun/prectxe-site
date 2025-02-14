@@ -3,6 +3,8 @@ import Link from 'next/link';
 
 import ArtworkGrid from '@/components/page/artwork/artwork-grid';
 import { Metadata } from 'next';
+import { getAllArtworks } from '@/app/artworks/actions';
+import Image from 'next/image';
 
 export const metadata: Metadata = {
   title: '작품 목록 | PRECTXE',
@@ -14,6 +16,7 @@ export const metadata: Metadata = {
 };
 
 const Page = async () => {
+  const artworks = await getAllArtworks();
   return (
     <div className="mx-auto max-w-5xl py-10">
       <div className="mb-8 flex items-center justify-between">
@@ -22,7 +25,7 @@ const Page = async () => {
           <Button>새 작품 등록</Button>
         </Link>
       </div>
-      <ArtworkGrid />
+      <ArtworkGrid artworks={artworks} />
     </div>
   );
 };

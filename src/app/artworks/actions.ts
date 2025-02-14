@@ -77,7 +77,7 @@ export async function getAllArtworks() {
       createdAt: 'desc',
     },
   });
-
+  console.log(JSON.stringify(artworks));
   return artworks;
 }
 

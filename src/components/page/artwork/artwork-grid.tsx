@@ -4,11 +4,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getImageUrl } from '@/lib/utils';
-import { getAllArtworks } from '@/app/artworks/actions';
+import { Artwork as PrismaArtwork, ArtworkImage } from '@prisma/client';
 
-const artworks = await getAllArtworks();
+type ArtworkWithImages = PrismaArtwork & {
+  images: ArtworkImage[];
+};
 
-const ArtworkGrid = () => {
+const ArtworkGrid = ({ artworks }: { artworks: ArtworkWithImages[] }) => {
   if (artworks.length === 0) {
     return (
       <div className="py-10 text-center">
