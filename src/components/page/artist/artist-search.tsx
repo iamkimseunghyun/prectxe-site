@@ -17,8 +17,9 @@ export function ArtistSearch() {
   const [isPending, startTransition] = useTransition();
 
   // 검색 실행 함수
-  const executeSearch = () => {
-    const params = new URLSearchParams(searchParams.toString());
+  const executeSearch = async () => {
+    const asyncParams = await searchParams;
+    const params = new URLSearchParams(asyncParams.toString());
     if (searchTerm.trim()) {
       params.set('search', searchTerm.trim());
     } else {
