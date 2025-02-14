@@ -39,7 +39,7 @@ const getArtists = unstable_cache(
 const ArtistList = async ({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) => {
   const { search } = await searchParams;
   const searchQuery = typeof search === 'string' ? search : '';

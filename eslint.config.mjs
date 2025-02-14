@@ -54,6 +54,7 @@ const eslintConfig = [
       '@typescript-eslint/no-empty-function': 'warn',
       'react/no-unescaped-entities': 'off',
       'react/display-name': 'off',
+      '@next/next/no-page-custom-font': 'off',
     },
     files: ['**/*.ts', '**/*.tsx'],
   },

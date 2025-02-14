@@ -4,7 +4,6 @@ import Link from 'next/link';
 import ArtworkGrid from '@/components/page/artwork/artwork-grid';
 import { Metadata } from 'next';
 import { getAllArtworks } from '@/app/artworks/actions';
-import Image from 'next/image';
 
 export const metadata: Metadata = {
   title: '작품 목록 | PRECTXE',

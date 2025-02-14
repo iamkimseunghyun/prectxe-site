@@ -1,6 +1,5 @@
 import PageHeader from '@/components/layout/page-header';
 import { ArtistSearch } from '@/components/page/artist/artist-search';
-import { ArtistFilter } from '@/components/page/artist/artist-filter';
 import { Suspense } from 'react';
 import { Metadata } from 'next';
 import ArtistList from '@/components/page/artist/artist-list';
@@ -16,11 +15,11 @@ export const metadata: Metadata = {
 // 페이지 리밸리데이션 시간 설정
 export const revalidate = 60; // 60초
 
-export default async function ArtistsPage({
+const Page = ({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) => {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <PageHeader
@@ -29,10 +28,11 @@ export default async function ArtistsPage({
       />
 
       {/* 검색과 필터는 별도의 Suspense 경계로 분리 */}
-      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <ArtistSearch />
-        <ArtistFilter />
-      </div>
+      <Suspense>
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <ArtistSearch />
+        </div>
+      </Suspense>
 
       {/* 아티스트 목록에 대한 Suspense 경계 설정 */}
       <Suspense fallback={<ArtistListSkeleton />}>
@@ -40,4 +40,5 @@ export default async function ArtistsPage({
       </Suspense>
     </div>
   );
-}
+};
+export default Page;

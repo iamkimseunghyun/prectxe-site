@@ -135,15 +135,3 @@ export const formatEventDate = (startDate: Date, endDate: Date): string => {
 
   return `${formattedStart} - ${formatDate(endDate)}`;
 };
-
-export function nullToUndefined<T extends Record<string, any>>(obj: T): T {
-  const result = { ...obj };
-  (Object.keys(result) as Array<keyof T>).forEach((key) => {
-    if (result[key] === null) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      result[key] = undefined;
-    }
-  });
-  return result;
-}
