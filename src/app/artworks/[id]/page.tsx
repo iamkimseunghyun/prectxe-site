@@ -1,8 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@radix-ui/react-select';
-
-import { ImageIcon } from 'lucide-react';
 import {
   Carousel,
   CarouselContent,
@@ -16,6 +14,7 @@ import { getArtworkById } from '@/app/artworks/actions';
 import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
 import Link from 'next/link';
+import BreadcrumbNav from '@/components/breadcrum-nav';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -23,14 +22,12 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const session = await getSession();
   return (
     <div className="mx-auto max-w-5xl py-10">
+      <BreadcrumbNav entityType="artwork" title={artwork.title} />
+
       <div className="mb-8">
         {/* 이미지 갤러리 섹션 */}
         {artwork.images.length > 0 && (
           <section className="mb-12">
-            <h2 className="images-center mb-4 flex gap-2 text-2xl font-semibold">
-              <ImageIcon className="size-5" />
-              갤러리
-            </h2>
             <div className="mx-auto">
               <Carousel>
                 <CarouselContent>

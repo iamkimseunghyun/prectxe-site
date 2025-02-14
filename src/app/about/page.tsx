@@ -45,35 +45,46 @@ const Page = () => {
               온라인과 오프라인의 경계를 넘어 새로운 예술 경험을 창조합니다.
             </p>
           </section>
-
           <section>
-            <h2 className="mb-3 text-2xl font-semibold">What We Do</h2>
+            <h2 className="mb-3 text-2xl font-semibold">미션 Mission</h2>
+            <p className="text-gray-600">
+              아티스트와 팬을 연결하고 지속가능한 창작 생태계를 만듭니다.
+            </p>
+          </section>
+          <section>
+            <h2 className="mb-3 text-2xl font-semibold">
+              창작 생태계 Creative Ecosystem
+            </h2>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg bg-gray-50 p-4">
                 <h3 className="mb-2 font-semibold">Digital Art Platform</h3>
                 <ul className="text-sm text-gray-600 *:py-1">
-                  <li>
-                    아티스트들의 작품을 전시하고 판매하는 온라인 갤러리 플랫폼
-                  </li>
-                  <li>✔ 티켓팅, 작품, 굿즈 판매, 아티스트 후원</li>
-                  <li>✔ 아티스트가 직접 작품 판매, 프로젝트 펀딩 개설</li>
-                  <li>✔ 아티스트·크리에이터·기획자·팬과 연결</li>
+                  <li>디지털 아티스트들의 창작 활동을 위한 통합 플랫폼</li>
+                  <li>✔ NFT 아트 갤러리와 작품 거래 시스템</li>
+                  <li>✔ 크리에이터 펀딩과 후원 프로그램</li>
+                  <li>✔ 아티스트-팬 커뮤니티 빌딩</li>
+                  <li>✔ 디지털 아트 교육과 워크숍</li>
                 </ul>
               </div>
               <div className="rounded-lg bg-gray-50 p-4">
                 <h3 className="mb-2 font-semibold">Art Festival</h3>
                 <ul className="text-sm text-gray-600 *:py-1">
-                  <li>디지털 아트와 퍼포먼스가 결합된 현장 축제 개최</li>
-                  <li>✔ 전시, 라이브 공연, 인터랙티브 아트</li>
-                  <li>✔ 글로벌 아티스트와 협업, 교류하는 예술 콘텐츠</li>
-                  <li>✔ 온라인 & 오프라인 예술 생태계 구축</li>
+                  <li>온·오프라인을 넘나드는 혁신적인 예술 축제</li>
+                  <li>✔ 실감형 디지털 아트 전시</li>
+                  <li>✔ 인터랙티브 퍼포먼스와 라이브 쇼</li>
+                  <li>✔ 글로벌 아티스트 레지던시 프로그램</li>
+                  <li>
+                    ✔ 테크놀로지와 예술의 경계를 탐험하는 실험적 프로젝트
+                  </li>
                 </ul>
               </div>
             </div>
           </section>
 
           <section>
-            <h2 className="mb-3 text-2xl font-semibold">Join Us</h2>
+            <h2 className="mb-3 text-2xl font-semibold">
+              새로운 창작의 세계를 Create with Us
+            </h2>
             <p className="mb-4 text-gray-600">
               새로운 디지털 아트의 세계를 함께 만들어갈 아티스트와 관람객을
               기다립니다.

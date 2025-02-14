@@ -10,52 +10,62 @@ import {
 import { revalidatePath } from 'next/cache';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 
-export async function getArtworkById(id: string) {
-  // 1. 먼저 ArtistArtwork 테이블 확인
-  // const artistArtworks = await prisma.artistArtwork.findMany({
-  //   where: {
-  //     artworkId: id,
-  //   },
-  //   include: {
-  //     artist: true,
-  //     artwork: true,
-  //   },
-  // });
-  // console.log('1. ArtistArtwork relationships:', JSON.stringify(artistArtworks, null, 2));
-
-  // 2. 직접 Artist 테이블 확인
-  // const artists = await prisma.artist.findMany();
-  // console.log('2. All Artists:', JSON.stringify(artists, null, 2));
-
-  // 3. 작품 데이터와 관계 확인
-  const artwork = await prisma.artwork.findUnique({
-    where: { id },
+export async function getArtworksByArtistId(artistId: string) {
+  const artworks = await prisma.artwork.findMany({
+    where: {
+      artists: {
+        some: {
+          artistId: artistId,
+        },
+      },
+    },
     include: {
       images: {
         orderBy: {
           order: 'asc',
         },
       },
-      artists: {
-        include: {
-          artist: {
-            select: {
-              id: true,
-              name: true,
-              nameKr: true,
-              mainImageUrl: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+  console.log(`Found ${artworks.length} artworks for artist ${artistId}`);
+  return artworks;
+}
+
+export async function getArtworkById(id: string) {
+  try {
+    const artwork = await prisma.artwork.findUnique({
+      where: { id },
+      include: {
+        images: {
+          orderBy: {
+            order: 'asc',
+          },
+        },
+        artists: {
+          include: {
+            artist: {
+              select: {
+                id: true,
+                name: true,
+                nameKr: true,
+                mainImageUrl: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
 
-  // console.log('3. Full artwork data:', JSON.stringify(artwork, null, 2));
+    if (!artwork) notFound();
 
-  if (!artwork) notFound();
-
-  return artwork;
+    return artwork;
+  } catch (error) {
+    console.error('Error fetching artwork:', error);
+    throw error;
+  }
 }
 
 export async function getAllArtworks() {
@@ -84,6 +94,8 @@ export async function createArtwork(formData: FormData, userId: string) {
       artists: JSON.parse(formData.get('artists')?.toString() || '[]'),
     };
 
+    console.log('Artists data received:', rawData.artists); // 로깅 추가
+
     const validatedData = createArtworkSchema.safeParse(rawData);
 
     if (!validatedData.success) {
@@ -111,10 +123,8 @@ export async function createArtwork(formData: FormData, userId: string) {
           })),
         },
         artists: {
-          create: validatedData.data.artists.map((artistData: any) => ({
-            artist: {
-              connect: { id: artistData.artistId },
-            },
+          create: validatedData.data.artists.map((artist: any) => ({
+            artistId: artist.artistId,
           })),
         },
       },
@@ -131,7 +141,10 @@ export async function createArtwork(formData: FormData, userId: string) {
     // Revalidate the artworks page
     revalidatePath('/artworks');
     revalidatePath(`/artworks/${artwork.id}`);
-
+    console.log(
+      'Created/Updated artwork with relationships:',
+      JSON.stringify(artwork, null, 2)
+    );
     return { ok: true, data: artwork };
   } catch (error) {
     console.error('아트워크 등록 중 서버 에러 발생.', error);
@@ -197,16 +210,26 @@ export async function updateArtwork(formData: FormData, artworkId: string) {
         },
         artists: {
           deleteMany: {},
-          create: validatedData.data.artists?.map((artistData) => ({
-            artist: {
-              connect: { id: artistData.artistId },
-            },
+          create: validatedData.data.artists?.map((artist) => ({
+            artistId: artist.artistId,
           })),
+        },
+      },
+      include: {
+        images: true,
+        artists: {
+          include: {
+            artist: true,
+          },
         },
       },
     });
     revalidatePath('/artworks');
     revalidatePath(`/artworks/${artworkId}`);
+    console.log(
+      'Created/Updated artwork with relationships:',
+      JSON.stringify(artwork, null, 2)
+    );
     return { ok: true, data: artwork };
   } catch (error) {
     console.error('작품 수정에 실패했습니다.:', error);
@@ -214,6 +237,7 @@ export async function updateArtwork(formData: FormData, artworkId: string) {
   }
 }
 
-export async function deleteArtworkById(id: string) {
+export async function deleteArtwork(id: string) {
   await prisma.artwork.delete({ where: { id: id } });
+  return { success: true };
 }

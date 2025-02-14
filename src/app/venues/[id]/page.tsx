@@ -6,6 +6,7 @@ import { Metadata } from 'next';
 import { getVenueById } from '@/app/venues/actions';
 import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
+import BreadcrumbNav from '@/components/breadcrum-nav';
 
 export async function generateMetadata({
   params,
@@ -46,6 +47,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
+      <BreadcrumbNav entityType={'venue'} title={venue.name} />
+
       {/* Gallery Section */}
       <div className="relative mb-4 aspect-[16/9] w-full overflow-hidden rounded-lg">
         <CarouselGallery images={venue.images} />

@@ -14,6 +14,7 @@ import {
 } from '@/lib/utils';
 import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
+import BreadcrumbNav from '@/components/breadcrum-nav';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
@@ -27,6 +28,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   return (
     <div className="mx-auto max-w-5xl px-12 py-6">
+      <BreadcrumbNav entityType={'event'} title={result.data.title} />
       {/* 이벤트 헤더 섹션 */}
       <div className="mb-8">
         <div className="mb-4 flex items-center gap-2">

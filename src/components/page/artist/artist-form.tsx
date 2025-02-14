@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import React from 'react';
+import React, { useState } from 'react';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import {
   baseArtistCreateSchema,
@@ -27,6 +27,7 @@ import MultiImageBox from '@/components/image/multi-image-box';
 import { uploadGalleryImages, uploadSingleImage } from '@/lib/utils';
 import { createArtist, updateArtist } from '@/app/artists/actions';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import FormSubmitButton from '@/components/form-submit-button';
 
 type ArtistFormProps = {
   mode: 'create' | 'edit';
@@ -42,6 +43,7 @@ const ArtistForm = ({
   userId,
 }: ArtistFormProps) => {
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const defaultValues = {
     name: initialData?.name ?? '',
@@ -111,6 +113,7 @@ const ArtistForm = ({
   };
 
   const onSubmit = handleSubmit(async (data: CreateArtistType) => {
+    setIsSubmitting(true);
     try {
       if (imageFile) {
         await uploadSingleImage(imageFile, uploadURL);
@@ -134,6 +137,8 @@ const ArtistForm = ({
       setError('root', {
         message: error instanceof Error ? error.message : '아티스트 등록 실패',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   });
 
@@ -261,9 +266,13 @@ const ArtistForm = ({
             >
               취소
             </Button>
-            <Button type="submit">
+            <FormSubmitButton
+              type="submit"
+              loading={isSubmitting}
+              loadingText={mode === 'edit' ? '수정하기' : '등록하기'}
+            >
               {mode === 'edit' ? '수정하기' : '등록하기'}
-            </Button>
+            </FormSubmitButton>
           </CardFooter>
           {errors.root && (
             <p className="text-sm text-red-500">{errors.root.message}</p>

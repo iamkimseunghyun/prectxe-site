@@ -5,7 +5,6 @@ import {
   baseArtistCreateSchema,
   createSimpleArtistSchema,
   SimpleArtistType,
-  UpdateArtistType,
 } from '@/app/artists/artist';
 import { revalidatePath } from 'next/cache';
 import { GalleryImage } from '@/lib/validations/gallery-image';
@@ -35,7 +34,7 @@ export async function getArtistById(artistId: string) {
     });
     if (!artist) return null;
 
-    const formattedData: UpdateArtistType = {
+    const formattedData = {
       ...artist,
       email: artist.email ?? undefined, // null 값을 undefined로 변환
       city: artist.city ?? undefined,
@@ -58,11 +57,6 @@ export async function getArtistById(artistId: string) {
     console.error(error);
     throw error;
   }
-}
-
-export async function deleteArtwork(id: string) {
-  await prisma.artwork.delete({ where: { id: id } });
-  return { success: true };
 }
 
 export async function getArtists() {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -26,6 +26,7 @@ import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { uploadGalleryImages } from '@/lib/utils';
 import MultiImageBox from '@/components/image/multi-image-box';
 import ArtistSelect from '@/components/page/project/artist-select';
+import FormSubmitButton from '@/components/form-submit-button';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';
@@ -43,6 +44,7 @@ const ArtWorkForm = ({
   artists,
 }: ArtworkFormProps) => {
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const defaultValues = {
     title: initialData?.title ?? '',
@@ -100,18 +102,8 @@ const ArtWorkForm = ({
   };
 
   const onSubmit = handleSubmit(async (data: CreateArtworkType) => {
+    setIsSubmitting(true);
     try {
-      // 데이터 로깅 추가
-      console.log('Form submission data:', {
-        title: data.title,
-        size: data.size,
-        media: data.media,
-        year: data.year,
-        description: data.description,
-        style: data.style,
-        images: data.images,
-      });
-
       if (multiImagePreview.length > 0) {
         await uploadGalleryImages(multiImagePreview);
       }
@@ -130,6 +122,8 @@ const ArtWorkForm = ({
       setError('root', {
         message: error instanceof Error ? error.message : '작품 등록 실패',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   });
 
@@ -241,12 +235,17 @@ const ArtWorkForm = ({
               type="button"
               variant="outline"
               onClick={() => router.back()}
+              disabled={isSubmitting}
             >
               취소
             </Button>
-            <Button type="submit">
+            <FormSubmitButton
+              type="submit"
+              loading={isSubmitting}
+              loadingText={mode === 'edit' ? '수정하기' : '등록하기'}
+            >
               {mode === 'edit' ? '수정하기' : '등록하기'}
-            </Button>
+            </FormSubmitButton>
           </CardFooter>
           {errors.root && (
             <p className="text-sm text-red-500">{errors.root.message}</p>

@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { formatDate, getImageUrl } from '@/lib/utils';
 import Image from 'next/image';
-import { getAllArtworks } from '@/app/artworks/actions';
+import { getArtworksByArtistId } from '@/app/artworks/actions';
 
-const WorkList = async () => {
-  const works = await getAllArtworks();
+const WorkList = async ({ artistId }: { artistId: string }) => {
+  const works = await getArtworksByArtistId(artistId);
 
   if (works.length === 0) {
     return (

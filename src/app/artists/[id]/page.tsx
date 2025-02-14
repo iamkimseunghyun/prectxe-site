@@ -13,6 +13,7 @@ import { getArtistById } from '@/app/artists/actions';
 import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
 import EventList from '@/components/page/event/event-list';
+import BreadcrumbNav from '@/components/breadcrum-nav';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -25,6 +26,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   return (
     <div className="mx-auto max-w-5xl py-10">
+      <BreadcrumbNav entityType="artist" title={artist.name} />
       <div className="grid gap-6 md:grid-cols-2">
         {/* 프로필 섹션 */}
         <Card>
@@ -116,7 +118,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             <div className="flex items-center justify-between">
               <CardTitle>작품</CardTitle>
               {session.id && (
-                <Link href={`/artists/new`}>
+                <Link href={`/artworks/new`}>
                   <Button variant="outline" size="sm">
                     작품 등록
                   </Button>
@@ -125,7 +127,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             </div>
           </CardHeader>
           <CardContent>
-            <WorkList />
+            <WorkList artistId={id} />
           </CardContent>
         </Card>
 

@@ -1,0 +1,24 @@
+import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
+import { EntityType, ROUTE_CONFIG } from '@/lib/route-config';
+
+interface BreadcrumbNavProps {
+  entityType: EntityType;
+  title: string;
+}
+
+const BreadcrumbNav = ({ entityType, title }: BreadcrumbNavProps) => {
+  const config = ROUTE_CONFIG[entityType];
+
+  return (
+    <nav className="mb-6 flex items-center space-x-2 text-sm text-muted-foreground">
+      <Link href={`/${config.path}`} className="hover:text-foreground">
+        {config.displayName}
+      </Link>
+      <ChevronRight className="h-4 w-4" />
+      <span className="text-foreground">{title}</span>
+    </nav>
+  );
+};
+
+export default BreadcrumbNav;
