@@ -29,7 +29,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import { createProject, updateProject } from '@/app/projects/actions';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
@@ -38,6 +37,7 @@ import SingleImageBox from '@/components/image/single-image-box';
 import MultiImageBox from '@/components/image/multi-image-box';
 import UploadProgress from '@/components/upload-progress';
 import ArtistSelect from '@/components/page/project/artist-select';
+import FormSubmitButton from '@/components/form-submit-button';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';
@@ -58,6 +58,7 @@ const ProjectForm = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // initialData가 있으면 날짜 형식만 변환
   const defaultValues = initialData
@@ -137,6 +138,7 @@ const ProjectForm = ({
   };
 
   const onSubmit = handleSubmit(async (data: ProjectFormData) => {
+    setIsSubmitting(true);
     try {
       setIsUploading(true);
       setUploadStatus('메인 이미지 업로드 중...');
@@ -170,6 +172,8 @@ const ProjectForm = ({
       setError('root', {
         message: error instanceof Error ? error.message : '프로젝트 등록 실패',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   });
 
@@ -328,16 +332,13 @@ const ProjectForm = ({
           </CardContent>
 
           <CardFooter className="flex justify-end gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
+            <FormSubmitButton
+              type="submit"
+              loading={isSubmitting}
+              loadingText={mode === 'edit' ? '수정하기' : '등록하기'}
             >
-              취소
-            </Button>
-            <Button type="submit">
               {mode === 'edit' ? '수정하기' : '등록하기'}
-            </Button>
+            </FormSubmitButton>
           </CardFooter>
           {errors.root && (
             <p className="text-sm text-red-500">{errors.root.message}</p>
