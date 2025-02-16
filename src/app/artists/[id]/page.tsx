@@ -14,6 +14,7 @@ import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
 import EventList from '@/components/page/event/event-list';
 import BreadcrumbNav from '@/components/breadcrum-nav';
+import canManage from '@/lib/can-manage';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -23,6 +24,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   if (!artist) {
     notFound();
   }
+
+  const canEdit = await canManage(session.id!, artist.userId);
 
   return (
     <div className="mx-auto max-w-5xl py-10">
@@ -91,8 +94,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           <CardContent className="pt-6">
             <Tabs defaultValue="biography" className="space-y-4">
               <TabsList>
-                <TabsTrigger value="biography">약력</TabsTrigger>
-                <TabsTrigger value="cv">이력서</TabsTrigger>
+                <TabsTrigger value="biography">소개</TabsTrigger>
+                <TabsTrigger value="cv">이력</TabsTrigger>
               </TabsList>
               <TabsContent value="biography" className="space-y-4">
                 {artist.biography && (
@@ -143,7 +146,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           </CardContent>
         </Card>
       </div>
-      {session.id && (
+      {canEdit && (
         <div className="mt-6 flex justify-end gap-x-2">
           <AdminButton id={id} entityType="artist" />
         </div>

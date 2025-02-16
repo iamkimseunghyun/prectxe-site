@@ -10,6 +10,7 @@ import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
+import canManage from '@/lib/can-manage';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -25,6 +26,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
     festival: '페스티벌',
     workshop: '워크숍',
   }[project.category];
+
+  const canEdit = await canManage(session.id!, project.userId);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
@@ -113,7 +116,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
       )}
 
       {/* 어드민 버튼 */}
-      {session.id && (
+      {canEdit && (
         <div className="mt-6 flex justify-end gap-x-2">
           <AdminButton id={project.id} entityType="project" />
         </div>

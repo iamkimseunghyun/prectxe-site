@@ -15,11 +15,14 @@ import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
 import Link from 'next/link';
 import BreadcrumbNav from '@/components/breadcrum-nav';
+import canManage from '@/lib/can-manage';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
   const artwork = await getArtworkById(id);
   const session = await getSession();
+
+  const canEdit = await canManage(session.id!, artwork.userId);
   return (
     <div className="mx-auto max-w-5xl py-10">
       <BreadcrumbNav entityType="artwork" title={artwork.title} />
@@ -130,7 +133,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           </CardContent>
         </Card>
       </div>
-      {session.id && (
+      {canEdit && (
         <div className="mt-6 flex justify-end gap-x-2">
           <AdminButton id={artwork.id} entityType="artwork" />
         </div>

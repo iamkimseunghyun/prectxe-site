@@ -15,6 +15,7 @@ import {
 import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
 import BreadcrumbNav from '@/components/breadcrum-nav';
+import canManage from '@/lib/can-manage';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
@@ -25,6 +26,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   }
 
   const session = await getSession();
+
+  const canEdit = await canManage(session.id!, result.data.id);
 
   return (
     <div className="mx-auto max-w-5xl px-12 py-6">
@@ -222,7 +225,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
         </div>
       </div>
       {/* 어드민 버튼 */}
-      {session.id && (
+      {canEdit && (
         <div className="mt-6 flex justify-end gap-x-2">
           <AdminButton id={id} entityType="event" />
         </div>

@@ -31,16 +31,37 @@ enum EventType {
   other
 }
 
+enum Role {
+  ADMIN
+  USER
+}
+
 model User {
   id       String    @id @default(cuid())
-  username String    @unique
-  email    String    @unique
-  password String
+  username String?   @unique
+  email    String?   @unique
+  password String?
+  role     Role?     @default(USER)
+  posts    Post[]
   projects Project[]
   events   Event[]
   artists  Artist[]
   artworks Artwork[]
   venues   Venue[]
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+model Post {
+  id        String    @id @default(cuid())
+  title     String?
+  content   String?
+  published Boolean?  @default(false)
+  author    User?     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
 model Project {
