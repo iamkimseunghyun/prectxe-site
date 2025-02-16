@@ -59,20 +59,20 @@ const Page = () => {
               <div className="rounded-lg bg-gray-50 p-4">
                 <h3 className="mb-2 font-semibold">Digital Art Platform</h3>
                 <ul className="text-sm text-gray-600 *:py-1">
-                  <li>디지털 아티스트들의 창작 활동을 위한 통합 플랫폼</li>
-                  <li>✔ NFT 아트 갤러리와 작품 거래 시스템</li>
-                  <li>✔ 크리에이터 펀딩과 후원 프로그램</li>
-                  <li>✔ 아티스트-팬 커뮤니티 빌딩</li>
-                  <li>✔ 디지털 아트 교육과 워크숍</li>
+                  <li>
+                    디지털 아티스트들의 창작과 수익 활동을 위한 통합 플랫폼
+                  </li>
+                  <li>✔ 아티스트 갤러리와 작품 거래 시스템</li>
+                  <li>✔ 창작자와 기획자의 프로젝트 펀딩과 후원 프로그램</li>
+                  <li>✔ 아티스트-팬-기획자 커뮤니티 빌딩</li>
                 </ul>
               </div>
               <div className="rounded-lg bg-gray-50 p-4">
                 <h3 className="mb-2 font-semibold">Art Festival</h3>
                 <ul className="text-sm text-gray-600 *:py-1">
-                  <li>온·오프라인을 넘나드는 혁신적인 예술 축제</li>
-                  <li>✔ 실감형 디지털 아트 전시</li>
-                  <li>✔ 인터랙티브 퍼포먼스와 라이브 쇼</li>
-                  <li>✔ 글로벌 아티스트 레지던시 프로그램</li>
+                  <li>온·오프라인을 넘나드는 예술 축제</li>
+                  <li>✔ 디지털 아트 전시</li>
+                  <li>✔ 전자음악과 인터랙티브 라이브 공연</li>
                   <li>
                     ✔ 테크놀로지와 예술의 경계를 탐험하는 실험적 프로젝트
                   </li>

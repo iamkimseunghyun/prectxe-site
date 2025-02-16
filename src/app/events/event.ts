@@ -58,7 +58,7 @@ export const eventFormSchema = z
       message: '종료일은 현재 시간 이후여야 합니다',
     }),
     mainImageUrl: z.string().url('올바른 이미지 URL을 입력해주세요'),
-    venueId: z.string().min(1, '장소를 선택해주세요'),
+    venueId: z.string().optional(),
     organizers: z
       .array(eventOrganizerSchema)
       .min(1, '최소 1명 이상의 주최자가 필요합니다'),
