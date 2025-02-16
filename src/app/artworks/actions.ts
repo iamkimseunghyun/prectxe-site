@@ -71,6 +71,7 @@ export async function getArtworkById(id: string) {
 export async function getAllArtworks() {
   const artworks = prisma.artwork.findMany({
     include: {
+      user: true,
       images: true,
     },
     orderBy: {

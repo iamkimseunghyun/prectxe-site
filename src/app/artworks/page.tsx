@@ -4,6 +4,8 @@ import Link from 'next/link';
 import ArtworkGrid from '@/components/page/artwork/artwork-grid';
 import { Metadata } from 'next';
 import { getAllArtworks } from '@/app/artworks/actions';
+import getSession from '@/lib/session';
+import canManage from '@/lib/can-manage';
 
 export const metadata: Metadata = {
   title: '작품 목록 | PRECTXE',
@@ -15,14 +17,20 @@ export const metadata: Metadata = {
 };
 
 const Page = async () => {
+  const session = await getSession();
   const artworks = await getAllArtworks();
+
+  const canEdit = await canManage(session.id!);
+
   return (
     <div className="mx-auto max-w-5xl py-10">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-3xl font-bold">작품 목록</h1>
-        <Link href="/artworks/new">
-          <Button>새 작품 등록</Button>
-        </Link>
+        {canEdit && (
+          <Link href="/artworks/new">
+            <Button>새 작품 등록</Button>
+          </Link>
+        )}
       </div>
       <ArtworkGrid artworks={artworks} />
     </div>

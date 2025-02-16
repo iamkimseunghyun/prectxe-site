@@ -2,7 +2,7 @@ import { prisma } from '@/lib/db/prisma';
 
 export default async function canManage(
   sessionId: string,
-  artistId: string
+  authorId?: string
 ): Promise<boolean> {
   let user = null;
   if (sessionId) {
@@ -12,6 +12,6 @@ export default async function canManage(
     });
   }
 
-  const canManage = user?.role === 'ADMIN' || sessionId === artistId;
+  const canManage = user?.role === 'ADMIN' || sessionId === authorId;
   return canManage;
 }
