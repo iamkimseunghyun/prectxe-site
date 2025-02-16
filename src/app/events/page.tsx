@@ -37,7 +37,7 @@ interface Event {
   type: EventType;
   startDate: string;
   endDate: string;
-  venueId: string;
+  venueId: string | null;
   venue: Venue | null;
 }
 
