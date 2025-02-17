@@ -49,6 +49,9 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  other: {
+    'naver-site-verification': '300199d0d8d13b5cec4510cd23ec7f007e7e9f56',
+  },
 };
 
 // viewport는 별도로 export
@@ -74,7 +77,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="overflow-y-scroll">
+    <html lang="ko" className="overflow-y-scroll">
       <body
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
       >

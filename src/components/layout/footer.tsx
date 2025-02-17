@@ -42,7 +42,7 @@ export function Footer() {
             {/* 연락처 */}
             <div>
               <h3 className="mb-3 text-sm font-semibold">Contact</h3>
-              <p className="text-gray-600">info@laaf.io</p>
+              <p className="text-gray-600">info@laaf.kr</p>
             </div>
           </div>
         </div>
