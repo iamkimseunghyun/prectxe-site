@@ -15,7 +15,47 @@ import getSession from '@/lib/session';
 import EventList from '@/components/page/event/event-list';
 import BreadcrumbNav from '@/components/breadcrum-nav';
 import canManage from '@/lib/can-manage';
+import { Metadata } from 'next';
+import { prisma } from '@/lib/db/prisma';
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const artist = await prisma.artist.findUnique({
+    where: { id: id },
+    select: {
+      name: true,
+      nameKr: true,
+      biography: true,
+      mainImageUrl: true,
+      city: true,
+      country: true,
+    },
+  });
+
+  if (!artist) {
+    return {
+      title: 'Artist Not Found',
+    };
+  }
+
+  const description =
+    artist.biography ||
+    `${artist.nameKr} (${artist.name}) - ${artist.city ? `${artist.city}, ` : ''}${artist.country || ''}`;
+
+  return {
+    title: `${artist.nameKr} (${artist.name})`,
+    description: description.slice(0, 160),
+    openGraph: {
+      title: `${artist.nameKr} (${artist.name})`,
+      description: description.slice(0, 160),
+      images: artist.mainImageUrl ? [{ url: artist.mainImageUrl }] : undefined,
+    },
+  };
+}
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
   const artist = await getArtistById(id);

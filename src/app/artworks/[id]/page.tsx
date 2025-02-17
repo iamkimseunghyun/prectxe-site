@@ -16,6 +16,76 @@ import getSession from '@/lib/session';
 import Link from 'next/link';
 import BreadcrumbNav from '@/components/breadcrum-nav';
 import canManage from '@/lib/can-manage';
+import { Metadata } from 'next';
+import { prisma } from '@/lib/db/prisma';
+import ArtworkSchema from '@/components/schema/artwork-schema';
+import { validateArtworkData } from '@/lib/validations/schema';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const artwork = await prisma.artwork.findUnique({
+    where: { id: id },
+    select: {
+      title: true,
+      description: true,
+      year: true,
+      media: true,
+      size: true,
+      style: true,
+      images: {
+        select: {
+          imageUrl: true,
+        },
+        take: 1,
+      },
+      artists: {
+        select: {
+          artist: {
+            select: {
+              name: true,
+              nameKr: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!artwork) {
+    return {
+      title: 'Artwork Not Found',
+    };
+  }
+
+  const artists = artwork.artists
+    .map((a) => `${a.artist.nameKr} (${a.artist.name})`)
+    .join(', ');
+  const details = [
+    artwork.year && `Year: ${artwork.year}`,
+    artwork.media && `Media: ${artwork.media}`,
+    artwork.size && `Size: ${artwork.size}`,
+    artwork.style && `Style: ${artwork.style}`,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+
+  return {
+    title: `${artwork.title} by ${artists}`,
+    description: artwork.description || `${artwork.title} - ${details}`,
+    openGraph: {
+      title: artwork.title,
+      description: artwork.description || details,
+      images: artwork.images[0]?.imageUrl
+        ? [{ url: artwork.images[0].imageUrl }]
+        : undefined,
+      type: 'article',
+    },
+  };
+}
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -23,8 +93,11 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const session = await getSession();
 
   const canEdit = await canManage(session.id!, artwork.userId);
+
+  const validatedArtwork = validateArtworkData(artwork);
   return (
     <div className="mx-auto max-w-5xl py-10">
+      <ArtworkSchema artwork={validatedArtwork} />
       <BreadcrumbNav entityType="artwork" title={artwork.title} />
 
       <div className="mb-8">

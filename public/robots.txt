@@ -1,0 +1,43 @@
+// public/robots.txt
+User-agent: *
+Allow: /
+
+
+# 크롤링 제외할 경로
+Disallow: /api/*
+Disallow: /admin/*
+Disallow: /dashboard/*
+Disallow: /auth/*
+Disallow: /*/edit
+Disallow: /*/new
+
+# 사이트맵 위치
+Sitemap: https://prectxe.com/sitemap.xml
+
+// app/api/sitemap/route.ts
+import { NextResponse } from 'next/server'
+import { MetadataRoute } from 'next'
+import sitemap from '@/app/sitemap'
+
+export async function GET() {
+  const sitemapData = await sitemap()
+
+  // XML 형식으로 변환
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  ${sitemapData.map((route) => `
+    <url>
+      <loc>${route.url}</loc>
+      <lastmod>${route.lastModified.toISOString()}</lastmod>
+      <changefreq>${route.changeFrequency}</changefreq>
+      <priority>${route.priority}</priority>
+    </url>
+  `).join('')}
+</urlset>`
+
+  return new NextResponse(xml, {
+    headers: {
+      'Content-Type': 'application/xml',
+    },
+  })
+}

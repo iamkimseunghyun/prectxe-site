@@ -10,45 +10,33 @@ import { Metadata } from 'next';
 
 // 메타데이터 설정
 export const metadata: Metadata = {
+  metadataBase: new URL('https://prectxe.com'),
   title: {
-    default: 'PRECTXE - Digital Art Platform',
+    default: 'PRECTXE',
     template: '%s | PRECTXE',
   },
-  description:
-    '디지털 아트 페스티벌, 전시, 공연을 위한 플랫폼. PRECTXE에서 새로운 예술을 경험하세요.',
-  keywords: [
-    '디지털아트',
-    '전시',
-    '공연',
-    '페스티벌',
-    '워크샵',
-    'PRECTXE',
-    '프렉티스',
-  ],
+  description: 'Digital Art Platform for Artists and Art Lovers',
+  keywords: ['digital art', 'art platform', 'artists', 'exhibitions', 'events'],
   authors: [{ name: 'PRECTXE' }],
   creator: 'PRECTXE',
-  metadataBase: new URL('https://prectxe.com'), // 실제 도메인으로 변경해주세요
+  publisher: 'PRECTXE',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   openGraph: {
     type: 'website',
     locale: 'ko_KR',
     url: 'https://prectxe.com',
-    title: 'PRECTXE - Digital Art Platform',
-    description: '디지털 아트 페스티벌, 전시, 공연을 위한 플랫폼',
+    title: 'PRECTXE',
+    description: 'Digital Art Platform for Artists and Art Lovers',
     siteName: 'PRECTXE',
-    images: [
-      {
-        url: '/og-image.jpg', // 실제 OG 이미지 경로로 변경해주세요
-        width: 1200,
-        height: 630,
-        alt: 'PRECTXE Preview',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PRECTXE - Digital Art Platform',
-    description: '디지털 아트 페스티벌, 전시, 공연을 위한 플랫폼',
-    images: ['/og-image.jpg'], // 실제 트위터 카드 이미지 경로로 변경해주세요
+    title: 'PRECTXE',
+    description: 'Digital Art Platform for Artists and Art Lovers',
   },
   robots: {
     index: true,
@@ -56,17 +44,18 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
       'max-image-preview': 'large',
+      'max-video-preview': -1,
       'max-snippet': -1,
     },
   },
-  verification: {
-    google: 'google-site-verification-code', // 구글 서치 콘솔 인증 코드
-    other: {
-      'naver-site-verification': 'naver-site-verification-code', // 네이버 서치어드바이저 인증 코드
-    },
-  },
+};
+
+// viewport는 별도로 export
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 const geistSans = Geist({

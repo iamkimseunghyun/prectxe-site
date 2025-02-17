@@ -16,6 +16,79 @@ import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
 import BreadcrumbNav from '@/components/breadcrum-nav';
 import canManage from '@/lib/can-manage';
+import { Metadata } from 'next';
+import { prisma } from '@/lib/db/prisma';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const id = (await params).id;
+  const event = await prisma.event.findUnique({
+    where: { id: id },
+    select: {
+      title: true,
+      subtitle: true,
+      description: true,
+      mainImageUrl: true,
+      startDate: true,
+      endDate: true,
+      type: true,
+      status: true,
+      venue: {
+        select: {
+          name: true,
+          address: true,
+        },
+      },
+      organizers: {
+        select: {
+          artist: {
+            select: {
+              name: true,
+              nameKr: true,
+            },
+          },
+          role: true,
+        },
+      },
+    },
+  });
+
+  if (!event) {
+    return {
+      title: 'Event Not Found',
+    };
+  }
+
+  const organizers = event.organizers
+    .map((org) => `${org.artist.nameKr} (${org.artist.name}) - ${org.role}`)
+    .join(', ');
+
+  return {
+    title: event.title,
+    description: `${event.subtitle ? event.subtitle + ' - ' : ''}${event.description.slice(0, 120)}`,
+    openGraph: {
+      title: event.title,
+      description: event.description.slice(0, 160),
+      images: event.mainImageUrl ? [{ url: event.mainImageUrl }] : undefined,
+      type: 'article',
+      publishedTime: event.startDate.toISOString(),
+      modifiedTime: event.endDate.toISOString(),
+      authors: event.organizers.map((org) => org.artist.nameKr),
+      siteName: 'PRECTXE',
+    },
+    other: {
+      'event:status': event.status,
+      'event:type': event.type,
+      'event:organizers': organizers,
+      'event-location': event.venue
+        ? `${event.venue.name} - ${event.venue.address}`
+        : '',
+    },
+  };
+}
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;

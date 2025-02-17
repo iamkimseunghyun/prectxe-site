@@ -8,7 +8,7 @@ const MotionDiv = motion.div;
 
 export function HeroSection() {
   return (
-    <section className="relative flex min-h-[50vh] items-center overflow-hidden bg-gradient-to-b from-white to-gray-50">
+    <section className="relative flex min-h-[70dvh] items-center overflow-hidden bg-gradient-to-b from-white to-gray-50">
       {/* 배경 블롭 효과 */}
       <div className="absolute inset-0 h-full w-full">
         <div className="blob absolute left-10 top-20 h-96 w-96 rounded-full bg-purple-400 opacity-70 blur-2xl" />

@@ -11,6 +11,84 @@ import getSession from '@/lib/session';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import canManage from '@/lib/can-manage';
+import { prisma } from '@/lib/db/prisma';
+import { Metadata } from 'next';
+
+// src/app/projects/[id]/page.tsx
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const project = await prisma.project.findUnique({
+    where: { id: id },
+    select: {
+      title: true,
+      about: true,
+      description: true,
+      year: true,
+      category: true,
+      mainImageUrl: true,
+      startDate: true,
+      endDate: true,
+      projectArtists: {
+        select: {
+          artist: {
+            select: {
+              name: true,
+              nameKr: true,
+            },
+          },
+        },
+      },
+      venues: {
+        select: {
+          venue: {
+            select: {
+              name: true,
+              address: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!project) {
+    return {
+      title: 'Project Not Found',
+    };
+  }
+
+  const artists = project.projectArtists
+    .map((pa) => `${pa.artist.nameKr} (${pa.artist.name})`)
+    .join(', ');
+
+  const venues = project.venues
+    .map((v) => `${v.venue.name} (${v.venue.address})`)
+    .join(', ');
+
+  return {
+    title: project.title,
+    description: `${project.about} - ${project.description.slice(0, 100)}`,
+    openGraph: {
+      title: project.title,
+      description: project.description.slice(0, 160),
+      images: project.mainImageUrl
+        ? [{ url: project.mainImageUrl }]
+        : undefined,
+      type: 'article',
+    },
+    other: {
+      'project:category': project.category,
+      'project:year': project.year.toString(),
+      'project:artists': artists,
+      'project:venues': venues,
+      'project:duration': `${project.startDate.toLocaleDateString()} - ${project.endDate.toLocaleDateString()}`,
+    },
+  };
+}
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
