@@ -12,11 +12,19 @@ import { Metadata } from 'next';
 export const metadata: Metadata = {
   metadataBase: new URL('https://prectxe.com'),
   title: {
-    default: 'PRECTXE',
-    template: '%s | PRECTXE',
+    default: '프렉티스 | 디지털 아트 플랫폼',
+    template: '%s | 프렉티스',
   },
-  description: 'Digital Art Platform for Artists and Art Lovers',
-  keywords: ['digital art', 'art platform', 'artists', 'exhibitions', 'events'],
+  description:
+    '작가와 관객을 위한 디지털 아트 플랫폼, 프렉티스에서 새로운 예술을 만나보세요',
+  keywords: [
+    '디지털 아트',
+    '예술 플랫폼',
+    '아티스트',
+    '전시',
+    '공연',
+    '이벤트',
+  ],
   authors: [{ name: 'PRECTXE' }],
   creator: 'PRECTXE',
   publisher: 'PRECTXE',
@@ -29,14 +37,16 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'ko_KR',
     url: 'https://prectxe.com',
-    title: 'PRECTXE',
-    description: 'Digital Art Platform for Artists and Art Lovers',
-    siteName: 'PRECTXE',
+    title: '프렉티스 | 디지털 아트 플랫폼',
+    description:
+      '작가와 관객을 위한 디지털 아트 플랫폼, 프렉트시에서 새로운 예술을 만나보세요',
+    siteName: '프렉티스',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PRECTXE',
-    description: 'Digital Art Platform for Artists and Art Lovers',
+    title: '프렉티스 | 디지털 아트 플랫폼',
+    description:
+      '작가와 관객을 위한 디지털 아트 플랫폼, 프렉트시에서 새로운 예술을 만나보세요',
   },
   robots: {
     index: true,
