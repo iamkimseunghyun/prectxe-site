@@ -45,7 +45,7 @@ export const eventFormSchema = z
       .string()
       .min(2, '제목은 최소 2글자 이상이어야 합니다')
       .max(100, '제목이 너무 깁니다'),
-    subtitle: z.string().max(200, '부제목이 너무 깁니다').optional().nullable(),
+    subtitle: z.string().max(200, '부제목이 너무 깁니다').optional(),
     description: z
       .string()
       .max(2000, '설명이 너무 깁니다')
