@@ -2,8 +2,6 @@
 User-agent: *
 Allow: /
 
-
-# 크롤링 제외할 경로
 Disallow: /api/*
 Disallow: /admin/*
 Disallow: /dashboard/*
