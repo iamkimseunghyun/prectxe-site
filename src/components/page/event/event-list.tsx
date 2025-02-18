@@ -1,11 +1,10 @@
 import Link from 'next/link';
 import { formatDate, getImageUrl } from '@/lib/utils';
 import Image from 'next/image';
-import { getRecentEvents } from '@/app/events/actions';
+import { getEventsByArtistId } from '@/app/events/actions';
 
-const EventList = async () => {
-  const events = await getRecentEvents();
-
+const EventList = async ({ artistId }: { artistId: string }) => {
+  const events = await getEventsByArtistId(artistId);
   if (events.length === 0) {
     return (
       <div className="py-6 text-center text-muted-foreground">
@@ -19,7 +18,7 @@ const EventList = async () => {
       {events.map((event) => (
         <Link
           key={event.id}
-          href={`/artworks/${event.id}`}
+          href={`/events/${event.id}`}
           className="group relative aspect-square overflow-hidden rounded-lg"
         >
           <Image

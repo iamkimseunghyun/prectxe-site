@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { STRING_REGEX } from '@/lib/constants/constants';
 
 // 기본 enum 값들
 const EventTypeEnum = z.enum([
@@ -44,11 +45,11 @@ export const eventFormSchema = z
       .string()
       .min(2, '제목은 최소 2글자 이상이어야 합니다')
       .max(100, '제목이 너무 깁니다'),
-    subtitle: z.string().max(200, '부제목이 너무 깁니다').optional(),
+    subtitle: z.string().max(200, '부제목이 너무 깁니다').optional().nullable(),
     description: z
       .string()
-      .min(10, '설명은 최소 10글자 이상이어야 합니다')
-      .max(2000, '설명이 너무 깁니다'),
+      .max(2000, '설명이 너무 깁니다')
+      .transform((value) => value.replace(STRING_REGEX, '')),
     type: EventTypeEnum,
     status: EventStatusEnum,
     startDate: z.string({

@@ -17,7 +17,6 @@ export default async function Home() {
     <>
       {/* 히어로 섹션 */}
       <HeroSection />
-      {/*<HereFloatingPaths />*/}
 
       <div className="mx-auto max-w-5xl">
         {/* 이벤트 섹션 */}

@@ -36,3 +36,6 @@ export const socialIcons = [
     icon: YoutubeIcon,
   },
 ];
+
+// eslint-disable-next-line no-control-regex
+export const STRING_REGEX = /[\0\x01-\x08\x0B-\x0C\x0E-\x1F\x7F]/g;

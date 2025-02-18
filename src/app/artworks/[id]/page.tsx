@@ -134,74 +134,76 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
         {/* 작품 정보 섹션 */}
         <Card className="p-6">
-          <h1 className="mb-2 text-3xl font-bold">{artwork.title}</h1>
-          <div className="mb-4 flex gap-2">
+          <h1 className="mb-4 text-3xl font-bold">{artwork.title}</h1>
+          <div className="flex gap-3">
             <Badge>{artwork.year}</Badge>
             <Badge variant="outline">{artwork.media}</Badge>
             <Badge variant="outline">{artwork.size}</Badge>
           </div>
-          <Separator className="my-4" />
+          <Separator className="my-8" />
           <CardContent className="p-0">
             <div className="prose max-w-none">
               <p className="whitespace-pre-wrap text-gray-600">
                 {artwork.description}
               </p>
             </div>
-            <Separator className="my-4" />
+            <Separator className="my-8" />
             {/* 작가 정보 */}
-            <div className="space-y-2">
-              <h3 className="font-semibold text-gray-900">작가 정보</h3>
-              <div className="flex flex-wrap gap-4">
-                {artwork.artists && artwork.artists.length > 0 ? (
-                  artwork.artists.map((artistRelation) => (
-                    <div key={artistRelation.artistId}>
-                      <Link
-                        href={`/artists/${artistRelation.artist.id}`}
-                        key={artistRelation.artist.id}
-                        className="flex items-center gap-3"
-                      >
-                        {artistRelation.artist.mainImageUrl && (
-                          <div className="relative h-12 w-12 overflow-hidden rounded-full">
-                            <Image
-                              src={`${artistRelation.artist.mainImageUrl}/public`}
-                              alt={
-                                artistRelation.artist.nameKr ||
-                                artistRelation.artist.name
-                              }
-                              fill
-                              className="object-cover"
-                            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <h3 className="font-semibold text-gray-900">작가 정보</h3>
+                <div className="flex flex-wrap gap-4">
+                  {artwork.artists && artwork.artists.length > 0 ? (
+                    artwork.artists.map((artistRelation) => (
+                      <div key={artistRelation.artistId}>
+                        <Link
+                          href={`/artists/${artistRelation.artist.id}`}
+                          key={artistRelation.artist.id}
+                          className="flex items-center gap-3"
+                        >
+                          {artistRelation.artist.mainImageUrl && (
+                            <div className="relative h-12 w-12 overflow-hidden rounded-full">
+                              <Image
+                                src={`${artistRelation.artist.mainImageUrl}/public`}
+                                alt={
+                                  artistRelation.artist.nameKr ||
+                                  artistRelation.artist.name
+                                }
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-medium">
+                              {artistRelation.artist.nameKr ||
+                                artistRelation.artist.name}
+                            </p>
                           </div>
-                        )}
-                        <div>
-                          <p className="font-medium">
-                            {artistRelation.artist.nameKr ||
-                              artistRelation.artist.name}
-                          </p>
-                        </div>
-                      </Link>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500">
-                    등록된 작가 정보가 없습니다.
-                  </p>
-                )}
+                        </Link>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      등록된 작가 정보가 없습니다.
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-            <Separator className="my-4" />
-            <div className="space-y-2">
-              <h3 className="font-semibold">작품 정보</h3>
-              <dl className="grid grid-cols-2 gap-2 text-sm">
-                <dt className="text-gray-500">스타일</dt>
-                <dd>{artwork.style}</dd>
-                <dt className="text-gray-500">제작 연도</dt>
-                <dd>{artwork.year}</dd>
-                <dt className="text-gray-500">크기</dt>
-                <dd>{artwork.size}</dd>
-                <dt className="text-gray-500">매체</dt>
-                <dd>{artwork.media}</dd>
-              </dl>
+              {/*<Separator className="my-4" />*/}
+              <div className="space-y-2">
+                <h3 className="font-semibold">작품 정보</h3>
+                <dl className="grid grid-cols-2 gap-2 text-sm">
+                  <dt className="text-gray-500">스타일</dt>
+                  <dd>{artwork.style}</dd>
+                  <dt className="text-gray-500">제작 연도</dt>
+                  <dd>{artwork.year}</dd>
+                  <dt className="text-gray-500">크기</dt>
+                  <dd>{artwork.size}</dd>
+                  <dt className="text-gray-500">매체</dt>
+                  <dd>{artwork.media}</dd>
+                </dl>
+              </div>
             </div>
           </CardContent>
         </Card>

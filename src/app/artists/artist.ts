@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { baseImageSchema } from '@/lib/validations/image';
+import { STRING_REGEX } from '@/lib/constants/constants';
 
 export const simpleArtistCreateSchema = z.object({
   name: z.string().min(1, '이름을 영어로 입력해주세요'),
@@ -46,15 +47,17 @@ export const baseArtistCreateSchema = z.object({
     })
     .optional()
     .nullable(),
-  homepage: z
+  homepage: z.string().optional().nullable(),
+  biography: z
     .string()
-    .url({
-      message: '올바른 URL을 입력해주세요.',
-    })
+    .transform((value) => value.replace(STRING_REGEX, ''))
     .optional()
     .nullable(),
-  biography: z.string().optional().nullable(),
-  cv: z.string().optional().nullable(),
+  cv: z
+    .string()
+    .transform((value) => value.replace(STRING_REGEX, ''))
+    .optional()
+    .nullable(),
   images: z.array(baseImageSchema).optional().default([]),
 });
 

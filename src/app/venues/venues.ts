@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { baseImageSchema } from '@/lib/validations/image';
+import { STRING_REGEX } from '@/lib/constants/constants';
 
 export const venueCreateSchema = z.object({
   name: z
@@ -8,8 +9,8 @@ export const venueCreateSchema = z.object({
     .max(50, '200자 이내로 입력해주세요.'),
   description: z
     .string()
-    .min(10, '설명은 10자 이상 입력해주세요.')
-    .max(500, '설명은 500자 이내로 입력해주세요.'),
+    .max(500, '설명은 500자 이내로 입력해주세요.')
+    .transform((value) => value.replace(STRING_REGEX, '')),
   address: z
     .string()
     .nonempty({ message: '지도 버튼을 클릭해 주소를 입력해주세요.' }),

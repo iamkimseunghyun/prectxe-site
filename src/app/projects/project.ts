@@ -1,6 +1,7 @@
 // lib/validations/project.ts
 import { z } from 'zod';
 import { baseImageSchema } from '@/lib/validations/image';
+import { STRING_REGEX } from '@/lib/constants/constants';
 
 export const projectCreateSchema = z
   .object({
@@ -15,13 +16,13 @@ export const projectCreateSchema = z
 
     about: z
       .string()
-      .min(50, '간단 소개는 최소 50자 이상 입력해주세요')
-      .max(1000, '간단 소개는 1000자 이하로 입력해주세요.'),
+      .max(1000, '간단 소개는 1000자 이하로 입력해주세요.')
+      .transform((value) => value.replace(STRING_REGEX, '')),
 
     description: z
       .string()
-      .min(200, '상세 내용은 최소 200자 이상 입력해주세요')
-      .max(10000, '설명은 10,000자 이내로 입력해주세요'),
+      .max(10000, '설명은 10,000자 이내로 입력해주세요')
+      .transform((value) => value.replace(STRING_REGEX, '')),
 
     year: z
       .number()

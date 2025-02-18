@@ -162,6 +162,30 @@ export async function deleteEvent(id: string) {
   }
 }
 
+export async function getEventsByArtistId(artistId: string) {
+  const artworks = await prisma.event.findMany({
+    where: {
+      organizers: {
+        some: {
+          artistId: artistId,
+        },
+      },
+    },
+    include: {
+      images: {
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+  console.log(`Found ${artworks.length} artworks for artist ${artistId}`);
+  return artworks;
+}
+
 export async function getEventById(id: string) {
   try {
     const event = await prisma.event.findUnique({

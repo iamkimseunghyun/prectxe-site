@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { baseImageSchema } from '@/lib/validations/image';
+import { STRING_REGEX } from '@/lib/constants/constants';
 
 // 아트웍 등록 폼 스키마 정의
 export const baseArtworkFormSchema = z.object({
@@ -23,9 +24,8 @@ export const baseArtworkFormSchema = z.object({
     .nullable(),
   description: z
     .string()
-    .min(2, {
-      message: '도시를 입력해주세요.',
-    })
+    .transform((value) => value.replace(STRING_REGEX, ''))
+    .optional()
     .nullable(),
   style: z
     .string()

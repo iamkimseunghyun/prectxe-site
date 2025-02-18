@@ -182,7 +182,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             </div>
           </CardHeader>
           <CardContent>
-            <EventList />
+            <EventList artistId={id} />
           </CardContent>
         </Card>
       </div>
