@@ -1,19 +1,20 @@
-import getSession from '@/lib/session';
+import { makeLogout } from '@/lib/make-login';
+import { Button } from '@/components/ui/button';
+import { redirect } from 'next/navigation';
 
-const Page = async () => {
-  const session = await getSession();
-  if (!session) return null;
-
+const Page = () => {
   const handleLogout = async () => {
-    session.destroy();
+    'use server';
+    await makeLogout();
+    redirect('/');
   };
-
   return (
-    <div>
-      <h1>User Profile</h1>
-      <div>
-        Logout
-        <button onClick={handleLogout}>로그아웃</button>
+    <div className="container mx-auto flex min-h-screen flex-col items-center justify-center">
+      <div className="absolute right-8 top-20 flex flex-col items-center justify-center gap-3">
+        <h1>User Profile</h1>
+        <form action={handleLogout}>
+          <Button>로그아웃</Button>
+        </form>
       </div>
     </div>
   );

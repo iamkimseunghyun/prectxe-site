@@ -4,9 +4,10 @@ import { z } from 'zod';
 import bcrypt from 'bcrypt';
 
 import { redirect } from 'next/navigation';
-import makeLogin from '@/lib/make-login';
+
 import { prisma } from '@/lib/db/prisma';
 import getSession from '@/lib/session';
+import { makeLogin } from '@/lib/make-login';
 
 const checkUsernameExists = async (username: string) => {
   const user = await prisma.user.findUnique({

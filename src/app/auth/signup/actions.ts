@@ -3,8 +3,9 @@
 import { signUpFormSchema } from '@/app/auth/signup/validation';
 import bcrypt from 'bcrypt';
 import { prisma } from '@/lib/db/prisma';
-import makeLogin from '@/lib/make-login';
+
 import { redirect } from 'next/navigation';
+import { makeLogin } from '@/lib/make-login';
 
 type FormState = {
   fieldErrors?: {
