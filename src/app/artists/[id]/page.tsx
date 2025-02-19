@@ -75,7 +75,9 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>{artist.name}</CardTitle>
+              <CardTitle>
+                {artist.name} {artist.nameKr}
+              </CardTitle>
               {canEdit && (
                 <Link href={`/artists/${id}/edit`}>
                   <Button variant="outline" size="sm">
@@ -108,7 +110,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     href={`mailto:${artist.email}`}
                     className="hover:underline"
                   >
-                    {artist.email}
+                    {/*{artist.email}*/}
                   </a>
                 </div>
               )}

@@ -9,15 +9,10 @@ import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
-type ActionResponse<T> = {
-  data?: T;
-  error?: string;
-};
-
 export async function createEvent(
   input: z.infer<typeof eventFormSchema>,
   userId: string
-): Promise<ActionResponse<{ id: string }>> {
+) {
   try {
     console.log('1. Raw input:', input); // 입력 데이터 확인
     const validatedData = eventFormSchema.parse(input);
@@ -58,12 +53,15 @@ export async function createEvent(
 
     const event = await prisma.event.create({
       data: eventData,
+      select: {
+        id: true,
+      },
     });
 
     console.log('4. Created event:', event); // 생성된 이벤트 확인
 
     revalidatePath('/events', 'page');
-    return { data: { id: event.id } };
+    return { ok: true, data: event };
   } catch (error) {
     // 에러 객체 자체를 출력
     console.error('Event creation error full object:', error);
@@ -75,10 +73,7 @@ export async function createEvent(
   }
 }
 
-export async function updateEvent(
-  id: string,
-  input: EventFormType
-): Promise<ActionResponse<{ id: string }>> {
+export async function updateEvent(id: string, input: EventFormType) {
   try {
     // 입력 값 검증
     const validatedData = eventFormSchema.parse(input);
@@ -138,7 +133,7 @@ export async function updateEvent(
     });
     revalidatePath('/events');
     revalidatePath(`/events/${id}`);
-    return { data: { id } };
+    return { ok: true, data: { id } };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { error: error.errors[0].message };
@@ -201,12 +196,30 @@ export async function getEventById(id: string) {
       },
     });
 
+    // 이벤트가 존재하지 않는 경우
     if (!event) {
       return { error: '이벤트를 찾을 수 없습니다.' };
     }
 
-    return { data: event };
+    // date 타입 안전하게 변환 및 널 체크
+    const formattedData = {
+      ...event,
+      startDate: event.startDate ? event.startDate.toISOString() : undefined,
+      endDate: event.endDate ? event.endDate.toISOString() : undefined,
+      // venue 널 체크
+      venue: event.venue || undefined,
+      // organizers 널 체크 및 안전한 변환
+      organizers: (event.organizers || []).map((org) => ({
+        ...org,
+        artist: org.artist || undefined,
+      })),
+      // tickets 널 체크
+      tickets: event.tickets || [],
+    };
+
+    return { data: formattedData };
   } catch (error) {
+    console.error('이벤트 조회 에러:', error);
     if (error instanceof z.ZodError) {
       return { error: error.errors[0].message };
     }
@@ -275,83 +288,5 @@ export async function getAllEvents(query: z.infer<typeof eventQuerySchema>) {
       return { error: error.errors[0].message };
     }
     return { error: '이벤트 목록 조회 중 오류가 발생했습니다.' };
-  }
-}
-
-export async function handleNewEventSubmit(
-  data: EventFormType,
-  userId: string
-) {
-  if (!userId) {
-    return {
-      success: false,
-      message: '사용자 정보가 없습니다.',
-    };
-  }
-
-  return handleEventSubmit(data, 'create', undefined, userId);
-}
-
-// onSubmit을 서버 액션으로 이름 변경
-export async function handleEventSubmit(
-  data: EventFormType,
-  mode: 'create' | 'edit',
-  eventId?: string,
-  userId?: string
-) {
-  try {
-    // create 모드일 때는 createEvent만 호출
-    console.log('Submit data:', data); // 입력값 확인
-    if (mode === 'create') {
-      // mainImageUrl과 venueId가 비어있지 않은지 확인
-      if (!data.mainImageUrl) {
-        return {
-          success: false,
-          message: '이미지 URL을 입력해주세요.',
-        };
-      }
-      if (!data.venueId) {
-        return {
-          success: false,
-          message: '장소를 선택해주세요.',
-        };
-      }
-      const result = await createEvent(data, userId!);
-      if ('error' in result) {
-        return {
-          success: false,
-          message: result.error,
-        };
-      }
-      return {
-        success: true,
-        message: '이벤트가 생성되었습니다.',
-        id: result.data?.id,
-      };
-    }
-
-    // edit 모드이고 eventId가 있을 때만 updateEvent 호출
-    if (mode === 'edit' && eventId) {
-      const result = await updateEvent(eventId, data);
-      if ('error' in result) {
-        return {
-          success: false,
-          message: result.error,
-        };
-      }
-      return {
-        success: true,
-        message: '이벤트가 수정되었습니다.',
-        id: result.data?.id,
-      };
-    }
-
-    throw new Error('Invalid operation');
-  } catch (error) {
-    console.error('Event submission error:', error);
-    return {
-      success: false,
-      message: '이벤트 처리 중 오류가 발생했습니다.',
-    };
   }
 }

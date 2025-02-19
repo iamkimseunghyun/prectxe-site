@@ -7,6 +7,14 @@ import { ProjectCategory } from '@/lib/types';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import { Prisma } from '@prisma/client';
 
+export async function getRecentProjects() {
+  return prisma.project.findMany({
+    include: {
+      venues: true,
+    },
+  });
+}
+
 export async function getAllProjects(
   year?: string,
   category?: string,

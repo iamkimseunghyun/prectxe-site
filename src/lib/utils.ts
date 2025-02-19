@@ -20,9 +20,29 @@ export const formatDateForInput = (
   return isoString.split('T')[0]; // "2024-02-01T00:00:00.000Z" -> "2024-02-01"
 };
 
+// 1. utils.ts에 안전한 날짜 변환 함수 추가
+export function formatDateForForm(
+  dateString: string | Date | undefined
+): string {
+  try {
+    if (!dateString) {
+      return new Date().toISOString().split('T')[0];
+    }
+
+    const date =
+      typeof dateString === 'string' ? new Date(dateString) : dateString;
+
+    // UTC 날짜를 YYYY-MM-DD 형식으로 변환 (시간대 조정 없이)
+    return date.toISOString().split('T')[0];
+  } catch (e) {
+    console.error('날짜 변환 오류:', e);
+    return new Date().toISOString().split('T')[0];
+  }
+}
+
 export const getImageUrl = (
   url: string | null | undefined,
-  variant: 'thumbnail' | 'public' | 'smaller'
+  variant: 'thumbnail' | 'public' | 'smaller' | 'hires'
 ) => {
   if (!url) return '/images/placeholder.png'; // 빈 문자열 대신 기본 이미지 경로 반환
   return `${url}/${variant}`;

@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import React from 'react';
+import React, { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
@@ -22,6 +22,7 @@ import { createVenue, updateVenue } from '@/app/venues/actions';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import { uploadGalleryImages } from '@/lib/utils';
 import MultiImageBox from '@/components/image/multi-image-box';
+import FormSubmitButton from '@/components/form-submit-button';
 
 type VenueFormProps = {
   mode: 'create' | 'edit';
@@ -32,7 +33,7 @@ type VenueFormProps = {
 
 const VenueForm = ({ mode, initialData, venueId, userId }: VenueFormProps) => {
   const router = useRouter();
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const {
     register,
     handleSubmit,
@@ -79,6 +80,7 @@ const VenueForm = ({ mode, initialData, venueId, userId }: VenueFormProps) => {
   };
 
   const onSubmit = handleSubmit(async (data: VenueFormData) => {
+    setIsSubmitting(true);
     try {
       if (multiImagePreview.length > 0) {
         await uploadGalleryImages(multiImagePreview);
@@ -98,6 +100,8 @@ const VenueForm = ({ mode, initialData, venueId, userId }: VenueFormProps) => {
       setError('root', {
         message: error instanceof Error ? error.message : '장소 등록 실패',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   });
   /*  const onValid = async () => {
@@ -182,9 +186,13 @@ const VenueForm = ({ mode, initialData, venueId, userId }: VenueFormProps) => {
             >
               취소
             </Button>
-            <Button type="submit">
+            <FormSubmitButton
+              type="submit"
+              loading={isSubmitting}
+              loadingText={mode === 'edit' ? '수정하기' : '등록하기'}
+            >
               {mode === 'edit' ? '수정하기' : '등록하기'}
-            </Button>
+            </FormSubmitButton>
           </CardFooter>
           {errors.root && (
             <p className="text-sm text-red-500">{errors.root.message}</p>

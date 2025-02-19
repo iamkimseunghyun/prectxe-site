@@ -32,7 +32,12 @@ const Page = async () => {
   return (
     <div className="container mx-auto px-12 py-6">
       <h1 className="mb-6 text-3xl font-bold">새 이벤트 등록</h1>
-      <EventForm venues={venues} artists={artists} userId={session.id} />
+      <EventForm
+        mode={'create'}
+        venues={venues}
+        artists={artists}
+        userId={session.id}
+      />
     </div>
   );
 };

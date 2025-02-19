@@ -104,7 +104,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   return (
     <div className="mx-auto max-w-5xl px-12 py-6">
-      <BreadcrumbNav entityType={'event'} title={result.data.title} />
+      <BreadcrumbNav entityType={'event'} title={result.data.title!} />
       {/* 이벤트 헤더 섹션 */}
       <div className="mb-8">
         <div className="mb-4 flex items-center gap-2">
@@ -122,7 +122,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           <div className="mb-8">
             <Image
               src={getImageUrl(`${result.data.mainImageUrl}`, 'public')}
-              alt={result.data.title}
+              alt={result.data.title!}
               width={300}
               height={300}
               className="h-96 w-full rounded-lg object-contain"
@@ -151,7 +151,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
               <Card>
                 <CardContent className="pt-6">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {result.data.organizers.map((organizer) => (
+                    {result.data.organizers?.map((organizer) => (
                       <div
                         key={organizer.artistId}
                         className="flex items-center gap-4"
@@ -196,7 +196,9 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     <h3 className="text-xl font-semibold">
                       {result.data.venue?.name}
                     </h3>
-                    <p>{result.data.venue?.description}</p>
+                    <p className="whitespace-pre-line">
+                      {result.data.venue?.description}
+                    </p>
                     <p className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
                       {result.data.venue?.address}
@@ -221,8 +223,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                   </div>
                   <div className="ml-6">
                     {formatEventDate(
-                      new Date(result.data.startDate),
-                      new Date(result.data.endDate)
+                      new Date(result.data.startDate || new Date()),
+                      new Date(result.data.endDate || new Date())
                     )}
                   </div>
                 </div>
@@ -255,13 +257,13 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     <Info className="h-4 w-4" />
                     <span className="font-semibold">티켓 정보</span>
                   </div>
-                  {result.data.tickets.map((ticket) => (
+                  {result.data.tickets?.map((ticket) => (
                     <div key={ticket.id} className="ml-6 rounded-lg border p-4">
                       <div className="mb-2 flex items-center justify-between">
                         <span className="font-semibold">{ticket.name}</span>
                         {(() => {
                           const bookingClosed = isEventBookingClosed(
-                            result.data.startDate
+                            result.data.startDate || new Date()
                           );
 
                           return bookingClosed ? (
@@ -278,14 +280,20 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                       {/*</div>*/}
                       <Button
                         className="w-full border border-gray-400"
-                        disabled={isEventBookingClosed(result.data.startDate)}
+                        disabled={isEventBookingClosed(
+                          result.data.startDate || new Date()
+                        )}
                         variant={
-                          isEventBookingClosed(result.data.startDate)
+                          isEventBookingClosed(
+                            result.data.startDate || new Date()
+                          )
                             ? 'secondary'
                             : 'destructive'
                         }
                       >
-                        {isEventBookingClosed(result.data.startDate)
+                        {isEventBookingClosed(
+                          result.data.startDate || new Date()
+                        )
                           ? '예매 마감'
                           : '예매하기'}
                       </Button>

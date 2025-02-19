@@ -110,36 +110,36 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
       {/* 메인 섹션 */}
-      <div className="mb-8">
-        {project.mainImageUrl ? (
-          <div className="relative mb-4 aspect-video overflow-hidden rounded-lg md:mb-8">
-            <Image
-              src={getImageUrl(project.mainImageUrl, 'public')}
-              alt={project.title}
-              fill
-              priority
-              className="object-cover"
-            />
-          </div>
-        ) : (
-          <p>No Image</p>
-        )}
-        <div className="mb-2 flex items-center gap-2">
-          <Badge variant="outline">{project.year}년</Badge>
-          <Badge>{categoryLabel}</Badge>
+
+      {project.mainImageUrl ? (
+        <div className="relative mb-4 flex justify-center overflow-hidden rounded-lg md:mb-8">
+          <Image
+            src={getImageUrl(project.mainImageUrl, 'hires')}
+            alt={project.title}
+            width={1000}
+            height={1000}
+            priority
+            className="object-contain"
+          />
         </div>
-        <h1 className="mb-2 text-3xl font-bold">{project.title}</h1>
-        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-          <Calendar className="h-4 w-4" />
-          <span>
-            {format(new Date(project.startDate), 'yyyy.MM.dd')} -{' '}
-            {format(new Date(project.endDate), 'yyyy.MM.dd')}
-          </span>
-        </div>
-        <p className="mt-4 whitespace-pre-wrap text-lg text-muted-foreground">
-          {project.about}
-        </p>
+      ) : (
+        <p>No Image</p>
+      )}
+      <div className="mb-4 flex items-center gap-2">
+        <Badge variant="outline">{project.year}년</Badge>
+        <Badge>{categoryLabel}</Badge>
       </div>
+      <h1 className="mb-2 text-3xl font-bold">{project.title}</h1>
+      <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+        <Calendar className="h-4 w-4" />
+        <span>
+          {format(new Date(project.startDate), 'yyyy.MM.dd')} -{' '}
+          {format(new Date(project.endDate), 'yyyy.MM.dd')}
+        </span>
+      </div>
+      <p className="mb-12 mt-8 whitespace-pre-wrap text-lg text-muted-foreground">
+        {project.about}
+      </p>
 
       {/* 참여 아티스트 */}
       {project.projectArtists.length > 0 && (

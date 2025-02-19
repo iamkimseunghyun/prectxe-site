@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { HeroSection } from '@/components/layout/hero-section';
-import { getAllProjects } from '@/app/projects/actions';
+import { getRecentProjects } from '@/app/projects/actions';
 import { getRecentEvents } from '@/app/events/actions';
 import { Calendar, MapPin } from 'lucide-react';
 import { formatEventDate, isEventBookingClosed } from '@/lib/utils';
@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 export const revalidate = 60; // 1분마다 재검증
 
 export default async function Home() {
-  const projects = await getAllProjects();
+  // const projects = await getAllProjects();
+  const projects = await getRecentProjects();
   const events = await getRecentEvents();
   return (
     <>

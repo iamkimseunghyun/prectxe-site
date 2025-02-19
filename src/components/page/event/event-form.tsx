@@ -10,20 +10,20 @@ import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 
 import { useRouter } from 'next/navigation';
-import { FullEvent } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 
 import BasicInfoSection from '@/components/page/event/basic-info-section';
 import DateVenueSection from '@/components/page/event/date-venue-section';
 import OrganizersSection from '@/components/page/event/organizer-section';
 import TicketsSection from '@/components/page/event/ticket-section';
-import { formatDate, uploadImage } from '@/lib/utils';
+import { formatDateForForm, uploadImage } from '@/lib/utils';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
-import { handleNewEventSubmit } from '@/app/events/actions';
+import { createEvent, updateEvent } from '@/app/events/actions';
 
 interface EventFormProps {
-  initialData?: FullEvent;
+  mode: 'create' | 'edit';
+  initialData?: Partial<EventFormType>;
   venues: {
     id: string;
     name: string;
@@ -33,13 +33,16 @@ interface EventFormProps {
     name: string;
   }[];
   userId: string;
+  eventId?: string;
 }
 
 export function EventForm({
+  mode,
   initialData,
   venues,
   artists,
   userId,
+  eventId,
 }: EventFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,8 +52,9 @@ export function EventForm({
     defaultValues: initialData
       ? ({
           ...initialData,
-          startDate: formatDate(new Date(initialData.startDate)),
-          endDate: formatDate(new Date(initialData.endDate)),
+          // formatDateForForm 함수 사용하여 일관된 형식으로 변환
+          startDate: formatDateForForm(initialData.startDate),
+          endDate: formatDateForForm(initialData.endDate),
         } as EventFormType)
       : {
           title: '',
@@ -58,8 +62,8 @@ export function EventForm({
           description: '',
           type: 'exhibition',
           status: 'upcoming',
-          startDate: formatDate(new Date()),
-          endDate: formatDate(new Date()),
+          startDate: formatDateForForm(new Date()),
+          endDate: formatDateForForm(new Date()),
           mainImageUrl: '',
           venueId: '',
           organizers: [],
@@ -105,6 +109,7 @@ export function EventForm({
                   title: 'Error',
                   description: '이미지 URL을 입력해주세요.',
                 });
+                setIsSubmitting(false);
                 return;
               }
               if (!values.venueId) {
@@ -112,24 +117,41 @@ export function EventForm({
                   title: 'Error',
                   description: '장소를 선택해주세요.',
                 });
+                setIsSubmitting(false);
                 return;
               }
-              const result = await handleNewEventSubmit(values, userId);
 
-              if (result.success) {
+              // 이벤트 생성 또는 수정
+              const result =
+                mode === 'edit'
+                  ? await updateEvent(eventId!, values)
+                  : await createEvent(values, userId);
+
+              // 결과 처리 개선
+              if (result && 'ok' in result && result.ok) {
                 toast({
                   title: 'Success',
-                  description: result.message,
+                  description:
+                    mode === 'edit'
+                      ? '이벤트가 수정되었습니다.'
+                      : '이벤트가 생성되었습니다.',
                 });
-                if (result.id) {
-                  router.push(`/events/${result.id}`);
+
+                // ID 참조 통일
+                const resultId = mode === 'edit' ? eventId : result.data?.id;
+                if (resultId) {
+                  router.push(`/events/${resultId}`);
                 } else {
                   router.push('/events');
                 }
               } else {
+                const errorMessage =
+                  result && 'error' in result
+                    ? result.error
+                    : '처리 중 오류가 발생했습니다.';
                 toast({
                   title: 'Error',
-                  description: result.message,
+                  description: errorMessage,
                 });
               }
             } catch (error) {
