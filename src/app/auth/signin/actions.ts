@@ -65,7 +65,7 @@ export const signIn = async (
 
     if (ok) {
       await makeLogin(user!.id);
-      return redirect('/');
+      return redirect('/profile');
     } else {
       return {
         success: false,
