@@ -17,9 +17,7 @@ export async function middleware(req: NextRequest) {
 
   if (!session.id) {
     if (!loggedIn) {
-      return NextResponse.redirect(
-        new URL('/auth/signin', req.nextUrl.toString())
-      );
+      return NextResponse.redirect(new URL('/', req.nextUrl.toString()));
     }
   } else {
     if (loggedIn) {
