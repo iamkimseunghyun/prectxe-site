@@ -6,17 +6,26 @@ import { prisma } from '@/lib/db/prisma';
 
 const Header = async () => {
   const session = await getSession();
+  let username = '';
+  let canEdit = false;
+  const isLoggedIn = !!session?.id;
 
-  const canEdit = await canManage(session.id!);
+  // 로그인한 경우에만 추가 정보 가져오기
+  if (isLoggedIn) {
+    try {
+      // 병렬로 권한 확인과 사용자 정보 가져오기
+      const [canManageResult, user] = await Promise.all([
+        canManage(session.id as string),
+        prisma.user.findUnique({ where: { id: session.id } }),
+      ]);
 
-  if (!session.id) {
-    return null;
-  }
-
-  const user = await prisma.user.findUnique({ where: { id: session.id } });
-
-  if (!user) {
-    return null;
+      canEdit = canManageResult;
+      if (user?.username) {
+        username = user.username;
+      }
+    } catch (error) {
+      console.error('사용자 정보 조회 오류:', error);
+    }
   }
 
   return (
@@ -27,8 +36,8 @@ const Header = async () => {
           <Link href="/" className="text-xl font-bold">
             PRECTXE
           </Link>
-          {/* 네비게이션 */}
-          <NavBar canEdit={canEdit} user={user.username!} />
+          {/* 네비게이션 - 로그인 여부와 관계없이 항상 표시 */}
+          <NavBar isLoggedIn={isLoggedIn} canEdit={canEdit} user={username} />
         </nav>
       </div>
     </header>

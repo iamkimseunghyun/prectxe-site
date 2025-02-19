@@ -13,6 +13,7 @@ import Link from 'next/link';
 import canManage from '@/lib/can-manage';
 import { prisma } from '@/lib/db/prisma';
 import { Metadata } from 'next';
+import BreadcrumbNav from '@/components/breadcrum-nav';
 
 // src/app/projects/[id]/page.tsx
 export async function generateMetadata({
@@ -110,7 +111,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
       {/* 메인 섹션 */}
-
+      <BreadcrumbNav entityType="project" title={project.title} />
       {project.mainImageUrl ? (
         <div className="relative mb-4 flex justify-center overflow-hidden rounded-lg md:mb-8">
           <Image
