@@ -132,6 +132,6 @@ export async function signUp(prevState: FormState | null, formData: FormData) {
     });
 
     await makeLogin(user.id);
-    return redirect('/admin');
+    return redirect('/');
   }
 }
