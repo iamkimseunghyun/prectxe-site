@@ -113,12 +113,13 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
       {/* 메인 섹션 */}
       <BreadcrumbNav entityType="project" title={project.title} />
       {project.mainImageUrl ? (
-        <div className="relative mb-4 flex justify-center overflow-hidden rounded-lg md:mb-8">
+        <div className="relative mb-4 flex aspect-video justify-center overflow-hidden rounded-lg md:mb-8">
           <Image
             src={getImageUrl(project.mainImageUrl, 'hires')}
             alt={project.title}
-            width={1000}
-            height={1000}
+            // width={800}
+            // height={800}
+            fill
             priority
             className="object-contain"
           />
