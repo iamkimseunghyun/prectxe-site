@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 
-const NavBar = ({ canEdit }: { canEdit: boolean }) => {
+const NavBar = ({ canEdit, user }: { canEdit: boolean; user?: string }) => {
   const pathname = usePathname();
 
   const publicNavigation = [
@@ -35,6 +35,7 @@ const NavBar = ({ canEdit }: { canEdit: boolean }) => {
         ))}
       </ul>
       {/* 관리자 메뉴 */}
+      {user ? <p>{user}!!!!</p> : 'no username'}
     </div>
   );
 };
