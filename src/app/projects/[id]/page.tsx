@@ -146,7 +146,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
       {/* 참여 아티스트 */}
       {project.projectArtists.length > 0 && (
         <section className="mb-12">
-          <h2 className="mb-6 text-3xl font-semibold">참여 아티스트</h2>
+          <h2 className="mb-6 text-3xl font-semibold">아티스트</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
             {project.projectArtists.map(({ artist }) => (
               <Link

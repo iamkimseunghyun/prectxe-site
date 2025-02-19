@@ -19,10 +19,11 @@ const NavBar = ({
   // 기본 공개 네비게이션 항목
   const publicNavigation = [
     { name: 'Home', href: '/' },
-    { name: 'Projects', href: '/projects' },
     { name: 'Events', href: '/events' },
+    { name: 'Projects', href: '/projects' },
     { name: 'Artists', href: '/artists' },
-    { name: 'Venues', href: '/venues' },
+    { name: 'Artworks', href: '/artworks' },
+    // { name: 'Venues', href: '/venues' },
   ];
 
   // 로그인 여부와 권한에 따른 네비게이션 항목 구성

@@ -26,11 +26,12 @@ const Page = async () => {
     <div className="mx-auto max-w-5xl py-10">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-3xl font-bold">작품 목록</h1>
-        {canEdit && (
-          <Link href="/artworks/new">
-            <Button>새 작품 등록</Button>
-          </Link>
-        )}
+        {
+          canEdit && null
+          // <Link href="/artworks/new">
+          //   <Button>새 작품 등록</Button>
+          // </Link>
+        }
       </div>
       <ArtworkGrid artworks={artworks} />
     </div>
