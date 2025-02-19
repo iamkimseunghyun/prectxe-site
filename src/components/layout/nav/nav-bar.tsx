@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 
-const NavBar = ({ sessionId }: { sessionId?: string }) => {
+const NavBar = ({ canEdit }: { canEdit: boolean }) => {
   const pathname = usePathname();
 
   const publicNavigation = [
@@ -13,7 +13,7 @@ const NavBar = ({ sessionId }: { sessionId?: string }) => {
     { name: 'Projects', href: '/projects' },
   ];
 
-  const navigation = sessionId
+  const navigation = canEdit
     ? [...publicNavigation, { name: 'Admin', href: '/admin' }]
     : publicNavigation;
 
