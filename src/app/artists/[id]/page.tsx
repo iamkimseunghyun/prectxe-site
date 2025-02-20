@@ -103,17 +103,17 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             )}
 
             <div className="space-y-2">
-              {artist.email && (
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Mail className="mr-2 h-4 w-4" />
-                  <a
-                    href={`mailto:${artist.email}`}
-                    className="hover:underline"
-                  >
-                    {/*{artist.email}*/}
-                  </a>
-                </div>
-              )}
+              {/*{artist.email && (*/}
+              {/*  <div className="flex items-center text-sm text-muted-foreground">*/}
+              {/*    <Mail className="mr-2 h-4 w-4" />*/}
+              {/*    <a*/}
+              {/*      href={`mailto:${artist.email}`}*/}
+              {/*      className="hover:underline"*/}
+              {/*    >*/}
+              {/*      {artist.email}*/}
+              {/*    </a>*/}
+              {/*  </div>*/}
+              {/*)}*/}
               {artist.homepage && (
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Globe className="mr-2 h-4 w-4" />
