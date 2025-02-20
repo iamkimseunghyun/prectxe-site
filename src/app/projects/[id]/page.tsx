@@ -121,7 +121,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             // height={800}
             fill
             priority
-            className="object-contain"
+            className="object-cover"
           />
         </div>
       ) : (

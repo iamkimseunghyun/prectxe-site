@@ -119,13 +119,13 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
         {/* 메인 컨텐츠 영역 */}
         <div className="lg:col-span-2">
           {/* 메인 이미지 */}
-          <div className="mb-8">
+          <div className="justify-left mb-8 flex items-center">
             <Image
               src={getImageUrl(`${result.data.mainImageUrl}`, 'public')}
               alt={result.data.title!}
               width={300}
               height={300}
-              className="h-96 w-full rounded-lg object-contain"
+              className="w-full rounded-lg object-contain"
             />
           </div>
 
@@ -214,9 +214,9 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
         <div className="lg:col-span-1">
           <Card className="sticky top-8">
             <CardContent className="pt-6">
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* 일시 정보 */}
-                <div className="space-y-2">
+                <div className="w-full">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     <span className="font-semibold">일시</span>
@@ -258,7 +258,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     <span className="font-semibold">티켓 정보</span>
                   </div>
                   {result.data.tickets?.map((ticket) => (
-                    <div key={ticket.id} className="ml-6 rounded-lg border p-4">
+                    <div key={ticket.id} className="rounded-lg border p-4">
                       <div className="mb-2 flex items-center justify-between">
                         <span className="font-semibold">{ticket.name}</span>
                         {(() => {
