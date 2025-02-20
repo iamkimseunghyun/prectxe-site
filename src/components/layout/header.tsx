@@ -28,6 +28,12 @@ const Header = async () => {
     }
   }
 
+  async function handleLogout() {
+    'use server';
+    const session = await getSession();
+    session.destroy();
+  }
+
   return (
     <header className="fixed top-0 z-50 h-[var(--header-height)] w-full border-b bg-white/80 backdrop-blur-md">
       <div className="mb-50 container mx-auto px-4">
@@ -37,7 +43,12 @@ const Header = async () => {
             PRECTXE
           </Link>
           {/* 네비게이션 - 로그인 여부와 관계없이 항상 표시 */}
-          <NavBar isLoggedIn={isLoggedIn} canEdit={canEdit} user={username} />
+          <NavBar
+            isLoggedIn={isLoggedIn}
+            canEdit={canEdit}
+            user={username}
+            logout={handleLogout}
+          />
         </nav>
       </div>
     </header>

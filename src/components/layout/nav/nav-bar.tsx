@@ -4,15 +4,18 @@ import React from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
+
 interface NavBarProps {
   canEdit?: boolean;
   user?: string;
   isLoggedIn?: boolean;
+  logout?: () => void;
 }
 const NavBar = ({
   canEdit = false,
   user = '',
   isLoggedIn = false,
+  logout,
 }: NavBarProps) => {
   const pathname = usePathname();
 
@@ -70,12 +73,12 @@ const NavBar = ({
               >
                 {user || '프로필'}
               </Link>
-              <Link
-                href="/api/auth/signout"
+              <button
+                onClick={logout}
                 className="rounded-md bg-red-50 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-100"
               >
                 로그아웃
-              </Link>
+              </button>
             </>
           ) : null
           /* 로그인하지 않은 경우 로그인 링크 표시 */

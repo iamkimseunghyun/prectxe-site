@@ -103,10 +103,10 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const canEdit = await canManage(session.id!, result.data.id);
 
   return (
-    <div className="mx-auto max-w-5xl px-12 py-6">
+    <div className="mx-auto px-4 py-6 sm:max-w-5xl sm:px-12">
       <BreadcrumbNav entityType={'event'} title={result.data.title!} />
       {/* 이벤트 헤더 섹션 */}
-      <div className="mb-8">
+      <div className="mb-2 sm:mb-8">
         <div className="mb-4 flex items-center gap-2">
           <Badge>{result.data.type}</Badge>
           <Badge variant="outline">{result.data.status}</Badge>
@@ -133,7 +133,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           <Tabs defaultValue="info" className="mb-8">
             <TabsList>
               <TabsTrigger value="info">상세 정보</TabsTrigger>
-              <TabsTrigger value="organizer">주최자</TabsTrigger>
+              <TabsTrigger value="organizer">출연진</TabsTrigger>
               <TabsTrigger value="venue">장소</TabsTrigger>
             </TabsList>
 

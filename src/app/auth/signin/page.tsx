@@ -12,7 +12,7 @@ const Page = () => {
     <div className="flex h-screen flex-col justify-start gap-10 px-6 py-8 pt-20">
       <div className="flex flex-col gap-2 text-center *:font-medium">
         <h1 className="text-2xl">안녕하세요!</h1>
-        <h2 className="text-xl">Log in with email and password.</h2>
+        <h2 className="text-xl">아이디와 패스워드를 입력하고 로그인하세요.</h2>
       </div>
       <div className="flex items-center justify-center">
         <form action={action} className="flex w-full max-w-xl flex-col gap-3">
