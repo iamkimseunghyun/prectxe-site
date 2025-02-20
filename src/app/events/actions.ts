@@ -229,6 +229,9 @@ export async function getEventById(id: string) {
 
 export async function getRecentEvents() {
   const events = await prisma.event.findMany({
+    orderBy: {
+      startDate: 'desc',
+    },
     include: {
       venue: true,
     },

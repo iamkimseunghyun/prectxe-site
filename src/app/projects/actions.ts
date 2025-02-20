@@ -12,6 +12,9 @@ export async function getRecentProjects() {
     include: {
       venues: true,
     },
+    orderBy: {
+      startDate: 'desc',
+    },
   });
 }
 
@@ -31,7 +34,7 @@ export async function getAllProjects(
   };
 
   const orderBy = {
-    createdAt: sort === 'oldest' ? 'asc' : 'desc',
+    startDate: sort === 'oldest' ? 'asc' : 'desc',
   } as const;
 
   return prisma.project.findMany({

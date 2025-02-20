@@ -16,6 +16,7 @@ const staticPublicUrls: Urls = {
   '/': true,
   '/about': true,
   '/artists': true,
+  '/artworks': true,
   '/events': true,
   '/projects': true,
   '/venues': true,
@@ -63,7 +64,10 @@ function isPublicPath(path: string): boolean {
 }
 
 export async function middleware(req: NextRequest) {
-  console.log('middleware 콜 ->', req.nextUrl.pathname);
+  // 개발 환경에서만 로깅
+  if (process.env.NODE_ENV === 'development') {
+    console.log('middleware 콜 ->', req.nextUrl.pathname);
+  }
   const session = await getSession();
   const path = req.nextUrl.pathname;
   const isPublicOnlyUrl = publicOnlyUrls[path];

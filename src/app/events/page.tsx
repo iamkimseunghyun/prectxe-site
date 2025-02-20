@@ -113,6 +113,9 @@ const Page = async () => {
     include: {
       venue: true,
     },
+    orderBy: {
+      startDate: 'desc',
+    },
   });
 
   // null 값을 undefined로 변환

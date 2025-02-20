@@ -5,7 +5,7 @@ import { STRING_REGEX } from '@/lib/constants/constants';
 export const simpleArtistCreateSchema = z.object({
   name: z.string().min(1, '이름을 영어로 입력해주세요'),
   nameKr: z.string().min(1, '이름을 한글로 입력해주세요'),
-  email: z.string().email().optional().or(z.literal('')),
+  email: z.string().optional().or(z.literal('')),
   mainImageUrl: z
     .string()
     .url('유효한 URL을 입력해주세요')
@@ -40,13 +40,7 @@ export const baseArtistCreateSchema = z.object({
     })
     .optional()
     .nullable(),
-  email: z
-    .string()
-    .email({
-      message: '올바른 이메일 주소를 입력해주세요.',
-    })
-    .optional()
-    .nullable(),
+  email: z.string().optional().nullable(),
   homepage: z.string().optional().nullable(),
   biography: z
     .string()
