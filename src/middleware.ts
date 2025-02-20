@@ -5,6 +5,7 @@ interface Urls {
   [key: string]: boolean;
 }
 
+// 로그인 전용 URL (로그인하지 않은 사용자만 접근 가능)
 const publicOnlyUrls: Urls = {
   '/auth/signin': true,
   '/auth/signup': true,
@@ -21,24 +22,44 @@ const staticPublicUrls: Urls = {
 };
 
 // 다이나믹 라우팅 패턴 (정규표현식 형태로 정의)
-const dynamicPublicPatterns = [
-  /^\/artists\/[^/]+$/, // /artists/[id] 패턴
-  /^\/events\/[^/]+$/, // /events/[id] 패턴
-  /^\/artworks\/[^/]+$/, // /artworks/[id] 패턴
-  /^\/projects\/[^/]+$/, // /projects/[id] 패턴 (주석 수정됨)
-  /^\/venues\/[^/]+$/, // /venues/[id] 패턴 (주석 수정됨)
+// 공개적으로 접근 가능한 다이나믹 경로 패턴
+const publicDynamicPatterns = [
+  /^\/artists\/[^/]+$/, // /artists/[id] 패턴 (상세 보기만 허용)
+  /^\/events\/[^/]+$/, // /events/[id] 패턴 (상세 보기만 허용)
+  /^\/projects\/[^/]+$/, // /projects/[id] 패턴 (상세 보기만 허용)
+  /^\/venues\/[^/]+$/, // /venues/[id] 패턴 (상세 보기만 허용)
+  /^\/artworks\/[^/]+$/, // /artworks/[id] 패턴 (상세 보기만 허용)
+];
+
+// 로그인이 필요한 특정 패턴 (더 구체적인 패턴이 우선 적용됨)
+const privatePathPatterns = [
+  /^\/artists\/[^/]+\/edit$/, // /artists/[id]/edit 패턴
+  /^\/artists\/new$/, // /artists/new 패턴
+  /^\/events\/[^/]+\/edit$/, // /events/[id]/edit 패턴
+  /^\/events\/new$/, // /events/new 패턴
+  /^\/projects\/[^/]+\/edit$/, // /projects/[id]/edit 패턴
+  /^\/projects\/new$/, // /projects/new 패턴
+  /^\/venues\/[^/]+\/edit$/, // /venues/[id]/edit 패턴
+  /^\/venues\/new$/, // /venues/new 패턴
+  /^\/admin\/?.*$/, // 모든 /admin 경로
 ];
 
 /**
  * 주어진 경로가 공개 접근 가능한지 확인하는 함수
  */
 function isPublicPath(path: string): boolean {
-  // 1. 정적 공개 URL 체크
+  // 1. 로그인이 필요한 특정 패턴 먼저 체크 (이 패턴들은 무조건 비공개)
+  if (privatePathPatterns.some((pattern) => pattern.test(path))) {
+    return false;
+  }
+
+  // 2. 정적 공개 URL 체크
   if (staticPublicUrls[path]) {
     return true;
   }
-  // 2. 다이나믹 라우팅 패턴 체크
-  return dynamicPublicPatterns.some((pattern) => pattern.test(path));
+
+  // 3. 다이나믹 라우팅 패턴 체크
+  return publicDynamicPatterns.some((pattern) => pattern.test(path));
 }
 
 export async function middleware(req: NextRequest) {
@@ -65,7 +86,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.next();
     }
 
-    // 그 외의 URL은 홈으로 리다이렉트
+    // 그 외의 URL은 로그인 페이지 or 메인 페이지로 리다이렉트
     return NextResponse.redirect(new URL('/', req.nextUrl.toString()));
   }
   // 로그인한 사용자
@@ -88,12 +109,15 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // 명시적으로 처리할 경로만 포함
     '/',
     '/about',
     '/artists/:path*',
     '/events/:path*',
+    '/projects/:path*',
+    '/venues/:path*',
+    '/artworks/:path*',
     '/auth/:path*',
     '/profile/:path*',
+    '/admin/:path*',
   ],
 };
