@@ -41,12 +41,28 @@ export const metadata: Metadata = {
     description:
       '전시, 공연, 디지털 아트를 한 곳에서 만나보세요. 작가와 관객이 함께 만들어가는 새로운 예술 플랫폼, 프렉티스',
     siteName: '프렉티스',
+    images: [
+      {
+        url: '/twitter-card.jpg', // metadataBase와 결합되어 https://prectxe.com/twitter-card.jpg가 됨
+        width: 1200,
+        height: 630,
+        alt: '프렉티스 디지털 아트 플랫폼',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: '프렉티스 | 디지털 아트 플랫폼',
     description:
       '전시, 공연, 디지털 아트를 한 곳에서 만나보세요. 작가와 관객이 함께 만들어가는 새로운 예술 플랫폼, 프렉티스',
+    images: [
+      {
+        url: '/twitter-card.jpg', // metadataBase와 결합되어 https://prectxe.com/twitter-card.jpg가 됨
+        width: 1200,
+        height: 630,
+        alt: '프렉티스 디지털 아트 플랫폼',
+      },
+    ],
   },
   robots: {
     index: true,
