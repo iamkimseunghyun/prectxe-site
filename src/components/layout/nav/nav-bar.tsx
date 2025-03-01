@@ -117,8 +117,8 @@ const NavBar = ({
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            className="fixed left-0 top-0 z-50 w-full rounded-b-lg bg-white pb-6 pt-16 shadow-lg md:hidden"
-            style={{ height: '80vh' }}
+            className="fixed left-0 top-0 z-50 w-full rounded-b-lg bg-blue-800 pb-16 pt-16 shadow-lg md:hidden"
+            // style={{ height: '80vh' }}
             initial={{ y: '-100%' }}
             animate={{ y: isMenuOpen ? '0%' : '-100%' }}
             exit={{ y: '-100%' }}
@@ -130,8 +130,10 @@ const NavBar = ({
                   <Link
                     href={item.href}
                     className={cn(
-                      'block py-2 text-3xl font-medium transition-colors hover:text-black/60',
-                      pathname === item.href ? 'text-black' : 'text-black/40'
+                      'block py-2 text-3xl font-medium transition-colors hover:text-blue-500/60',
+                      pathname === item.href
+                        ? 'text-blue-200'
+                        : 'text-blue-300/40'
                     )}
                     onClick={() => setIsMenuOpen(false)} // Close menu when item is clicked
                   >
