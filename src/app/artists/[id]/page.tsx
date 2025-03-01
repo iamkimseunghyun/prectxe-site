@@ -76,7 +76,10 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>
-                {artist.name} {artist.nameKr}
+                <div className="space-y-2">
+                  <p>{artist.nameKr}</p>
+                  <p className="text-base">{artist.name}</p>
+                </div>
               </CardTitle>
               {canEdit && (
                 <Link href={`/artists/${id}/edit`}>

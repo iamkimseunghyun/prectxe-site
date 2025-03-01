@@ -133,7 +133,11 @@ const Page = async () => {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-8">
-        <h1 className="mb-4 text-3xl font-bold">PRECTXE 이벤트</h1>
+        <h1 className="mb-4 text-4xl font-bold">이벤트</h1>
+        <p className="mb-4 max-w-2xl text-gray-600">
+          PRECTXE의 이벤트를 즐겨보세요. 다양한 장소에서 흥미로운 일들이
+          펼쳐집니다.
+        </p>
         <div className="mb-6 flex gap-4">
           <Badge variant="secondary">전체</Badge>
           <Badge variant="outline">전시</Badge>

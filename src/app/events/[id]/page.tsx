@@ -111,8 +111,12 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           <Badge>{result.data.type}</Badge>
           <Badge variant="outline">{result.data.status}</Badge>
         </div>
-        <h1 className="mb-2 text-4xl font-bold">{result.data.title}</h1>
-        <p className="mb-4 text-xl text-gray-600">{result.data.subtitle}</p>
+        <h1 className="mb-2 text-xl font-bold sm:text-4xl">
+          {result.data.title}
+        </h1>
+        <p className="text-md mb-4 text-gray-600 sm:text-xl">
+          {result.data.subtitle}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">

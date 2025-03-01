@@ -131,7 +131,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
         <Badge variant="outline">{project.year}년</Badge>
         <Badge>{categoryLabel}</Badge>
       </div>
-      <h1 className="mb-2 text-3xl font-bold">{project.title}</h1>
+      <h1 className="mb-2 text-2xl font-bold sm:text-3xl">{project.title}</h1>
       <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
         <Calendar className="h-4 w-4" />
         <span>
