@@ -68,7 +68,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const canEdit = await canManage(session.id!, artist.userId);
 
   return (
-    <div className="mx-auto max-w-5xl py-10">
+    <div className="mx-auto max-w-5xl px-4 py-10">
       <BreadcrumbNav entityType="artist" title={artist.name} />
       <div className="grid gap-6 md:grid-cols-2">
         {/* 프로필 섹션 */}

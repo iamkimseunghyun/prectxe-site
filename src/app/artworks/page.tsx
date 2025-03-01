@@ -20,7 +20,7 @@ const Page = async () => {
   const canEdit = await canManage(session.id!);
 
   return (
-    <div className="mx-auto max-w-5xl py-10">
+    <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-3xl font-bold">작품 목록</h1>
       </div>

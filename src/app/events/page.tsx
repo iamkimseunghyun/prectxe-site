@@ -62,7 +62,7 @@ const EventStatusBadge = async ({ status }: EventStatusBadgeProps) => {
 
 const EventCard = ({ event }: { event: Event }) => (
   <Card className="w-full transition-shadow hover:shadow-lg">
-    <div className="relative h-48 w-full">
+    <div className="relative w-full">
       <Image
         src={getImageUrl(`${event.mainImageUrl}`, 'public')}
         alt={event.title}
@@ -131,7 +131,7 @@ const Page = async () => {
   }
 
   return (
-    <div className="mx-auto max-w-5xl py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-8">
         <h1 className="mb-4 text-3xl font-bold">PRECTXE 이벤트</h1>
         <div className="mb-6 flex gap-4">

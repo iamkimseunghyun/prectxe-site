@@ -96,7 +96,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   const validatedArtwork = validateArtworkData(artwork);
   return (
-    <div className="mx-auto max-w-5xl py-10">
+    <div className="mx-auto max-w-5xl px-4 py-10">
       <ArtworkSchema artwork={validatedArtwork} />
       <BreadcrumbNav entityType="artwork" title={artwork.title} />
 
