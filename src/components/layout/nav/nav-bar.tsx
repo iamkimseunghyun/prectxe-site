@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface NavBarProps {
   canEdit?: boolean;
@@ -113,60 +114,66 @@ const NavBar = ({
       </div>
 
       {/* 모바일 메뉴 슬라이드 패널 */}
-      {isMenuOpen && (
-        <div
-          className="fixed left-0 top-0 z-50 w-full rounded-b-lg bg-white pb-6 pt-16 shadow-lg md:hidden"
-          style={{ maxHeight: '70vh' }}
-        >
-          <ul className="flex flex-col space-y-4 px-6">
-            {navigation.map((item) => (
-              <li key={item.name}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    'block py-2 text-base font-medium transition-colors hover:text-black/60',
-                    pathname === item.href ? 'text-black' : 'text-black/40'
-                  )}
-                  onClick={() => setIsMenuOpen(false)} // Close menu when item is clicked
-                >
-                  {item.name}
-                </Link>
-              </li>
-            ))}
-
-            {/* 사용자 메뉴 모바일 뷰 */}
-            {isLoggedIn && (
-              <>
-                <li className="mt-4 border-t border-gray-100 pt-4">
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            className="fixed left-0 top-0 z-50 w-full rounded-b-lg bg-white pb-6 pt-16 shadow-lg md:hidden"
+            style={{ height: '80vh' }}
+            initial={{ y: '-100%' }}
+            animate={{ y: isMenuOpen ? '0%' : '-100%' }}
+            exit={{ y: '-100%' }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
+          >
+            <ul className="flex flex-col items-center justify-center space-y-6 px-6">
+              {navigation.map((item) => (
+                <li key={item.name}>
                   <Link
-                    href="/profile"
+                    href={item.href}
                     className={cn(
-                      'block py-2 text-base font-medium transition-colors hover:text-purple-600',
-                      pathname === '/profile'
-                        ? 'text-purple-700'
-                        : 'text-purple-500'
+                      'block py-2 text-3xl font-medium transition-colors hover:text-black/60',
+                      pathname === item.href ? 'text-black' : 'text-black/40'
                     )}
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={() => setIsMenuOpen(false)} // Close menu when item is clicked
                   >
-                    {user || '프로필'}
+                    {item.name}
                   </Link>
                 </li>
-                <li>
-                  <button
-                    onClick={() => {
-                      if (logout) logout();
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full rounded-md bg-red-50 px-3 py-1.5 text-left text-sm text-red-600 transition-colors hover:bg-red-100"
-                  >
-                    로그아웃
-                  </button>
-                </li>
-              </>
-            )}
-          </ul>
-        </div>
-      )}
+              ))}
+
+              {/* 사용자 메뉴 모바일 뷰 */}
+              {isLoggedIn && (
+                <>
+                  <li className="mt-4 border-t border-gray-100 pt-4">
+                    <Link
+                      href="/profile"
+                      className={cn(
+                        'block py-2 text-base font-medium transition-colors hover:text-purple-600',
+                        pathname === '/profile'
+                          ? 'text-purple-700'
+                          : 'text-purple-500'
+                      )}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {user || '프로필'}
+                    </Link>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => {
+                        if (logout) logout();
+                        setIsMenuOpen(false);
+                      }}
+                      className="w-full rounded-md bg-red-50 px-3 py-1.5 text-left text-sm text-red-600 transition-colors hover:bg-red-100"
+                    >
+                      로그아웃
+                    </button>
+                  </li>
+                </>
+              )}
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };

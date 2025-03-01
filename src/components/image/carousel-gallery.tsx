@@ -19,7 +19,7 @@ const CarouselGallery = ({ images }: CarouselProps) => {
         <CarouselContent>
           {images.map((image, index) => (
             <CarouselItem key={index}>
-              <div className="relative aspect-video">
+              <div className="relative aspect-square sm:aspect-video">
                 <Image
                   src={getImageUrl(image.imageUrl, 'public')}
                   alt={image.alt || '장소 이미지'}
