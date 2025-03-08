@@ -1,7 +1,6 @@
 // components/projects/project-card.tsx
 import { Project } from '@prisma/client';
 import { Card } from '@/components/ui/card';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 

@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import Link from 'next/link';
 
 // 기본적인 이미지 타입
@@ -53,13 +52,11 @@ export async function ArtistGrid({ artists }: ArtistGridProps) {
           className="group relative overflow-hidden rounded-lg"
         >
           <div className="relative aspect-square">
-            <Image
-              src={`${artist.mainImageUrl}/smaller`}
+            <img
+              src={`${artist.mainImageUrl}/thumbnail`}
               alt={artist.name}
-              className="object-cover transition-transform group-hover:scale-105"
+              className="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105"
               sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-              priority={true}
-              fill
             />
           </div>
           <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 to-transparent p-4">

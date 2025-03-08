@@ -114,12 +114,11 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     >
                       <div className="relative aspect-square w-full overflow-hidden rounded-lg">
                         <Image
-                          src={`${image.imageUrl}/public`}
+                          src={`${image.imageUrl}/smaller`}
                           alt={image.alt}
-                          fill
-                          sizes="200"
-                          priority
-                          className="object-cover"
+                          width={400}
+                          height={400}
+                          className="absolute inset-0 h-full w-full object-cover"
                         />
                       </div>
                     </CarouselItem>
@@ -163,13 +162,12 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                         >
                           {artistRelation.artist.mainImageUrl && (
                             <div className="relative h-12 w-12 overflow-hidden rounded-full">
-                              <Image
+                              <img
                                 src={`${artistRelation.artist.mainImageUrl}/public`}
                                 alt={
                                   artistRelation.artist.nameKr ||
                                   artistRelation.artist.name
                                 }
-                                fill
                                 className="object-cover"
                               />
                             </div>

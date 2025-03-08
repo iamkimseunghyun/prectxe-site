@@ -41,7 +41,7 @@ export const ROUTE_CONFIG: Record<EntityType, RouteConfig> = {
     schemaTable: 'Project',
   },
   venue: {
-    path: 'venue',
+    path: 'venues',
     displayName: '공간',
     schemaTable: 'Venue',
   },

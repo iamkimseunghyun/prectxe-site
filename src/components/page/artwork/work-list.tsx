@@ -24,11 +24,12 @@ const WorkList = async ({ artistId }: { artistId: string }) => {
         >
           <Image
             src={
-              `${getImageUrl(work.images?.[0]?.imageUrl, 'public')}` ||
+              `${getImageUrl(work.images?.[0]?.imageUrl, 'smaller')}` ||
               '/api/placeholder/400/400'
             }
             alt={work.title}
-            fill
+            width={500}
+            height={500}
             className="object-cover transition-transform group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100">

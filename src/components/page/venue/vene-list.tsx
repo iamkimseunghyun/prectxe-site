@@ -2,8 +2,6 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
-
-import Image from 'next/image';
 import Link from 'next/link';
 
 import { Venue } from '@prisma/client';
@@ -30,13 +28,11 @@ const VenueList = ({ initialData }: VenueListProps) => {
               <CardContent className="p-0">
                 {venue.images?.[0] ? (
                   <div className="relative h-48 w-full">
-                    <Image
+                    <img
                       src={getImageUrl(venue.images[0].imageUrl, 'public')}
                       alt={venue.images[0].alt}
-                      fill
-                      priority
                       sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                      className="rounded-t-lg object-cover"
+                      className="absolute inset-0 h-full w-full rounded-t-lg object-cover"
                     />
                   </div>
                 ) : (

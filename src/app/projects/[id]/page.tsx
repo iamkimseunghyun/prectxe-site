@@ -8,7 +8,7 @@ import CarouselGallery from '@/components/image/carousel-gallery';
 import { getProjectById } from '@/app/projects/actions';
 import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Link from 'next/link';
 import canManage from '@/lib/can-manage';
 import { prisma } from '@/lib/db/prisma';
@@ -156,8 +156,10 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                 <Avatar className="h-20 w-20">
                   {artist.mainImageUrl &&
                   getImageUrl(artist.mainImageUrl, 'thumbnail') ? (
-                    <AvatarImage
+                    <img
                       src={getImageUrl(artist.mainImageUrl, 'thumbnail')!}
+                      width={100}
+                      height={100}
                       alt={artist.name}
                     />
                   ) : (

@@ -95,12 +95,12 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             {artist.mainImageUrl && (
               <div className="relative aspect-square overflow-hidden rounded-lg">
                 <Image
-                  src={`${artist.mainImageUrl}/public`}
+                  src={`${artist.mainImageUrl}/smaller`}
                   alt={artist.name!}
-                  fill
+                  width={500}
+                  height={500}
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
-                  priority
                 />
               </div>
             )}

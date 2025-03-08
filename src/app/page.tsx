@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import Image from 'next/image';
 import { HeroSection } from '@/components/layout/hero-section';
 import { getRecentProjects } from '@/app/projects/actions';
 import { getRecentEvents } from '@/app/events/actions';
@@ -44,12 +43,11 @@ export default async function Home() {
                 >
                   <div className="relative aspect-[4/3]">
                     {event.mainImageUrl ? (
-                      <Image
+                      <img
                         src={`${event.mainImageUrl}/smaller`}
                         alt={event.title}
-                        fill
                         sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                        className="object-cover"
+                        className="h-full w-full object-cover"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gray-100">
@@ -123,12 +121,11 @@ export default async function Home() {
                 >
                   <div className="relative aspect-[4/3]">
                     {project.mainImageUrl ? (
-                      <Image
+                      <img
                         src={`${project.mainImageUrl}/smaller`}
                         alt={project.title}
-                        fill
                         sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        className="absolute object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gray-100">

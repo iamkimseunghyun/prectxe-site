@@ -125,7 +125,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           {/* 메인 이미지 */}
           <div className="justify-left mb-8 flex items-center">
             <Image
-              src={getImageUrl(`${result.data.mainImageUrl}`, 'public')}
+              src={getImageUrl(`${result.data.mainImageUrl}`, 'smaller')}
               alt={result.data.title!}
               width={300}
               height={300}
@@ -161,14 +161,14 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                         className="flex items-center gap-4"
                       >
                         {organizer.artist.mainImageUrl ? (
-                          <Image
+                          <img
                             src={getImageUrl(
                               organizer.artist.mainImageUrl,
-                              'public'
+                              'thumbnail'
                             )}
                             alt={organizer.artist.name}
-                            width={300}
-                            height={300}
+                            width={60}
+                            height={60}
                             className="h-16 w-16 rounded-full object-cover"
                           />
                         ) : (
