@@ -117,9 +117,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           <Image
             src={getImageUrl(project.mainImageUrl, 'hires')}
             alt={project.title}
-            // width={800}
-            // height={800}
-            fill
+            width={1200}
+            height={1200}
             priority
             className="object-cover"
           />
