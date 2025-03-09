@@ -12,7 +12,7 @@ export const dynamic = 'force-static';
 export default async function Home() {
   const projects = await prisma.project.findMany({
     orderBy: {
-      createdAt: 'desc',
+      startDate: 'desc',
     },
     take: 6,
   });
