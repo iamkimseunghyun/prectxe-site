@@ -220,7 +220,7 @@ const ArtWorkForm = ({
               <Textarea
                 {...register('description')}
                 placeholder="작품에 대한 간단한 설명을 입력하세요"
-                rows={6}
+                rows={15}
               />
               {errors?.description && (
                 <p id="description-error" className="text-sm text-destructive">

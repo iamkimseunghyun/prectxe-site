@@ -1,10 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model User {
+  id        String    @id @default(cuid())
+  username  String?   @unique
+  email     String?   @unique
+  password  String?
+  createdAt DateTime? @default(now())
+  role      Role?     @default(USER)
+  updatedAt DateTime? @updatedAt
+  artists   Artist[]
+  artworks  Artwork[]
+  events    Event[]
+  posts     Post[]
+  projects  Project[]
+  venues    Venue[]
+}
+
+model Post {
+  id        String    @id @default(cuid())
+  title     String?
+  content   String?
+  published Boolean?  @default(false)
+  authorId  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+  author    User?     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id              String           @id @default(cuid())
+  title           String
+  about           String
+  description     String
+  year            Int
+  startDate       DateTime
+  endDate         DateTime
+  category        ProjectCategory
+  mainImageUrl    String
+  userId          String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectArtists  ProjectArtist[]
+  projectArtworks ProjectArtwork[]
+  images          ProjectImage[]
+  venues          ProjectVenue[]
+}
+
+model ProjectImage {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  alt       String
+  order     Int      @default(0)
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id           String           @id @default(cuid())
+  title        String
+  subtitle     String?
+  description  String
+  status       EventStatus      @default(upcoming)
+  type         EventType
+  startDate    DateTime
+  endDate      DateTime
+  userId       String
+  mainImageUrl String
+  venueId      String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue        Venue?           @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  images       EventImage[]
+  organizers   EventOrganizer[]
+  tickets      EventTicket[]
+}
+
+model EventImage {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  alt       String
+  order     Int      @default(0)
+  eventId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model EventOrganizer {
+  eventId   String
+  artistId  String
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, artistId])
+}
+
+model EventTicket {
+  id        String   @id @default(cuid())
+  eventId   String
+  name      String
+  price     Int
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Artist {
+  id              String           @id @default(cuid())
+  mainImageUrl    String?
+  city            String?
+  country         String?
+  email           String?
+  homepage        String?
+  biography       String?
+  cv              String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  userId          String
+  name            String           @map("name_en")
+  nameKr          String           @map("name_kr")
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artistArtworks  ArtistArtwork[]
+  images          ArtistImage[]
+  eventOrganizers EventOrganizer[]
+  projectArtists  ProjectArtist[]
+}
+
+model ArtistImage {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  alt       String
+  order     Int      @default(0)
+  artistId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+}
+
+model Artwork {
+  id              String           @id @default(cuid())
+  title           String
+  size            String?
+  media           String?
+  year            Int?
+  description     String?
+  style           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  userId          String
+  artists         ArtistArtwork[]
+  user            User             @relation(fields: [userId], references: [id])
+  images          ArtworkImage[]
+  projectArtWorks ProjectArtwork[]
+}
+
+model ArtworkImage {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  alt       String
+  order     Int      @default(0)
+  artworkId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+}
+
+model Venue {
+  id           String         @id @default(cuid())
+  address      String
+  name         String
+  description  String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  userId       String
+  Event        Event[]
+  projectVenue ProjectVenue[]
+  user         User           @relation(fields: [userId], references: [id])
+  images       VenueImage[]
+}
+
+model VenueImage {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  alt       String
+  order     Int      @default(0)
+  venueId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+}
+
+model ProjectArtist {
+  projectId String
+  artistId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, artistId])
+}
+
+model ProjectArtwork {
+  projectId String
+  artworkId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([artworkId, projectId])
+}
+
+model ProjectVenue {
+  venueId   String
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Project   Project  @relation(fields: [projectId], references: [id])
+  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, venueId])
+}
+
+model ArtistArtwork {
+  artistId  String
+  artworkId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@id([artistId, artworkId])
 }
 
 enum ProjectCategory {
@@ -34,267 +276,4 @@ enum EventType {
 enum Role {
   ADMIN
   USER
-}
-
-model User {
-  id       String    @id @default(cuid())
-  username String?   @unique
-  email    String?   @unique
-  password String?
-  role     Role?     @default(USER)
-  posts    Post[]
-  projects Project[]
-  events   Event[]
-  artists  Artist[]
-  artworks Artwork[]
-  venues   Venue[]
-
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
-}
-
-model Post {
-  id        String    @id @default(cuid())
-  title     String?
-  content   String?
-  published Boolean?  @default(false)
-  author    User?     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId  String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
-}
-
-model Project {
-  id              String           @id @default(cuid())
-  title           String
-  about           String
-  description     String
-  year            Int
-  startDate       DateTime
-  endDate         DateTime
-  category        ProjectCategory
-  mainImageUrl    String
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String
-  images          ProjectImage[]
-  projectArtists  ProjectArtist[]
-  projectArtworks ProjectArtwork[]
-  venues          ProjectVenue[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-model ProjectImage {
-  id        String  @id @default(cuid())
-  imageUrl  String
-  alt       String
-  order     Int     @default(0)
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Event {
-  id          String      @id @default(cuid())
-  title       String
-  subtitle    String?
-  description String      @db.Text
-  status      EventStatus @default(upcoming)
-  type        EventType
-  startDate   DateTime
-  endDate     DateTime
-  // 사용자
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-
-  // 이벤트 이미지
-  mainImageUrl String
-  images       EventImage[]
-
-  // 이벤트 장소
-  venue   Venue?  @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  venueId String?
-
-  // 이벤트 주최자/아티스트
-  organizers EventOrganizer[]
-
-  // 티켓/예약 정보
-  tickets EventTicket[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model EventImage {
-  id       String @id @default(cuid())
-  imageUrl String
-  alt      String
-  order    Int    @default(0)
-  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventId  String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model EventOrganizer {
-  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventId  String
-  artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
-  artistId String
-  role     String // ex: "주최자", "큐레이터", "퍼포머" 등
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@id([eventId, artistId])
-}
-
-model EventTicket {
-  id       String @id @default(cuid())
-  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventId  String
-  name     String // ex: "일반 입장권", "VIP 티켓" 등
-  price    Int
-  quantity Int // 남은 수량
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Artist {
-  id              String           @id @default(cuid())
-  name            String           @map("name_en")
-  nameKr          String           @map("name_kr")
-  mainImageUrl    String?
-  email           String?
-  city            String?
-  country         String?
-  homepage        String?
-  biography       String?
-  cv              String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  images          ArtistImage[]
-  artistArtworks  ArtistArtwork[]
-  projectArtists  ProjectArtist[]
-  eventOrganizers EventOrganizer[]
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String
-}
-
-model ArtistImage {
-  id       String @id @default(cuid())
-  imageUrl String
-  alt      String
-  order    Int    @default(0)
-  artist   Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
-  artistId String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Artwork {
-  id              String           @id @default(cuid())
-  title           String
-  size            String?
-  media           String?
-  year            Int?
-  description     String?
-  style           String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  images          ArtworkImage[]
-  artists         ArtistArtwork[]
-  projectArtWorks ProjectArtwork[]
-  user            User             @relation(fields: [userId], references: [id])
-  userId          String
-}
-
-model ArtworkImage {
-  id        String  @id @default(cuid())
-  imageUrl  String
-  alt       String
-  order     Int     @default(0)
-  artwork   Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
-  artworkId String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Venue {
-  id           String         @id @default(cuid())
-  name         String
-  description  String
-  address      String
-  images       VenueImage[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  projectVenue ProjectVenue[]
-  Event        Event[]
-  user         User           @relation(fields: [userId], references: [id])
-  userId       String
-}
-
-model VenueImage {
-  id       String @id @default(cuid())
-  imageUrl String
-  alt      String
-  order    Int    @default(0)
-  venue    Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  venueId  String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model ProjectArtist {
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId String
-  artist    Artist  @relation(fields: [artistId], references: [id], onDelete: Cascade)
-  artistId  String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@id([projectId, artistId])
-}
-
-model ProjectArtwork {
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  artworkId String
-  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@id([artworkId, projectId])
-}
-
-model ProjectVenue {
-  venue   Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  venueId String
-
-  Project   Project? @relation(fields: [projectId], references: [id])
-  projectId String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@id([projectId, venueId])
-}
-
-model ArtistArtwork {
-  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
-  artistId  String
-  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
-  artworkId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@id([artistId, artworkId])
 }

@@ -20,6 +20,7 @@ import { Metadata } from 'next';
 import { prisma } from '@/lib/db/prisma';
 import ArtworkSchema from '@/components/schema/artwork-schema';
 import { validateArtworkData } from '@/lib/validations/schema';
+import { getImageUrl } from '@/lib/utils';
 
 export async function generateMetadata({
   params,
@@ -85,6 +86,16 @@ export async function generateMetadata({
       type: 'article',
     },
   };
+}
+
+export async function generateStaticParams() {
+  const artworks = await prisma.artwork.findMany({
+    select: { id: true },
+  });
+
+  return artworks.map((artwork) => ({
+    id: artwork.id,
+  }));
 }
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
@@ -162,8 +173,13 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                         >
                           {artistRelation.artist.mainImageUrl && (
                             <div className="relative h-12 w-12 overflow-hidden rounded-full">
-                              <img
-                                src={`${artistRelation.artist.mainImageUrl}/public`}
+                              <Image
+                                src={getImageUrl(
+                                  `${artistRelation.artist.mainImageUrl}`,
+                                  'thumbnail'
+                                )}
+                                width={60}
+                                height={60}
                                 alt={
                                   artistRelation.artist.nameKr ||
                                   artistRelation.artist.name

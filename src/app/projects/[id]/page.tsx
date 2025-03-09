@@ -1,19 +1,19 @@
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from 'lucide-react';
 import Image from 'next/image';
-import { format } from 'date-fns';
-import { getImageUrl } from '@/lib/utils';
+import { formatEventDate, getImageUrl } from '@/lib/utils';
 import React from 'react';
 import CarouselGallery from '@/components/image/carousel-gallery';
-import { getProjectById } from '@/app/projects/actions';
+import { getProjectWithCache } from '@/app/projects/actions';
 import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Link from 'next/link';
 import canManage from '@/lib/can-manage';
-import { prisma } from '@/lib/db/prisma';
 import { Metadata } from 'next';
 import BreadcrumbNav from '@/components/breadcrum-nav';
+import { prisma } from '@/lib/db/prisma';
+import { format } from 'date-fns';
 
 // src/app/projects/[id]/page.tsx
 export async function generateMetadata({
@@ -22,39 +22,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const project = await prisma.project.findUnique({
-    where: { id: id },
-    select: {
-      title: true,
-      about: true,
-      description: true,
-      year: true,
-      category: true,
-      mainImageUrl: true,
-      startDate: true,
-      endDate: true,
-      projectArtists: {
-        select: {
-          artist: {
-            select: {
-              name: true,
-              nameKr: true,
-            },
-          },
-        },
-      },
-      venues: {
-        select: {
-          venue: {
-            select: {
-              name: true,
-              address: true,
-            },
-          },
-        },
-      },
-    },
-  });
+  const project = await getProjectWithCache(id);
 
   if (!project) {
     return {
@@ -86,14 +54,24 @@ export async function generateMetadata({
       'project:year': project.year.toString(),
       'project:artists': artists,
       'project:venues': venues,
-      'project:duration': `${project.startDate.toLocaleDateString()} - ${project.endDate.toLocaleDateString()}`,
+      'project:duration': `${format(project.startDate, 'yyyy-MM-dd')} - ${format(project.endDate, 'yyyy-MM-dd')}`,
     },
   };
 }
 
+export async function generateStaticParams() {
+  const projects = await prisma.project.findMany({
+    select: { id: true },
+  });
+
+  return projects.map((project) => ({
+    id: project.id,
+  }));
+}
+
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
-  const project = await getProjectById(id);
+  const project = await getProjectWithCache(id);
 
   if (!project) return null;
 
@@ -115,7 +93,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
       {project.mainImageUrl ? (
         <div className="relative mb-4 flex aspect-square justify-center overflow-hidden rounded-lg sm:aspect-video md:mb-8">
           <Image
-            src={getImageUrl(project.mainImageUrl, 'hires')}
+            src={getImageUrl(project.mainImageUrl, 'public')}
             alt={project.title}
             width={1200}
             height={1200}
@@ -134,8 +112,10 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
       <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
         <Calendar className="h-4 w-4" />
         <span>
-          {format(new Date(project.startDate), 'yyyy.MM.dd')} -{' '}
-          {format(new Date(project.endDate), 'yyyy.MM.dd')}
+          {formatEventDate(
+            new Date(project.startDate || new Date()),
+            new Date(project.endDate || new Date())
+          )}
         </span>
       </div>
       <p className="mb-12 mt-8 whitespace-pre-wrap text-lg text-muted-foreground">
@@ -156,7 +136,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                 <Avatar className="h-20 w-20">
                   {artist.mainImageUrl &&
                   getImageUrl(artist.mainImageUrl, 'thumbnail') ? (
-                    <img
+                    <Image
                       src={getImageUrl(artist.mainImageUrl, 'thumbnail')!}
                       width={100}
                       height={100}

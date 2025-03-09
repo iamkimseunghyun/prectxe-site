@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import Image from 'next/image';
+import { getImageUrl } from '@/lib/utils';
 
 // 기본적인 이미지 타입
 interface ImageData {
@@ -52,8 +54,10 @@ export async function ArtistGrid({ artists }: ArtistGridProps) {
           className="group relative overflow-hidden rounded-lg"
         >
           <div className="relative aspect-square">
-            <img
-              src={`${artist.mainImageUrl}/thumbnail`}
+            <Image
+              src={getImageUrl(`${artist.mainImageUrl}`, 'smaller')}
+              width={200}
+              height={200}
               alt={artist.name}
               className="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105"
               sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"

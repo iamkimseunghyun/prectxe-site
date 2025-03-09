@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Venue } from '@prisma/client';
 import { getImageUrl } from '@/lib/utils';
 import { GalleryImage } from '@/lib/validations/gallery-image';
+import Image from 'next/image';
 
 interface VenueListProps {
   initialData: {
@@ -28,9 +29,11 @@ const VenueList = ({ initialData }: VenueListProps) => {
               <CardContent className="p-0">
                 {venue.images?.[0] ? (
                   <div className="relative h-48 w-full">
-                    <img
+                    <Image
                       src={getImageUrl(venue.images[0].imageUrl, 'public')}
                       alt={venue.images[0].alt}
+                      width={200}
+                      height={200}
                       sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                       className="absolute inset-0 h-full w-full rounded-t-lg object-cover"
                     />

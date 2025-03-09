@@ -18,6 +18,7 @@ import BreadcrumbNav from '@/components/breadcrum-nav';
 import canManage from '@/lib/can-manage';
 import { Metadata } from 'next';
 import { prisma } from '@/lib/db/prisma';
+import Link from 'next/link';
 
 export async function generateMetadata({
   params,
@@ -88,6 +89,16 @@ export async function generateMetadata({
         : '',
     },
   };
+}
+
+export async function generateStaticParams() {
+  const events = await prisma.event.findMany({
+    select: { id: true },
+  });
+
+  return events.map((event) => ({
+    id: event.id,
+  }));
 }
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
@@ -161,7 +172,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                         className="flex items-center gap-4"
                       >
                         {organizer.artist.mainImageUrl ? (
-                          <img
+                          <Image
                             src={getImageUrl(
                               organizer.artist.mainImageUrl,
                               'thumbnail'
@@ -178,14 +189,16 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                             </span>
                           </div>
                         )}
-                        <div>
-                          <div className="font-semibold">
-                            {organizer.artist.name}
+                        <Link href={`/artists/${organizer.artistId}`}>
+                          <div>
+                            <div className="font-semibold">
+                              {organizer.artist.name}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {organizer.role}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-600">
-                            {organizer.role}
-                          </div>
-                        </div>
+                        </Link>
                       </div>
                     ))}
                   </div>

@@ -3,8 +3,6 @@ import ProjectFilterWrapper from '@/components/page/project/project-filter-wrapp
 import { Suspense } from 'react';
 import { getAllProjects } from '@/app/projects/actions';
 
-export const revalidate = 60; // 1분마다 재검증
-
 const Page = async ({
   searchParams,
 }: {

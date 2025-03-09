@@ -237,7 +237,7 @@ const ArtistForm = ({
               <Textarea
                 placeholder="아티스트의 약력을 입력해주세요."
                 {...register('biography')}
-                rows={6}
+                rows={15}
               />
               {errors.biography && (
                 <p id="biography-error" className="text-sm text-destructive">
@@ -249,7 +249,7 @@ const ArtistForm = ({
               <Textarea
                 placeholder="아티스트의 이력서를 입력해주세요."
                 {...register('cv')}
-                rows={6}
+                rows={15}
               />
               {errors.cv && (
                 <p id="cv-error" className="text-sm text-destructive">

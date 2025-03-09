@@ -3,6 +3,7 @@ import { Project } from '@prisma/client';
 import { Card } from '@/components/ui/card';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
 
 interface ProjectCardProps {
   project: Project;
@@ -23,9 +24,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
         {/* 이미지 섹션 */}
         <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
           {project.mainImageUrl ? (
-            <img
+            <Image
               src={`${project.mainImageUrl}/thumbnail`}
               alt={project.title}
+              width={200}
+              height={200}
               sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
               className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />

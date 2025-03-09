@@ -133,7 +133,7 @@ const VenueForm = ({ mode, initialData, venueId, userId }: VenueFormProps) => {
               <Textarea
                 {...register('description')}
                 placeholder="장소에 대해 간단히 설명해주세요."
-                rows={4}
+                rows={10}
               />
               {errors.description && (
                 <span className="text-sm text-red-500">

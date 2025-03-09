@@ -1,23 +1,36 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { HeroSection } from '@/components/layout/hero-section';
-import { getRecentProjects } from '@/app/projects/actions';
-import { getRecentEvents } from '@/app/events/actions';
-import { Calendar, MapPin } from 'lucide-react';
-import { formatEventDate, isEventBookingClosed } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
+import { prisma } from '@/lib/db/prisma';
+import { formatEventDate, isEventBookingClosed } from '@/lib/utils';
+import { Calendar, MapPin } from 'lucide-react';
 
-export const revalidate = 60; // 1분마다 재검증
+export const dynamic = 'force-static';
 
 export default async function Home() {
-  // const projects = await getAllProjects();
-  const projects = await getRecentProjects();
-  const events = await getRecentEvents();
+  const projects = await prisma.project.findMany({
+    orderBy: {
+      createdAt: 'desc',
+    },
+    take: 6,
+  });
+
+  const events = await prisma.event.findMany({
+    orderBy: {
+      startDate: 'desc',
+    },
+    take: 3,
+    include: {
+      venue: true,
+    },
+  });
+
   return (
     <>
       {/* 히어로 섹션 */}
       <HeroSection />
-
       <div className="mx-auto max-w-5xl">
         {/* 이벤트 섹션 */}
         <section className="bg-white pt-20">
@@ -43,9 +56,11 @@ export default async function Home() {
                 >
                   <div className="relative aspect-[4/3]">
                     {event.mainImageUrl ? (
-                      <img
+                      <Image
                         src={`${event.mainImageUrl}/smaller`}
                         alt={event.title}
+                        width={200}
+                        height={200}
                         sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                         className="h-full w-full object-cover"
                       />
@@ -121,9 +136,11 @@ export default async function Home() {
                 >
                   <div className="relative aspect-[4/3]">
                     {project.mainImageUrl ? (
-                      <img
+                      <Image
                         src={`${project.mainImageUrl}/smaller`}
                         alt={project.title}
+                        width={400}
+                        height={400}
                         sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                         className="absolute object-cover transition-transform duration-300 group-hover:scale-105"
                       />
@@ -156,10 +173,6 @@ export default async function Home() {
             <div className="mx-auto max-w-3xl space-y-6 text-center">
               <h2 className="text-3xl font-bold">About PRECTXE</h2>
               <p className="text-gray-600">
-                {/*Since 2018, PRECTXE has been a platform for digital artists to
-              showcase their work through exhibitions, performances, and
-              workshops. We believe in the power of technology to new.tsx new
-              forms of artistic expression.*/}
                 2018년, PRECTXE는 디지털 아티스트들의 창의적인 실험을 위한
                 플랫폼으로 시작되었습니다. 전시, 공연, 워크숍을 통해 기술과
                 예술이 만나는 새로운 경험을 제시합니다.

@@ -31,11 +31,13 @@ const ArtworkGrid = ({ artworks }: { artworks: ArtworkWithImages[] }) => {
             <CardContent>
               {artwork.images[0] && (
                 <div className="relative aspect-video w-full overflow-hidden rounded-lg">
-                  <img
+                  <Image
                     src={getImageUrl(`${artwork.images[0].imageUrl}`, 'public')}
                     alt={artwork.images[0].alt}
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    width={100}
+                    height={300}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    // sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
                 </div>
               )}

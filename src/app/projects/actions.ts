@@ -6,64 +6,101 @@ import { projectCreateSchema } from '@/app/projects/project';
 import { ProjectCategory } from '@/lib/types';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import { Prisma } from '@prisma/client';
+import { cache } from 'react';
 
-export async function getRecentProjects() {
-  return prisma.project.findMany({
-    include: {
-      venues: true,
-    },
-    orderBy: {
-      startDate: 'desc',
-    },
-  });
-}
+export const getAllProjects = cache(
+  async (year?: string, category?: string, sort?: string, search?: string) => {
+    try {
+      const where = {
+        ...(year && year !== 'all-year' && { year: parseInt(year) }),
+        ...(category &&
+          category !== 'all-category' && {
+            category: category as ProjectCategory,
+          }),
+        ...(search && {
+          OR: [{ title: { contains: search } }],
+        }),
+      };
 
-export async function getAllProjects(
-  year?: string,
-  category?: string,
-  sort?: string,
-  search?: string
-) {
-  const where = {
-    ...(year && year !== 'all-year' && { year: parseInt(year) }),
-    ...(category &&
-      category !== 'all-category' && { category: category as ProjectCategory }),
-    ...(search && {
-      OR: [{ title: { contains: search } }],
-    }),
-  };
+      const orderBy = {
+        startDate: sort === 'oldest' ? 'asc' : 'desc',
+      } as const;
 
-  const orderBy = {
-    startDate: sort === 'oldest' ? 'asc' : 'desc',
-  } as const;
+      return prisma.project.findMany({
+        where,
+        orderBy,
+      });
+    } catch (error) {
+      console.error('프로젝트 가져오기 오류:', error);
+      return [];
+    }
+  }
+);
 
-  return prisma.project.findMany({
-    where,
-    orderBy,
-  });
-}
-
-export async function getProjectById(projectId: string) {
+// 캐시된 데이터 패칭 함수
+export const getProjectWithCache = cache(async (projectId: string) => {
   try {
     const projectData = await prisma.project.findUnique({
       where: { id: projectId },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        about: true,
+        description: true,
+        year: true,
+        category: true,
+        mainImageUrl: true,
+        startDate: true,
+        endDate: true,
+        userId: true,
+
+        // 필요한 이미지 필드만 선택
         images: {
+          select: {
+            imageUrl: true,
+            alt: true,
+            order: true,
+          },
           orderBy: { order: 'asc' },
         },
+
+        // 필요한 장소 정보만 선택
         venues: {
-          include: {
-            venue: true,
+          select: {
+            venue: {
+              select: {
+                id: true,
+                name: true,
+                address: true,
+              },
+            },
           },
         },
+
+        // 필요한 아티스트 정보만 선택
         projectArtists: {
-          include: {
-            artist: true,
+          select: {
+            artistId: true,
+            artist: {
+              select: {
+                id: true,
+                name: true,
+                nameKr: true,
+                mainImageUrl: true,
+              },
+            },
           },
         },
+
+        // 필요한 작품 정보만 선택 (페이지에서 사용하는 경우)
         projectArtworks: {
-          include: {
-            artwork: true,
+          select: {
+            artwork: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
           },
         },
       },
@@ -71,23 +108,20 @@ export async function getProjectById(projectId: string) {
 
     if (!projectData) return null;
 
-    // project schema 수정 후 지울 코드
-    const formattedData = {
+    // 불필요한 변환 제거, 데이터 그대로 반환
+    return {
       ...projectData,
-      category: projectData?.category as
-        | 'exhibition'
-        | 'performance'
-        | 'festival'
-        | 'workshop',
-      startDate: projectData?.startDate.toISOString(),
-      endDate: projectData?.endDate.toISOString(),
+      startDate: projectData.startDate.toISOString(),
+      endDate: projectData.endDate.toISOString(),
     };
-
-    return formattedData;
   } catch (error) {
     console.error(error);
     throw error;
   }
+});
+
+export async function getProjectById(projectId: string) {
+  return getProjectWithCache(projectId);
 }
 
 export type CreateProjectResult =
@@ -152,7 +186,8 @@ export async function createProject(
         })),
       });
     }
-
+    revalidatePath('/');
+    revalidatePath(`/projects`);
     return { ok: true, data: { id: project.id } };
   } catch (error) {
     console.error(error);
@@ -236,7 +271,8 @@ export async function updateProject(formData: FormData, projectId: string) {
         },
       },
     });
-
+    revalidatePath('/');
+    revalidatePath(`/projects/${project.id}`);
     return { ok: true, data: project };
   } catch (error) {
     console.error('프로젝트 페이지 수정 실패:', error);
@@ -265,76 +301,10 @@ export async function deleteProject(projectId: string) {
       },
     });
     revalidatePath('/');
+    revalidatePath('/projects');
     return { success: true };
   } catch (error) {
     console.error(error);
     return { success: false };
-  }
-}
-
-// 프로젝트에 등록가능한 아티스트 목록을 가져오는 함수
-export async function getAvailableArtists(projectId: string) {
-  // 이미 프로젝트에 등록된 아티스트 ID 목록
-  const existingArtists = await prisma.projectArtist
-    .findMany({
-      where: {
-        projectId,
-      },
-      select: { artistId: true },
-    })
-    .then((artists) => artists.map((artist) => artist.artistId));
-
-  // 아직 등록되지 않은 아티스트 목록
-  const availableArtists = await prisma.artist.findMany({
-    where: {
-      id: { notIn: existingArtists },
-    },
-    select: {
-      id: true,
-      name: true,
-      mainImageUrl: true,
-    },
-  });
-
-  return availableArtists;
-}
-
-// app/projects/actions.ts
-export async function updateProjectWithArtist(
-  formData: FormData,
-  projectId: string
-) {
-  try {
-    const projectArtists = JSON.parse(formData.get('projectArtists') as string);
-
-    // 기존 projectArtists 관계를 모두 삭제
-    await prisma.projectArtist.deleteMany({
-      where: { projectId },
-    });
-
-    // 새로운 projectArtists 관계 생성
-    const project = await prisma.project.update({
-      where: { id: projectId },
-      data: {
-        // ... 다른 필드들 ...
-        projectArtists: {
-          create: projectArtists.map((pa: { artistId: string }) => ({
-            artistId: pa.artistId,
-          })),
-        },
-      },
-      include: {
-        projectArtists: {
-          include: {
-            artist: true,
-          },
-        },
-      },
-    });
-
-    return { ok: true, data: project };
-  } catch (error) {
-    // ... 에러 처리
-    console.error(error);
   }
 }
