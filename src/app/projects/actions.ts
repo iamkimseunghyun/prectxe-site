@@ -36,8 +36,13 @@ export const getAllProjectsWithCache = cache(
   }
 );
 
-export const getAllProjects = async () => {
-  return getAllProjectsWithCache();
+export const getAllProjects = async (
+  year?: string,
+  category?: string,
+  sort?: string,
+  search?: string
+) => {
+  return getAllProjectsWithCache(year, category, sort, search);
 };
 
 // 캐시된 데이터 패칭 함수

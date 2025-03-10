@@ -1,10 +1,6 @@
 'use server';
 
-import {
-  eventFormSchema,
-  EventFormType,
-  eventQuerySchema,
-} from '@/app/events/event';
+import { eventFormSchema, EventFormType } from '@/app/events/event';
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';

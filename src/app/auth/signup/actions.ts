@@ -1,7 +1,7 @@
 'use server';
 
 import { signUpFormSchema } from '@/app/auth/signup/validation';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db/prisma';
 
 import { redirect } from 'next/navigation';
