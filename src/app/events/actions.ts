@@ -157,7 +157,7 @@ export async function deleteEvent(id: string) {
   }
 }
 
-export async function getEventsByArtistId(artistId: string) {
+export const getEventsByArtistIdWithCache = async (artistId: string) => {
   const artworks = await prisma.event.findMany({
     where: {
       organizers: {
@@ -179,9 +179,13 @@ export async function getEventsByArtistId(artistId: string) {
   });
   console.log(`Found ${artworks.length} artworks for artist ${artistId}`);
   return artworks;
+};
+
+export async function getEventsByArtistId(artistId: string) {
+  return getEventsByArtistIdWithCache(artistId);
 }
 
-export async function getEventById(id: string) {
+export const getEventByIdWithCache = async (id: string) => {
   try {
     const event = await prisma.event.findUnique({
       where: { id },
@@ -225,71 +229,8 @@ export async function getEventById(id: string) {
     }
     return { error: '이벤트 조회 중 오류가 발생했습니다.' };
   }
-}
+};
 
-export async function getRecentEvents() {
-  const events = await prisma.event.findMany({
-    orderBy: {
-      startDate: 'desc',
-    },
-    include: {
-      venue: true,
-    },
-  });
-  return events;
-}
-
-export async function getAllEvents(query: z.infer<typeof eventQuerySchema>) {
-  try {
-    // 쿼리 파라미터 검증
-    const validatedQuery = eventQuerySchema.parse(query);
-    const { page, limit, type, status, search, startDate, endDate } =
-      validatedQuery;
-
-    // 필터 조건 구성
-    const where: any = {};
-    if (type) where.type = type;
-    if (status) where.status = status;
-    if (search) {
-      where.OR = [
-        { title: { contains: search } },
-        { subtitle: { contains: search } },
-        { description: { contains: search } },
-      ];
-    }
-    if (startDate) where.startDate = { gte: new Date(startDate) };
-    if (endDate) where.endDate = { gte: new Date(endDate) };
-
-    // 이벤트 조회
-    const [events, total] = await Promise.all([
-      prisma.event.findMany({
-        where,
-        include: {
-          venue: true,
-          organizers: {
-            include: {
-              artist: true,
-            },
-          },
-          tickets: true,
-        },
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { startDate: 'desc' },
-      }),
-      prisma.event.count({ where }),
-    ]);
-
-    return {
-      data: {
-        events,
-        total,
-      },
-    };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { error: error.errors[0].message };
-    }
-    return { error: '이벤트 목록 조회 중 오류가 발생했습니다.' };
-  }
+export async function getEventById(id: string) {
+  return getEventByIdWithCache(id);
 }

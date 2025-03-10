@@ -9,32 +9,39 @@ import {
 } from '@/app/artworks/artwork';
 import { revalidatePath } from 'next/cache';
 import { GalleryImage } from '@/lib/validations/gallery-image';
+import { cache } from 'react';
+
+export const getArtworksByArtistIdWithCache = cache(
+  async (artistId: string) => {
+    const artworks = await prisma.artwork.findMany({
+      where: {
+        artists: {
+          some: {
+            artistId: artistId,
+          },
+        },
+      },
+      include: {
+        images: {
+          orderBy: {
+            order: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    console.log(`Found ${artworks.length} artworks for artist ${artistId}`);
+    return artworks;
+  }
+);
 
 export async function getArtworksByArtistId(artistId: string) {
-  const artworks = await prisma.artwork.findMany({
-    where: {
-      artists: {
-        some: {
-          artistId: artistId,
-        },
-      },
-    },
-    include: {
-      images: {
-        orderBy: {
-          order: 'asc',
-        },
-      },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-  console.log(`Found ${artworks.length} artworks for artist ${artistId}`);
-  return artworks;
+  return getArtworksByArtistIdWithCache(artistId);
 }
 
-export async function getArtworkById(id: string) {
+export const getArtworkByIdWithCache = cache(async (id: string) => {
   try {
     const artwork = await prisma.artwork.findUnique({
       where: { id },
@@ -66,9 +73,13 @@ export async function getArtworkById(id: string) {
     console.error('Error fetching artwork:', error);
     throw error;
   }
+});
+
+export async function getArtworkById(id: string) {
+  return getArtworkByIdWithCache(id);
 }
 
-export async function getAllArtworks() {
+export const getAllArtworksWithCache = cache(async () => {
   const artworks = prisma.artwork.findMany({
     include: {
       user: true,
@@ -80,6 +91,10 @@ export async function getAllArtworks() {
   });
 
   return artworks;
+});
+
+export async function getAllArtworks() {
+  return getAllArtworksWithCache();
 }
 
 export async function createArtwork(formData: FormData, userId: string) {

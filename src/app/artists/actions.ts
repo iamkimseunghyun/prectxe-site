@@ -8,8 +8,9 @@ import {
 } from '@/app/artists/artist';
 import { revalidatePath } from 'next/cache';
 import { GalleryImage } from '@/lib/validations/gallery-image';
+import { cache } from 'react';
 
-export async function getArtistById(artistId: string) {
+export const getArtistByIdWithCache = cache(async (artistId: string) => {
   try {
     const artist = await prisma.artist.findUnique({
       where: {
@@ -57,9 +58,13 @@ export async function getArtistById(artistId: string) {
     console.error(error);
     throw error;
   }
+});
+
+export async function getArtistById(artistId: string) {
+  return getArtistByIdWithCache(artistId);
 }
 
-export async function getArtists() {
+export const getArtistsWithCache = cache(async () => {
   try {
     const artists = await prisma.artist.findMany({
       select: {
@@ -73,26 +78,10 @@ export async function getArtists() {
     console.error(error);
     throw new Error('아티스트 목록을 불러오는데 실패했습니다.');
   }
-}
+});
 
-export async function getAllArtists(search?: string) {
-  const artists = await prisma.artist.findMany({
-    where: {
-      OR: search
-        ? [{ name: { contains: search } }, { biography: { contains: search } }]
-        : undefined,
-      // category: category && category !== 'all' ? category : undefined,
-    },
-    select: {
-      _count: {
-        select: { artistArtworks: true },
-      },
-      id: true,
-      name: true,
-      mainImageUrl: true,
-    },
-  });
-  return artists;
+export async function getArtists() {
+  return getArtistsWithCache();
 }
 
 export async function createSimpleArtist(
@@ -216,44 +205,73 @@ export async function createArtist(formData: FormData, userId: string) {
 
 export async function updateArtist(formData: FormData, artistId: string) {
   try {
-    const mainImageUrl = formData.get('mainImageUrl')?.toString() || '';
-    const galleryData = JSON.parse(formData.get('images')?.toString() || '[]');
+    // 부분 업데이트를 위한 객체 생성
+    const updateData: Record<string, any> = {};
 
-    const updateData = {
-      // formEntry 객체로 들어오면 스트링 | 널 값으로 타입이 결정되기 때문에 데이터 변환을 해줘야 한다.
-      name: formData.get('name')?.toString() || '',
-      nameKr: formData.get('nameKr')?.toString() || '',
-      email: formData.get('email')?.toString() || '',
-      city: formData.get('city')?.toString() || '',
-      country: formData.get('country')?.toString() || '',
-      homepage: formData.get('homepage')?.toString() || '',
-      biography: formData.get('biography')?.toString() || '',
-      cv: formData.get('cv')?.toString() || '',
-      images: galleryData,
-      ...(mainImageUrl && { mainImageUrl }),
-    };
+    // 각 필드 조건부 추가 (값이 제공된 경우에만 업데이트)
+    const name = formData.get('name')?.toString();
+    if (name) updateData.name = name;
 
+    const nameKr = formData.get('nameKr')?.toString();
+    if (nameKr) updateData.nameKr = nameKr;
+
+    const email = formData.get('email')?.toString();
+    if (email) updateData.email = email;
+
+    const city = formData.get('city')?.toString();
+    if (city) updateData.city = city;
+
+    const country = formData.get('country')?.toString();
+    if (country) updateData.country = country;
+
+    const homepage = formData.get('homepage')?.toString();
+    if (homepage) updateData.homepage = homepage;
+
+    const biography = formData.get('biography')?.toString();
+    if (biography) updateData.biography = biography;
+
+    const cv = formData.get('cv')?.toString();
+    if (cv) updateData.cv = cv;
+
+    const mainImageUrl = formData.get('mainImageUrl')?.toString();
+    if (mainImageUrl) updateData.mainImageUrl = mainImageUrl;
+
+    // 이미지 업데이트 처리
+    let imagesUpdate = {};
+    const galleryDataStr = formData.get('images')?.toString();
+
+    if (galleryDataStr) {
+      const galleryData = JSON.parse(galleryDataStr);
+
+      if (Array.isArray(galleryData) && galleryData.length > 0) {
+        imagesUpdate = {
+          deleteMany: {},
+          create: galleryData.map((image: GalleryImage) => ({
+            imageUrl: image.imageUrl,
+            alt: image.alt || '',
+            order: image.order,
+          })),
+        };
+      }
+    }
+
+    // 아티스트 업데이트
     const artist = await prisma.artist.update({
       where: { id: artistId },
       data: {
         ...updateData,
         updatedAt: new Date(),
-        images: {
-          deleteMany: {},
-          create: updateData.images.map((image: GalleryImage) => ({
-            imageUrl: image.imageUrl,
-            alt: image.alt,
-            order: image.order,
-          })),
-        },
+        ...(Object.keys(imagesUpdate).length > 0 && { images: imagesUpdate }),
       },
     });
 
     revalidatePath('/artists');
     revalidatePath(`/artists/${artistId}`);
+
     return { ok: true, data: artist };
   } catch (error) {
     console.error('Artist update error:', error);
+
     return {
       ok: false,
       error:

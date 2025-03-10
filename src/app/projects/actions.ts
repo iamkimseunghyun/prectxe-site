@@ -2,13 +2,12 @@
 
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
-import { projectCreateSchema } from '@/app/projects/project';
+import { projectCreateSchema, ProjectFormData } from '@/app/projects/project';
 import { ProjectCategory } from '@/lib/types';
-import { GalleryImage } from '@/lib/validations/gallery-image';
 import { Prisma } from '@prisma/client';
 import { cache } from 'react';
 
-export const getAllProjects = cache(
+export const getAllProjectsWithCache = cache(
   async (year?: string, category?: string, sort?: string, search?: string) => {
     try {
       const where = {
@@ -36,6 +35,10 @@ export const getAllProjects = cache(
     }
   }
 );
+
+export const getAllProjects = async () => {
+  return getAllProjectsWithCache();
+};
 
 // 캐시된 데이터 패칭 함수
 export const getProjectWithCache = cache(async (projectId: string) => {
@@ -197,9 +200,10 @@ export async function createProject(
 
 export async function updateProject(formData: FormData, projectId: string) {
   try {
-    const updateData: Partial<Prisma.ProjectUpdateInput> = {};
+    // 부분 업데이트를 위한 객체 생성
+    const updateData: Partial<ProjectFormData> = {};
 
-    // 각 필드 조건부 추가
+    // 각 필드 조건부 추가 (값이 제공된 경우에만 업데이트)
     const title = formData.get('title')?.toString();
     if (title) updateData.title = title;
 
@@ -216,21 +220,58 @@ export async function updateProject(formData: FormData, projectId: string) {
     if (about) updateData.about = about;
 
     const startDate = formData.get('startDate')?.toString();
-    if (startDate) updateData.startDate = new Date(startDate).toISOString();
+    if (startDate) updateData.startDate = startDate;
 
     const endDate = formData.get('endDate')?.toString();
-    if (endDate) updateData.endDate = new Date(endDate).toISOString();
+    if (endDate) updateData.endDate = endDate;
 
     const mainImageUrl = formData.get('mainImageUrl')?.toString();
     if (mainImageUrl) updateData.mainImageUrl = mainImageUrl;
 
     // 이미지 업데이트
-    const galleryData = JSON.parse(formData.get('images')?.toString() || '[]');
-    if (galleryData.length > 0) {
-      updateData.images = {
+    const galleryDataStr = formData.get('images')?.toString();
+    if (galleryDataStr) {
+      const galleryData = JSON.parse(galleryDataStr);
+      if (Array.isArray(galleryData) && galleryData.length > 0) {
+        updateData.images = galleryData;
+      }
+    }
+
+    // 프로젝트 아티스트 업데이트
+    const projectArtistsStr = formData.get('projectArtists')?.toString();
+    if (projectArtistsStr) {
+      const projectArtists = JSON.parse(projectArtistsStr);
+      if (Array.isArray(projectArtists) && projectArtists.length > 0) {
+        updateData.projectArtists = projectArtists;
+      }
+    }
+
+    // Prisma에서 사용할 수 있는 형식으로 변환
+    const prismaUpdateData: Partial<Prisma.ProjectUpdateInput> = {
+      title: updateData.title,
+      year: updateData.year,
+      category: updateData.category,
+      description: updateData.description,
+      about: updateData.about,
+      mainImageUrl: updateData.mainImageUrl,
+      updatedAt: new Date(),
+    };
+
+    // 날짜 필드 변환
+    if (updateData.startDate) {
+      prismaUpdateData.startDate = new Date(updateData.startDate);
+    }
+
+    if (updateData.endDate) {
+      prismaUpdateData.endDate = new Date(updateData.endDate);
+    }
+
+    // 이미지와 아티스트 관계 처리
+    if (updateData.images) {
+      prismaUpdateData.images = {
         deleteMany: {},
         createMany: {
-          data: galleryData.map((image: GalleryImage) => ({
+          data: updateData.images.map((image) => ({
             imageUrl: image.imageUrl,
             alt: image.alt || '',
             order: image.order,
@@ -239,29 +280,23 @@ export async function updateProject(formData: FormData, projectId: string) {
       };
     }
 
-    // 프로젝트 아티스트 업데이트
-    const projectArtists = JSON.parse(
-      formData.get('projectArtists')?.toString() || '[]'
-    );
-    if (projectArtists.length > 0) {
-      updateData.projectArtists = {
+    if (updateData.projectArtists) {
+      prismaUpdateData.projectArtists = {
         deleteMany: {},
         createMany: {
-          data: projectArtists
-            .filter((pa: { artistId?: string }) => pa.artistId)
-            .map((pa: { artistId: string }) => ({
+          data: updateData.projectArtists
+            .filter((pa) => pa.artistId)
+            .map((pa) => ({
               artistId: pa.artistId,
             })),
         },
       };
     }
 
+    // 프로젝트 업데이트
     const project = await prisma.project.update({
       where: { id: projectId },
-      data: {
-        ...updateData,
-        updatedAt: new Date(),
-      },
+      data: prismaUpdateData,
       include: {
         images: true,
         projectArtists: {
@@ -271,8 +306,11 @@ export async function updateProject(formData: FormData, projectId: string) {
         },
       },
     });
+
+    // 캐시 무효화
     revalidatePath('/');
     revalidatePath(`/projects/${project.id}`);
+
     return { ok: true, data: project };
   } catch (error) {
     console.error('프로젝트 페이지 수정 실패:', error);
