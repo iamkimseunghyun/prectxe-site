@@ -2,7 +2,11 @@
 
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
-import { projectCreateSchema, ProjectFormData } from '@/app/projects/project';
+import {
+  createProjectSchema,
+  updateProjectSchema,
+  UpdateProjectType,
+} from '@/app/projects/project';
 import { ProjectCategory } from '@/lib/types';
 import { Prisma } from '@prisma/client';
 import { cache } from 'react';
@@ -156,7 +160,7 @@ export async function createProject(
       ),
     };
 
-    const validatedData = projectCreateSchema.safeParse(rawData);
+    const validatedData = createProjectSchema.safeParse(rawData);
     if (!validatedData.success) {
       return { ok: false, error: '입력값이 올바르지 않습니다.' };
     }
@@ -206,7 +210,7 @@ export async function createProject(
 export async function updateProject(formData: FormData, projectId: string) {
   try {
     // 부분 업데이트를 위한 객체 생성
-    const updateData: Partial<ProjectFormData> = {};
+    const updateData: UpdateProjectType = {};
 
     // 각 필드 조건부 추가 (값이 제공된 경우에만 업데이트)
     const title = formData.get('title')?.toString();
@@ -251,6 +255,11 @@ export async function updateProject(formData: FormData, projectId: string) {
       }
     }
 
+    const validatedData = updateProjectSchema.safeParse(updateData);
+    if (!validatedData.success) {
+      return { ok: false, error: '입력값이 올바르지 않습니다.' };
+    }
+
     // Prisma에서 사용할 수 있는 형식으로 변환
     const prismaUpdateData: Partial<Prisma.ProjectUpdateInput> = {
       title: updateData.title,
@@ -259,7 +268,6 @@ export async function updateProject(formData: FormData, projectId: string) {
       description: updateData.description,
       about: updateData.about,
       mainImageUrl: updateData.mainImageUrl,
-      updatedAt: new Date(),
     };
 
     // 날짜 필드 변환
@@ -301,7 +309,7 @@ export async function updateProject(formData: FormData, projectId: string) {
     // 프로젝트 업데이트
     const project = await prisma.project.update({
       where: { id: projectId },
-      data: prismaUpdateData,
+      data: { ...prismaUpdateData, updatedAt: new Date() },
       include: {
         images: true,
         projectArtists: {
@@ -315,7 +323,6 @@ export async function updateProject(formData: FormData, projectId: string) {
     // 캐시 무효화
     revalidatePath('/');
     revalidatePath(`/projects/${project.id}`);
-
     return { ok: true, data: project };
   } catch (error) {
     console.error('프로젝트 페이지 수정 실패:', error);

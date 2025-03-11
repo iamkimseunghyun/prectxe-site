@@ -17,19 +17,6 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
     return <div>Project not found</div>;
   }
 
-  const formattedData = {
-    mainImageUrl: projectData.mainImageUrl,
-    title: projectData.title,
-    about: projectData.about,
-    description: projectData.description,
-    year: projectData.year,
-    category: projectData.category,
-    startDate: projectData.startDate,
-    endDate: projectData.endDate,
-    images: projectData.images,
-    projectArtists: projectData.projectArtists,
-  };
-
   const artists = await getArtists();
 
   return (
@@ -38,7 +25,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
         <ProjectForm
           mode={'edit'}
           projectId={projectId}
-          initialData={formattedData}
+          initialData={projectData}
           artists={artists}
         />
       </div>

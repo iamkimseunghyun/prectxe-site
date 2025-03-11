@@ -3,6 +3,7 @@ import NavBar from '@/components/layout/nav/nav-bar';
 import getSession from '@/lib/session';
 import canManage from '@/lib/can-manage';
 import { prisma } from '@/lib/db/prisma';
+import { redirect } from 'next/navigation';
 
 const Header = async () => {
   const session = await getSession();
@@ -32,6 +33,7 @@ const Header = async () => {
     'use server';
     const session = await getSession();
     session.destroy();
+    redirect('/');
   }
 
   return (

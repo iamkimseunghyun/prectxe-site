@@ -4,7 +4,11 @@ import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { projectCreateSchema, ProjectFormData } from '@/app/projects/project';
+import {
+  createProjectSchema,
+  CreateProjectType,
+  UpdateProjectType,
+} from '@/app/projects/project';
 import {
   formatDate,
   formatDateForInput,
@@ -41,7 +45,7 @@ import FormSubmitButton from '@/components/form-submit-button';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';
-  initialData?: ProjectFormData;
+  initialData?: CreateProjectType | UpdateProjectType;
   projectId?: string;
   userId?: string;
   artists?: { mainImageUrl: string | null; id: string; name: string }[];
@@ -86,8 +90,8 @@ const ProjectForm = ({
     setValue,
     setError,
     formState: { errors },
-  } = useForm<ProjectFormData>({
-    resolver: zodResolver(projectCreateSchema),
+  } = useForm<CreateProjectType>({
+    resolver: zodResolver(createProjectSchema),
     defaultValues,
   });
 
@@ -120,7 +124,7 @@ const ProjectForm = ({
   });
 
   const prepareFormData = (
-    data: ProjectFormData,
+    data: CreateProjectType,
     galleryData: GalleryImage[]
   ) => {
     const formData = new FormData();
@@ -137,7 +141,7 @@ const ProjectForm = ({
     return formData;
   };
 
-  const onSubmit = handleSubmit(async (data: ProjectFormData) => {
+  const onSubmit = handleSubmit(async (data: CreateProjectType) => {
     setIsSubmitting(true);
     try {
       setIsUploading(true);

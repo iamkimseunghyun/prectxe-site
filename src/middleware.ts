@@ -43,6 +43,7 @@ const privatePathPatterns = [
   /^\/venues\/[^/]+\/edit$/, // /venues/[id]/edit 패턴
   /^\/venues\/new$/, // /venues/new 패턴
   /^\/admin\/?.*$/, // 모든 /admin 경로
+  /^\/profile\/?.*$/, // 모든 /profile 경로
 ];
 
 /**
