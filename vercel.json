@@ -1,9 +1,5 @@
 {
   "regions": ["icn1"],
-  "build": {
-    "env": {
-      "ENABLE_CACHE": "true"
-    }
-  },
-  "cacheDirectories": [".next/cache", "node_modules/.cache", ".vercel/cache"]
+  "framework": "nextjs",
+  "outputDirectory": ".next"
 }
