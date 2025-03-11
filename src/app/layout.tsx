@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/footer';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/header';
 import { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 
 // 메타데이터 설정
 export const metadata: Metadata = {
@@ -110,6 +111,7 @@ export default function RootLayout({
         <Header />
         <main className="pt-[var(--header-height)]">
           {children}
+          <Analytics />
           <Toaster />
         </main>
         <Footer />

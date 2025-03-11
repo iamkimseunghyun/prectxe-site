@@ -1,0 +1,21 @@
+# 버전 관리 시스템 관련
+.git
+.github
+
+# 개발 환경 파일
+.vscode
+.idea
+
+# 테스트 파일
+__tests__
+test
+tests
+
+# 문서 파일
+docs
+README.md
+CHANGELOG.md
+
+# 로컬 환경 설정
+.env.local
+.env.development
