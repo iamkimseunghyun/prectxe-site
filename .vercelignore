@@ -6,6 +6,9 @@
 .vscode
 .idea
 
+# 패키지 파일
+node_modules
+
 # 테스트 파일
 __tests__
 test
@@ -19,3 +22,11 @@ CHANGELOG.md
 # 로컬 환경 설정
 .env.local
 .env.development
+
+# 개발 관리 파일
+.husky
+*.log
+*.md
+.prettierrc
+.eslintrc*
+tsconfig.tsbuildinfo
