@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 
 interface SessionContent {
   id?: string;
+  name?: string;
+  isAdmin?: boolean;
 }
 
 export default async function getSession() {

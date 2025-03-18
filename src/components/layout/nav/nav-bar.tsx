@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
@@ -21,6 +21,12 @@ const NavBar = ({
 }: NavBarProps) => {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [localCanEdit, setLocalCanEdit] = useState(canEdit);
+
+  // canEdit prop이 변경될 때 localCanEdit 업데이트
+  useEffect(() => {
+    setLocalCanEdit(canEdit);
+  }, [canEdit]);
 
   // 모바일 메뉴 토글
   const toggleMenu = () => {
@@ -41,7 +47,7 @@ const NavBar = ({
   const navigation = [...publicNavigation];
 
   // 관리자인 경우 관리자 메뉴 추가
-  if (canEdit) {
+  if (localCanEdit) {
     navigation.push({ name: 'Admin', href: '/admin' });
   }
 
