@@ -1,8 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import Image from 'next/image';
-import { getImageUrl } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 import { getMoreArtists } from '@/app/artists/actions';
 import ArtistCard from '@/components/page/artist/artist-card';
