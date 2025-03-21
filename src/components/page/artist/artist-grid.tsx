@@ -43,7 +43,7 @@ interface ArtistGridProps {
 }
 
 export function ArtistGrid({ initialArtists }: ArtistGridProps) {
-  const [artists, setArtists] = useState<ArtistData[]>([]);
+  const [artists, setArtists] = useState<ArtistData[]>(initialArtists);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [isLastPage, setIsLastPage] = useState(false);
@@ -82,7 +82,7 @@ export function ArtistGrid({ initialArtists }: ArtistGridProps) {
     };
   }, [page]);
 
-  if (initialArtists.length === 0) {
+  if (artists.length === 0) {
     return (
       <div className="text-center">
         <p className="text-muted-foreground">검색 결과가 없습니다.</p>
@@ -92,7 +92,7 @@ export function ArtistGrid({ initialArtists }: ArtistGridProps) {
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {initialArtists.map((artist) => (
+      {artists.map((artist) => (
         <ArtistCard key={artist.id} artist={artist} />
       ))}
       {!isLastPage ? (
