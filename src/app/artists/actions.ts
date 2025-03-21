@@ -72,6 +72,7 @@ export const getArtistsWithCache = cache(async () => {
         name: true,
         mainImageUrl: true,
       },
+      take: 10,
     });
     return artists;
   } catch (error) {

@@ -137,6 +137,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                   {artist.mainImageUrl &&
                   getImageUrl(artist.mainImageUrl, 'thumbnail') ? (
                     <Image
+                      unoptimized
                       src={getImageUrl(artist.mainImageUrl, 'thumbnail')!}
                       width={100}
                       height={100}

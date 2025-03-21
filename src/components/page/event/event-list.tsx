@@ -22,6 +22,7 @@ const EventList = async ({ artistId }: { artistId: string }) => {
           className="group relative aspect-square overflow-hidden rounded-lg"
         >
           <Image
+            unoptimized
             src={
               `${getImageUrl(event.mainImageUrl, 'smaller')}` ||
               '/api/placeholder/400/400'

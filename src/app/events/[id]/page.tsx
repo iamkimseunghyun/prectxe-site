@@ -173,6 +173,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                       >
                         {organizer.artist.mainImageUrl ? (
                           <Image
+                            unoptimized
                             src={getImageUrl(
                               organizer.artist.mainImageUrl,
                               'thumbnail'

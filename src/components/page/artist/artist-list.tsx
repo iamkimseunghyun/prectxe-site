@@ -3,7 +3,7 @@ import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/db/prisma';
 import { ArtistGrid } from '@/components/page/artist/artist-grid';
 
-const getArtists = unstable_cache(
+const getQueryArtists = unstable_cache(
   async (searchQuery: string) => {
     return await prisma.artist.findMany({
       where: {
@@ -43,7 +43,7 @@ const ArtistList = async ({
 }) => {
   const { search } = await searchParams;
   const searchQuery = typeof search === 'string' ? search : '';
-  const initialArtists = await getArtists(searchQuery);
+  const initialArtists = await getQueryArtists(searchQuery);
   return <ArtistGrid initialArtists={initialArtists} />;
 };
 
