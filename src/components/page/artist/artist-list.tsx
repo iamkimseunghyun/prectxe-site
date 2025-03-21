@@ -43,8 +43,8 @@ const ArtistList = async ({
 }) => {
   const { search } = await searchParams;
   const searchQuery = typeof search === 'string' ? search : '';
-  const artists = await getArtists(searchQuery);
-  return <ArtistGrid artists={artists} />;
+  const initialArtists = await getArtists(searchQuery);
+  return <ArtistGrid initialArtists={initialArtists} />;
 };
 
 export default ArtistList;

@@ -1,6 +1,12 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { getImageUrl } from '@/lib/utils';
+import { useEffect, useRef, useState } from 'react';
+import { getMoreArtists } from '@/app/artists/actions';
+import ArtistCard from '@/components/page/artist/artist-card';
+import InfiniteScroll from '@/components/page/artist/infinite-scroll';
 
 // 기본적인 이미지 타입
 interface ImageData {
@@ -21,23 +27,62 @@ interface ArtworkData {
 interface ArtistData {
   id: string;
   name: string;
-  nameKr: string;
+  nameKr?: string;
   mainImageUrl?: string | null;
   biography?: string | null;
   city?: string | null;
   country?: string | null;
-  images: ImageData[];
+  images?: ImageData[];
   artistArtworks: {
     artwork: ArtworkData;
   }[];
 }
 
 interface ArtistGridProps {
-  artists: ArtistData[];
+  initialArtists: ArtistData[];
 }
 
-export async function ArtistGrid({ artists }: ArtistGridProps) {
-  if (artists.length === 0) {
+export function ArtistGrid({ initialArtists }: ArtistGridProps) {
+  const [artists, setArtists] = useState<ArtistData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [isLastPage, setIsLastPage] = useState(false);
+  const trigger = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      async (
+        entries: IntersectionObserverEntry[],
+        observer: IntersectionObserver
+      ) => {
+        const element = entries[0];
+        if (element.isIntersecting && trigger.current) {
+          observer.unobserve(trigger.current);
+          setIsLoading(true);
+          const newArtists = await getMoreArtists(page + 1);
+          if (newArtists.length !== 0) {
+            setPage((prev) => prev + 1);
+            setArtists((prev) => [...prev, ...newArtists]);
+          } else {
+            setIsLastPage(true);
+          }
+          setIsLoading(false);
+        }
+        console.log('Infinite Scrolling~~~', entries[0].isIntersecting);
+      },
+      {
+        threshold: 1,
+        rootMargin: '0px 0px -100px 0px',
+      }
+    );
+    if (trigger.current) {
+      observer.observe(trigger.current);
+    }
+    return () => {
+      observer.disconnect();
+    };
+  }, [page]);
+
+  if (initialArtists.length === 0) {
     return (
       <div className="text-center">
         <p className="text-muted-foreground">검색 결과가 없습니다.</p>
@@ -47,30 +92,14 @@ export async function ArtistGrid({ artists }: ArtistGridProps) {
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {artists.map((artist) => (
-        <Link
-          key={artist.id}
-          href={`/artists/${artist.id}`}
-          className="group relative overflow-hidden rounded-lg"
-        >
-          <div className="relative aspect-square">
-            <Image
-              src={getImageUrl(`${artist.mainImageUrl}`, 'smaller')}
-              width={200}
-              height={200}
-              alt={artist.name}
-              className="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105"
-              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            />
-          </div>
-          <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 to-transparent p-4">
-            <h3 className="text-xl font-bold text-white">{artist.name}</h3>
-            <p className="text-sm text-white/80">
-              작품 {artist.artistArtworks.length}개
-            </p>
-          </div>
-        </Link>
+      {initialArtists.map((artist) => (
+        <ArtistCard key={artist.id} artist={artist} />
       ))}
+      {!isLastPage ? (
+        <div>
+          <InfiniteScroll trigger={trigger} isLoading={isLoading} />
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -84,6 +84,36 @@ export async function getArtists() {
   return getArtistsWithCache();
 }
 
+export async function getMoreArtists(page: number) {
+  const artists = await prisma.artist.findMany({
+    select: {
+      id: true,
+      name: true,
+      mainImageUrl: true,
+      artistArtworks: {
+        include: {
+          artwork: {
+            include: {
+              images: true,
+            },
+          },
+        },
+      },
+    },
+    skip: page * 10,
+    take: 10,
+    orderBy: [
+      {
+        createdAt: 'desc',
+      },
+      {
+        id: 'desc',
+      },
+    ],
+  });
+  return artists;
+}
+
 export async function createSimpleArtist(
   data: SimpleArtistType,
   userId: string
