@@ -42,9 +42,23 @@ interface ArtistGridProps {
 export function ArtistGrid({ initialArtists }: ArtistGridProps) {
   const [artists, setArtists] = useState<ArtistData[]>(initialArtists);
   const [isLoading, setIsLoading] = useState(false);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1); // Start with page 1 since initialArtists is page 0
   const [isLastPage, setIsLastPage] = useState(false);
   const trigger = useRef<HTMLSpanElement>(null);
+
+  // Keep track of artist IDs to prevent duplicates
+  const artistIdsRef = useRef(
+    new Set(initialArtists.map((artist) => artist.id))
+  );
+
+  useEffect(() => {
+    // Reset when initialArtists changes (e.g., when search query changes)
+    setArtists(initialArtists);
+    artistIdsRef.current = new Set(initialArtists.map((artist) => artist.id));
+    setPage(1);
+    setIsLastPage(false);
+  }, [initialArtists]);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       async (
@@ -52,32 +66,58 @@ export function ArtistGrid({ initialArtists }: ArtistGridProps) {
         observer: IntersectionObserver
       ) => {
         const element = entries[0];
-        if (element.isIntersecting && trigger.current) {
+        if (
+          element.isIntersecting &&
+          trigger.current &&
+          !isLoading &&
+          !isLastPage
+        ) {
           observer.unobserve(trigger.current);
           setIsLoading(true);
-          const newArtists = await getMoreArtists(page + 1);
-          if (newArtists.length !== 0) {
-            setPage((prev) => prev + 1);
-            setArtists((prev) => [...prev, ...newArtists]);
-          } else {
-            setIsLastPage(true);
+
+          try {
+            const newArtists = await getMoreArtists(page);
+
+            // Filter  out duplicates
+            const uniqueNewArtists = newArtists.filter(
+              (artist) => !artistIdsRef.current.has(artist.id)
+            );
+
+            if (uniqueNewArtists.length > 0) {
+              // Add new artist IDs to the Set
+              uniqueNewArtists.forEach((artist) =>
+                artistIdsRef.current.add(artist.id)
+              );
+
+              setPage((prev) => prev + 1);
+              setArtists((prev) => [...prev, ...uniqueNewArtists]);
+            } else {
+              setIsLastPage(true);
+            }
+
+            // If we received fewer items than requested, we've reached the end
+            if (newArtists.length < 10) {
+              setIsLastPage(true);
+            }
+          } catch (error) {
+            console.error('Error loading more artists:', error);
+          } finally {
+            setIsLoading(false);
           }
-          setIsLoading(false);
         }
-        console.log('Infinite Scrolling~~~', entries[0].isIntersecting);
       },
       {
-        threshold: 1,
-        rootMargin: '0px 0px -100px 0px',
+        threshold: 0.5,
+        rootMargin: '0px 0px 200px 0px', // Load earlier for smoother experience
       }
     );
-    if (trigger.current) {
+    if (trigger.current && !isLastPage) {
       observer.observe(trigger.current);
     }
     return () => {
       observer.disconnect();
     };
-  }, [page]);
+  }, [page, isLoading, isLastPage]);
 
   if (artists.length === 0) {
     return (
@@ -92,11 +132,11 @@ export function ArtistGrid({ initialArtists }: ArtistGridProps) {
       {artists.map((artist) => (
         <ArtistCard key={artist.id} artist={artist} />
       ))}
-      {!isLastPage ? (
+      {!isLastPage && (
         <div>
           <InfiniteScroll trigger={trigger} isLoading={isLoading} />
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
