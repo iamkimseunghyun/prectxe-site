@@ -57,16 +57,6 @@ export async function generateMetadata({
   };
 }
 
-export async function generateStaticParams() {
-  const artists = await prisma.artist.findMany({
-    select: { id: true },
-  });
-
-  return artists.map((artist) => ({
-    id: artist.id,
-  }));
-}
-
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
   const artist = await getArtistById(id);
