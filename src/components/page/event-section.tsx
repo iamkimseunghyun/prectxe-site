@@ -11,7 +11,6 @@ const EventSection = async () => {
     orderBy: {
       startDate: 'desc',
     },
-    take: 3,
     include: {
       venue: true,
     },

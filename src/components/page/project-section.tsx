@@ -1,15 +1,10 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { prisma } from '@/lib/db/prisma';
+import { getAllProjects } from '@/app/projects/actions';
 
 const ProjectSection = async () => {
-  const projects = await prisma.project.findMany({
-    orderBy: {
-      startDate: 'desc',
-    },
-    take: 6,
-  });
+  const projects = await getAllProjects();
   return (
     <section className="bg-white pt-20">
       <div className="container px-4">
