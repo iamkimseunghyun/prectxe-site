@@ -9,56 +9,66 @@ import {
 import { revalidatePath } from 'next/cache';
 import { GalleryImage } from '@/lib/validations/gallery-image';
 import { cache } from 'react';
+import { unstable_cache as next_cache } from 'next/cache';
 
-export const getArtistByIdWithCache = cache(async (artistId: string) => {
-  try {
-    const artist = await prisma.artist.findUnique({
-      where: {
-        id: artistId,
-      },
-      include: {
-        images: {
-          orderBy: { order: 'asc' },
+// 아티스트 목록에 대한 캐시 설정
+const ARTISTS_LIST_CACHE_TIME = 3600; // 1시간 (초 단위)
+const ARTIST_DETAIL_CACHE_TIME = 7200; // 2시간 (초 단위)
+
+export const getArtistByIdWithCache = next_cache(
+  async (artistId: string) => {
+    try {
+      const artist = await prisma.artist.findUnique({
+        where: {
+          id: artistId,
         },
-        artistArtworks: {
-          include: {
-            artwork: {
-              include: {
-                images: {
-                  orderBy: { order: 'asc' },
+        include: {
+          images: {
+            orderBy: { order: 'asc' },
+          },
+          artistArtworks: {
+            include: {
+              artwork: {
+                include: {
+                  images: {
+                    orderBy: { order: 'asc' },
+                  },
                 },
               },
             },
           },
         },
-      },
-    });
-    if (!artist) return null;
+      });
+      if (!artist) return null;
 
-    const formattedData = {
-      ...artist,
-      email: artist.email ?? undefined, // null 값을 undefined로 변환
-      city: artist.city ?? undefined,
-      country: artist.country ?? undefined,
-      homepage: artist.homepage ?? undefined,
-      biography: artist.biography ?? undefined,
-      cv: artist.cv ?? undefined,
-      mainImageUrl: artist.mainImageUrl ?? undefined,
-      images: artist.images.map(({ id, imageUrl, alt, order }) => ({
-        id,
-        imageUrl,
-        alt,
-        order,
-      })),
-    };
+      const formattedData = {
+        ...artist,
+        email: artist.email ?? undefined, // null 값을 undefined로 변환
+        city: artist.city ?? undefined,
+        country: artist.country ?? undefined,
+        homepage: artist.homepage ?? undefined,
+        biography: artist.biography ?? undefined,
+        cv: artist.cv ?? undefined,
+        mainImageUrl: artist.mainImageUrl ?? undefined,
+        images: artist.images.map(({ id, imageUrl, alt, order }) => ({
+          id,
+          imageUrl,
+          alt,
+          order,
+        })),
+      };
 
-    // DB 데이터를 ArtistFormData 형식으로 변환
-    return formattedData;
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-});
+      // DB 데이터를 ArtistFormData 형식으로 변환
+      return formattedData;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  },
+  // 특정 아티스트의 캐시 키
+  ['artist-detail'],
+  { revalidate: ARTISTS_LIST_CACHE_TIME }
+);
 
 export async function getArtistById(artistId: string) {
   return getArtistByIdWithCache(artistId);
@@ -85,34 +95,55 @@ export async function getArtists() {
   return getArtistsWithCache();
 }
 
-export async function getMoreArtists(page: number) {
-  const artists = await prisma.artist.findMany({
-    select: {
-      id: true,
-      name: true,
-      mainImageUrl: true,
-      artistArtworks: {
+// 통합된 아티스트 조회 함수
+export const getArtistsPage = next_cache(
+  async (page = 0, pageSize = 10, searchQuery = '') => {
+    try {
+      return await prisma.artist.findMany({
+        where: {
+          OR: searchQuery
+            ? [
+                { name: { contains: searchQuery, mode: 'insensitive' } },
+                { nameKr: { contains: searchQuery, mode: 'insensitive' } },
+                { biography: { contains: searchQuery, mode: 'insensitive' } },
+              ]
+            : undefined,
+        },
         include: {
-          artwork: {
+          images: true,
+          artistArtworks: {
             include: {
-              images: true,
+              artwork: {
+                include: {
+                  images: true,
+                },
+              },
             },
           },
         },
-      },
-    },
-    skip: page * 10,
-    take: 10,
-    orderBy: [
-      {
-        createdAt: 'desc',
-      },
-      {
-        id: 'desc',
-      },
-    ],
-  });
-  return artists;
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: page * pageSize,
+        take: pageSize,
+      });
+    } catch (error) {
+      console.error('아티스트 목록 조회 오류:', error);
+      throw new Error('아티스트 목록을 불러오는데 실패했습니다.');
+    }
+  },
+  // 캐시 키 그룹 - 이 키를 사용하여 특정 캐시 항목을 무효화할 수 있습니다
+  ['artists-list'],
+  // 캐시 옵션: 60초 동안 캐시 유지
+  { revalidate: ARTIST_DETAIL_CACHE_TIME }
+);
+
+// 이 함수는 기존 getMoreArtists를 대체합니다
+export async function getMoreArtists(page = 0, searchQuery = '') {
+  return getArtistsPage(page, 10, searchQuery);
+}
+
+// 아티스트 추가, 수정, 삭제 후 캐시 무효화에 사용할 함수
+export async function invalidateArtistsCache() {
+  revalidatePath('/artists');
 }
 
 export async function createSimpleArtist(
@@ -216,10 +247,8 @@ export async function createArtist(formData: FormData, userId: string) {
 
     revalidatePath('/artists');
     revalidatePath(`/artists/${artist.id}`);
-
     return { ok: true, data: artist };
   } catch (error) {
-    // 안전한 에러 로깅
     console.error(
       '아티스트 등록 중 서버 에러 발생:',
       error instanceof Error ? error.message : String(error)
@@ -314,12 +343,23 @@ export async function updateArtist(formData: FormData, artistId: string) {
 }
 
 export async function deleteArtist(artistId: string) {
-  await prisma.artist.delete({
-    where: {
-      id: artistId,
-    },
-  });
-  return {
-    success: true,
-  };
+  try {
+    await prisma.artist.delete({
+      where: {
+        id: artistId,
+      },
+    });
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('Artist deletion error', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : '아티스트 삭제에 실패했습니다.',
+    };
+  }
 }

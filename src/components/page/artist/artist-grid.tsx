@@ -37,9 +37,13 @@ interface ArtistData {
 
 interface ArtistGridProps {
   initialArtists: ArtistData[];
+  searchQuery?: string;
 }
 
-export function ArtistGrid({ initialArtists }: ArtistGridProps) {
+export function ArtistGrid({
+  initialArtists,
+  searchQuery = '',
+}: ArtistGridProps) {
   const [artists, setArtists] = useState<ArtistData[]>(initialArtists);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1); // Start with page 1 since initialArtists is page 0
@@ -76,7 +80,7 @@ export function ArtistGrid({ initialArtists }: ArtistGridProps) {
           setIsLoading(true);
 
           try {
-            const newArtists = await getMoreArtists(page);
+            const newArtists = await getMoreArtists(page, searchQuery);
 
             // Filter  out duplicates
             const uniqueNewArtists = newArtists.filter(
@@ -100,7 +104,7 @@ export function ArtistGrid({ initialArtists }: ArtistGridProps) {
               setIsLastPage(true);
             }
           } catch (error) {
-            console.error('Error loading more artists:', error);
+            console.error('아티스트 목록 불러오기 오류:', error);
           } finally {
             setIsLoading(false);
           }
@@ -108,7 +112,7 @@ export function ArtistGrid({ initialArtists }: ArtistGridProps) {
       },
       {
         threshold: 0.5,
-        rootMargin: '0px 0px 200px 0px', // Load earlier for smoother experience
+        rootMargin: '0px 0px 200px 0px', // 부드러운 경험을 위해 더 일찍 로드
       }
     );
     if (trigger.current && !isLastPage) {
