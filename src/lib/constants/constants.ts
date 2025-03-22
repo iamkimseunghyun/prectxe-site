@@ -39,3 +39,45 @@ export const socialIcons = [
 
 // eslint-disable-next-line no-control-regex
 export const STRING_REGEX = /[\0\x01-\x08\x0B-\x0C\x0E-\x1F\x7F]/g;
+
+// 페이지네이션 관련 상수
+export const PAGINATION = {
+  DEFAULT_PAGE_SIZE: 10, // 기본 페이지 크기
+  ARTISTS_PAGE_SIZE: 10, // 아티스트 페이지 크기
+  ARTWORKS_PAGE_SIZE: 12, // 작품 페이지 크기
+  EVENTS_PAGE_SIZE: 8, // 이벤트 페이지 크기
+};
+
+// 캐시 관련 상수 (시간은 초 단위)
+export const CACHE_TIMES = {
+  ARTISTS_LIST: 3600, // 아티스트 목록 (1시간)
+  ARTIST_DETAIL: 7200, // 아티스트 상세 (2시간)
+  ARTWORKS_LIST: 3600, // 작품 목록 (1시간)
+  ARTWORK_DETAIL: 7200, // 작품 상세 (2시간)
+  EVENTS_LIST: 1800, // 이벤트 목록 (30분)
+  EVENT_DETAIL: 3600, // 이벤트 상세 (1시간)
+  PROJECTS_LIST: 3600, // 프로젝트 목록 (1시간)
+  PROJECT_DETAIL: 7200, // 프로젝트 상세 (2시간)
+};
+
+// 공통 선택 필드 (Prisma select)
+export const SELECT_FIELDS = {
+  SIMPLE_ARTIST: {
+    id: true,
+    name: true,
+    nameKr: true,
+    mainImageUrl: true,
+  },
+  SIMPLE_ARTWORK: {
+    id: true,
+    title: true,
+    mainImageUrl: true,
+  },
+};
+
+// API 관련 상수
+export const API = {
+  REVALIDATE_ON_FOCUS: false, // 포커스 시 재검증 여부
+  RETRY_COUNT: 3, // 재시도 횟수
+  RETRY_DELAY: 1000, // 재시도 대기 시간 (ms)
+};

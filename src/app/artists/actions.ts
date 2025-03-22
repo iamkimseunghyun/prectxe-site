@@ -8,10 +8,11 @@ import {
 } from '@/app/artists/artist';
 import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
 import { GalleryImage } from '@/lib/validations/gallery-image';
-
-// 아티스트 목록에 대한 캐시 설정
-const ARTISTS_LIST_CACHE_TIME = 3600; // 1시간 (초 단위)
-const ARTIST_DETAIL_CACHE_TIME = 7200; // 2시간 (초 단위)
+import {
+  CACHE_TIMES,
+  PAGINATION,
+  SELECT_FIELDS,
+} from '@/lib/constants/constants';
 
 export const getArtistByIdWithCache = next_cache(
   async (artistId: string) => {
@@ -65,7 +66,7 @@ export const getArtistByIdWithCache = next_cache(
   },
   // 특정 아티스트의 캐시 키
   ['artist-detail'],
-  { revalidate: ARTIST_DETAIL_CACHE_TIME }
+  { revalidate: CACHE_TIMES.ARTIST_DETAIL }
 );
 
 export async function getArtistById(artistId: string) {
@@ -74,7 +75,11 @@ export async function getArtistById(artistId: string) {
 
 // 통합된 아티스트 조회 함수
 export const getArtistsPage = next_cache(
-  async (page = 0, pageSize = 10, searchQuery = '') => {
+  async (
+    page = 0,
+    pageSize = PAGINATION.ARTISTS_PAGE_SIZE,
+    searchQuery = ''
+  ) => {
     try {
       return await prisma.artist.findMany({
         where: {
@@ -110,12 +115,12 @@ export const getArtistsPage = next_cache(
   // 캐시 키 그룹 - 이 키를 사용하여 특정 캐시 항목을 무효화할 수 있습니다
   ['artists-list'],
   // 캐시 옵션: 60초 동안 캐시 유지
-  { revalidate: ARTISTS_LIST_CACHE_TIME }
+  { revalidate: CACHE_TIMES.ARTISTS_LIST }
 );
 
 // 이 함수는 기존 getMoreArtists를 대체합니다
 export async function getMoreArtists(page = 0, searchQuery = '') {
-  return getArtistsPage(page, 10, searchQuery);
+  return getArtistsPage(page, PAGINATION.ARTISTS_PAGE_SIZE, searchQuery);
 }
 
 // 간단한 아티스트 목록 (드롭다운 등을 위한)
@@ -123,11 +128,7 @@ export const getSimpleArtistsList = next_cache(
   async () => {
     try {
       return await prisma.artist.findMany({
-        select: {
-          id: true,
-          name: true,
-          nameKr: true,
-        },
+        select: SELECT_FIELDS.SIMPLE_ARTIST,
         orderBy: {
           name: 'asc',
         },
@@ -138,7 +139,7 @@ export const getSimpleArtistsList = next_cache(
     }
   },
   ['simple-artists-list'],
-  { revalidate: ARTISTS_LIST_CACHE_TIME }
+  { revalidate: CACHE_TIMES.ARTISTS_LIST }
 );
 
 export async function createSimpleArtist(

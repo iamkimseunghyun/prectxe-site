@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { getMoreArtists } from '@/app/artists/actions';
 import ArtistCard from '@/components/page/artist/artist-card';
 import InfiniteScroll from '@/components/page/artist/infinite-scroll';
+import { PAGINATION } from '@/lib/constants/constants';
 
 // 기본적인 이미지 타입
 interface ImageData {
@@ -100,7 +101,7 @@ export function ArtistGrid({
             }
 
             // If we received fewer items than requested, we've reached the end
-            if (newArtists.length < 10) {
+            if (newArtists.length < PAGINATION.ARTISTS_PAGE_SIZE) {
               setIsLastPage(true);
             }
           } catch (error) {
