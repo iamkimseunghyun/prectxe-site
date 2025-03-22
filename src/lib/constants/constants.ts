@@ -42,10 +42,10 @@ export const STRING_REGEX = /[\0\x01-\x08\x0B-\x0C\x0E-\x1F\x7F]/g;
 
 // 페이지네이션 관련 상수
 export const PAGINATION = {
-  DEFAULT_PAGE_SIZE: 10, // 기본 페이지 크기
-  ARTISTS_PAGE_SIZE: 10, // 아티스트 페이지 크기
-  ARTWORKS_PAGE_SIZE: 12, // 작품 페이지 크기
-  EVENTS_PAGE_SIZE: 8, // 이벤트 페이지 크기
+  DEFAULT_PAGE_SIZE: 6, // 기본 페이지 크기
+  ARTISTS_PAGE_SIZE: 6, // 아티스트 페이지 크기
+  ARTWORKS_PAGE_SIZE: 6, // 작품 페이지 크기
+  EVENTS_PAGE_SIZE: 6, // 이벤트 페이지 크기
 };
 
 // 캐시 관련 상수 (시간은 초 단위)
