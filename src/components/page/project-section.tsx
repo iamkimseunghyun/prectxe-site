@@ -11,7 +11,7 @@ const ProjectSection = async () => {
     take: 6,
   });
   return (
-    <section className="bg-white py-20">
+    <section className="bg-white pt-20">
       <div className="container px-4">
         <div className="mb-8 flex items-end justify-between">
           <div>
