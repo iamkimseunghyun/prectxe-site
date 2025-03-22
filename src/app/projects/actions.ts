@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
 import {
   createProjectSchema,
   updateProjectSchema,
@@ -9,9 +9,11 @@ import {
 } from '@/app/projects/project';
 import { ProjectCategory } from '@/lib/types';
 import { Prisma } from '@prisma/client';
-import { cache } from 'react';
 
-export const getAllProjectsWithCache = cache(
+const PROJECTS_LIST_CACHE_TIME = 3600; // 1시간 (초 단위)
+const PROJECTS_DETAIL_CACHE_TIME = 7200; // 2시간 (초 단위)
+
+export const getAllProjectsWithCache = next_cache(
   async (year?: string, category?: string, sort?: string, search?: string) => {
     try {
       const where = {
@@ -37,7 +39,9 @@ export const getAllProjectsWithCache = cache(
       console.error('프로젝트 가져오기 오류:', error);
       return [];
     }
-  }
+  },
+  ['projects-list'],
+  { revalidate: PROJECTS_LIST_CACHE_TIME }
 );
 
 export const getAllProjects = async (
@@ -50,87 +54,91 @@ export const getAllProjects = async (
 };
 
 // 캐시된 데이터 패칭 함수
-export const getProjectWithCache = cache(async (projectId: string) => {
-  try {
-    const projectData = await prisma.project.findUnique({
-      where: { id: projectId },
-      select: {
-        id: true,
-        title: true,
-        about: true,
-        description: true,
-        year: true,
-        category: true,
-        mainImageUrl: true,
-        startDate: true,
-        endDate: true,
-        userId: true,
+export const getProjectWithCache = next_cache(
+  async (projectId: string) => {
+    try {
+      const projectData = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: {
+          id: true,
+          title: true,
+          about: true,
+          description: true,
+          year: true,
+          category: true,
+          mainImageUrl: true,
+          startDate: true,
+          endDate: true,
+          userId: true,
 
-        // 필요한 이미지 필드만 선택
-        images: {
-          select: {
-            imageUrl: true,
-            alt: true,
-            order: true,
+          // 필요한 이미지 필드만 선택
+          images: {
+            select: {
+              imageUrl: true,
+              alt: true,
+              order: true,
+            },
+            orderBy: { order: 'asc' },
           },
-          orderBy: { order: 'asc' },
-        },
 
-        // 필요한 장소 정보만 선택
-        venues: {
-          select: {
-            venue: {
-              select: {
-                id: true,
-                name: true,
-                address: true,
+          // 필요한 장소 정보만 선택
+          venues: {
+            select: {
+              venue: {
+                select: {
+                  id: true,
+                  name: true,
+                  address: true,
+                },
+              },
+            },
+          },
+
+          // 필요한 아티스트 정보만 선택
+          projectArtists: {
+            select: {
+              artistId: true,
+              artist: {
+                select: {
+                  id: true,
+                  name: true,
+                  nameKr: true,
+                  mainImageUrl: true,
+                },
+              },
+            },
+          },
+
+          // 필요한 작품 정보만 선택 (페이지에서 사용하는 경우)
+          projectArtworks: {
+            select: {
+              artwork: {
+                select: {
+                  id: true,
+                  title: true,
+                },
               },
             },
           },
         },
+      });
 
-        // 필요한 아티스트 정보만 선택
-        projectArtists: {
-          select: {
-            artistId: true,
-            artist: {
-              select: {
-                id: true,
-                name: true,
-                nameKr: true,
-                mainImageUrl: true,
-              },
-            },
-          },
-        },
+      if (!projectData) return null;
 
-        // 필요한 작품 정보만 선택 (페이지에서 사용하는 경우)
-        projectArtworks: {
-          select: {
-            artwork: {
-              select: {
-                id: true,
-                title: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!projectData) return null;
-
-    // 불필요한 변환 제거, 데이터 그대로 반환
-    return {
-      ...projectData,
-      startDate: projectData.startDate.toISOString(),
-      endDate: projectData.endDate.toISOString(),
-    };
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-});
+      // 불필요한 변환 제거, 데이터 그대로 반환
+      return {
+        ...projectData,
+        startDate: projectData.startDate.toISOString(),
+        endDate: projectData.endDate.toISOString(),
+      };
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  },
+  ['project-detail'],
+  { revalidate: PROJECTS_DETAIL_CACHE_TIME }
+);
 
 export async function getProjectById(projectId: string) {
   return getProjectWithCache(projectId);

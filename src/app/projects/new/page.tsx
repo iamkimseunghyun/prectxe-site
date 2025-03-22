@@ -2,7 +2,7 @@ import React from 'react';
 import ProjectForm from '@/components/page/project/project-form';
 import { Metadata } from 'next';
 import getSession from '@/lib/session';
-import { getArtists } from '@/app/artists/actions';
+import { getArtistsPage } from '@/app/artists/actions';
 
 export const metadata: Metadata = {
   title: '프로젝트 등록',
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 const Page = async () => {
-  const artists = await getArtists();
+  const artists = await getArtistsPage();
   const session = await getSession();
   return (
     <div>

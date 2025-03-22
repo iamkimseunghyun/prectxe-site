@@ -7,11 +7,13 @@ import {
   createArtworkSchema,
   updateArtworkSchema,
 } from '@/app/artworks/artwork';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
 import { GalleryImage } from '@/lib/validations/gallery-image';
-import { cache } from 'react';
 
-export const getArtworksByArtistIdWithCache = cache(
+const ARTWORKS_LIST_CACHE_TIME = 3600; // 1시간 (초 단위)
+const ARTWORKS_DETAIL_CACHE_TIME = 7200; // 2시간 (초 단위)
+
+export const getArtworksByArtistIdWithCache = next_cache(
   async (artistId: string) => {
     const artworks = await prisma.artwork.findMany({
       where: {
@@ -34,64 +36,74 @@ export const getArtworksByArtistIdWithCache = cache(
     });
     console.log(`Found ${artworks.length} artworks for artist ${artistId}`);
     return artworks;
-  }
+  },
+  ['artworks-list'],
+  { revalidate: ARTWORKS_LIST_CACHE_TIME }
 );
 
 export async function getArtworksByArtistId(artistId: string) {
   return getArtworksByArtistIdWithCache(artistId);
 }
 
-export const getArtworkByIdWithCache = cache(async (id: string) => {
-  try {
-    const artwork = await prisma.artwork.findUnique({
-      where: { id },
-      include: {
-        images: {
-          orderBy: {
-            order: 'asc',
+export const getArtworkByIdWithCache = next_cache(
+  async (id: string) => {
+    try {
+      const artwork = await prisma.artwork.findUnique({
+        where: { id },
+        include: {
+          images: {
+            orderBy: {
+              order: 'asc',
+            },
           },
-        },
-        artists: {
-          include: {
-            artist: {
-              select: {
-                id: true,
-                name: true,
-                nameKr: true,
-                mainImageUrl: true,
+          artists: {
+            include: {
+              artist: {
+                select: {
+                  id: true,
+                  name: true,
+                  nameKr: true,
+                  mainImageUrl: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    if (!artwork) notFound();
+      if (!artwork) notFound();
 
-    return artwork;
-  } catch (error) {
-    console.error('Error fetching artwork:', error);
-    throw error;
-  }
-});
+      return artwork;
+    } catch (error) {
+      console.error('Error fetching artwork:', error);
+      throw error;
+    }
+  },
+  ['artworks-detail'],
+  { revalidate: ARTWORKS_DETAIL_CACHE_TIME }
+);
 
 export async function getArtworkById(id: string) {
   return getArtworkByIdWithCache(id);
 }
 
-export const getAllArtworksWithCache = cache(async () => {
-  const artworks = prisma.artwork.findMany({
-    include: {
-      user: true,
-      images: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
+export const getAllArtworksWithCache = next_cache(
+  async () => {
+    const artworks = prisma.artwork.findMany({
+      include: {
+        user: true,
+        images: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
 
-  return artworks;
-});
+    return artworks;
+  },
+  ['artworks-list'],
+  { revalidate: ARTWORKS_LIST_CACHE_TIME }
+);
 
 export async function getAllArtworks() {
   return getAllArtworksWithCache();

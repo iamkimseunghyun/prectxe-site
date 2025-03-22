@@ -6,10 +6,8 @@ import {
   createSimpleArtistSchema,
   SimpleArtistType,
 } from '@/app/artists/artist';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
 import { GalleryImage } from '@/lib/validations/gallery-image';
-import { cache } from 'react';
-import { unstable_cache as next_cache } from 'next/cache';
 
 // 아티스트 목록에 대한 캐시 설정
 const ARTISTS_LIST_CACHE_TIME = 3600; // 1시간 (초 단위)
@@ -67,32 +65,11 @@ export const getArtistByIdWithCache = next_cache(
   },
   // 특정 아티스트의 캐시 키
   ['artist-detail'],
-  { revalidate: ARTISTS_LIST_CACHE_TIME }
+  { revalidate: ARTIST_DETAIL_CACHE_TIME }
 );
 
 export async function getArtistById(artistId: string) {
   return getArtistByIdWithCache(artistId);
-}
-
-export const getArtistsWithCache = cache(async () => {
-  try {
-    const artists = await prisma.artist.findMany({
-      select: {
-        id: true,
-        name: true,
-        mainImageUrl: true,
-      },
-      take: 10,
-    });
-    return artists;
-  } catch (error) {
-    console.error(error);
-    throw new Error('아티스트 목록을 불러오는데 실패했습니다.');
-  }
-});
-
-export async function getArtists() {
-  return getArtistsWithCache();
 }
 
 // 통합된 아티스트 조회 함수
@@ -133,7 +110,7 @@ export const getArtistsPage = next_cache(
   // 캐시 키 그룹 - 이 키를 사용하여 특정 캐시 항목을 무효화할 수 있습니다
   ['artists-list'],
   // 캐시 옵션: 60초 동안 캐시 유지
-  { revalidate: ARTIST_DETAIL_CACHE_TIME }
+  { revalidate: ARTISTS_LIST_CACHE_TIME }
 );
 
 // 이 함수는 기존 getMoreArtists를 대체합니다
@@ -141,10 +118,28 @@ export async function getMoreArtists(page = 0, searchQuery = '') {
   return getArtistsPage(page, 10, searchQuery);
 }
 
-// 아티스트 추가, 수정, 삭제 후 캐시 무효화에 사용할 함수
-export async function invalidateArtistsCache() {
-  revalidatePath('/artists');
-}
+// 간단한 아티스트 목록 (드롭다운 등을 위한)
+export const getSimpleArtistsList = next_cache(
+  async () => {
+    try {
+      return await prisma.artist.findMany({
+        select: {
+          id: true,
+          name: true,
+          nameKr: true,
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      });
+    } catch (error) {
+      console.error('간단한 아티스트 목록 조회 오류:', error);
+      throw new Error('아티스트 목록을 불러오는데 실패했습니다.');
+    }
+  },
+  ['simple-artists-list'],
+  { revalidate: ARTISTS_LIST_CACHE_TIME }
+);
 
 export async function createSimpleArtist(
   data: SimpleArtistType,
@@ -176,6 +171,7 @@ export async function createSimpleArtist(
       },
     });
 
+    revalidatePath('/artists');
     revalidatePath('/events/new', 'page');
     revalidatePath('/events/[id]/edit', 'page');
 
@@ -246,7 +242,6 @@ export async function createArtist(formData: FormData, userId: string) {
     });
 
     revalidatePath('/artists');
-    revalidatePath(`/artists/${artist.id}`);
     return { ok: true, data: artist };
   } catch (error) {
     console.error(
@@ -349,6 +344,7 @@ export async function deleteArtist(artistId: string) {
         id: artistId,
       },
     });
+    revalidatePath('/artists');
     return {
       success: true,
     };
