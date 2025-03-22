@@ -14,6 +14,7 @@ const EventSection = async () => {
     include: {
       venue: true,
     },
+    take: 3,
   });
   return (
     <section className="bg-white py-20">
