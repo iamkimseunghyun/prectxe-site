@@ -53,7 +53,9 @@ const ArtistCard = ({ artist }: ArtistCardProps) => {
       <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 to-transparent p-4">
         <h3 className="text-xl font-bold text-white">{artist.name}</h3>
         <p className="text-sm text-white/80">
-          작품 {artist.artistArtworks.length}개
+          {artist.artistArtworks.length > 0
+            ? `작품 {artist.artistArtworks.length}개`
+            : null}
         </p>
       </div>
     </Link>
