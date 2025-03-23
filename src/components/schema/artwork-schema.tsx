@@ -1,4 +1,5 @@
 import { ArtworkResponse } from '@/lib/validations/schema';
+import { formatEventDate } from '@/lib/utils';
 
 const ArtworkSchema = ({ artwork }: { artwork: ArtworkResponse }) => {
   const jsonLd = {
@@ -38,8 +39,8 @@ const ArtworkSchema = ({ artwork }: { artwork: ArtworkResponse }) => {
     // URL
     url: `https://prectxe.com/artworks/${artwork.id}`,
     // 메타데이터
-    datePublished: artwork.createdAt.toISOString(),
-    dateModified: artwork.updatedAt.toISOString(),
+    datePublished: new Date(artwork.createdAt),
+    dateModified: new Date(artwork.updatedAt),
   };
 
   // null, undefined 값 제거
