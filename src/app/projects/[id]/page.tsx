@@ -93,6 +93,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
       {project.mainImageUrl ? (
         <div className="relative mb-4 flex aspect-square justify-center overflow-hidden rounded-lg sm:aspect-video md:mb-8">
           <Image
+            unoptimized
             src={getImageUrl(project.mainImageUrl, 'public')}
             alt={project.title}
             width={1200}

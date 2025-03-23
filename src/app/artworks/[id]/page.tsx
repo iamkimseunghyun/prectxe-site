@@ -104,7 +104,6 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   const canEdit = await canManage(session.id!, artwork.userId);
 
-  // const validatedArtwork = validateArtworkData(artwork);
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <ArtworkSEOSchema artwork={artwork} />
@@ -124,6 +123,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     >
                       <div className="relative aspect-square w-full overflow-hidden rounded-lg">
                         <Image
+                          unoptimized
                           src={`${image.imageUrl}/smaller`}
                           alt={image.alt}
                           width={400}

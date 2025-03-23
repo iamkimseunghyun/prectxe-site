@@ -21,6 +21,7 @@ const CarouselGallery = ({ images }: CarouselProps) => {
             <CarouselItem key={index}>
               <div className="relative aspect-square sm:aspect-[16/10.5]">
                 <Image
+                  unoptimized
                   src={getImageUrl(image.imageUrl, 'public')}
                   alt={image.alt || '장소 이미지'}
                   width={1200}

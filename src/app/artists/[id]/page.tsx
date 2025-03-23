@@ -96,6 +96,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             {artist.mainImageUrl && (
               <div className="relative aspect-square overflow-hidden rounded-lg">
                 <Image
+                  unoptimized
                   src={`${artist.mainImageUrl}/smaller`}
                   alt={artist.name!}
                   width={500}

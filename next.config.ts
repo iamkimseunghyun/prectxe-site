@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
 
   images: {
+    unoptimized: true,
     minimumCacheTTL: 2678400,
     remotePatterns: [
       {

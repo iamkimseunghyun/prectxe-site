@@ -1,5 +1,4 @@
 import { ArtworkResponse } from '@/lib/validations/schema';
-import { formatEventDate } from '@/lib/utils';
 
 const ArtworkSchema = ({ artwork }: { artwork: ArtworkResponse }) => {
   const jsonLd = {
