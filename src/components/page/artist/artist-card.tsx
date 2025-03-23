@@ -54,7 +54,7 @@ const ArtistCard = ({ artist }: ArtistCardProps) => {
         <h3 className="text-xl font-bold text-white">{artist.name}</h3>
         <p className="text-sm text-white/80">
           {artist.artistArtworks.length > 0
-            ? `작품 {artist.artistArtworks.length}개`
+            ? `작품 ${artist.artistArtworks.length}개`
             : null}
         </p>
       </div>
