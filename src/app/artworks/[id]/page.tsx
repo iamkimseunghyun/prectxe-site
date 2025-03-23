@@ -19,7 +19,6 @@ import canManage from '@/lib/can-manage';
 import { Metadata } from 'next';
 import { prisma } from '@/lib/db/prisma';
 import ArtworkSchema from '@/components/schema/artwork-schema';
-import { validateArtworkData } from '@/lib/validations/schema';
 import { getImageUrl } from '@/lib/utils';
 
 export async function generateMetadata({
@@ -105,10 +104,10 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   const canEdit = await canManage(session.id!, artwork.userId);
 
-  const validatedArtwork = validateArtworkData(artwork);
+  // const validatedArtwork = validateArtworkData(artwork);
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <ArtworkSchema artwork={validatedArtwork} />
+      <ArtworkSchema artwork={artwork} />
       <BreadcrumbNav entityType="artwork" title={artwork.title} />
 
       <div className="mb-8">
