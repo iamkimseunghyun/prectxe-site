@@ -163,24 +163,26 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
         </Card>
 
         {/* 작품 목록 */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>작품</CardTitle>
-              {canEdit && (
-                <Link href={`/artworks/new`}>
-                  <Button variant="outline" size="sm">
-                    작품 등록
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <WorkList artistId={id} />
-          </CardContent>
-        </Card>
 
+        {artist.artistArtworks.length > 0 && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>작품</CardTitle>
+                {canEdit && (
+                  <Link href={`/artworks/new`}>
+                    <Button variant="outline" size="sm">
+                      작품 등록
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <WorkList artistId={id} />
+            </CardContent>
+          </Card>
+        )}
         {/* 이벤트 목록 */}
         <Card className="md:col-span-2">
           <CardHeader>
