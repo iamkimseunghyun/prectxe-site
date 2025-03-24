@@ -1,16 +1,38 @@
-// app/artworks/artwork-grid.tsx
+'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getImageUrl } from '@/lib/utils';
 import { Artwork as PrismaArtwork, ArtworkImage } from '@prisma/client';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
+import { getMoreArtworks } from '@/app/artworks/actions';
+import { PAGINATION } from '@/lib/constants/constants';
+import InfiniteScroll from '@/components/page/artist/infinite-scroll';
 
 type ArtworkWithImages = PrismaArtwork & {
   images: ArtworkImage[];
 };
 
-const ArtworkGrid = ({ artworks }: { artworks: ArtworkWithImages[] }) => {
+const ArtworkGrid = ({
+  initialArtworks,
+  searchQuery = '',
+}: {
+  initialArtworks: ArtworkWithImages[];
+  searchQuery?: string;
+}) => {
+  const {
+    items: artworks,
+    isLoading,
+    isLastPage,
+    trigger,
+  } = useInfiniteScroll({
+    fetchFunction: getMoreArtworks,
+    initialData: initialArtworks,
+    searchQuery,
+    pageSize: PAGINATION.ARTWORKS_PAGE_SIZE,
+  });
+
   if (artworks.length === 0) {
     return (
       <div className="py-10 text-center">
@@ -32,6 +54,7 @@ const ArtworkGrid = ({ artworks }: { artworks: ArtworkWithImages[] }) => {
               {artwork.images[0] && (
                 <div className="relative aspect-video w-full overflow-hidden rounded-lg">
                   <Image
+                    priority
                     src={getImageUrl(`${artwork.images[0].imageUrl}`, 'public')}
                     alt={artwork.images[0].alt}
                     width={100}
@@ -53,6 +76,11 @@ const ArtworkGrid = ({ artworks }: { artworks: ArtworkWithImages[] }) => {
           </Card>
         </Link>
       ))}
+      {!isLastPage && (
+        <div>
+          <InfiniteScroll trigger={trigger} isLoading={isLoading} />
+        </div>
+      )}
     </div>
   );
 };

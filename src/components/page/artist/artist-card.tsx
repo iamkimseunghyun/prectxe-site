@@ -42,6 +42,7 @@ const ArtistCard = ({ artist }: ArtistCardProps) => {
     >
       <div className="relative aspect-square">
         <Image
+          priority
           src={getImageUrl(`${artist.mainImageUrl}`, 'smaller')}
           width={200}
           height={200}

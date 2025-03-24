@@ -9,6 +9,7 @@ import {
 } from '@/app/artworks/artwork';
 import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
 import { GalleryImage } from '@/lib/validations/gallery-image';
+import { CACHE_TIMES, PAGINATION } from '@/lib/constants/constants';
 
 const ARTWORKS_LIST_CACHE_TIME = 3600; // 1시간 (초 단위)
 const ARTWORKS_DETAIL_CACHE_TIME = 7200; // 2시간 (초 단위)
@@ -87,26 +88,44 @@ export async function getArtworkById(id: string) {
   return getArtworkByIdWithCache(id);
 }
 
-export const getAllArtworksWithCache = next_cache(
-  async () => {
-    const artworks = prisma.artwork.findMany({
-      include: {
-        user: true,
-        images: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+export const getArtworksPage = next_cache(
+  async (
+    page = 0,
+    pageSize = PAGINATION.ARTISTS_PAGE_SIZE,
+    searchQuery = ''
+  ) => {
+    try {
+      return prisma.artwork.findMany({
+        where: {
+          OR: searchQuery
+            ? [
+                { title: { contains: searchQuery, mode: 'insensitive' } },
+                { description: { contains: searchQuery, mode: 'insensitive' } },
+                { style: { contains: searchQuery, mode: 'insensitive' } },
+              ]
+            : undefined,
+        },
+        include: {
+          images: true,
+          artists: true,
+          user: true,
+        },
 
-    return artworks;
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: page * pageSize,
+        take: pageSize,
+      });
+    } catch (error) {
+      console.error('아티스트 목록 조회 오류:', error);
+      throw new Error('아티스트 목록을 불러오는데 실패했습니다.');
+    }
   },
   ['artworks-list'],
-  { revalidate: ARTWORKS_LIST_CACHE_TIME }
+  { revalidate: CACHE_TIMES.ARTWORKS_LIST }
 );
 
-export async function getAllArtworks() {
-  return getAllArtworksWithCache();
+export async function getMoreArtworks(page = 0, searchQuery = '') {
+  return getArtworksPage(page, PAGINATION.ARTWORKS_PAGE_SIZE, searchQuery);
 }
 
 export async function createArtwork(formData: FormData, userId: string) {

@@ -1,7 +1,10 @@
 import ArtworkGrid from '@/components/page/artwork/artwork-grid';
 import { Metadata } from 'next';
-import { getAllArtworks } from '@/app/artworks/actions';
-import React from 'react';
+import { getArtworksPage } from '@/app/artworks/actions';
+import React, { Suspense } from 'react';
+import { PAGINATION } from '@/lib/constants/constants';
+import { SearchBar } from '@/components/search-bar';
+import { ArtistGridSkeleton } from '@/components/page/artist/artist-grid-skeleton';
 
 export const metadata: Metadata = {
   title: '작품 목록 | PRECTXE',
@@ -12,8 +15,18 @@ export const metadata: Metadata = {
   },
 };
 
-const Page = async () => {
-  const artworks = await getAllArtworks();
+const Page = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) => {
+  const { search } = await searchParams;
+  const searchQuery = typeof search === 'string' ? search : '';
+  const artworks = await getArtworksPage(
+    0,
+    PAGINATION.ARTWORKS_PAGE_SIZE,
+    searchQuery
+  );
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
@@ -23,7 +36,18 @@ const Page = async () => {
           지금까지 PRECTXE에서 소개된 훌륭한 작품들에 많은 관심을 가져주세요.
         </p>
       </div>
-      <ArtworkGrid artworks={artworks} />
+
+      {/* 검색과 필터는 별도의 Suspense 경계로 분리 */}
+      <Suspense>
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <SearchBar />
+        </div>
+      </Suspense>
+
+      {/* 아트워크 목록에 대한 Suspense 경계 설정 */}
+      <Suspense fallback={<ArtistGridSkeleton />}>
+        <ArtworkGrid initialArtworks={artworks} searchQuery={searchQuery} />
+      </Suspense>
     </div>
   );
 };

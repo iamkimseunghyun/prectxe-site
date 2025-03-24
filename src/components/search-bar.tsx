@@ -1,13 +1,13 @@
-// components/page/artist/artist-search.tsx
+// components/page/artist/search-bar.tsx
 'use client';
 
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 
-export function ArtistSearch() {
+export function SearchBar() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -18,8 +18,7 @@ export function ArtistSearch() {
 
   // 검색 실행 함수
   const executeSearch = async () => {
-    const asyncParams = await searchParams;
-    const params = new URLSearchParams(asyncParams.toString());
+    const params = new URLSearchParams(searchParams.toString());
     if (searchTerm.trim()) {
       params.set('search', searchTerm.trim());
     } else {
@@ -53,7 +52,7 @@ export function ArtistSearch() {
         className={`absolute left-3 top-3 h-4 w-4 ${isPending ? 'text-muted-foreground/70' : 'text-muted-foreground'}`}
       />
       <Input
-        placeholder="아티스트 검색..."
+        placeholder="검색어를 입력하세요."
         className={`pl-9 pr-10 transition-opacity ${
           isPending ? 'opacity-70' : 'opacity-100'
         }`}

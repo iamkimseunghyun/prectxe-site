@@ -1,7 +1,7 @@
 import ArtworkForm from '@/components/page/artwork/artwork-form';
 import { Metadata } from 'next';
 import getSession from '@/lib/session';
-import { getArtistsPage } from '@/app/artists/actions';
+import { prisma } from '@/lib/db/prisma';
 
 export const metadata: Metadata = {
   title: '작품 등록',
@@ -10,7 +10,13 @@ export const metadata: Metadata = {
 
 const Page = async () => {
   const session = await getSession();
-  const artists = await getArtistsPage();
+  const artists = await prisma.artist.findMany({
+    select: {
+      id: true,
+      name: true,
+      mainImageUrl: true,
+    },
+  });
 
   return (
     <>
