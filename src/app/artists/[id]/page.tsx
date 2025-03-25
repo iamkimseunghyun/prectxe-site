@@ -17,6 +17,7 @@ import BreadcrumbNav from '@/components/breadcrum-nav';
 import canManage from '@/lib/can-manage';
 import { Metadata } from 'next';
 import { prisma } from '@/lib/db/prisma';
+import CopyUrlButton from '@/components/copy-url-button';
 
 export async function generateMetadata({
   params,
@@ -82,6 +83,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                   <p className="text-base">{artist.name}</p>
                 </div>
               </CardTitle>
+              <CopyUrlButton />
               {canEdit && (
                 <Link href={`/artists/${id}/edit`}>
                   <Button variant="outline" size="sm">

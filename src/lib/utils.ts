@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { GalleryPreview } from '@/lib/validations/gallery-image';
+import { prisma } from '@/lib/db/prisma';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

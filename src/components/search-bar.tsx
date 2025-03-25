@@ -33,6 +33,7 @@ export function SearchBar() {
   // 수정된 코드
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       executeSearch();
     }
   };
