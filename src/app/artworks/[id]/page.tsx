@@ -123,12 +123,14 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     >
                       <div className="relative aspect-square w-full overflow-hidden rounded-lg">
                         <Image
-                          unoptimized
                           src={`${image.imageUrl}/smaller`}
                           alt={image.alt}
-                          width={400}
-                          height={400}
-                          className="absolute inset-0 h-full w-full object-cover"
+                          fill
+                          priority
+                          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                          placeholder="blur"
+                          blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='100%25' height='100%25' fill='%23f3f4f6'/%3E%3C/svg%3E"
+                          className="object-cover"
                         />
                       </div>
                     </CarouselItem>
@@ -171,18 +173,20 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                           className="flex items-center gap-3"
                         >
                           {artistRelation.artist.mainImageUrl && (
-                            <div className="relative h-12 w-12 overflow-hidden rounded-full">
+                            <div className="relative h-16 w-16 overflow-hidden rounded-full">
                               <Image
                                 src={getImageUrl(
                                   `${artistRelation.artist.mainImageUrl}`,
                                   'thumbnail'
                                 )}
-                                width={60}
-                                height={60}
                                 alt={
                                   artistRelation.artist.nameKr ||
                                   artistRelation.artist.name
                                 }
+                                fill
+                                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                placeholder="blur"
+                                blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='100%25' height='100%25' fill='%23f3f4f6'/%3E%3C/svg%3E"
                                 className="object-cover"
                               />
                             </div>

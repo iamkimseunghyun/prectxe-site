@@ -1,10 +1,15 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { getAllProjects } from '@/app/projects/actions';
+import { prisma } from '@/lib/db/prisma';
 
 const ProjectSection = async () => {
-  const projects = await getAllProjects();
+  const projects = await prisma.project.findMany({
+    take: 3,
+    orderBy: {
+      startDate: 'desc',
+    },
+  });
   return (
     <section className="bg-white pt-20">
       <div className="container px-4">
@@ -28,15 +33,14 @@ const ProjectSection = async () => {
               href={`/projects/${project.id}`}
               className="group relative overflow-hidden rounded-lg"
             >
-              <div className="relative aspect-[4/3]">
+              <div className="relative aspect-[4/3] overflow-hidden">
                 {project.mainImageUrl ? (
                   <Image
                     src={`${project.mainImageUrl}/smaller`}
                     alt={project.title}
-                    width={400}
-                    height={400}
+                    fill
                     sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                    className="absolute object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="object-cover object-top transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-gray-100">

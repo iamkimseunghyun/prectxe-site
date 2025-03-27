@@ -34,6 +34,14 @@ export const getAllProjectsWithCache = next_cache(
       return prisma.project.findMany({
         where,
         orderBy,
+        select: {
+          id: true,
+          title: true,
+          about: true,
+          year: true,
+          category: true,
+          mainImageUrl: true,
+        },
       });
     } catch (error) {
       console.error('프로젝트 가져오기 오류:', error);

@@ -8,6 +8,9 @@ import { PAGINATION } from '@/lib/constants/constants';
 import { ArtistGrid } from '@/components/page/artist/artist-grid';
 import { SearchBar } from '@/components/search-bar';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 86400;
+
 export const metadata: Metadata = {
   title: '아티스트',
   description:

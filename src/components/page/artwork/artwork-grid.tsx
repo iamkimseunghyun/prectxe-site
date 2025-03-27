@@ -54,13 +54,14 @@ const ArtworkGrid = ({
               {artwork.images[0] && (
                 <div className="relative aspect-video w-full overflow-hidden rounded-lg">
                   <Image
-                    priority
                     src={getImageUrl(`${artwork.images[0].imageUrl}`, 'public')}
                     alt={artwork.images[0].alt}
-                    width={100}
-                    height={300}
-                    className="absolute inset-0 h-full w-full object-cover"
-                    // sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    fill
+                    priority
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    placeholder="blur"
+                    blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='100%25' height='100%25' fill='%23f3f4f6'/%3E%3C/svg%3E"
+                    className="object-cover"
                   />
                 </div>
               )}

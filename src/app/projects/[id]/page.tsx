@@ -93,13 +93,14 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
       {project.mainImageUrl ? (
         <div className="relative mb-4 flex aspect-square justify-center overflow-hidden rounded-lg sm:aspect-video md:mb-8">
           <Image
-            unoptimized
             src={getImageUrl(project.mainImageUrl, 'public')}
             alt={project.title}
-            width={1200}
-            height={1200}
+            fill
             priority
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             className="object-cover"
+            placeholder="blur"
+            blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='100%25' height='100%25' fill='%23f3f4f6'/%3E%3C/svg%3E"
           />
         </div>
       ) : (
@@ -138,10 +139,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                   {artist.mainImageUrl &&
                   getImageUrl(artist.mainImageUrl, 'thumbnail') ? (
                     <Image
-                      unoptimized
                       src={getImageUrl(artist.mainImageUrl, 'thumbnail')!}
-                      width={100}
-                      height={100}
+                      fill
                       alt={artist.name}
                     />
                   ) : (

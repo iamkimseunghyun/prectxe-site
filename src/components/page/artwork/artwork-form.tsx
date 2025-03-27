@@ -25,8 +25,9 @@ import { createArtwork, updateArtwork } from '@/app/artworks/actions';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { uploadGalleryImages } from '@/lib/utils';
 import MultiImageBox from '@/components/image/multi-image-box';
-import ArtistSelect from '@/components/page/project/artist-select';
+
 import FormSubmitButton from '@/components/form-submit-button';
+import ArtistSelect from '@/components/page/artist/artist-select';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';

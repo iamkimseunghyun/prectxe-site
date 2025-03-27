@@ -40,8 +40,9 @@ import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
 import MultiImageBox from '@/components/image/multi-image-box';
 import UploadProgress from '@/components/upload-progress';
-import ArtistSelect from '@/components/page/project/artist-select';
+
 import FormSubmitButton from '@/components/form-submit-button';
+import ArtistSelect from '@/components/page/artist/artist-select';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';

@@ -2,17 +2,17 @@
 
 import { eventFormSchema, EventFormType } from '@/app/events/event';
 import { prisma } from '@/lib/db/prisma';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
 import { z } from 'zod';
+import { CACHE_TIMES, PAGINATION } from '@/lib/constants/constants';
+import { getArtistsPage } from '@/app/artists/actions';
 
 export async function createEvent(
   input: z.infer<typeof eventFormSchema>,
   userId: string
 ) {
   try {
-    console.log('1. Raw input:', input); // 입력 데이터 확인
     const validatedData = eventFormSchema.parse(input);
-    console.log('2. Validated data:', validatedData); // 검증된 데이터 확인
 
     // 데이터 구조 explicitly 정의
     const eventData = {
@@ -45,16 +45,12 @@ export async function createEvent(
       },
     };
 
-    console.log('3. Prisma input:', eventData); // Prisma에 전달되는 데이터 확인
-
     const event = await prisma.event.create({
       data: eventData,
       select: {
         id: true,
       },
     });
-
-    console.log('4. Created event:', event); // 생성된 이벤트 확인
 
     revalidatePath('/events', 'page');
     return { ok: true, data: event };
@@ -153,79 +149,130 @@ export async function deleteEvent(id: string) {
   }
 }
 
-export const getEventsByArtistIdWithCache = async (artistId: string) => {
-  const artworks = await prisma.event.findMany({
-    where: {
-      organizers: {
-        some: {
-          artistId: artistId,
-        },
-      },
-    },
+export const getAllEventsWithCache = async () => {
+  return prisma.event.findMany({
     include: {
-      images: {
-        orderBy: {
-          order: 'asc',
+      venue: true,
+    },
+    take: 3,
+  });
+};
+
+export async function getEventSectionEvents() {
+  return getAllEventsWithCache();
+}
+
+export const getEventsPage = next_cache(
+  async (
+    page = 0,
+    pageSize = PAGINATION.ARTISTS_PAGE_SIZE,
+    searchQuery = ''
+  ) => {
+    try {
+      return await prisma.event.findMany({
+        include: {
+          venue: true,
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: page * pageSize,
+        take: pageSize,
+      });
+    } catch (error) {
+      console.error('아티스트 목록 조회 오류:', error);
+      throw new Error('아티스트 목록을 불러오는데 실패했습니다.');
+    }
+  },
+  // 캐시 키 그룹 - 이 키를 사용하여 특정 캐시 항목을 무효화할 수 있습니다
+  ['event-list'],
+  // 캐시 옵션: 60초 동안 캐시 유지
+  { revalidate: CACHE_TIMES.ARTISTS_LIST }
+);
+
+export async function getMoreEvents(page = 0, searchQuery = '') {
+  return getEventsPage(page, PAGINATION.ARTISTS_PAGE_SIZE, searchQuery);
+}
+
+export const getEventsByArtistIdWithCache = next_cache(
+  async (artistId: string) => {
+    const artworks = await prisma.event.findMany({
+      where: {
+        organizers: {
+          some: {
+            artistId: artistId,
+          },
         },
       },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-  console.log(`Found ${artworks.length} artworks for artist ${artistId}`);
-  return artworks;
-};
+      include: {
+        images: {
+          orderBy: {
+            order: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    console.log(`Found ${artworks.length} artworks for artist ${artistId}`);
+    return artworks;
+  },
+  ['event-list'],
+  { revalidate: CACHE_TIMES.EVENTS_LIST }
+);
 
 export async function getEventsByArtistId(artistId: string) {
   return getEventsByArtistIdWithCache(artistId);
 }
 
-export const getEventByIdWithCache = async (id: string) => {
-  try {
-    const event = await prisma.event.findUnique({
-      where: { id },
-      include: {
-        venue: true,
-        organizers: {
-          include: {
-            artist: true,
+export const getEventByIdWithCache = next_cache(
+  async (id: string) => {
+    try {
+      const event = await prisma.event.findUnique({
+        where: { id },
+        include: {
+          venue: true,
+          organizers: {
+            include: {
+              artist: true,
+            },
           },
+          tickets: true,
         },
-        tickets: true,
-      },
-    });
+      });
 
-    // 이벤트가 존재하지 않는 경우
-    if (!event) {
-      return { error: '이벤트를 찾을 수 없습니다.' };
+      // 이벤트가 존재하지 않는 경우
+      if (!event) {
+        return { error: '이벤트를 찾을 수 없습니다.' };
+      }
+
+      // date 타입 안전하게 변환 및 널 체크
+      const formattedData = {
+        ...event,
+        startDate: event.startDate ? event.startDate.toISOString() : undefined,
+        endDate: event.endDate ? event.endDate.toISOString() : undefined,
+        // venue 널 체크
+        venue: event.venue || undefined,
+        // organizers 널 체크 및 안전한 변환
+        organizers: (event.organizers || []).map((org) => ({
+          ...org,
+          artist: org.artist || undefined,
+        })),
+        // tickets 널 체크
+        tickets: event.tickets || [],
+      };
+
+      return { data: formattedData };
+    } catch (error) {
+      console.error('이벤트 조회 에러:', error);
+      if (error instanceof z.ZodError) {
+        return { error: error.errors[0].message };
+      }
+      return { error: '이벤트 조회 중 오류가 발생했습니다.' };
     }
-
-    // date 타입 안전하게 변환 및 널 체크
-    const formattedData = {
-      ...event,
-      startDate: event.startDate ? event.startDate.toISOString() : undefined,
-      endDate: event.endDate ? event.endDate.toISOString() : undefined,
-      // venue 널 체크
-      venue: event.venue || undefined,
-      // organizers 널 체크 및 안전한 변환
-      organizers: (event.organizers || []).map((org) => ({
-        ...org,
-        artist: org.artist || undefined,
-      })),
-      // tickets 널 체크
-      tickets: event.tickets || [],
-    };
-
-    return { data: formattedData };
-  } catch (error) {
-    console.error('이벤트 조회 에러:', error);
-    if (error instanceof z.ZodError) {
-      return { error: error.errors[0].message };
-    }
-    return { error: '이벤트 조회 중 오류가 발생했습니다.' };
-  }
-};
+  },
+  ['event'],
+  { revalidate: CACHE_TIMES.EVENT_DETAIL }
+);
 
 export async function getEventById(id: string) {
   return getEventByIdWithCache(id);

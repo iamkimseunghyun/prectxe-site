@@ -134,13 +134,16 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
         {/* 메인 컨텐츠 영역 */}
         <div className="lg:col-span-2">
           {/* 메인 이미지 */}
-          <div className="justify-left mb-8 flex items-center">
+          <div className="justify-left relative mb-8 flex aspect-square w-full items-center overflow-hidden rounded-lg">
             <Image
               src={getImageUrl(`${result.data.mainImageUrl}`, 'smaller')}
               alt={result.data.title!}
-              width={300}
-              height={300}
-              className="w-full rounded-lg object-contain"
+              fill
+              priority
+              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+              placeholder="blur"
+              blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='100%25' height='100%25' fill='%23f3f4f6'/%3E%3C/svg%3E"
+              className="object-cover"
             />
           </div>
 
@@ -172,17 +175,21 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                         className="flex items-center gap-4"
                       >
                         {organizer.artist.mainImageUrl ? (
-                          <Image
-                            unoptimized
-                            src={getImageUrl(
-                              organizer.artist.mainImageUrl,
-                              'thumbnail'
-                            )}
-                            alt={organizer.artist.name}
-                            width={60}
-                            height={60}
-                            className="h-16 w-16 rounded-full object-cover"
-                          />
+                          <div className="relative aspect-square h-16 w-16 overflow-hidden rounded-full">
+                            <Image
+                              unoptimized
+                              src={getImageUrl(
+                                organizer.artist.mainImageUrl,
+                                'thumbnail'
+                              )}
+                              alt={organizer.artist.name}
+                              fill
+                              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                              placeholder="blur"
+                              blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='100%25' height='100%25' fill='%23f3f4f6'/%3E%3C/svg%3E"
+                              className="object-cover"
+                            />
+                          </div>
                         ) : (
                           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-200">
                             <span className="text-xl font-semibold text-gray-600">

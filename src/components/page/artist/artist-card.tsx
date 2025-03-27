@@ -35,29 +35,26 @@ interface ArtistCardProps {
 
 const ArtistCard = ({ artist }: ArtistCardProps) => {
   return (
-    <Link
-      key={artist.id}
-      href={`/artists/${artist.id}`}
-      className="group relative overflow-hidden rounded-lg"
-    >
-      <div className="relative aspect-square">
+    <Link key={artist.id} href={`/artists/${artist.id}`}>
+      <div className="relative aspect-square overflow-hidden rounded-lg">
         <Image
-          priority
           src={getImageUrl(`${artist.mainImageUrl}`, 'smaller')}
-          width={200}
-          height={200}
           alt={artist.name}
-          className="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105"
+          fill
+          priority
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          placeholder="blur"
+          blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='100%25' height='100%25' fill='%23f3f4f6'/%3E%3C/svg%3E"
+          className="object-cover"
         />
-      </div>
-      <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 to-transparent p-4">
-        <h3 className="text-xl font-bold text-white">{artist.name}</h3>
-        <p className="text-sm text-white/80">
-          {artist.artistArtworks.length > 0
-            ? `작품 ${artist.artistArtworks.length}개`
-            : null}
-        </p>
+        <div className="absolute inset-0 flex flex-col justify-end p-4">
+          <h3 className="text-xl font-bold text-white">{artist.name}</h3>
+          <p className="text-sm text-white">
+            {artist.artistArtworks.length > 0
+              ? `작품 ${artist.artistArtworks.length}개`
+              : null}
+          </p>
+        </div>
       </div>
     </Link>
   );

@@ -46,7 +46,11 @@ export const getImageUrl = (
   variant: 'thumbnail' | 'public' | 'smaller' | 'hires'
 ) => {
   if (!url) return '/images/placeholder.png'; // 빈 문자열 대신 기본 이미지 경로 반환
-  return `${url}/${variant}`;
+  // Remove any trailing size indicators
+  const baseUrl = url.replace(/\/(thumbnail|smaller|public)$/, '');
+
+  // Return with proper size parameter
+  return `${baseUrl}/${variant}`;
 };
 
 export const uploadSingleImage = async (imageFile: File, uploadURL: string) => {

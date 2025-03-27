@@ -6,6 +6,9 @@ import { PAGINATION } from '@/lib/constants/constants';
 import { SearchBar } from '@/components/search-bar';
 import { ArtistGridSkeleton } from '@/components/page/artist/artist-grid-skeleton';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 86400;
+
 export const metadata: Metadata = {
   title: '작품 목록 | PRECTXE',
   description: 'PRECTXE에서 선보이는 모든 디지털 아트 작품들을 만나보세요.',
