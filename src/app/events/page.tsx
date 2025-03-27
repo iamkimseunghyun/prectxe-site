@@ -1,14 +1,14 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { getEventSectionEvents } from '@/app/events/actions';
+import { getAllEvents } from '@/app/events/actions';
 import EventCard from '@/components/page/event/event-card';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 86400;
 
 const Page = async () => {
-  const events = await getEventSectionEvents();
+  const events = await getAllEvents();
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">

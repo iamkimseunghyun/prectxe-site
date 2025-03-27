@@ -1,10 +1,19 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { getEventSectionEvents } from '@/app/events/actions';
 import Image from 'next/image';
+import { prisma } from '@/lib/db/prisma';
 
 const EventSection = async () => {
-  const events = await getEventSectionEvents();
+  const events = await prisma.event.findMany({
+    select: {
+      title: true,
+      subtitle: true,
+      startDate: true,
+      mainImageUrl: true,
+      id: true,
+    },
+    take: 3,
+  });
   return (
     <section className="bg-white py-20">
       <div className="container px-4">

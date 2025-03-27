@@ -154,11 +154,10 @@ export const getAllEventsWithCache = async () => {
     include: {
       venue: true,
     },
-    take: 3,
   });
 };
 
-export async function getEventSectionEvents() {
+export async function getAllEvents() {
   return getAllEventsWithCache();
 }
 
