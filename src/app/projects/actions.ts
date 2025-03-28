@@ -189,7 +189,7 @@ export async function createProject(
         about: validatedData.data.about,
         year: validatedData.data.year,
         category: validatedData.data.category,
-        mainImageUrl: validatedData.data.mainImageUrl,
+        mainImageUrl: validatedData.data.mainImageUrl as string,
         startDate: new Date(validatedData.data.startDate),
         endDate: new Date(validatedData.data.endDate),
         userId,
@@ -284,7 +284,7 @@ export async function updateProject(formData: FormData, projectId: string) {
       category: updateData.category,
       description: updateData.description,
       about: updateData.about,
-      mainImageUrl: updateData.mainImageUrl,
+      mainImageUrl: updateData.mainImageUrl as string,
     };
 
     // 날짜 필드 변환

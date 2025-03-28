@@ -52,6 +52,7 @@ export const getArtworkByIdWithCache = next_cache(
     try {
       const artwork = await prisma.artwork.findUnique({
         where: { id },
+
         include: {
           images: {
             orderBy: {

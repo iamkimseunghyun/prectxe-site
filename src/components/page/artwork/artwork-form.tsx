@@ -16,11 +16,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
-import {
-  createArtworkSchema,
-  CreateArtworkType,
-  UpdateArtworkType,
-} from '@/app/artworks/artwork';
 import { createArtwork, updateArtwork } from '@/app/artworks/actions';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { uploadGalleryImages } from '@/lib/utils';
@@ -28,11 +23,17 @@ import MultiImageBox from '@/components/image/multi-image-box';
 
 import FormSubmitButton from '@/components/form-submit-button';
 import ArtistSelect from '@/components/page/artist/artist-select';
-import { ImageData } from '@/lib/schemas';
+import {
+  CreateArtworkInput,
+  createArtworkSchema,
+  ImageData,
+  UpdateArtworkInput,
+  Artwork,
+} from '@/lib/schemas';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';
-  initialData?: CreateArtworkType | UpdateArtworkType;
+  initialData?: CreateArtworkInput | UpdateArtworkInput;
   artworkId?: string;
   userId?: string;
   artists?: { id: string; name: string; mainImageUrl: string | null }[];
@@ -66,7 +67,7 @@ const ArtWorkForm = ({
     watch,
     setError,
     formState: { errors },
-  } = useForm<CreateArtworkType>({
+  } = useForm<Artwork>({
     resolver: zodResolver(createArtworkSchema),
     defaultValues,
     resetOptions: {
@@ -88,7 +89,7 @@ const ArtWorkForm = ({
   });
 
   const prepareFormData = (
-    data: CreateArtworkType,
+    data: CreateArtworkInput,
     galleryData: ImageData[]
   ) => {
     const formData = new FormData();
@@ -103,7 +104,7 @@ const ArtWorkForm = ({
     return formData;
   };
 
-  const onSubmit = handleSubmit(async (data: CreateArtworkType) => {
+  const onSubmit = handleSubmit(async (data: CreateArtworkInput) => {
     setIsSubmitting(true);
     try {
       if (multiImagePreview.length > 0) {
@@ -117,7 +118,7 @@ const ArtWorkForm = ({
           ? await updateArtwork(formData, artworkId!)
           : await createArtwork(formData, userId!);
 
-      if (!result.ok) throw new Error(result.error);
+      if (!result.ok) return new Error(result.error);
       router.push(`/artworks/${result.data?.id}`);
     } catch (error) {
       console.error(error);

@@ -12,8 +12,6 @@ import { EventWithRelations } from '@/types/schema';
 //     return val;
 //   });
 
-// Enums
-export const RoleEnum = z.enum(['ADMIN', 'USER']);
 export const EventStatusEnum = z.enum([
   'upcoming',
   'ongoing',

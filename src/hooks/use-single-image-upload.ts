@@ -4,7 +4,7 @@ import validateImageFile from '@/hooks/validate-file';
 import { getCloudflareImageUrl } from '@/app/actions/actions';
 
 type ImageUploadProps = {
-  initialImage?: string;
+  initialImage?: string | null;
   onImageUrlChange?: (url: string) => void;
 };
 

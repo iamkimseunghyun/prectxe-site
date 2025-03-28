@@ -25,7 +25,7 @@ export const projectSchema = z.object({
   }),
   startDate: isoDateStringSchema,
   endDate: isoDateStringSchema,
-  mainImageUrl: z.string(),
+  mainImageUrl: z.string().nullable(),
   images: z
     .array(baseImageSchema)
     .min(1, {

@@ -2,18 +2,21 @@
 import { z } from 'zod';
 import {
   baseImageSchema,
-  nonEmptyStringSchema,
   sanitizedTextTransformer,
   yearSchema,
 } from '@/lib/schemas/base';
 
 export const artworkSchema = z.object({
   title: z.string().min(2, '작품 제목은 2글자 이상이어야 합니다.'),
-  size: z.string().optional(),
-  media: z.string().optional(),
-  year: yearSchema.optional(),
-  description: z.string().transform(sanitizedTextTransformer).optional(),
-  style: z.string().optional(),
+  size: z.string().optional().nullable(),
+  media: z.string().optional().nullable(),
+  year: yearSchema.optional().nullable(),
+  description: z
+    .string()
+    .transform(sanitizedTextTransformer)
+    .optional()
+    .nullable(),
+  style: z.string().optional().nullable(),
   images: z.array(baseImageSchema).default([]),
   artists: z
     .array(
@@ -22,7 +25,7 @@ export const artworkSchema = z.object({
         artist: z.object({
           id: z.string(),
           name: z.string(),
-          mainImageUrl: nonEmptyStringSchema,
+          mainImageUrl: z.string().nullable(),
         }),
       })
     )
