@@ -2,13 +2,13 @@
 
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
-import {
-  createProjectSchema,
-  updateProjectSchema,
-} from '@/app/projects/project';
 
 import { Prisma } from '@prisma/client';
-import { UpdateProjectInput } from '@/lib/schemas';
+import {
+  createProjectSchema,
+  UpdateProjectInput,
+  updateProjectSchema,
+} from '@/lib/schemas';
 import { ProjectCategory } from '@/lib/schemas';
 
 const PROJECTS_LIST_CACHE_TIME = 3600; // 1시간 (초 단위)
