@@ -14,11 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import React, { useState } from 'react';
 
-import {
-  baseArtistCreateSchema,
-  CreateArtistType,
-  UpdateArtistType,
-} from '@/app/artists/artist';
+import { baseArtistCreateSchema } from '@/app/artists/artist';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
@@ -28,11 +24,11 @@ import { uploadGalleryImages, uploadSingleImage } from '@/lib/utils';
 import { createArtist, updateArtist } from '@/app/artists/actions';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import FormSubmitButton from '@/components/form-submit-button';
-import { ImageData } from '@/lib/schemas';
+import { CreateArtistInput, ImageData, UpdateArtistInput } from '@/lib/schemas';
 
 type ArtistFormProps = {
   mode: 'create' | 'edit';
-  initialData?: CreateArtistType | UpdateArtistType;
+  initialData?: CreateArtistInput | UpdateArtistInput;
   artistId?: string;
   userId?: string;
 };
@@ -65,7 +61,7 @@ const ArtistForm = ({
     setValue,
     setError,
     formState: { errors },
-  } = useForm<CreateArtistType>({
+  } = useForm<CreateArtistInput>({
     resolver: zodResolver(baseArtistCreateSchema),
     defaultValues,
   });
@@ -96,7 +92,7 @@ const ArtistForm = ({
     });
 
   const prepareFormData = (
-    data: CreateArtistType,
+    data: CreateArtistInput,
     galleryData: ImageData[]
   ) => {
     const formData = new FormData();
@@ -113,7 +109,7 @@ const ArtistForm = ({
     return formData;
   };
 
-  const onSubmit = handleSubmit(async (data: CreateArtistType) => {
+  const onSubmit = handleSubmit(async (data: CreateArtistInput) => {
     setIsSubmitting(true);
     try {
       if (imageFile) {
@@ -131,7 +127,7 @@ const ArtistForm = ({
           : await createArtist(formData, userId!);
 
       // 에러 처리 수정
-      if (!result.ok) throw new Error(result.error);
+      if (!result.ok) return new Error(result.error);
       router.push(`/artists/${result.data?.id}`);
     } catch (error) {
       console.error('Error: ', error);

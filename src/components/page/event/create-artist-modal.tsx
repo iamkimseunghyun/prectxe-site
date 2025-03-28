@@ -25,10 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
 import { createSimpleArtist } from '@/app/artists/actions';
 import { toast } from '@/hooks/use-toast';
-import {
-  simpleArtistCreateSchema,
-  SimpleArtistType,
-} from '@/app/artists/artist';
+import { SimpleArtist, simpleArtistSchema } from '@/lib/schemas';
 
 interface CreateArtistModalProps {
   onSuccess: (artist: { id: string; name: string }) => void;
@@ -40,8 +37,8 @@ export function CreateArtistModal({
   userId,
 }: CreateArtistModalProps) {
   const [open, setOpen] = useState(false);
-  const form = useForm<SimpleArtistType>({
-    resolver: zodResolver(simpleArtistCreateSchema),
+  const form = useForm<SimpleArtist>({
+    resolver: zodResolver(simpleArtistSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -51,7 +48,7 @@ export function CreateArtistModal({
     },
   });
 
-  async function onSubmit(data: SimpleArtistType) {
+  async function onSubmit(data: SimpleArtist) {
     const result = await createSimpleArtist(data, userId);
 
     if (result.error) {

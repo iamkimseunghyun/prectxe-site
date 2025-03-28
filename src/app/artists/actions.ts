@@ -1,11 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
-import {
-  baseArtistCreateSchema,
-  createSimpleArtistSchema,
-  SimpleArtistType,
-} from '@/app/artists/artist';
+
 import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
 
 import {
@@ -13,7 +9,12 @@ import {
   PAGINATION,
   SELECT_FIELDS,
 } from '@/lib/constants/constants';
-import { ImageData } from '@/lib/schemas';
+import {
+  artistSchema,
+  ImageData,
+  SimpleArtist,
+  simpleArtistSchema,
+} from '@/lib/schemas';
 
 export const getArtistByIdWithCache = next_cache(
   async (artistId: string) => {
@@ -143,12 +144,9 @@ export const getSimpleArtistsList = next_cache(
   { revalidate: CACHE_TIMES.ARTISTS_LIST }
 );
 
-export async function createSimpleArtist(
-  data: SimpleArtistType,
-  userId: string
-) {
+export async function createSimpleArtist(data: SimpleArtist, userId: string) {
   try {
-    const validatedData = createSimpleArtistSchema.safeParse(data);
+    const validatedData = simpleArtistSchema.safeParse(data);
 
     if (!validatedData.success) {
       const errorMessage = validatedData.error.issues
@@ -206,7 +204,7 @@ export async function createArtist(formData: FormData, userId: string) {
     };
 
     // Zod 검증 실패 시 구체적인 에러 반환
-    const validatedData = baseArtistCreateSchema.safeParse(rawData);
+    const validatedData = artistSchema.safeParse(rawData);
 
     if (!validatedData.success) {
       const errorMessage = validatedData.error.issues

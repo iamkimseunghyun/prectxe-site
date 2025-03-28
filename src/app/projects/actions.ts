@@ -153,14 +153,7 @@ export async function getProjectById(projectId: string) {
   return getProjectWithCache(projectId);
 }
 
-export type CreateProjectResult =
-  | { ok: true; data: { id: string } }
-  | { ok: false; error: string };
-
-export async function createProject(
-  formData: FormData,
-  userId: string
-): Promise<CreateProjectResult> {
+export async function createProject(formData: FormData, userId: string) {
   try {
     const rawData = {
       title: formData.get('title'),
