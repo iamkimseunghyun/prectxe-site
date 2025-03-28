@@ -14,7 +14,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import React, { useState } from 'react';
 
-import { baseArtistCreateSchema } from '@/app/artists/artist';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,12 @@ import { uploadGalleryImages, uploadSingleImage } from '@/lib/utils';
 import { createArtist, updateArtist } from '@/app/artists/actions';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import FormSubmitButton from '@/components/form-submit-button';
-import { CreateArtistInput, ImageData, UpdateArtistInput } from '@/lib/schemas';
+import {
+  CreateArtistInput,
+  createArtistSchema,
+  ImageData,
+  UpdateArtistInput,
+} from '@/lib/schemas';
 
 type ArtistFormProps = {
   mode: 'create' | 'edit';
@@ -62,7 +66,7 @@ const ArtistForm = ({
     setError,
     formState: { errors },
   } = useForm<CreateArtistInput>({
-    resolver: zodResolver(baseArtistCreateSchema),
+    resolver: zodResolver(createArtistSchema),
     defaultValues,
   });
 
