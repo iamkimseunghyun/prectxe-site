@@ -26,11 +26,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { EventFormType } from '@/app/events/event';
+import type { Event } from '@/lib/schemas';
 import { CreateArtistModal } from '@/components/page/event/create-artist-modal';
 
 interface OrganizersSectionProps {
-  control: Control<EventFormType>;
+  control: Control<Event>;
   artists: {
     id: string;
     name: string;

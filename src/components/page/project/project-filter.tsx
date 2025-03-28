@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTransition } from 'react';
-import ProjectCardSkeleton from '@/components/page/project/project-card-skeleton';
+
 import {
   Select,
   SelectContent,
@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import CardSkeleton from '@/components/layout/skeleton/card-skeleton';
 
 interface ProjectFilterProps {
   years: number[];
@@ -101,11 +102,12 @@ const ProjectFilter = ({ years, categories }: ProjectFilterProps) => {
           </Select>
         </div>
       </div>
+
       {isPending && (
         <div className="mt-8">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <ProjectCardSkeleton key={i} />
+              <CardSkeleton key={i} />
             ))}
           </div>
         </div>

@@ -49,7 +49,7 @@ const Page = async ({
     <div className="mx-auto max-w-5xl px-4 py-12">
       <div className="mb-12">
         <h1 className="mb-4 text-4xl font-bold">프로젝트</h1>
-        <p className="max-w-2xl text-gray-600">
+        <p className="max-w-2xl text-muted-foreground">
           2018년부터 이어온 PRECTXE의 예술적 여정을 살펴보세요. 전시, 공연,
           워크숍 등 다양한 프로젝트들을 만나볼 수 있습니다.
         </p>

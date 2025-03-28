@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const ProjectCardSkeleton = () => {
+const CardSkeleton = () => {
   return (
     <Card className="overflow-hidden">
       {/* 이미지 스켈레톤 */}
@@ -25,4 +25,4 @@ const ProjectCardSkeleton = () => {
   );
 };
 
-export default ProjectCardSkeleton;
+export default CardSkeleton;

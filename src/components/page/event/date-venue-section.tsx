@@ -15,11 +15,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { EventFormType } from '@/app/events/event';
+import type { Event } from '@/lib/schemas';
 import { Input } from '@/components/ui/input';
 
 interface DateVenueSectionProps {
-  control: Control<EventFormType>;
+  control: Control<Event>;
   venues: {
     id: string;
     name: string;

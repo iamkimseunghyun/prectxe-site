@@ -4,8 +4,6 @@ import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import { eventFormSchema, type EventFormType } from '@/app/events/event';
-
 import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 
@@ -20,10 +18,11 @@ import { formatDateForForm, uploadImage } from '@/lib/utils';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
 import { createEvent, updateEvent } from '@/app/events/actions';
+import { Event, eventSchema, EventStatus, EventType } from '@/lib/schemas';
 
 interface EventFormProps {
   mode: 'create' | 'edit';
-  initialData?: Partial<EventFormType>;
+  initialData?: Event;
   venues: {
     id: string;
     name: string;
@@ -47,21 +46,21 @@ export function EventForm({
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<EventFormType>({
-    resolver: zodResolver(eventFormSchema),
+  const form = useForm<Event>({
+    resolver: zodResolver(eventSchema),
     defaultValues: initialData
       ? ({
           ...initialData,
           // formatDateForForm 함수 사용하여 일관된 형식으로 변환
           startDate: formatDateForForm(initialData.startDate),
           endDate: formatDateForForm(initialData.endDate),
-        } as EventFormType)
+        } as Event)
       : {
           title: '',
           subtitle: '',
           description: '',
-          type: 'exhibition',
-          status: 'upcoming',
+          type: EventType.exhibition,
+          status: EventStatus.upcoming,
           startDate: formatDateForForm(new Date()),
           endDate: formatDateForForm(new Date()),
           mainImageUrl: '',

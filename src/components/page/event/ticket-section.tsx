@@ -1,6 +1,6 @@
 import { Control, useFieldArray } from 'react-hook-form';
 import { Plus, Trash2 } from 'lucide-react';
-import type { EventFormType } from '@/app/events/event';
+import type { Event } from '@/lib/schemas';
 
 import {
   FormControl,
@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/table';
 
 interface TicketsSectionProps {
-  control: Control<EventFormType>;
+  control: Control<Event>;
 }
 
 const TicketsSection = ({ control }: TicketsSectionProps) => {

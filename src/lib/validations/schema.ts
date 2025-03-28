@@ -2,15 +2,15 @@ import { z } from 'zod';
 import { EventWithRelations } from '@/types/schema';
 
 // Helper function to transform strings to dates
-const dateTransformer = z
-  .string()
-  .or(z.date())
-  .transform((val) => {
-    if (typeof val === 'string') {
-      return new Date(val);
-    }
-    return val;
-  });
+// const dateTransformer = z
+//   .string()
+//   .or(z.date())
+//   .transform((val) => {
+//     if (typeof val === 'string') {
+//       return new Date(val);
+//     }
+//     return val;
+//   });
 
 // Enums
 export const RoleEnum = z.enum(['ADMIN', 'USER']);

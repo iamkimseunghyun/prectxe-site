@@ -17,10 +17,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { EventFormType } from '@/app/events/event';
+import type { Event } from '@/lib/schemas';
 
 interface BasicInfoSectionProps {
-  control: Control<EventFormType>;
+  control: Control<Event>;
 }
 
 const EVENT_TYPES = [

@@ -3,7 +3,8 @@ import { getEventById } from '@/app/events/actions';
 import { notFound } from 'next/navigation';
 import { EventForm } from '@/components/page/event/event-form';
 import getSession from '@/lib/session';
-import { EventFormType } from '@/app/events/event';
+
+import { Event } from '@/lib/schemas';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -28,12 +29,12 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   }
 
   // EventFormType에 맞는 안전한 초기 데이터 생성
-  const initialFormData: EventFormType = {
+  const initialFormData: Event = {
     title: eventData.data.title || '',
     subtitle: eventData.data.subtitle || '',
     description: eventData.data.description || '',
-    type: (eventData.data.type as any) || 'exhibition',
-    status: (eventData.data.status as any) || 'upcoming',
+    type: eventData.data.type || 'exhibition',
+    status: eventData.data.status || 'upcoming',
     startDate: eventData.data.startDate || new Date().toISOString(),
     endDate: eventData.data.endDate || new Date().toISOString(),
     mainImageUrl: eventData.data.mainImageUrl || '',

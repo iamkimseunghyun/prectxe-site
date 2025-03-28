@@ -1,18 +1,17 @@
 'use server';
 
-import { eventFormSchema, EventFormType } from '@/app/events/event';
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
 import { z } from 'zod';
 import { CACHE_TIMES, PAGINATION } from '@/lib/constants/constants';
-import { getArtistsPage } from '@/app/artists/actions';
+import { eventSchema, Event } from '@/lib/schemas';
 
 export async function createEvent(
-  input: z.infer<typeof eventFormSchema>,
+  input: z.infer<typeof eventSchema>,
   userId: string
 ) {
   try {
-    const validatedData = eventFormSchema.parse(input);
+    const validatedData = eventSchema.parse(input);
 
     // 데이터 구조 explicitly 정의
     const eventData = {
@@ -20,7 +19,7 @@ export async function createEvent(
       subtitle: validatedData.subtitle,
       description: validatedData.description,
       type: validatedData.type,
-      status: validatedData.status,
+      status: validatedData?.status,
       startDate: new Date(validatedData.startDate),
       endDate: new Date(validatedData.endDate),
       mainImageUrl: validatedData.mainImageUrl,
@@ -65,10 +64,10 @@ export async function createEvent(
   }
 }
 
-export async function updateEvent(id: string, input: EventFormType) {
+export async function updateEvent(id: string, input: Event) {
   try {
     // 입력 값 검증
-    const validatedData = eventFormSchema.parse(input);
+    const validatedData = eventSchema.parse(input);
 
     // 이벤트 존재 여부 확인
     const existingEvent = await prisma.event.findUnique({
