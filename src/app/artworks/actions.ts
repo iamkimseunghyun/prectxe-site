@@ -8,8 +8,9 @@ import {
   updateArtworkSchema,
 } from '@/app/artworks/artwork';
 import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
-import { GalleryImage } from '@/lib/validations/gallery-image';
+
 import { CACHE_TIMES, PAGINATION } from '@/lib/constants/constants';
+import { ImageData } from '@/lib/schemas';
 
 const ARTWORKS_LIST_CACHE_TIME = 3600; // 1시간 (초 단위)
 const ARTWORKS_DETAIL_CACHE_TIME = 7200; // 2시간 (초 단위)
@@ -249,7 +250,7 @@ export async function updateArtwork(formData: FormData, artworkId: string) {
         style: validatedData.data.style,
         images: {
           deleteMany: {},
-          create: validatedData.data.images?.map((image: GalleryImage) => ({
+          create: validatedData.data.images?.map((image: ImageData) => ({
             imageUrl: image.imageUrl,
             alt: image.alt,
             order: image.order,

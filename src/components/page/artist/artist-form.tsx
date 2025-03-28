@@ -13,7 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import React, { useState } from 'react';
-import { GalleryImage } from '@/lib/validations/gallery-image';
+
 import {
   baseArtistCreateSchema,
   CreateArtistType,
@@ -28,6 +28,7 @@ import { uploadGalleryImages, uploadSingleImage } from '@/lib/utils';
 import { createArtist, updateArtist } from '@/app/artists/actions';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import FormSubmitButton from '@/components/form-submit-button';
+import { ImageData } from '@/lib/schemas';
 
 type ArtistFormProps = {
   mode: 'create' | 'edit';
@@ -96,7 +97,7 @@ const ArtistForm = ({
 
   const prepareFormData = (
     data: CreateArtistType,
-    galleryData: GalleryImage[]
+    galleryData: ImageData[]
   ) => {
     const formData = new FormData();
     formData.append('name', data.name);

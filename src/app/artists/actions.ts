@@ -7,12 +7,13 @@ import {
   SimpleArtistType,
 } from '@/app/artists/artist';
 import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
-import { GalleryImage } from '@/lib/validations/gallery-image';
+
 import {
   CACHE_TIMES,
   PAGINATION,
   SELECT_FIELDS,
 } from '@/lib/constants/constants';
+import { ImageData } from '@/lib/schemas';
 
 export const getArtistByIdWithCache = next_cache(
   async (artistId: string) => {
@@ -302,7 +303,7 @@ export async function updateArtist(formData: FormData, artistId: string) {
       if (Array.isArray(galleryData) && galleryData.length > 0) {
         imagesUpdate = {
           deleteMany: {},
-          create: galleryData.map((image: GalleryImage) => ({
+          create: galleryData.map((image: ImageData) => ({
             imageUrl: image.imageUrl,
             alt: image.alt || '',
             order: image.order,

@@ -5,10 +5,11 @@ import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
 import {
   createProjectSchema,
   updateProjectSchema,
-  UpdateProjectType,
 } from '@/app/projects/project';
-import { ProjectCategory } from '@/lib/types';
+
 import { Prisma } from '@prisma/client';
+import { UpdateProjectInput } from '@/lib/schemas';
+import { ProjectCategory } from '@/lib/schemas';
 
 const PROJECTS_LIST_CACHE_TIME = 3600; // 1시간 (초 단위)
 const PROJECTS_DETAIL_CACHE_TIME = 7200; // 2시간 (초 단위)
@@ -226,7 +227,7 @@ export async function createProject(
 export async function updateProject(formData: FormData, projectId: string) {
   try {
     // 부분 업데이트를 위한 객체 생성
-    const updateData: UpdateProjectType = {};
+    const updateData: UpdateProjectInput = {};
 
     // 각 필드 조건부 추가 (값이 제공된 경우에만 업데이트)
     const title = formData.get('title')?.toString();

@@ -7,6 +7,8 @@ export const baseImageSchema = z.object({
   order: z.number(),
 });
 
+export type ImageData = z.infer<typeof baseImageSchema>;
+
 // 날짜 변환 헬퍼
 export const dateSchema = z.preprocess((arg) => {
   if (typeof arg === 'string' || arg instanceof Date) return new Date(arg);

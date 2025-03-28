@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { baseImageSchema } from '@/lib/validations/image';
+
 import { STRING_REGEX } from '@/lib/constants/constants';
+import { baseImageSchema } from '@/lib/schemas';
 
 export const venueCreateSchema = z.object({
   name: z

@@ -1,7 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { GalleryPreview } from '@/lib/validations/gallery-image';
-import { prisma } from '@/lib/db/prisma';
+import { ImagePreview } from '@/lib/schemas';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -88,7 +87,7 @@ export const uploadImage = async (
   }
 };
 
-export const uploadGalleryImages = async (previews: GalleryPreview[]) => {
+export const uploadGalleryImages = async (previews: ImagePreview[]) => {
   return Promise.all(
     previews.map(async (preview) => {
       const formData = new FormData();

@@ -9,7 +9,7 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import Image from 'next/image';
-import { GalleryImage } from '@/lib/validations/gallery-image';
+
 import { getArtworkById } from '@/app/artworks/actions';
 import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
@@ -20,6 +20,7 @@ import { Metadata } from 'next';
 import { prisma } from '@/lib/db/prisma';
 import ArtworkSEOSchema from '@/components/schema/artwork-schema';
 import { getImageUrl } from '@/lib/utils';
+import { ImageData } from '@/lib/schemas';
 
 export async function generateMetadata({
   params,
@@ -116,7 +117,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             <div className="mx-auto">
               <Carousel>
                 <CarouselContent>
-                  {artwork.images.map((image: GalleryImage) => (
+                  {artwork.images.map((image: ImageData) => (
                     <CarouselItem
                       key={image.id}
                       className="md:basis-1/2 lg:basis-1/3"

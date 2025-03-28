@@ -6,13 +6,14 @@ import Link from 'next/link';
 
 import { Venue } from '@prisma/client';
 import { getImageUrl } from '@/lib/utils';
-import { GalleryImage } from '@/lib/validations/gallery-image';
+
 import Image from 'next/image';
+import { ImageData } from '@/lib/schemas';
 
 interface VenueListProps {
   initialData: {
     venues: (Venue & {
-      images: GalleryImage[];
+      images: ImageData[];
     })[];
     total: number;
     totalPages: number;

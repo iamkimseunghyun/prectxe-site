@@ -19,10 +19,11 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
 import { createVenue, updateVenue } from '@/app/venues/actions';
-import { GalleryImage } from '@/lib/validations/gallery-image';
+
 import { uploadGalleryImages } from '@/lib/utils';
 import MultiImageBox from '@/components/image/multi-image-box';
 import FormSubmitButton from '@/components/form-submit-button';
+import { ImageData } from '@/lib/schemas';
 
 type VenueFormProps = {
   mode: 'create' | 'edit';
@@ -67,10 +68,7 @@ const VenueForm = ({ mode, initialData, venueId, userId }: VenueFormProps) => {
     },
   });
 
-  const prepareFormData = (
-    data: VenueFormData,
-    galleryData: GalleryImage[]
-  ) => {
+  const prepareFormData = (data: VenueFormData, galleryData: ImageData[]) => {
     const formData = new FormData();
     formData.append('name', data.name);
     formData.append('description', data.description);

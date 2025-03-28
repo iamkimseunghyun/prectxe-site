@@ -1,10 +1,9 @@
 import { z } from 'zod';
 import {
   baseImageSchema,
-  yearSchema,
   isoDateStringSchema,
   sanitizedTextTransformer,
-  nonEmptyStringSchema,
+  yearSchema,
 } from '@/lib/schemas/base';
 import { ProjectCategory } from '@/lib/schemas/types';
 
@@ -26,7 +25,7 @@ export const projectSchema = z.object({
   }),
   startDate: isoDateStringSchema,
   endDate: isoDateStringSchema,
-  mainImageUrl: nonEmptyStringSchema,
+  mainImageUrl: z.string(),
   images: z
     .array(baseImageSchema)
     .min(1, {

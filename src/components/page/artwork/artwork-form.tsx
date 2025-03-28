@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { GalleryImage } from '@/lib/validations/gallery-image';
+
 import {
   createArtworkSchema,
   CreateArtworkType,
@@ -28,6 +28,7 @@ import MultiImageBox from '@/components/image/multi-image-box';
 
 import FormSubmitButton from '@/components/form-submit-button';
 import ArtistSelect from '@/components/page/artist/artist-select';
+import { ImageData } from '@/lib/schemas';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';
@@ -88,7 +89,7 @@ const ArtWorkForm = ({
 
   const prepareFormData = (
     data: CreateArtworkType,
-    galleryData: GalleryImage[]
+    galleryData: ImageData[]
   ) => {
     const formData = new FormData();
     formData.append('title', data.title);

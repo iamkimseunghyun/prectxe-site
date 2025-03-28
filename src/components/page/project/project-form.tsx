@@ -4,11 +4,7 @@ import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  createProjectSchema,
-  CreateProjectType,
-  UpdateProjectType,
-} from '@/app/projects/project';
+
 import {
   formatDate,
   formatDateForInput,
@@ -33,7 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { GalleryImage } from '@/lib/validations/gallery-image';
+
 import { createProject, updateProject } from '@/app/projects/actions';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
@@ -43,10 +39,16 @@ import UploadProgress from '@/components/upload-progress';
 
 import FormSubmitButton from '@/components/form-submit-button';
 import ArtistSelect from '@/components/page/artist/artist-select';
+import {
+  CreateProjectInput,
+  createProjectSchema,
+  ImageData,
+  UpdateProjectInput,
+} from '@/lib/schemas';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';
-  initialData?: CreateProjectType | UpdateProjectType;
+  initialData?: CreateProjectInput | UpdateProjectInput;
   projectId?: string;
   userId?: string;
   artists?: { mainImageUrl: string | null; id: string; name: string }[];
@@ -91,7 +93,7 @@ const ProjectForm = ({
     setValue,
     setError,
     formState: { errors },
-  } = useForm<CreateProjectType>({
+  } = useForm<CreateProjectInput>({
     resolver: zodResolver(createProjectSchema),
     defaultValues,
   });
@@ -125,8 +127,8 @@ const ProjectForm = ({
   });
 
   const prepareFormData = (
-    data: CreateProjectType,
-    galleryData: GalleryImage[]
+    data: CreateProjectInput,
+    galleryData: ImageData[]
   ) => {
     const formData = new FormData();
     formData.append('title', data.title);
@@ -142,7 +144,7 @@ const ProjectForm = ({
     return formData;
   };
 
-  const onSubmit = handleSubmit(async (data: CreateProjectType) => {
+  const onSubmit = handleSubmit(async (data: CreateProjectInput) => {
     setIsSubmitting(true);
     try {
       setIsUploading(true);
@@ -170,7 +172,7 @@ const ProjectForm = ({
       setUploadProgress(100);
       setUploadStatus('완료! 페이지 이동 중...');
 
-      if (!result.ok) throw new Error(result.error);
+      if (!result.ok) return new Error(result.error);
       router.push(`/projects/${result.data?.id}`);
     } catch (error) {
       console.error(error);
