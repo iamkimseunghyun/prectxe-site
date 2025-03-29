@@ -2,12 +2,12 @@
 
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { deleteArtist } from '@/app/artists/actions';
-import { deleteProject } from '@/app/projects/actions';
-import { deleteVenue } from '@/app/venues/actions';
+import { deleteArtist } from '@/app/(page)/artists/actions';
+import { deleteProject } from '@/app/(page)/projects/actions';
+import { deleteVenue } from '@/app/(page)/venues/actions';
 import { Button } from '@/components/ui/button';
-import { deleteEvent } from '@/app/events/actions';
-import { deleteArtwork } from '@/app/artworks/actions';
+import { deleteEvent } from '@/app/(page)/events/actions';
+import { deleteArtwork } from '@/app/(page)/artworks/actions';
 
 const AdminButton = ({
   id,

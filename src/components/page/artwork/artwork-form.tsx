@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
-import { createArtwork, updateArtwork } from '@/app/artworks/actions';
+import { createArtwork, updateArtwork } from '@/app/(page)/artworks/actions';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { uploadGalleryImages } from '@/lib/utils';
 import MultiImageBox from '@/components/image/multi-image-box';

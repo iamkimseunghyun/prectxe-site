@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { venueCreateSchema, VenueFormData } from '@/app/venues/venues';
+
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import {
   Card,
@@ -18,16 +18,21 @@ import React, { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
-import { createVenue, updateVenue } from '@/app/venues/actions';
 
 import { uploadGalleryImages } from '@/lib/utils';
 import MultiImageBox from '@/components/image/multi-image-box';
 import FormSubmitButton from '@/components/form-submit-button';
-import { ImageData } from '@/lib/schemas';
+import {
+  CreateVenueInput,
+  createVenueSchema,
+  ImageData,
+  Venue,
+} from '@/lib/schemas';
+import { createVenue, updateVenue } from '@/app/(page)/venues/actions';
 
 type VenueFormProps = {
   mode: 'create' | 'edit';
-  initialData?: VenueFormData;
+  initialData?: CreateVenueInput;
   venueId?: string;
   userId?: string;
 };
@@ -41,8 +46,8 @@ const VenueForm = ({ mode, initialData, venueId, userId }: VenueFormProps) => {
     setError,
     setValue,
     formState: { errors },
-  } = useForm<VenueFormData>({
-    resolver: zodResolver(venueCreateSchema),
+  } = useForm<CreateVenueInput>({
+    resolver: zodResolver(createVenueSchema),
     defaultValues: initialData || {
       name: '',
       description: '',
@@ -68,7 +73,10 @@ const VenueForm = ({ mode, initialData, venueId, userId }: VenueFormProps) => {
     },
   });
 
-  const prepareFormData = (data: VenueFormData, galleryData: ImageData[]) => {
+  const prepareFormData = (
+    data: CreateVenueInput,
+    galleryData: ImageData[]
+  ) => {
     const formData = new FormData();
     formData.append('name', data.name);
     formData.append('description', data.description);
@@ -77,7 +85,7 @@ const VenueForm = ({ mode, initialData, venueId, userId }: VenueFormProps) => {
     return formData;
   };
 
-  const onSubmit = handleSubmit(async (data: VenueFormData) => {
+  const onSubmit = handleSubmit(async (data: Venue) => {
     setIsSubmitting(true);
     try {
       if (multiImagePreview.length > 0) {

@@ -23,7 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 
 import { Plus } from 'lucide-react';
-import { createSimpleArtist } from '@/app/artists/actions';
+import { createSimpleArtist } from '@/app/(page)/artists/actions';
 import { toast } from '@/hooks/use-toast';
 import { SimpleArtist, simpleArtistSchema } from '@/lib/schemas';
 

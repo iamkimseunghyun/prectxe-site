@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getImageUrl } from '@/lib/utils';
 import { Artwork as PrismaArtwork, ArtworkImage } from '@prisma/client';
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
-import { getMoreArtworks } from '@/app/artworks/actions';
+import { getMoreArtworks } from '@/app/(page)/artworks/actions';
 import { PAGINATION } from '@/lib/constants/constants';
 import InfiniteScroll from '@/components/page/artist/infinite-scroll';
 

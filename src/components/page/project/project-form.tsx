@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
-import { createProject, updateProject } from '@/app/projects/actions';
+import { createProject, updateProject } from '@/app/(page)/projects/actions';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';

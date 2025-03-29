@@ -1,6 +1,6 @@
 'use client';
 
-import { getMoreArtists } from '@/app/artists/actions';
+import { getMoreArtists } from '@/app/(page)/artists/actions';
 import ArtistCard from '@/components/page/artist/artist-card';
 import InfiniteScroll from '@/components/page/artist/infinite-scroll';
 import { PAGINATION } from '@/lib/constants/constants';

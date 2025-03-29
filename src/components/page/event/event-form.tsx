@@ -17,7 +17,7 @@ import TicketsSection from '@/components/page/event/ticket-section';
 import { formatDateForForm, uploadImage } from '@/lib/utils';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
-import { createEvent, updateEvent } from '@/app/events/actions';
+import { createEvent, updateEvent } from '@/app/(page)/events/actions';
 import { Event, eventSchema, EventStatus, EventType } from '@/lib/schemas';
 
 interface EventFormProps {

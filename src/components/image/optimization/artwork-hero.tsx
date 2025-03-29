@@ -1,9 +1,9 @@
 import { OptimizedImage } from '@/components/image/optimization/optimized-image';
-import { ArtworkWithRelations } from '@/types/schema';
 import { cn, getImageUrl } from '@/lib/utils';
+import { Artwork } from '@/lib/schemas';
 
 interface ArtworkHeroProps {
-  artwork: ArtworkWithRelations;
+  artwork: Artwork;
   className?: string;
 }
 

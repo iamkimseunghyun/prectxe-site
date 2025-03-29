@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { formatDate, getImageUrl } from '@/lib/utils';
 import Image from 'next/image';
-import { getEventsByArtistId } from '@/app/events/actions';
+import { getEventsByArtistId } from '@/app/(page)/events/actions';
 
 const EventList = async ({ artistId }: { artistId: string }) => {
   const events = await getEventsByArtistId(artistId);

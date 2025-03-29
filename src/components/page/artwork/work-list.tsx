@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { formatDate, getImageUrl } from '@/lib/utils';
 import Image from 'next/image';
-import { getArtworksByArtistId } from '@/app/artworks/actions';
+import { getArtworksByArtistId } from '@/app/(page)/artworks/actions';
 
 const WorkList = async ({ artistId }: { artistId: string }) => {
   const works = await getArtworksByArtistId(artistId);

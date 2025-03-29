@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 
 import MultiImageBox from '@/components/image/multi-image-box';
 import { uploadGalleryImages, uploadSingleImage } from '@/lib/utils';
-import { createArtist, updateArtist } from '@/app/artists/actions';
+import { createArtist, updateArtist } from '@/app/(page)/artists/actions';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import FormSubmitButton from '@/components/form-submit-button';
 import {
