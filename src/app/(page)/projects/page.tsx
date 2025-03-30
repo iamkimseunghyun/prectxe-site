@@ -38,7 +38,7 @@ const Page = async ({
 
   const projects = await getAllProjects(year, category, sort, search);
 
-  if (projects.length === 0) {
+  if (projects.data?.length === 0) {
     return (
       <div className="flex min-h-[200px] items-center justify-center rounded-lg bg-gray-50 text-gray-500">
         <p>프로젝트가 없습니다.</p>
@@ -63,7 +63,7 @@ const Page = async ({
       </Suspense>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {projects.map((project) => (
+        {projects.data?.map((project) => (
           <ProjectCard key={project.id} project={project} />
         ))}
       </div>

@@ -3,7 +3,6 @@ import { Metadata } from 'next';
 
 import React, { Suspense } from 'react';
 import { PAGINATION } from '@/lib/constants/constants';
-import { SearchBar } from '@/components/search-bar';
 import GridSkeleton from '@/components/layout/skeleton/grid-skeleton';
 import { getArtworksPage } from '@/app/(page)/artworks/actions';
 
@@ -43,9 +42,7 @@ const Page = async ({
 
       {/* 검색과 필터는 별도의 Suspense 경계로 분리 */}
       <Suspense>
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <SearchBar />
-        </div>
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between"></div>
       </Suspense>
 
       {/* 아트워크 목록에 대한 Suspense 경계 설정 */}

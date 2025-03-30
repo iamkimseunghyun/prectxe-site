@@ -5,8 +5,8 @@ export { EventStatus, EventType, ProjectCategory };
 
 // API 응답 타입
 export type ApiResponse<T = undefined> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+  | { success: true; data: T; message?: string }
+  | { success: false; error: string; details?: any };
 
 export type ImagePreview = {
   preview: string;

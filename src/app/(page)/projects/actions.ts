@@ -6,10 +6,10 @@ import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
 import { Prisma } from '@prisma/client';
 import {
   createProjectSchema,
+  ProjectCategory,
   UpdateProjectInput,
   updateProjectSchema,
 } from '@/lib/schemas';
-import { ProjectCategory } from '@/lib/schemas';
 
 const PROJECTS_LIST_CACHE_TIME = 3600; // 1시간 (초 단위)
 const PROJECTS_DETAIL_CACHE_TIME = 7200; // 2시간 (초 단위)
@@ -59,7 +59,26 @@ export const getAllProjects = async (
   sort?: string,
   search?: string
 ) => {
-  return getAllProjectsWithCache(year, category, sort, search);
+  try {
+    const projects = await getAllProjectsWithCache(
+      year,
+      category,
+      sort,
+      search
+    );
+
+    return {
+      success: true,
+      data: projects,
+    };
+  } catch (error) {
+    console.error('Error fetching projects', error);
+    return {
+      success: false,
+      error: '프로젝트 목록을 불러오는데 실패했습니다.',
+      details: process.env.NODE_ENV === 'development' ? error : undefined,
+    };
+  }
 };
 
 // 캐시된 데이터 패칭 함수

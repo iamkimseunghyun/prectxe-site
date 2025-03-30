@@ -5,7 +5,6 @@ import { Metadata } from 'next';
 
 import { PAGINATION } from '@/lib/constants/constants';
 import { ArtistGrid } from '@/components/page/artist/artist-grid';
-import { SearchBar } from '@/components/search-bar';
 import GridSkeleton from '@/components/layout/skeleton/grid-skeleton';
 import { getArtistsPage } from '@/app/(page)/artists/actions';
 
@@ -42,9 +41,7 @@ const Page = async ({
 
       {/* 검색과 필터는 별도의 Suspense 경계로 분리 */}
       <Suspense>
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <SearchBar />
-        </div>
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between"></div>
       </Suspense>
 
       {/* 아티스트 목록에 대한 Suspense 경계 설정 */}

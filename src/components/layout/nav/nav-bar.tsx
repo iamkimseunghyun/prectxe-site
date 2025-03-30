@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import GlobalSearch from '@/components/search/global-search';
 
 interface NavBarProps {
   canEdit?: boolean;
@@ -13,6 +14,7 @@ interface NavBarProps {
   isLoggedIn?: boolean;
   logout?: () => void;
 }
+
 const NavBar = ({
   canEdit = false,
   user = '',
@@ -40,7 +42,6 @@ const NavBar = ({
     { name: 'Projects', href: '/projects' },
     { name: 'Artists', href: '/artists' },
     { name: 'Artworks', href: '/artworks' },
-    // { name: 'Venues', href: '/venues' },
   ];
 
   // 로그인 여부와 권한에 따른 네비게이션 항목 구성
@@ -52,32 +53,46 @@ const NavBar = ({
   }
 
   return (
-    <nav className="relative">
+    <div className="w-full">
       {/* 데스크탑 네비게이션 */}
-      <div className="hidden items-center gap-4 md:flex">
-        {/* 메인 네비게이션 */}
-        <ul className="flex items-center gap-8">
-          {navigation.map((item) => (
-            <li key={item.name}>
-              <Link
-                href={item.href}
-                className={cn(
-                  'text-sm transition-colors hover:text-black/60',
-                  pathname === item.href ? 'text-black' : 'text-black/40'
-                )}
-              >
-                {item.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
+      <div className="hidden md:block">
+        <div className="flex h-16 items-center justify-between px-4">
+          {/* 로고 영역 */}
+          <div className="flex-shrink-0">
+            <Link href="/" className="text-xl font-bold">
+              PRECTXE
+            </Link>
+          </div>
 
-        {/* 사용자 메뉴 영역 */}
-        <div className="ml-4 flex items-center gap-4">
-          {
-            isLoggedIn ? (
-              <>
-                {/* 로그인한 경우 사용자 정보와 로그아웃 링크 표시 */}
+          {/* 네비게이션 메뉴 */}
+          <div className="flex items-center">
+            <nav className="mx-auto flex">
+              <ul className="flex space-x-8">
+                {navigation.map((item) => (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        'text-sm transition-colors hover:text-black/60',
+                        pathname === item.href ? 'text-black' : 'text-black/40'
+                      )}
+                    >
+                      {item.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+
+          {/* 우측 영역: 검색 및 사용자 메뉴 */}
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center">
+              <GlobalSearch />
+            </div>
+
+            {isLoggedIn ? (
+              <div className="flex items-center space-x-4">
                 <Link
                   href="/profile"
                   className={cn(
@@ -95,28 +110,37 @@ const NavBar = ({
                 >
                   로그아웃
                 </button>
-              </>
-            ) : null
-            /* 로그인하지 않은 경우 로그인 링크 표시 */
-            // <Link
-            //   href="/auth/signin"
-            //   className="rounded-md bg-blue-50 px-3 py-1.5 text-sm text-blue-600 transition-colors hover:bg-blue-100"
-            // >
-            //   로그인
-            // </Link>
-          }
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
-      {/* 모바일 네비게이션 햄버거 아이콘 */}
-      <div className="flex justify-end md:hidden">
-        <button
-          onClick={toggleMenu}
-          className="relative z-[60] p-2 text-black focus:outline-none"
-          aria-label="Toggle menu"
-        >
-          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+      {/* 모바일 네비게이션 */}
+      <div className="md:hidden">
+        <div className="flex h-16 items-center justify-between px-4">
+          {/* 모바일 로고 */}
+          <div className="flex-shrink-0">
+            <Link href="/" className="text-xl font-bold">
+              PRECTXE
+            </Link>
+          </div>
+
+          {/* 모바일 우측 영역: 검색 및 메뉴 */}
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center">
+              <GlobalSearch />
+            </div>
+
+            <button
+              onClick={toggleMenu}
+              className="relative z-[60] ml-2 p-2 text-black focus:outline-none"
+              aria-label="Toggle menu"
+            >
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* 모바일 메뉴 슬라이드 패널 */}
@@ -124,7 +148,6 @@ const NavBar = ({
         {isMenuOpen && (
           <motion.div
             className="fixed left-0 top-0 z-50 w-full rounded-b-lg bg-blue-800 pb-16 pt-16 shadow-lg md:hidden"
-            // style={{ height: '80vh' }}
             initial={{ y: '-100%' }}
             animate={{ y: isMenuOpen ? '0%' : '-100%' }}
             exit={{ y: '-100%' }}
@@ -182,7 +205,8 @@ const NavBar = ({
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </div>
   );
 };
+
 export default NavBar;

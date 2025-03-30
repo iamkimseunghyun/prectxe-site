@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import NavBar from '@/components/layout/nav/nav-bar';
 import getSession from '@/lib/session';
 import canManage from '@/lib/can-manage';
@@ -37,21 +36,14 @@ const Header = async () => {
   }
 
   return (
-    <header className="fixed top-0 z-50 h-[var(--header-height)] w-full border-b bg-white/80 backdrop-blur-md">
-      <div className="mb-50 container mx-auto px-4">
-        <nav className="flex h-16 items-center justify-between">
-          {/* 로고 */}
-          <Link href="/" className="text-xl font-bold">
-            PRECTXE
-          </Link>
-          {/* 네비게이션 - 로그인 여부와 관계없이 항상 표시 */}
-          <NavBar
-            isLoggedIn={isLoggedIn}
-            canEdit={canEdit}
-            user={username}
-            logout={handleLogout}
-          />
-        </nav>
+    <header className="fixed top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md">
+      <div className="container mx-auto">
+        <NavBar
+          isLoggedIn={isLoggedIn}
+          canEdit={canEdit}
+          user={username}
+          logout={handleLogout}
+        />
       </div>
     </header>
   );
