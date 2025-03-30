@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useTransition } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Calendar,
@@ -16,15 +16,18 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
+  DialogOverlay,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/components/ui/dialog-search';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { cn, getImageUrl } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
 import { globalSearch } from '@/app/actions';
 import Image from 'next/image';
+import { DialogClose, DialogDescription } from '@/components/ui/dialog';
 
 type SearchResult = {
   id: string;
@@ -50,10 +53,11 @@ const GlobalSearch = () => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [recentSearches, setRecentSearches] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
   const router = useRouter();
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultsContainerRef = useRef<HTMLDivElement>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   // 로컬 스토리지에서 최근 검색어 불러오기
@@ -124,16 +128,40 @@ const GlobalSearch = () => {
     }
   }, [open]);
 
-  // Execute search
-  const handleSearch = () => {
-    if (!searchTerm.trim()) return;
-
-    startTransition(() => {
+  // Handle ESC key properly
+  const handleEscKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && open) {
+      e.preventDefault();
       setOpen(false);
-      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
-    });
+    }
   };
 
+  useEffect(() => {
+    document.addEventListener('keydown', handleEscKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [open]);
+
+  // handleSearch 함수 수정
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) return;
+
+    setIsPending(true);
+    setIsSearching(true);
+
+    try {
+      // 외부 경로로 이동하지 않고 내부에서 결과 처리
+      const results = await globalSearch(searchTerm, 20); // 더 많은 결과 가져오기
+      setSearchResults(results);
+      // 필요하다면 UI 상태 변경 (예: 결과 보기 모드로 전환)
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
+      setIsPending(false);
+    }
+  };
   // Handle keyboard shortcut for search (Ctrl+K or Command+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -181,6 +209,24 @@ const GlobalSearch = () => {
     }
   };
 
+  // Get translated type name
+  const getTypeName = (type: string) => {
+    switch (type) {
+      case 'artist':
+        return '아티스트';
+      case 'artwork':
+        return '작품';
+      case 'event':
+        return '이벤트';
+      case 'project':
+        return '프로젝트';
+      case 'venue':
+        return '장소';
+      default:
+        return type;
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -189,17 +235,40 @@ const GlobalSearch = () => {
           size="sm"
           className="flex h-9 w-9 items-center justify-center rounded-md p-0 sm:h-9 sm:w-auto sm:px-3 sm:py-2"
         >
-          <Search className="h-4 w-4 sm:mr-2" />
-          <span className="sr-only sm:not-sr-only">검색</span>
+          <Search className="h-4 w-4 text-black/40 sm:mr-2" />
+          <span className="sr-only text-black/40 sm:not-sr-only">검색</span>
           <kbd className="pointer-events-none ml-auto hidden select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs text-muted-foreground sm:inline-flex">
             <span className="text-xs">⌘</span>K
           </kbd>
         </Button>
       </DialogTrigger>
-      <DialogContent className="p-0 sm:max-w-2xl">
-        <DialogTitle className="sr-only">사이트 검색</DialogTitle>
-        <div className="flex flex-col">
-          <div className="relative">
+
+      {/* Fixed backdrop opacity */}
+      <DialogOverlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity data-[state=closed]:opacity-0 data-[state=open]:opacity-100" />
+
+      {/* Fixed dialog content width with close button hidden */}
+      <DialogContent
+        className="fixed left-[50%] top-[50%] z-50 flex max-h-[85vh] w-[90%] max-w-2xl translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-lg border bg-background p-0 shadow-lg md:w-full"
+        showCloseButton={false}
+      >
+        <div className="flex items-center justify-between border-b p-3">
+          <DialogTitle className="sr-only">사이트 검색</DialogTitle>
+          <DialogDescription className="sr-only">
+            아티스트, 작품, 이벤트, 프로젝트 등을 검색할 수 있습니다.
+          </DialogDescription>
+          <DialogClose asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 rounded-full p-0"
+              aria-label="검색창 닫기"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogClose>
+        </div>
+        <div className="flex min-h-0 flex-col">
+          <div className="relative flex-shrink-0">
             <Search className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
             <Input
               ref={inputRef}
@@ -208,11 +277,15 @@ const GlobalSearch = () => {
               onKeyDown={handleKeyDown}
               placeholder="아티스트, 작품, 이벤트, 프로젝트 등 검색..."
               className={cn(
-                'h-14 border-0 pl-12 pr-12 text-lg focus-visible:ring-0',
+                'h-14 border-0 pl-12 pr-12 text-lg focus-visible:ring-0 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden',
                 isPending && 'opacity-50'
               )}
               disabled={isPending}
+              type="text"
+              autoComplete="off"
+              spellCheck="false"
             />
+            {/* X 버튼은 검색어가 있을 때만 표시 */}
             {searchTerm && (
               <Button
                 type="button"
@@ -221,6 +294,7 @@ const GlobalSearch = () => {
                 className="absolute right-2 top-2 h-10 w-10 rounded-full p-0 hover:bg-transparent"
                 onClick={() => setSearchTerm('')}
                 disabled={isPending}
+                aria-label="Clear search"
               >
                 {isPending ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -232,7 +306,7 @@ const GlobalSearch = () => {
           </div>
 
           {/* 카테고리 필터 */}
-          <div className="border-b border-t px-4 py-3">
+          <div className="flex-shrink-0 border-b border-t px-4 py-3">
             <div className="flex flex-wrap gap-2">
               {searchCategories.map((category) => (
                 <Button
@@ -253,45 +327,59 @@ const GlobalSearch = () => {
             </div>
           </div>
 
-          {/* 검색 결과 또는 최근 검색어 */}
-          <div className="max-h-[60vh] overflow-y-auto p-2">
-            {isSearching ? (
+          {/* 검색 결과 또는 최근 검색어 컨테이너 */}
+          <div
+            ref={resultsContainerRef}
+            className="flex-1 overflow-y-auto overflow-x-hidden p-2"
+            style={{
+              maxHeight: 'calc(50vh - 130px)', // vh 기반 동적 높이 설정
+              minHeight: '200px',
+            }}
+          >
+            {/* 검색 중 로딩 표시 */}
+            {isSearching && (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : searchTerm && searchResults.length > 0 ? (
+            )}
+
+            {/* 검색 결과 표시 */}
+            {!isSearching && searchResults.length > 0 && (
               <div className="space-y-1 px-2 py-2">
                 <h3 className="px-2 pb-2 text-sm font-medium text-muted-foreground">
                   검색 결과
                 </h3>
-                <div className="grid gap-1">
+                <div className="grid gap-1 overflow-visible">
                   {searchResults.map((result) => (
                     <Button
                       key={`${result.type}-${result.id}`}
                       variant="ghost"
-                      className="h-auto justify-start px-2 py-3 text-left"
+                      className="h-auto w-full justify-start overflow-hidden text-ellipsis px-2 py-3 text-left"
                       onClick={() => {
                         saveRecentSearch(result);
-                        router.push(result.url);
                         setOpen(false);
+                        router.push(result.url);
                       }}
                     >
                       <div className="flex w-full items-center gap-3">
+                        {/* 여기서 이미지 표시 로직 변경 */}
                         {result.imageUrl ? (
-                          <div className="relative h-10 w-10 overflow-hidden rounded-md bg-muted">
+                          <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-muted">
                             <Image
-                              src={result.imageUrl}
+                              src={getImageUrl(result.imageUrl, 'thumbnail')}
                               alt={result.title}
                               fill
+                              sizes="40px"
                               className="object-cover"
                             />
                           </div>
                         ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
-                            {getResultIcon(result.type)}
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-muted">
+                            {/* 이미지가 없을 때만 Clock 아이콘 표시 */}
+                            <Clock className="h-4 w-4 text-muted-foreground" />
                           </div>
                         )}
-                        <div className="flex-1 overflow-hidden">
+                        <div className="min-w-0 flex-1 overflow-hidden">
                           <p className="truncate font-medium">{result.title}</p>
                           {result.description && (
                             <p className="truncate text-sm text-muted-foreground">
@@ -299,26 +387,28 @@ const GlobalSearch = () => {
                             </p>
                           )}
                         </div>
-                        <span className="ml-auto flex h-5 items-center rounded-full bg-muted px-2 text-xs">
-                          {result.type === 'artist' && '아티스트'}
-                          {result.type === 'artwork' && '작품'}
-                          {result.type === 'event' && '이벤트'}
-                          {result.type === 'project' && '프로젝트'}
-                          {result.type === 'venue' && '장소'}
+                        <span className="ml-auto flex h-5 flex-shrink-0 items-center rounded-full bg-muted px-2 text-xs">
+                          {getTypeName(result.type)}
                         </span>
                       </div>
                     </Button>
                   ))}
                 </div>
               </div>
-            ) : searchTerm && searchResults.length === 0 ? (
+            )}
+
+            {/* 검색 결과 없음 */}
+            {!isSearching && searchTerm && searchResults.length === 0 && (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <p className="mb-1 text-lg font-medium">검색 결과가 없습니다</p>
                 <p className="text-sm text-muted-foreground">
                   다른 검색어로 시도해보세요
                 </p>
               </div>
-            ) : recentSearches.length > 0 ? (
+            )}
+
+            {/* 최근 검색 표시 (검색어가 없을 때) */}
+            {!searchTerm && recentSearches.length > 0 && (
               <div className="space-y-1 px-2 py-2">
                 <div className="flex items-center justify-between px-2 pb-2">
                   <h3 className="text-sm font-medium text-muted-foreground">
@@ -341,17 +431,18 @@ const GlobalSearch = () => {
                     <Button
                       key={`recent-${result.type}-${result.id}`}
                       variant="ghost"
-                      className="h-auto justify-start px-2 py-3 text-left"
+                      className="h-auto w-full justify-start px-2 py-3 text-left"
                       onClick={() => {
                         router.push(result.url);
                         setOpen(false);
                       }}
                     >
                       <div className="flex w-full items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-muted">
+                          {/*<Clock className="h-4 w-4 text-muted-foreground" />*/}
+                          {getResultIcon(result.type)}
                         </div>
-                        <div className="flex-1 overflow-hidden">
+                        <div className="min-w-0 flex-1 overflow-hidden">
                           <p className="truncate font-medium">{result.title}</p>
                           {result.description && (
                             <p className="truncate text-sm text-muted-foreground">
@@ -359,51 +450,43 @@ const GlobalSearch = () => {
                             </p>
                           )}
                         </div>
-                        <span className="ml-auto flex h-5 items-center rounded-full bg-muted px-2 text-xs">
-                          {result.type === 'artist' && '아티스트'}
-                          {result.type === 'artwork' && '작품'}
-                          {result.type === 'event' && '이벤트'}
-                          {result.type === 'project' && '프로젝트'}
-                          {result.type === 'venue' && '장소'}
+                        <span className="ml-auto flex h-5 flex-shrink-0 items-center rounded-full bg-muted px-2 text-xs">
+                          {getTypeName(result.type)}
                         </span>
                       </div>
                     </Button>
                   ))}
                 </div>
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <p className="mb-1 text-lg font-medium">
-                  무엇을 찾고 계신가요?
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  검색어를 입력하여 시작하세요
-                </p>
-              </div>
             )}
           </div>
 
-          {/* 검색 버튼 */}
-          <div className="flex justify-end border-t p-4">
-            <Button
-              variant="default"
-              onClick={handleSearch}
-              disabled={!searchTerm.trim() || isPending}
-              className="px-6"
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  검색 중...
-                </>
-              ) : (
-                <>
-                  <Search className="mr-2 h-4 w-4" />
-                  검색
-                </>
-              )}
-            </Button>
-          </div>
+          {/* 푸터 */}
+          <DialogFooter className="mt-auto flex items-center justify-between border-t p-4 text-sm text-muted-foreground">
+            <div className="flex gap-4">
+              <div className="flex items-center gap-1">
+                <kbd className="rounded border px-1 py-0.5 text-xs">↑</kbd>
+                <kbd className="rounded border px-1 py-0.5 text-xs">↓</kbd>
+                <span>이동</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <kbd className="rounded border px-1 py-0.5 text-xs">Enter</kbd>
+                <span>선택</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <kbd className="rounded border px-1 py-0.5 text-xs">Esc</kbd>
+                <span>닫기</span>
+              </div>
+            </div>
+
+            {/*<Button*/}
+            {/*  variant="default"*/}
+            {/*  onClick={handleSearch}*/}
+            {/*  disabled={!searchTerm.trim() || isPending}*/}
+            {/*>*/}
+            {/*  검색*/}
+            {/*</Button>*/}
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>
