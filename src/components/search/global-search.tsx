@@ -20,14 +20,15 @@ import {
   DialogOverlay,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog-search';
+  DialogClose,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn, getImageUrl } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
 import { globalSearch } from '@/app/actions';
 import Image from 'next/image';
-import { DialogClose, DialogDescription } from '@/components/ui/dialog';
 
 type SearchResult = {
   id: string;
@@ -233,13 +234,10 @@ const GlobalSearch = () => {
         <Button
           variant="outline"
           size="sm"
-          className="flex h-9 w-9 items-center justify-center rounded-md p-0 sm:h-9 sm:w-auto sm:px-3 sm:py-2"
+          className="flex h-9 w-9 items-center justify-center gap-x-4 rounded-2xl p-0 sm:h-9 sm:w-auto sm:px-3 sm:py-2"
         >
           <Search className="h-4 w-4 text-black/40 sm:mr-2" />
-          <span className="sr-only text-black/40 sm:not-sr-only">검색</span>
-          <kbd className="pointer-events-none ml-auto hidden select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs text-muted-foreground sm:inline-flex">
-            <span className="text-xs">⌘</span>K
-          </kbd>
+          <span className="sr-only text-black/40 sm:not-sr-only">Search</span>
         </Button>
       </DialogTrigger>
 
@@ -251,21 +249,11 @@ const GlobalSearch = () => {
         className="fixed left-[50%] top-[50%] z-50 flex max-h-[85vh] w-[90%] max-w-2xl translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-lg border bg-background p-0 shadow-lg md:w-full"
         showCloseButton={false}
       >
-        <div className="flex items-center justify-between border-b p-3">
+        <div className="flex items-center justify-between">
           <DialogTitle className="sr-only">사이트 검색</DialogTitle>
           <DialogDescription className="sr-only">
             아티스트, 작품, 이벤트, 프로젝트 등을 검색할 수 있습니다.
           </DialogDescription>
-          <DialogClose asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 rounded-full p-0"
-              aria-label="검색창 닫기"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </DialogClose>
         </div>
         <div className="flex min-h-0 flex-col">
           <div className="relative flex-shrink-0">
@@ -306,7 +294,7 @@ const GlobalSearch = () => {
           </div>
 
           {/* 카테고리 필터 */}
-          <div className="flex-shrink-0 border-b border-t px-4 py-3">
+          <div className="flex-shrink-0 px-4 py-3">
             <div className="flex flex-wrap gap-2">
               {searchCategories.map((category) => (
                 <Button
@@ -463,29 +451,16 @@ const GlobalSearch = () => {
 
           {/* 푸터 */}
           <DialogFooter className="mt-auto flex items-center justify-between border-t p-4 text-sm text-muted-foreground">
-            <div className="flex gap-4">
-              <div className="flex items-center gap-1">
-                <kbd className="rounded border px-1 py-0.5 text-xs">↑</kbd>
-                <kbd className="rounded border px-1 py-0.5 text-xs">↓</kbd>
-                <span>이동</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <kbd className="rounded border px-1 py-0.5 text-xs">Enter</kbd>
-                <span>선택</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <kbd className="rounded border px-1 py-0.5 text-xs">Esc</kbd>
-                <span>닫기</span>
-              </div>
-            </div>
-
-            {/*<Button*/}
-            {/*  variant="default"*/}
-            {/*  onClick={handleSearch}*/}
-            {/*  disabled={!searchTerm.trim() || isPending}*/}
-            {/*>*/}
-            {/*  검색*/}
-            {/*</Button>*/}
+            <DialogClose asChild>
+              <Button
+                variant="default"
+                size="default"
+                className="h-8 w-14 rounded-md"
+                aria-label="검색창 닫기"
+              >
+                Close
+              </Button>
+            </DialogClose>
           </DialogFooter>
         </div>
       </DialogContent>

@@ -11,6 +11,14 @@ export const revalidate = 86400;
 const Page = async () => {
   const events = await getAllEvents();
 
+  if (events.data?.length === 0) {
+    return (
+      <div className="flex min-h-[200px] items-center justify-center rounded-lg bg-gray-50 text-gray-500">
+        <p>프로젝트가 없습니다.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-8">
@@ -30,7 +38,7 @@ const Page = async () => {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* 이벤트 카드들이 여기에 매핑됩니다 */}
-        {events.map((event) => (
+        {events.data?.map((event) => (
           <Link href={`/events/${event.id}`} key={event.id}>
             <EventCard event={event} />
           </Link>

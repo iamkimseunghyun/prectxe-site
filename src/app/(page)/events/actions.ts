@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db/prisma';
 import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
 import { z } from 'zod';
 import { CACHE_TIMES, PAGINATION } from '@/lib/constants/constants';
-import { eventSchema, Event } from '@/lib/schemas';
+import { Event, eventSchema, EventType } from '@/lib/schemas';
 
 export async function createEvent(
   input: z.infer<typeof eventSchema>,
@@ -148,16 +148,71 @@ export async function deleteEvent(id: string) {
   }
 }
 
-export const getAllEventsWithCache = async () => {
-  return prisma.event.findMany({
-    include: {
-      venue: true,
-    },
-  });
-};
+export const getAllEventsWithCache = next_cache(
+  async (year?: string, type?: string, sort?: string, search?: string) => {
+    try {
+      const where = {
+        ...(year && year !== 'all-year' && { year: parseInt(year) }),
+        ...(type &&
+          type !== 'all-type' && {
+            type: type as EventType,
+          }),
+        ...(search && {
+          OR: [{ title: { contains: search } }],
+        }),
+      };
 
-export async function getAllEvents() {
-  return getAllEventsWithCache();
+      const orderBy = {
+        startDate: sort === 'oldest' ? 'asc' : 'desc',
+      } as const;
+
+      return prisma.event.findMany({
+        where,
+        orderBy,
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          startDate: true,
+          endDate: true,
+          status: true,
+          venue: true,
+          venueId: true,
+          type: true,
+          mainImageUrl: true,
+        },
+      });
+    } catch (error) {
+      console.error('이벤트 가져오기 오류:', error);
+      return [];
+    }
+  },
+
+  ['event-list'],
+  { revalidate: CACHE_TIMES.EVENTS_LIST }
+);
+
+export async function getAllEvents(
+  year?: string,
+  type?: string,
+  sort?: string,
+  search?: string
+) {
+  try {
+    const events = await getAllEventsWithCache(year, type, sort, search);
+
+    return {
+      success: true,
+      data: events,
+    };
+  } catch (error) {
+    console.error('Error fetching events', error);
+    return {
+      success: false,
+      error: '이벤트 목록을 불러오는데 실패했습니다.',
+      details: process.env.NODE_ENV === 'development' ? error : undefined,
+    };
+  }
 }
 
 export const getEventsPage = next_cache(

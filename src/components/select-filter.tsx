@@ -13,11 +13,13 @@ import {
 import CardSkeleton from '@/components/layout/skeleton/card-skeleton';
 
 interface ProjectFilterProps {
-  years: number[];
-  categories: { value: string; label: string }[];
+  years?: number[];
+  categories?: { value: string; label: string }[];
+  // types?: { value: string; label: string }[];
+  pathname: string;
 }
 
-const ProjectFilter = ({ years, categories }: ProjectFilterProps) => {
+const SelectFilter = ({ years, categories, pathname }: ProjectFilterProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -34,7 +36,7 @@ const ProjectFilter = ({ years, categories }: ProjectFilterProps) => {
       } else {
         params.set(key, value);
       }
-      router.push(`/projects?${params.toString()}`);
+      router.push(`/${pathname}?${params.toString()}`);
     });
   };
 
@@ -63,7 +65,7 @@ const ProjectFilter = ({ years, categories }: ProjectFilterProps) => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all-year">전체</SelectItem>
-              {years.map((year) => (
+              {years?.map((year) => (
                 <SelectItem key={`year-${year}`} value={year.toString()}>
                   {year}년
                 </SelectItem>
@@ -72,24 +74,26 @@ const ProjectFilter = ({ years, categories }: ProjectFilterProps) => {
           </Select>
         </div>
 
-        <div className="w-48">
-          <Select value={selectedCategory} onValueChange={onCategoryChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="카테고리 선택" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all-category">전체</SelectItem>
-              {categories.map((category) => (
-                <SelectItem
-                  key={`category-${category.value}`}
-                  value={category.value}
-                >
-                  {category.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {categories && (
+          <div className="w-48">
+            <Select value={selectedCategory} onValueChange={onCategoryChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="카테고리 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-category">전체</SelectItem>
+                {categories?.map((category) => (
+                  <SelectItem
+                    key={`category-${category.value}`}
+                    value={category.value}
+                  >
+                    {category.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="w-48">
           <Select value={selectedSort} onValueChange={onSortChange}>
             <SelectTrigger>
@@ -116,4 +120,4 @@ const ProjectFilter = ({ years, categories }: ProjectFilterProps) => {
   );
 };
 
-export default ProjectFilter;
+export default SelectFilter;

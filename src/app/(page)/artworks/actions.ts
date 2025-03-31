@@ -95,11 +95,14 @@ export const getArtworksPage = next_cache(
   async (
     page = 0,
     pageSize = PAGINATION.ARTISTS_PAGE_SIZE,
-    searchQuery = ''
+    searchQuery = '',
+    year?: string,
+    sort?: string
   ) => {
     try {
       return prisma.artwork.findMany({
         where: {
+          ...(year && year !== 'all-year' && { year: parseInt(year) }),
           OR: searchQuery
             ? [
                 { title: { contains: searchQuery, mode: 'insensitive' } },
@@ -114,7 +117,10 @@ export const getArtworksPage = next_cache(
           user: true,
         },
 
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        orderBy: [
+          { createdAt: sort === 'oldest' ? 'desc' : 'asc' },
+          { id: 'desc' },
+        ],
         skip: page * pageSize,
         take: pageSize,
       });

@@ -1,4 +1,4 @@
-import ProjectFilter from '@/components/page/project/project-filter';
+import SelectFilter from '@/components/select-filter';
 import { Suspense } from 'react';
 
 import { ProjectCard } from '@/components/page/project/project-card';
@@ -38,14 +38,6 @@ const Page = async ({
 
   const projects = await getAllProjects(year, category, sort, search);
 
-  if (projects.data?.length === 0) {
-    return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-lg bg-gray-50 text-gray-500">
-        <p>프로젝트가 없습니다.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
       <div className="mb-12">
@@ -58,15 +50,27 @@ const Page = async ({
 
       <Suspense>
         <div className="mb-8">
-          <ProjectFilter years={years} categories={categories} />
+          <SelectFilter
+            years={years}
+            categories={categories}
+            pathname="projects"
+          />
         </div>
       </Suspense>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {projects.data?.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
-      </div>
+      <Suspense>
+        {projects.data?.length !== 0 ? (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {projects.data?.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex min-h-[200px] flex-col items-center justify-center rounded-lg bg-gray-50 text-gray-500">
+            <p>프로젝트가 없습니다.</p>
+          </div>
+        )}
+      </Suspense>
     </div>
   );
 };
