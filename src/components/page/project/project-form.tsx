@@ -45,6 +45,7 @@ import {
   ImageData,
   UpdateProjectInput,
 } from '@/lib/schemas';
+import { Button } from '@/components/ui/button';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';
@@ -339,6 +340,14 @@ const ProjectForm = ({
           </CardContent>
 
           <CardFooter className="flex justify-end gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+              disabled={isSubmitting}
+            >
+              취소
+            </Button>
             <FormSubmitButton
               type="submit"
               loading={isSubmitting}

@@ -177,7 +177,7 @@ export function EventForm({
                     displayUrl={displayUrl}
                     error={fileError}
                     handleImageChange={handleImageChange}
-                    aspectRatio="video"
+                    aspectRatio="square"
                   />
                   <FormMessage />
                 </FormItem>
