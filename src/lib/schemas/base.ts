@@ -52,5 +52,17 @@ export const paginationSchema = z.object({
 export const idSchema = z.string().uuid('유효한 ID 형식이 아닙니다');
 
 // Description 텍스트 정제 변환기
-export const sanitizedTextTransformer = (value: string) =>
-  value.replace(/[^\x20-\x7E\t\n\r]/g, ''); // 출력 가능한 ASCII와 일부 공백 문자만 유지
+// Improved implementation - preserves Unicode characters
+export const sanitizedTextTransformer = (value: string) => {
+  // Option 1: Remove only truly dangerous control characters but keep Unicode
+  return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+
+  // Option 2: Or if you need to remove specific characters but keep Korean, emojis, etc.
+  // return value.replace(/[<specific characters to remove>]/g, '');
+
+  // Option 3: If you want to sanitize HTML/script tags but keep Unicode
+  // return value
+  //   .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+  //   .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+  //   .replace(/<[^>]*>/g, ''); // Remove HTML tags
+};

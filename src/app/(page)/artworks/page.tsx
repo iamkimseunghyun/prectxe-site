@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 
 import React, { Suspense } from 'react';
 import { PAGINATION } from '@/lib/constants/constants';
+import GridSkeleton from '@/components/layout/skeleton/grid-skeleton';
 import { getArtworksPage } from '@/app/(page)/artworks/actions';
 import SelectFilter from '@/components/select-filter';
 
@@ -21,55 +22,39 @@ export const metadata: Metadata = {
 const Page = async ({
   searchParams,
 }: {
-  searchParams: Promise<{
-    year?: string;
-    sort?: string;
-    search?: string;
-  }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) => {
-  const params = await searchParams;
-  const searchQuery = typeof params.search === 'string' ? params.search : '';
-
-  // searchParams의 각 값을 const로 추출
-  const year = params?.year ?? 'all-year';
-  const sort = params?.sort ?? 'latest';
-
-  const years = Array.from(
-    { length: new Date().getFullYear() - 2017 },
-    (_, i) => new Date().getFullYear() - i
-  );
-
+  const { search } = await searchParams;
+  const searchQuery = typeof search === 'string' ? search : '';
   const artworks = await getArtworksPage(
     0,
     PAGINATION.ARTWORKS_PAGE_SIZE,
-    searchQuery,
-    year,
-    sort
+    searchQuery
   );
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12">
-      <div className="mb-12">
-        <h1 className="mb-4 text-4xl font-bold">작품 소개</h1>
+    <div className="mx-auto max-w-5xl px-4 py-10">
+      <div className="mb-8">
+        <h1 className="mb-4 text-3xl font-bold">작품 소개</h1>
         <p className="max-w-2xl text-muted-foreground">
           지금까지 PRECTXE에서 소개된 훌륭한 작품들에 많은 관심을 가져주세요.
         </p>
       </div>
 
+      {/* 검색과 필터는 별도의 Suspense 경계로 분리 */}
       <Suspense>
         <div className="mb-8">
-          <SelectFilter years={years} pathname="artworks" />
+          <SelectFilter
+            // years={years}
+            // categories={categories}
+            pathname="artworks"
+          />
         </div>
       </Suspense>
 
-      <Suspense>
-        {artworks?.length !== 0 ? (
-          <ArtworkGrid initialArtworks={artworks} searchQuery={searchQuery} />
-        ) : (
-          <div className="flex min-h-[200px] items-center justify-center rounded-lg bg-gray-50 text-gray-500">
-            <p>작품이 없습니다.</p>
-          </div>
-        )}
+      {/* 아트워크 목록에 대한 Suspense 경계 설정 */}
+      <Suspense fallback={<GridSkeleton />}>
+        <ArtworkGrid initialArtworks={artworks} searchQuery={searchQuery} />
       </Suspense>
     </div>
   );

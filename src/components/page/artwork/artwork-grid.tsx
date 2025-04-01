@@ -67,12 +67,10 @@ const ArtworkGrid = ({
               )}
 
               <div className="mt-4 space-y-2">
-                <p className="line-clamp-1 text-sm text-gray-500">
+                <p className="text-sm text-gray-500">
                   {artwork.year}년 | {artwork.media}
                 </p>
-                <p className="line-clamp-1 text-sm text-gray-500">
-                  크기: {artwork.size}
-                </p>
+                <p className="text-sm text-gray-500">크기: {artwork.size}</p>
                 <p className="line-clamp-2 text-sm">{artwork.description}</p>
               </div>
             </CardContent>

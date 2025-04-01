@@ -10,9 +10,7 @@ import {
   UpdateProjectInput,
   updateProjectSchema,
 } from '@/lib/schemas';
-
-const PROJECTS_LIST_CACHE_TIME = 3600; // 1시간 (초 단위)
-const PROJECTS_DETAIL_CACHE_TIME = 7200; // 2시간 (초 단위)
+import { CACHE_TIMES } from '@/lib/constants/constants';
 
 export const getAllProjectsWithCache = next_cache(
   async (year?: string, category?: string, sort?: string, search?: string) => {
@@ -50,7 +48,7 @@ export const getAllProjectsWithCache = next_cache(
     }
   },
   ['projects-list'],
-  { revalidate: PROJECTS_LIST_CACHE_TIME }
+  { revalidate: CACHE_TIMES.PROJECTS_LIST }
 );
 
 export const getAllProjects = async (
@@ -165,7 +163,7 @@ export const getProjectWithCache = next_cache(
     }
   },
   ['project-detail'],
-  { revalidate: PROJECTS_DETAIL_CACHE_TIME }
+  { revalidate: CACHE_TIMES.PROJECT_DETAIL }
 );
 
 export async function getProjectById(projectId: string) {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { PAGINATION } from '@/lib/constants/constants';
 
 interface UseInfiniteScrollOptions<T> {
   fetchFunction: (page: number, query?: string) => Promise<T[]>;
@@ -10,7 +11,7 @@ interface UseInfiniteScrollOptions<T> {
 export function useInfiniteScroll<T extends { id: string }>({
   fetchFunction,
   initialData,
-  pageSize = 12, // 기본 페이지 크기 설정
+  pageSize = PAGINATION.DEFAULT_PAGE_SIZE, // 기본 페이지 크기 설정
   searchQuery = '',
 }: UseInfiniteScrollOptions<T>) {
   const [items, setItems] = useState<T[]>(initialData);

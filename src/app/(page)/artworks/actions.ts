@@ -13,9 +13,6 @@ import {
   updateArtworkSchema,
 } from '@/lib/schemas';
 
-const ARTWORKS_LIST_CACHE_TIME = 3600; // 1시간 (초 단위)
-const ARTWORKS_DETAIL_CACHE_TIME = 7200; // 2시간 (초 단위)
-
 export const getArtworksByArtistIdWithCache = next_cache(
   async (artistId: string) => {
     const artworks = await prisma.artwork.findMany({
@@ -41,7 +38,7 @@ export const getArtworksByArtistIdWithCache = next_cache(
     return artworks;
   },
   ['artworks-list'],
-  { revalidate: ARTWORKS_LIST_CACHE_TIME }
+  { revalidate: CACHE_TIMES.ARTWORKS_LIST }
 );
 
 export async function getArtworksByArtistId(artistId: string) {
@@ -84,7 +81,7 @@ export const getArtworkByIdWithCache = next_cache(
     }
   },
   ['artworks-detail'],
-  { revalidate: ARTWORKS_DETAIL_CACHE_TIME }
+  { revalidate: CACHE_TIMES.ARTWORK_DETAIL }
 );
 
 export async function getArtworkById(id: string) {
@@ -95,14 +92,11 @@ export const getArtworksPage = next_cache(
   async (
     page = 0,
     pageSize = PAGINATION.ARTISTS_PAGE_SIZE,
-    searchQuery = '',
-    year?: string,
-    sort?: string
+    searchQuery = ''
   ) => {
     try {
       return prisma.artwork.findMany({
         where: {
-          ...(year && year !== 'all-year' && { year: parseInt(year) }),
           OR: searchQuery
             ? [
                 { title: { contains: searchQuery, mode: 'insensitive' } },
@@ -117,10 +111,7 @@ export const getArtworksPage = next_cache(
           user: true,
         },
 
-        orderBy: [
-          { createdAt: sort === 'oldest' ? 'desc' : 'asc' },
-          { id: 'desc' },
-        ],
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: page * pageSize,
         take: pageSize,
       });
