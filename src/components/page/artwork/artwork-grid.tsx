@@ -20,6 +20,7 @@ const ArtworkGrid = ({
 }: {
   initialArtworks: ArtworkWithImages[];
   searchQuery?: string;
+  yearFilter?: string;
 }) => {
   const {
     items: artworks,

@@ -12,14 +12,14 @@ import {
 } from '@/components/ui/select';
 import CardSkeleton from '@/components/layout/skeleton/card-skeleton';
 
-interface ProjectFilterProps {
+interface FilterProps {
   years?: number[];
   categories?: { value: string; label: string }[];
   // types?: { value: string; label: string }[];
   pathname: string;
 }
 
-const SelectFilter = ({ years, categories, pathname }: ProjectFilterProps) => {
+const SelectFilter = ({ years, categories, pathname }: FilterProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();

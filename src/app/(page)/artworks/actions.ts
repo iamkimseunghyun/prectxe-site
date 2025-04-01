@@ -95,16 +95,19 @@ export const getArtworksPage = next_cache(
     searchQuery = ''
   ) => {
     try {
+      const where: any = {};
+
+      // Search query filter
+      if (searchQuery) {
+        where.OR = [
+          { title: { contains: searchQuery, mode: 'insensitive' } },
+          { description: { contains: searchQuery, mode: 'insensitive' } },
+          { style: { contains: searchQuery, mode: 'insensitive' } },
+        ];
+      }
+
       return prisma.artwork.findMany({
-        where: {
-          OR: searchQuery
-            ? [
-                { title: { contains: searchQuery, mode: 'insensitive' } },
-                { description: { contains: searchQuery, mode: 'insensitive' } },
-                { style: { contains: searchQuery, mode: 'insensitive' } },
-              ]
-            : undefined,
-        },
+        where,
         include: {
           images: true,
           artists: true,

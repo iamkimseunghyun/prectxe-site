@@ -22,10 +22,16 @@ export const metadata: Metadata = {
 const Page = async ({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams: Promise<{
+    year?: string;
+    sort?: string;
+    search?: string;
+  }>;
 }) => {
-  const { search } = await searchParams;
-  const searchQuery = typeof search === 'string' ? search : '';
+  const params = await searchParams;
+  const searchQuery = typeof params.search === 'string' ? params.search : '';
+  const year = params?.year ?? 'all-year';
+
   const artworks = await getArtworksPage(
     0,
     PAGINATION.ARTWORKS_PAGE_SIZE,
@@ -40,17 +46,6 @@ const Page = async ({
           지금까지 PRECTXE에서 소개된 훌륭한 작품들에 많은 관심을 가져주세요.
         </p>
       </div>
-
-      {/* 검색과 필터는 별도의 Suspense 경계로 분리 */}
-      <Suspense>
-        <div className="mb-8">
-          <SelectFilter
-            // years={years}
-            // categories={categories}
-            pathname="artworks"
-          />
-        </div>
-      </Suspense>
 
       {/* 아트워크 목록에 대한 Suspense 경계 설정 */}
       <Suspense fallback={<GridSkeleton />}>
