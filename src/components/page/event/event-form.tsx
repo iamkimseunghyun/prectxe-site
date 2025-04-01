@@ -87,84 +87,83 @@ export function EventForm({
     },
   });
 
+  const formSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      // 이미지 파일이 있는 경우에만 Cloudflare에 실제 업로드 진행
+      if (imageFile) {
+        await uploadImage(imageFile, uploadURL);
+      }
+
+      const values = form.getValues();
+      console.log('Form values:', values);
+
+      // mainImageUrl은 이미 Cloudflare에서 받아온 URL이 설정되어 있음
+      if (!values.mainImageUrl) {
+        toast({
+          title: 'Error',
+          description: '이미지 URL을 입력해주세요.',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      if (!values.venueId) {
+        toast({
+          title: 'Error',
+          description: '장소를 선택해주세요.',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 이벤트 생성 또는 수정
+      const result =
+        mode === 'edit'
+          ? await updateEvent(eventId!, values)
+          : await createEvent(values, userId);
+
+      // 결과 처리 개선
+      if (result && 'ok' in result && result.ok) {
+        toast({
+          title: 'Success',
+          description:
+            mode === 'edit'
+              ? '이벤트가 수정되었습니다.'
+              : '이벤트가 생성되었습니다.',
+        });
+
+        // ID 참조 통일
+        const resultId = mode === 'edit' ? eventId : result.data?.id;
+        if (resultId) {
+          router.push(`/events/${resultId}`);
+        } else {
+          router.push('/events');
+        }
+      } else {
+        const errorMessage =
+          result && 'error' in result
+            ? result.error
+            : '처리 중 오류가 발생했습니다.';
+        toast({
+          title: 'Error',
+          description: errorMessage,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: '이벤트 저장 중 오류가 발생했습니다.',
+        description: 'Error',
+      });
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <FormProvider {...form}>
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(async () => {
-            setIsSubmitting(true);
-            try {
-              // 이미지 파일이 있는 경우에만 Cloudflare에 실제 업로드 진행
-              if (imageFile) {
-                await uploadImage(imageFile, uploadURL);
-              }
-
-              const values = form.getValues();
-              console.log('Form values:', values);
-
-              // mainImageUrl은 이미 Cloudflare에서 받아온 URL이 설정되어 있음
-              if (!values.mainImageUrl) {
-                toast({
-                  title: 'Error',
-                  description: '이미지 URL을 입력해주세요.',
-                });
-                setIsSubmitting(false);
-                return;
-              }
-              if (!values.venueId) {
-                toast({
-                  title: 'Error',
-                  description: '장소를 선택해주세요.',
-                });
-                setIsSubmitting(false);
-                return;
-              }
-
-              // 이벤트 생성 또는 수정
-              const result =
-                mode === 'edit'
-                  ? await updateEvent(eventId!, values)
-                  : await createEvent(values, userId);
-
-              // 결과 처리 개선
-              if (result && 'ok' in result && result.ok) {
-                toast({
-                  title: 'Success',
-                  description:
-                    mode === 'edit'
-                      ? '이벤트가 수정되었습니다.'
-                      : '이벤트가 생성되었습니다.',
-                });
-
-                // ID 참조 통일
-                const resultId = mode === 'edit' ? eventId : result.data?.id;
-                if (resultId) {
-                  router.push(`/events/${resultId}`);
-                } else {
-                  router.push('/events');
-                }
-              } else {
-                const errorMessage =
-                  result && 'error' in result
-                    ? result.error
-                    : '처리 중 오류가 발생했습니다.';
-                toast({
-                  title: 'Error',
-                  description: errorMessage,
-                });
-              }
-            } catch (error) {
-              toast({
-                title: '이벤트 저장 중 오류가 발생했습니다.',
-                description: 'Error',
-              });
-              console.error(error);
-            } finally {
-              setIsSubmitting(false);
-            }
-          })}
-          className="space-y-8"
-        >
+        <form onSubmit={form.handleSubmit(formSubmit)} className="space-y-8">
           <div className="space-y-6">
             {/* 이미지 업로드 섹션 */}
             <FormField

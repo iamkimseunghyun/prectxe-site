@@ -57,7 +57,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   };
 
   return (
-    <div className="container mx-auto px-12 py-6">
+    <div className="mx-auto px-4 py-6 sm:max-w-5xl sm:px-12">
       <h1 className="text-3xl font-bold">이벤트 수정</h1>
       <EventForm
         mode={'edit'}

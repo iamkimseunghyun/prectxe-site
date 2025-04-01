@@ -30,7 +30,7 @@ const Page = async () => {
   ]);
 
   return (
-    <div className="container mx-auto px-12 py-6">
+    <div className="mx-auto px-4 py-6 sm:max-w-5xl sm:px-12">
       <h1 className="mb-6 text-3xl font-bold">새 이벤트 등록</h1>
       <EventForm
         mode={'create'}
