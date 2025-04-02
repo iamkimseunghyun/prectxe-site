@@ -4,11 +4,12 @@ import './globals.css';
 import React from 'react';
 
 import { Footer } from '@/components/layout/footer';
-import { Toaster } from '@/components/ui/toaster';
+
 import Header from '@/components/layout/header';
 import { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { Toaster } from '@/components/ui/toaster';
 
 // 메타데이터 설정
 export const metadata: Metadata = {

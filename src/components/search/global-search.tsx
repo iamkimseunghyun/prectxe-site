@@ -29,6 +29,7 @@ import { cn, getImageUrl } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
 import { globalSearch } from '@/app/actions';
 import Image from 'next/image';
+import Link from 'next/link';
 
 type SearchResult = {
   id: string;
@@ -339,9 +340,9 @@ const GlobalSearch = () => {
                 </h3>
                 <div className="grid gap-1 overflow-visible">
                   {searchResults.map((result) => (
-                    <Button
+                    <Link
+                      href={result.url}
                       key={`${result.type}-${result.id}`}
-                      variant="ghost"
                       className="h-auto w-full justify-start overflow-hidden text-ellipsis px-2 py-3 text-left"
                       onClick={() => {
                         saveRecentSearch(result);
@@ -379,7 +380,7 @@ const GlobalSearch = () => {
                           {getTypeName(result.type)}
                         </span>
                       </div>
-                    </Button>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -396,10 +397,11 @@ const GlobalSearch = () => {
             )}
 
             {/* 최근 검색 표시 (검색어가 없을 때) */}
+
             {!searchTerm && recentSearches.length > 0 && (
               <div className="space-y-1 px-2 py-2">
                 <div className="flex items-center justify-between px-2 pb-2">
-                  <h3 className="text-sm font-medium text-muted-foreground">
+                  <h3 className="px-2 pb-2 text-sm font-medium text-muted-foreground">
                     최근 검색
                   </h3>
                   <Button
@@ -414,20 +416,18 @@ const GlobalSearch = () => {
                     모두 지우기
                   </Button>
                 </div>
-                <div className="grid gap-1">
+                <div className="grid gap-1 overflow-visible">
                   {recentSearches.map((result) => (
-                    <Button
+                    <Link
+                      href={result.url}
                       key={`recent-${result.type}-${result.id}`}
-                      variant="ghost"
-                      className="h-auto w-full justify-start px-2 py-3 text-left"
+                      className="h-auto w-full justify-start overflow-hidden text-ellipsis px-2 py-2 text-left"
                       onClick={() => {
-                        router.push(result.url);
                         setOpen(false);
                       }}
                     >
                       <div className="flex w-full items-center gap-3">
                         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-muted">
-                          {/*<Clock className="h-4 w-4 text-muted-foreground" />*/}
                           {getResultIcon(result.type)}
                         </div>
                         <div className="min-w-0 flex-1 overflow-hidden">
@@ -442,7 +442,7 @@ const GlobalSearch = () => {
                           {getTypeName(result.type)}
                         </span>
                       </div>
-                    </Button>
+                    </Link>
                   ))}
                 </div>
               </div>

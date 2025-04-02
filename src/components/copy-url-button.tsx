@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, Link } from 'lucide-react';
+import { Check, Link2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const CopyUrlButton = () => {
@@ -38,16 +38,17 @@ const CopyUrlButton = () => {
   return (
     <Button
       onClick={copyToClipboard}
-      variant="outline"
-      size="sm"
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 rounded-full transition-all hover:bg-muted"
       title="URL 복사하기"
+      aria-label="URL 복사하기"
     >
       {copied ? (
-        <Check className="mr-2 h-4 w-4" />
+        <Check className="h-4 w-4 text-green-500" />
       ) : (
-        <Link className="mr-2 h-4 w-4" />
+        <Link2 className="h-4 w-4" />
       )}
-      URL 복사
     </Button>
   );
 };
