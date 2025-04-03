@@ -35,7 +35,7 @@ const WorkList = async ({ artistId }: { artistId: string }) => {
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
             <div className="absolute bottom-0 p-4 text-white">
               <h3 className="font-medium">{work.title}</h3>
-              <p className="text-sm">{formatDate(new Date(work.createdAt))}</p>
+              <p className="text-sm">{work.year}</p>
             </div>
           </div>
         </Link>

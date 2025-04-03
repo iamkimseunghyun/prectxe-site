@@ -59,21 +59,19 @@ export function ArtistGrid({
 
   if (artists.length === 0) {
     return (
-      <div className="text-center">
+      <div className="py-10 text-center">
         <p className="text-muted-foreground">검색 결과가 없습니다.</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
       {artists.map((artist) => (
         <ArtistCard key={artist.id} artist={artist} />
       ))}
       {!isLastPage && (
-        <div>
-          <InfiniteScroll trigger={trigger} isLoading={isLoading} />
-        </div>
+        <InfiniteScroll trigger={trigger} isLoading={isLoading} />
       )}
     </div>
   );

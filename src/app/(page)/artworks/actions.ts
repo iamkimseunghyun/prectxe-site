@@ -23,7 +23,11 @@ export const getArtworksByArtistIdWithCache = next_cache(
           },
         },
       },
-      include: {
+      select: {
+        id: true,
+        title: true,
+
+        year: true,
         images: {
           orderBy: {
             order: 'asc',

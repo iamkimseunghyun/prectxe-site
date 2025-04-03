@@ -79,9 +79,7 @@ const ArtworkGrid = ({
         </Link>
       ))}
       {!isLastPage && (
-        <div>
-          <InfiniteScroll trigger={trigger} isLoading={isLoading} />
-        </div>
+        <InfiniteScroll trigger={trigger} isLoading={isLoading} />
       )}
     </div>
   );
