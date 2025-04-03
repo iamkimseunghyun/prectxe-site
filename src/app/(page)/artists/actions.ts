@@ -20,7 +20,8 @@ import {
   simpleArtistSchema,
 } from '@/lib/schemas';
 
-export const getArtistByIdWithCache = next_cache(
+export const getArtistByIdWithCache =
+  // next_cache(
   async (artistId: string) => {
     try {
       const artist = await prisma.artist.findUnique({
@@ -69,11 +70,11 @@ export const getArtistByIdWithCache = next_cache(
       console.error(error);
       throw error;
     }
-  },
-  // 특정 아티스트의 캐시 키
-  ['artist-detail'],
-  { revalidate: CACHE_TIMES.ARTIST_DETAIL }
-);
+  };
+// 특정 아티스트의 캐시 키
+//   ['artist-detail'],
+//   { revalidate: CACHE_TIMES.ARTIST_DETAIL }
+// );
 
 export async function getArtistById(artistId: string) {
   return getArtistByIdWithCache(artistId);
@@ -253,11 +254,6 @@ export async function createArtist(formData: FormData, userId: string) {
     // 캐시 무효화 개선
     revalidatePath('/artists');
     revalidatePath(`/artists/${artist.id}`);
-
-    // 명시적인 캐시 키 무효화 추가
-    unstable_cacheTag('artists-list');
-    unstable_cacheTag('artist-detail');
-    unstable_cacheTag('simple-artists-list');
     return { ok: true, data: artist };
   } catch (error) {
     console.error(
@@ -352,12 +348,6 @@ export async function updateArtist(formData: FormData, artistId: string) {
 
     // 이벤트 페이지의 캐시도 무효화
     revalidatePath('/events');
-
-    // 명시적인 캐시 키 무효화 추가
-    unstable_cacheTag('artists-list');
-    unstable_cacheTag('artist-detail');
-    unstable_cacheTag('simple-artists-list');
-    unstable_cacheTag('artworks-list'); // 아티스트의 작품 목록에 영향
 
     return { ok: true, data: artist };
   } catch (error) {
