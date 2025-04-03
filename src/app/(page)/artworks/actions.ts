@@ -191,6 +191,10 @@ export async function createArtwork(formData: FormData, userId: string) {
     // Revalidate the artworks page
     revalidatePath('/artworks');
     revalidatePath(`/artworks/${artwork.id}`);
+    // artwork.artists에 있는 모든 아티스트 ID에 대해 캐시 무효화
+    artwork.artists.forEach((artist) => {
+      revalidatePath(`/artists/${artist.artistId}`);
+    });
     console.log(
       'Created/Updated artwork with relationships:',
       JSON.stringify(artwork, null, 2)
@@ -276,6 +280,10 @@ export async function updateArtwork(formData: FormData, artworkId: string) {
     });
     revalidatePath('/artworks');
     revalidatePath(`/artworks/${artworkId}`);
+    // Add similar revalidation for artist pages:
+    artwork.artists.forEach((artist) => {
+      revalidatePath(`/artists/${artist.artistId}`);
+    });
     console.log(
       'Created/Updated artwork with relationships:',
       JSON.stringify(artwork, null, 2)

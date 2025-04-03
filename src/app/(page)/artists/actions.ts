@@ -2,7 +2,11 @@
 
 import { prisma } from '@/lib/db/prisma';
 
-import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
+import {
+  revalidatePath,
+  unstable_cache as next_cache,
+  unstable_cacheTag,
+} from 'next/cache';
 
 import {
   CACHE_TIMES,
@@ -171,9 +175,14 @@ export async function createSimpleArtist(data: SimpleArtist, userId: string) {
       },
     });
 
+    // 캐시 무효화 개선
     revalidatePath('/artists');
     revalidatePath('/events/new', 'page');
     revalidatePath('/events/[id]/edit', 'page');
+
+    // 명시적인 캐시 키 무효화 추가
+    unstable_cacheTag('artists-list');
+    unstable_cacheTag('simple-artists-list');
 
     return { ok: true, data: artist };
   } catch (error) {
@@ -241,7 +250,14 @@ export async function createArtist(formData: FormData, userId: string) {
       },
     });
 
+    // 캐시 무효화 개선
     revalidatePath('/artists');
+    revalidatePath(`/artists/${artist.id}`);
+
+    // 명시적인 캐시 키 무효화 추가
+    unstable_cacheTag('artists-list');
+    unstable_cacheTag('artist-detail');
+    unstable_cacheTag('simple-artists-list');
     return { ok: true, data: artist };
   } catch (error) {
     console.error(
@@ -320,8 +336,28 @@ export async function updateArtist(formData: FormData, artistId: string) {
       },
     });
 
+    // 캐시 무효화 개선
     revalidatePath('/artists');
     revalidatePath(`/artists/${artistId}`);
+
+    // 아티스트와 관련된 작품 페이지의 캐시도 무효화
+    const artistArtworks = await prisma.artistArtwork.findMany({
+      where: { artistId },
+      select: { artworkId: true },
+    });
+
+    artistArtworks.forEach(({ artworkId }) => {
+      revalidatePath(`/artworks/${artworkId}`);
+    });
+
+    // 이벤트 페이지의 캐시도 무효화
+    revalidatePath('/events');
+
+    // 명시적인 캐시 키 무효화 추가
+    unstable_cacheTag('artists-list');
+    unstable_cacheTag('artist-detail');
+    unstable_cacheTag('simple-artists-list');
+    unstable_cacheTag('artworks-list'); // 아티스트의 작품 목록에 영향
 
     return { ok: true, data: artist };
   } catch (error) {
@@ -339,12 +375,35 @@ export async function updateArtist(formData: FormData, artistId: string) {
 
 export async function deleteArtist(artistId: string) {
   try {
+    // 아티스트 삭제 전에 관련 작품 ID 가져오기
+    const artistArtworks = await prisma.artistArtwork.findMany({
+      where: { artistId },
+      select: { artworkId: true },
+    });
+
     await prisma.artist.delete({
       where: {
         id: artistId,
       },
     });
+    // 캐시 무효화 개선
     revalidatePath('/artists');
+    revalidatePath(`/artists/${artistId}`);
+
+    // 아티스트와 관련된 작품 페이지의 캐시도 무효화
+    artistArtworks.forEach(({ artworkId }) => {
+      revalidatePath(`/artworks/${artworkId}`);
+    });
+
+    // 이벤트 페이지의 캐시도 무효화
+    revalidatePath('/events');
+
+    // 명시적인 캐시 키 무효화 추가
+    unstable_cacheTag('artists-list');
+    unstable_cacheTag('artist-detail');
+    unstable_cacheTag('simple-artists-list');
+    unstable_cacheTag('artworks-list');
+
     return {
       success: true,
     };
