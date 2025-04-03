@@ -238,7 +238,7 @@ const GlobalSearch = () => {
           className="flex h-9 w-9 items-center justify-center gap-x-4 rounded-2xl p-0 sm:h-9 sm:w-auto sm:px-3 sm:py-2"
         >
           <Search className="h-4 w-4 text-black/40 sm:mr-2" />
-          <span className="sr-only text-black/40 sm:not-sr-only">Search</span>
+          <span className="sr-only text-black/40 sm:not-sr-only"></span>
         </Button>
       </DialogTrigger>
 

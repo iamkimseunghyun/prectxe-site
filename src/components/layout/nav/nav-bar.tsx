@@ -134,7 +134,7 @@ const NavBar = ({
 
             <button
               onClick={toggleMenu}
-              className="relative z-[60] ml-2 p-2 text-black focus:outline-none"
+              className="relative z-[60] ml-2 p-2 text-blue-200 focus:outline-none"
               aria-label="Toggle menu"
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -147,7 +147,7 @@ const NavBar = ({
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            className="fixed left-0 top-0 z-50 w-full rounded-b-lg bg-blue-800 pb-16 pt-16 shadow-lg md:hidden"
+            className="fixed left-0 top-0 z-50 w-full rounded-b-md bg-black pb-16 pt-16 shadow-lg md:hidden"
             initial={{ y: '-100%' }}
             animate={{ y: isMenuOpen ? '0%' : '-100%' }}
             exit={{ y: '-100%' }}
