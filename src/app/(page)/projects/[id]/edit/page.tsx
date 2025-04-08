@@ -1,8 +1,9 @@
-import ProjectForm from '@/components/page/project/project-form';
 import React from 'react';
-import { getProjectById } from '@/app/(page)/projects/actions';
+
 import { Metadata } from 'next';
 import { getArtistsPage } from '@/app/(page)/artists/actions';
+import { getProjectById } from '@/modules/projects/server/actions';
+import ProjectFormView from '@/modules/projects/ui/view/project-form-view';
 
 export const metadata: Metadata = {
   title: '프로젝트 수정',
@@ -22,7 +23,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="mx-auto max-w-3xl">
-        <ProjectForm
+        <ProjectFormView
           mode={'edit'}
           projectId={projectId}
           initialData={projectData}

@@ -1,26 +1,34 @@
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getImageUrl } from '@/lib/utils';
-import { Artwork as PrismaArtwork, ArtworkImage } from '@prisma/client';
-import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
-import { getMoreArtworks } from '@/app/(page)/artworks/actions';
 import { PAGINATION } from '@/lib/constants/constants';
 import InfiniteScroll from '@/components/page/artist/infinite-scroll';
+import { getMoreArtworks } from '@/modules/artworks/server/actions';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
+import { getImageUrl } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
+import Image from 'next/image';
 
-type ArtworkWithImages = PrismaArtwork & {
-  images: ArtworkImage[];
+type ArtworkWithImages = {
+  id: string;
+  title: string;
+  description: string | null;
+  year: number | null;
+  media: string | null;
+  size: string | null;
+  images: { id: string; imageUrl: string; alt: string }[];
+  user: {
+    id: string;
+  };
+  artists: {
+    artist: { name: string };
+  }[];
 };
 
-const ArtworkGrid = ({
+const ArtworkGridSection = ({
   initialArtworks,
-  searchQuery = '',
 }: {
   initialArtworks: ArtworkWithImages[];
-  searchQuery?: string;
-  yearFilter?: string;
 }) => {
   const {
     items: artworks,
@@ -30,11 +38,18 @@ const ArtworkGrid = ({
   } = useInfiniteScroll({
     fetchFunction: getMoreArtworks,
     initialData: initialArtworks,
-    searchQuery,
     pageSize: PAGINATION.ARTWORKS_PAGE_SIZE,
   });
 
   if (artworks.length === 0) {
+    return (
+      <div className="py-10 text-center">
+        <p className="text-gray-500">등록된 작품이 없습니다.</p>
+      </div>
+    );
+  }
+
+  if (initialArtworks.length === 0) {
     return (
       <div className="py-10 text-center">
         <p className="text-gray-500">등록된 작품이 없습니다.</p>
@@ -85,4 +100,4 @@ const ArtworkGrid = ({
   );
 };
 
-export default ArtworkGrid;
+export default ArtworkGridSection;

@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
-import { createArtwork, updateArtwork } from '@/app/(page)/artworks/actions';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { uploadGalleryImages } from '@/lib/utils';
 import MultiImageBox from '@/components/image/multi-image-box';
@@ -30,6 +29,10 @@ import {
   UpdateArtworkInput,
   Artwork,
 } from '@/lib/schemas';
+import {
+  createArtwork,
+  updateArtwork,
+} from '@/modules/artworks/server/actions';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';
@@ -39,7 +42,7 @@ type ArtworkFormProps = {
   artists?: { id: string; name: string; mainImageUrl: string | null }[];
 };
 
-const ArtWorkForm = ({
+const ArtworkFormView = ({
   mode,
   initialData,
   artworkId,
@@ -259,4 +262,4 @@ const ArtWorkForm = ({
   );
 };
 
-export default ArtWorkForm;
+export default ArtworkFormView;

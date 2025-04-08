@@ -1,7 +1,8 @@
 import { HeroSection } from '@/components/layout/hero-section';
 import EventSection from '@/components/page/event-section';
-import ProjectSection from '@/components/page/project-section';
+
 import AboutSection from '@/components/page/about-section';
+import ProjectSection from '@/modules/projects/ui/section/project-section';
 
 export const dynamic = 'force-static';
 

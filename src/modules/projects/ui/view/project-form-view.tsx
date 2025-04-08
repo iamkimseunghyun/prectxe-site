@@ -30,7 +30,6 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
-import { createProject, updateProject } from '@/app/(page)/projects/actions';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
@@ -46,6 +45,10 @@ import {
   UpdateProjectInput,
 } from '@/lib/schemas';
 import { Button } from '@/components/ui/button';
+import {
+  createProject,
+  updateProject,
+} from '@/modules/projects/server/actions';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';
@@ -55,7 +58,7 @@ type ProjectFormProps = {
   artists?: { mainImageUrl: string | null; id: string; name: string }[];
 };
 
-const ProjectForm = ({
+const ProjectFormView = ({
   mode,
   initialData,
   projectId,
@@ -365,4 +368,4 @@ const ProjectForm = ({
   );
 };
 
-export default ProjectForm;
+export default ProjectFormView;

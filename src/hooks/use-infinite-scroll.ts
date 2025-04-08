@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { PAGINATION } from '@/lib/constants/constants';
 
@@ -5,14 +7,12 @@ interface UseInfiniteScrollOptions<T> {
   fetchFunction: (page: number, query?: string) => Promise<T[]>;
   initialData: T[];
   pageSize?: number;
-  searchQuery?: string;
 }
 
 export function useInfiniteScroll<T extends { id: string }>({
   fetchFunction,
   initialData,
   pageSize = PAGINATION.DEFAULT_PAGE_SIZE, // 기본 페이지 크기 설정
-  searchQuery = '',
 }: UseInfiniteScrollOptions<T>) {
   const [items, setItems] = useState<T[]>(initialData);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,7 +29,7 @@ export function useInfiniteScroll<T extends { id: string }>({
     itemIdsRef.current = new Set(initialData.map((item) => item.id));
     setPage(1);
     setIsLastPage(false);
-  }, [initialData, searchQuery]);
+  }, [initialData]);
 
   // 무한 스크롤 로직
   const loadMoreItems = useCallback(async () => {
@@ -38,7 +38,7 @@ export function useInfiniteScroll<T extends { id: string }>({
     setIsLoading(true);
 
     try {
-      const newItems = await fetchFunction(page, searchQuery);
+      const newItems = await fetchFunction(page);
 
       // 중복 아이템 필터링
       const uniqueNewItems = newItems.filter(
@@ -62,7 +62,7 @@ export function useInfiniteScroll<T extends { id: string }>({
     } finally {
       setIsLoading(false);
     }
-  }, [page, isLoading, isLastPage, fetchFunction, searchQuery, pageSize]);
+  }, [page, isLoading, isLastPage, fetchFunction, pageSize]);
 
   // Intersection Observer 설정
   useEffect(() => {

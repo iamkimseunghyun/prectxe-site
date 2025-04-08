@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/carousel';
 import Image from 'next/image';
 
-import { getArtworkById } from '@/app/(page)/artworks/actions';
 import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
 import Link from 'next/link';
@@ -22,6 +21,7 @@ import { prisma } from '@/lib/db/prisma';
 import { getImageUrl } from '@/lib/utils';
 import { ImageData } from '@/lib/schemas';
 import ArtworkSchema from '@/components/seoSchema/artwork-schema';
+import { getArtworkById } from '@/modules/artworks/server/actions';
 
 export async function generateMetadata({
   params,

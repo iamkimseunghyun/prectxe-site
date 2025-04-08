@@ -1,7 +1,7 @@
-import ArtworkForm from '@/components/page/artwork/artwork-form';
 import { Metadata } from 'next';
 import getSession from '@/lib/session';
 import { prisma } from '@/lib/db/prisma';
+import ArtworkFormView from '@/modules/artworks/ui/view/artwork-form-view';
 
 export const metadata: Metadata = {
   title: '작품 등록',
@@ -19,9 +19,7 @@ const Page = async () => {
   });
 
   return (
-    <>
-      <ArtworkForm mode={'create'} userId={session.id} artists={artists} />
-    </>
+    <ArtworkFormView mode={'create'} userId={session.id} artists={artists} />
   );
 };
 

@@ -8,7 +8,6 @@ import { Edit, Globe } from 'lucide-react';
 
 import Link from 'next/link';
 
-import WorkList from '@/components/page/artwork/work-list';
 import { getArtistById } from '@/app/(page)/artists/actions';
 import AdminButton from '@/components/admin-button';
 import getSession from '@/lib/session';
@@ -17,6 +16,7 @@ import BreadcrumbNav from '@/components/breadcrum-nav';
 import canManage from '@/lib/can-manage';
 import { Metadata } from 'next';
 import { prisma } from '@/lib/db/prisma';
+import ArtworkListSection from '@/modules/artworks/ui/section/artwork-list-section';
 
 export async function generateMetadata({
   params,
@@ -180,7 +180,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
               </div>
             </CardHeader>
             <CardContent>
-              <WorkList artistId={id} />
+              <ArtworkListSection artistId={id} />
             </CardContent>
           </Card>
         )}

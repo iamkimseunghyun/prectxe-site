@@ -3,11 +3,12 @@
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { deleteArtist } from '@/app/(page)/artists/actions';
-import { deleteProject } from '@/app/(page)/projects/actions';
+
 import { deleteVenue } from '@/app/(page)/venues/actions';
 import { Button } from '@/components/ui/button';
 import { deleteEvent } from '@/app/(page)/events/actions';
 import { deleteArtwork } from '@/app/(page)/artworks/actions';
+import { deleteProject } from '@/modules/projects/server/actions';
 
 const AdminButton = ({
   id,

@@ -1,8 +1,9 @@
 import React from 'react';
-import ProjectForm from '@/components/page/project/project-form';
+
 import { Metadata } from 'next';
 import getSession from '@/lib/session';
 import { getArtistsPage } from '@/app/(page)/artists/actions';
+import ProjectFormView from '@/modules/projects/ui/view/project-form-view';
 
 export const metadata: Metadata = {
   title: '프로젝트 등록',
@@ -14,7 +15,7 @@ const Page = async () => {
   const session = await getSession();
   return (
     <div>
-      <ProjectForm mode={'create'} userId={session.id} artists={artists} />
+      <ProjectFormView mode={'create'} userId={session.id} artists={artists} />
     </div>
   );
 };

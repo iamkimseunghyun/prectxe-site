@@ -41,10 +41,7 @@ interface ArtistGridProps {
   searchQuery?: string;
 }
 
-export function ArtistGrid({
-  initialArtists,
-  searchQuery = '',
-}: ArtistGridProps) {
+export function ArtistGrid({ initialArtists }: ArtistGridProps) {
   const {
     items: artists,
     isLoading,
@@ -53,7 +50,6 @@ export function ArtistGrid({
   } = useInfiniteScroll<ArtistData>({
     fetchFunction: getMoreArtists,
     initialData: initialArtists,
-    searchQuery,
     pageSize: PAGINATION.ARTISTS_PAGE_SIZE, // 페이지 크기 명시적으로 전달
   });
 
