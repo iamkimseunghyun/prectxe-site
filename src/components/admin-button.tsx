@@ -7,8 +7,9 @@ import { deleteArtist } from '@/app/(page)/artists/actions';
 import { deleteVenue } from '@/app/(page)/venues/actions';
 import { Button } from '@/components/ui/button';
 import { deleteEvent } from '@/app/(page)/events/actions';
-import { deleteArtwork } from '@/app/(page)/artworks/actions';
+
 import { deleteProject } from '@/modules/projects/server/actions';
+import { deleteArtwork } from '@/modules/artworks/server/actions';
 
 const AdminButton = ({
   id,
