@@ -216,11 +216,7 @@ export async function getAllEvents(
 }
 
 export const getEventsPage = next_cache(
-  async (
-    page = 0,
-    pageSize = PAGINATION.ARTISTS_PAGE_SIZE,
-    searchQuery = ''
-  ) => {
+  async (page = 0, pageSize = PAGINATION.ARTISTS_PAGE_SIZE) => {
     try {
       return await prisma.event.findMany({
         include: {
@@ -241,8 +237,8 @@ export const getEventsPage = next_cache(
   { revalidate: CACHE_TIMES.ARTISTS_LIST }
 );
 
-export async function getMoreEvents(page = 0, searchQuery = '') {
-  return getEventsPage(page, PAGINATION.ARTISTS_PAGE_SIZE, searchQuery);
+export async function getMoreEvents(page = 0) {
+  return getEventsPage(page, PAGINATION.ARTISTS_PAGE_SIZE);
 }
 
 export const getEventsByArtistIdWithCache = next_cache(

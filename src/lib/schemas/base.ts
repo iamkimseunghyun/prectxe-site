@@ -55,6 +55,7 @@ export const idSchema = z.string().uuid('유효한 ID 형식이 아닙니다');
 // Improved implementation - preserves Unicode characters
 export const sanitizedTextTransformer = (value: string) => {
   // Option 1: Remove only truly dangerous control characters but keep Unicode
+  // eslint-disable-next-line no-control-regex
   return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 
   // Option 2: Or if you need to remove specific characters but keep Korean, emojis, etc.

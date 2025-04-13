@@ -106,12 +106,6 @@ export async function middleware(req: NextRequest) {
   }
 }
 
-// export const config = {
-//   matcher: [
-//     '/((?!api|_next/static|_next/image|_next/public|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-//   ],
-// };
-
 export const config = {
   matcher: [
     '/',

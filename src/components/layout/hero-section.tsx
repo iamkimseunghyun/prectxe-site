@@ -6,6 +6,13 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 const MotionDiv = motion.div;
 
+const text = `PRECTXE`;
+
+const staggerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
+};
+
 export function HeroSection() {
   return (
     <section className="relative flex h-screen items-center overflow-hidden bg-gradient-to-b from-white to-gray-50 sm:h-[70dvh]">
@@ -24,9 +31,28 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-6xl font-bold tracking-tight md:text-7xl">
-              PRECTXE
-            </h1>
+            <motion.h1
+              initial="hidden"
+              animate="visible"
+              variants={{
+                visible: {
+                  transition: {
+                    staggerChildren: 0.2,
+                  },
+                },
+              }}
+              className="text-6xl font-bold tracking-tight md:text-7xl"
+            >
+              {text.split('').map((letter, index) => (
+                <motion.span
+                  key={index}
+                  variants={staggerVariants}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent"
+                >
+                  {letter}
+                </motion.span>
+              ))}
+            </motion.h1>
           </MotionDiv>
 
           <MotionDiv
