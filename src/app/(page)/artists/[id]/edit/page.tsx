@@ -1,5 +1,5 @@
-import ArtistForm from '@/components/page/artist/artist-form';
-import { getArtistById } from '@/app/(page)/artists/actions';
+import ArtistFormView from '@/modules/artists/ui/views/artist-form-view';
+import { getArtistById } from '@/modules/artists/server/actions';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -11,7 +11,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   }
   return (
     <div>
-      <ArtistForm mode={'edit'} initialData={initialData} artistId={id} />
+      <ArtistFormView mode={'edit'} initialData={initialData} artistId={id} />
     </div>
   );
 };

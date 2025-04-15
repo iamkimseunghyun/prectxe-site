@@ -1,9 +1,10 @@
 import React from 'react';
 
 import { Metadata } from 'next';
-import { getArtistsPage } from '@/app/(page)/artists/actions';
+
 import { getProjectById } from '@/modules/projects/server/actions';
-import ProjectFormView from '@/modules/projects/ui/view/project-form-view';
+import ProjectFormView from '@/modules/projects/ui/views/project-form-view';
+import { getArtistsPage } from '@/modules/artists/server/actions';
 
 export const metadata: Metadata = {
   title: '프로젝트 수정',

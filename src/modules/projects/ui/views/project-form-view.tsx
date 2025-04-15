@@ -34,10 +34,10 @@ import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
 import MultiImageBox from '@/components/image/multi-image-box';
-import UploadProgress from '@/components/upload-progress';
+import UploadProgress from '@/components/icons/upload-progress';
 
-import FormSubmitButton from '@/components/form-submit-button';
-import ArtistSelect from '@/components/page/artist/artist-select';
+import FormSubmitButton from '@/components/layout/form-submit-button';
+
 import {
   CreateProjectInput,
   createProjectSchema,
@@ -49,6 +49,7 @@ import {
   createProject,
   updateProject,
 } from '@/modules/projects/server/actions';
+import ArtistSelect from '@/modules/artists/ui/components/artist-select';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';

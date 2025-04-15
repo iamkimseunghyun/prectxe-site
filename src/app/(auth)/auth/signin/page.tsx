@@ -2,8 +2,8 @@
 
 import { useActionState } from 'react';
 import { Input } from '@/components/ui/input';
-import LoginButton from '@/components/auth-button';
 import { signIn } from '@/app/(auth)/auth/signin/actions';
+import { Button } from '@/components/ui/button';
 
 const Page = () => {
   const [state, action, isPending] = useActionState(signIn, null);
@@ -32,7 +32,9 @@ const Page = () => {
             />
             {state?.fieldErrors ? state?.fieldErrors?.password : ''}
           </div>
-          <LoginButton text="Login" isPending={isPending} />
+          <Button disabled={isPending}>
+            {isPending ? '로딩 중...' : '로그인'}
+          </Button>
         </form>
       </div>
     </div>

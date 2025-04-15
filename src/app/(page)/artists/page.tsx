@@ -4,9 +4,11 @@ import { Suspense } from 'react';
 import { Metadata } from 'next';
 
 import { PAGINATION } from '@/lib/constants/constants';
-import { ArtistGrid } from '@/components/page/artist/artist-grid';
+
 import GridSkeleton from '@/components/layout/skeleton/grid-skeleton';
-import { getArtistsPage } from '@/app/(page)/artists/actions';
+
+import { ArtistListView } from '@/modules/artists/ui/views/artist-list-view';
+import { getArtistsPage } from '@/modules/artists/server/actions';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 86400;
@@ -46,7 +48,10 @@ const Page = async ({
 
       {/* 아티스트 목록에 대한 Suspense 경계 설정 */}
       <Suspense fallback={<GridSkeleton />}>
-        <ArtistGrid initialArtists={initialArtists} searchQuery={searchQuery} />
+        <ArtistListView
+          initialArtists={initialArtists}
+          searchQuery={searchQuery}
+        />
       </Suspense>
     </div>
   );

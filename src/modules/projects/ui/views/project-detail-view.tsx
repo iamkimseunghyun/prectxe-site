@@ -1,4 +1,4 @@
-import BreadcrumbNav from '@/components/breadcrum-nav';
+import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import Image from 'next/image';
 import { formatEventDate, getImageUrl } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +6,7 @@ import { Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import CarouselGallery from '@/components/image/carousel-gallery';
-import AdminButton from '@/components/admin-button';
+import AdminButton from '@/components/layout/admin-button';
 import { getProjectWithCache } from '@/modules/projects/server/actions';
 import getSession from '@/lib/session';
 import canManage from '@/lib/can-manage';

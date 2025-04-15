@@ -1,10 +1,11 @@
 'use client';
 
-import { getMoreArtists } from '@/app/(page)/artists/actions';
-import ArtistCard from '@/components/page/artist/artist-card';
-import InfiniteScroll from '@/components/page/artist/infinite-scroll';
 import { PAGINATION } from '@/lib/constants/constants';
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
+import ArtistCard from '@/modules/artists/ui/section/artist-card';
+import { getMoreArtists } from '@/modules/artists/server/actions';
+import Spinner from '@/components/icons/spinner';
+import React from 'react';
 
 // 기본적인 이미지 타입
 interface ImageData {
@@ -41,7 +42,7 @@ interface ArtistGridProps {
   searchQuery?: string;
 }
 
-export function ArtistGrid({ initialArtists }: ArtistGridProps) {
+export function ArtistListView({ initialArtists }: ArtistGridProps) {
   const {
     items: artists,
     isLoading,
@@ -67,7 +68,9 @@ export function ArtistGrid({ initialArtists }: ArtistGridProps) {
         <ArtistCard key={artist.id} artist={artist} />
       ))}
       {!isLastPage && (
-        <InfiniteScroll trigger={trigger} isLoading={isLoading} />
+        <span ref={trigger} className="mx-auto">
+          {isLoading ? <Spinner /> : '더 보기'}
+        </span>
       )}
     </div>
   );

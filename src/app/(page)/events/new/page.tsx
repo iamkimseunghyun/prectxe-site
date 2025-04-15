@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db/prisma';
-import { EventForm } from '@/components/page/event/event-form';
 import getSession from '@/lib/session';
+import { EventFormView } from '@/modules/events/ui/views/event-form-view';
 
 const Page = async () => {
   const session = await getSession();
@@ -32,7 +32,7 @@ const Page = async () => {
   return (
     <div className="mx-auto px-4 py-6 sm:max-w-5xl sm:px-12">
       <h1 className="mb-6 text-3xl font-bold">새 이벤트 등록</h1>
-      <EventForm
+      <EventFormView
         mode={'create'}
         venues={venues}
         artists={artists}

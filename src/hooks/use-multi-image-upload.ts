@@ -1,7 +1,7 @@
 import { ChangeEvent, useState } from 'react';
 
 import { getCloudflareImageUrl } from '@/lib/cdn/cloudflare';
-import validateImageFile from '@/lib/validate-file';
+import validateImageFile from '@/lib/utils';
 
 // Base image type that represents the core image data
 interface BaseImage {

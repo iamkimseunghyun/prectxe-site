@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 import React from 'react';
-import { ArtworkListView } from '@/modules/artworks/ui/view/artwork-list-view';
+import { ArtworkListView } from '@/modules/artworks/ui/views/artwork-list-view';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 86400;

@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, Clock, Info, MapPin } from 'lucide-react';
-import { getEventById } from '@/app/(page)/events/actions';
+
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -12,13 +12,14 @@ import {
   getImageUrl,
   isEventBookingClosed,
 } from '@/lib/utils';
-import AdminButton from '@/components/admin-button';
+import AdminButton from '@/components/layout/admin-button';
 import getSession from '@/lib/session';
-import BreadcrumbNav from '@/components/breadcrum-nav';
+import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import canManage from '@/lib/can-manage';
 import { Metadata } from 'next';
 import { prisma } from '@/lib/db/prisma';
 import Link from 'next/link';
+import { getEventById } from '@/modules/events/server/actions';
 
 export async function generateMetadata({
   params,

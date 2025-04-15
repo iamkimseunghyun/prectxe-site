@@ -1,13 +1,15 @@
 'use client';
 
 import { PAGINATION } from '@/lib/constants/constants';
-import InfiniteScroll from '@/components/page/artist/infinite-scroll';
 import { getMoreArtworks } from '@/modules/artworks/server/actions';
+
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 import { getImageUrl } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import Image from 'next/image';
+import Spinner from '@/components/icons/spinner';
+import React from 'react';
 
 type ArtworkWithImages = {
   id: string;
@@ -94,7 +96,9 @@ const ArtworkGridSection = ({
         </Link>
       ))}
       {!isLastPage && (
-        <InfiniteScroll trigger={trigger} isLoading={isLoading} />
+        <span ref={trigger} className="mx-auto">
+          {isLoading ? <Spinner /> : '더 보기'}
+        </span>
       )}
     </div>
   );

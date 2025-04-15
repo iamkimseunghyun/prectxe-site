@@ -10,15 +10,16 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 
-import BasicInfoSection from '@/components/page/event/basic-info-section';
-import DateVenueSection from '@/components/page/event/date-venue-section';
-import OrganizersSection from '@/components/page/event/organizer-section';
-import TicketsSection from '@/components/page/event/ticket-section';
 import { formatDateForForm, uploadImage } from '@/lib/utils';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
-import { createEvent, updateEvent } from '@/app/(page)/events/actions';
+
 import { Event, eventSchema, EventStatus, EventType } from '@/lib/schemas';
+import { createEvent, updateEvent } from '@/modules/events/server/actions';
+import TicketsSection from '@/modules/events/ui/section/ticket-section';
+import DateVenueSection from '@/modules/events/ui/section/date-venue-section';
+import BasicInfoSection from '@/modules/events/ui/section/basic-info-section';
+import OrganizersSection from '@/modules/events/ui/section/organizer-section';
 
 interface EventFormProps {
   mode: 'create' | 'edit';
@@ -35,7 +36,7 @@ interface EventFormProps {
   eventId?: string;
 }
 
-export function EventForm({
+export function EventFormView({
   mode,
   initialData,
   venues,

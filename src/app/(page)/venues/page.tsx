@@ -1,5 +1,5 @@
-import VenueList from '@/components/page/venue/vene-list';
-import { getAllVenues } from '@/app/(page)/venues/actions';
+import VenueListView from '@/modules/venues/ui/views/venue-list-view';
+import { getAllVenues } from '@/modules/venues/server/actions';
 
 const VenuesPage = async ({
   searchParams,
@@ -22,7 +22,7 @@ const VenuesPage = async ({
         </Link>*/}
       </div>
 
-      <VenueList initialData={initialData} />
+      <VenueListView initialData={initialData} />
     </div>
   );
 };

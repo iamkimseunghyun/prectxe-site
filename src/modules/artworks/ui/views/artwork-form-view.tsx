@@ -20,8 +20,8 @@ import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { uploadGalleryImages } from '@/lib/utils';
 import MultiImageBox from '@/components/image/multi-image-box';
 
-import FormSubmitButton from '@/components/form-submit-button';
-import ArtistSelect from '@/components/page/artist/artist-select';
+import FormSubmitButton from '@/components/layout/form-submit-button';
+
 import {
   CreateArtworkInput,
   createArtworkSchema,
@@ -33,6 +33,7 @@ import {
   createArtwork,
   updateArtwork,
 } from '@/modules/artworks/server/actions';
+import ArtistSelect from '@/modules/artists/ui/components/artist-select';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';

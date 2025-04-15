@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, Link2 } from 'lucide-react';
+import { CopyCheckIcon, CopyIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const CopyUrlButton = () => {
@@ -45,9 +45,9 @@ const CopyUrlButton = () => {
       aria-label="URL 복사하기"
     >
       {copied ? (
-        <Check className="h-4 w-4 text-green-500" />
+        <CopyCheckIcon className="h-4 w-4 text-green-500" />
       ) : (
-        <Link2 className="h-4 w-4" />
+        <CopyIcon className="h-4 w-4" />
       )}
     </Button>
   );

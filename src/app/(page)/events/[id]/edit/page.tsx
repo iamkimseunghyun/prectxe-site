@@ -1,10 +1,12 @@
 import { prisma } from '@/lib/db/prisma';
-import { getEventById } from '@/app/(page)/events/actions';
+
 import { notFound } from 'next/navigation';
-import { EventForm } from '@/components/page/event/event-form';
+
 import getSession from '@/lib/session';
 
 import { Event } from '@/lib/schemas';
+import { getEventById } from '@/modules/events/server/actions';
+import { EventFormView } from '@/modules/events/ui/views/event-form-view';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;
@@ -59,7 +61,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   return (
     <div className="mx-auto px-4 py-6 sm:max-w-5xl sm:px-12">
       <h1 className="mb-6 text-3xl font-bold">이벤트 수정</h1>
-      <EventForm
+      <EventFormView
         mode={'edit'}
         initialData={initialFormData}
         venues={venues}

@@ -1,8 +1,8 @@
-import VenueForm from '@/components/page/venue/venue-form';
-
 import { Metadata } from 'next';
-import { getVenueById } from '@/app/(page)/venues/actions';
+
 import { prisma } from '@/lib/db/prisma';
+import VenueFormView from '@/modules/venues/ui/views/venue-form-view';
+import { getVenueById } from '@/modules/venues/server/actions';
 
 export const metadata: Metadata = {
   title: '장소 프로필 수정',
@@ -29,7 +29,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
     return <div>Venue not found</div>;
   }
 
-  return <VenueForm mode={'edit'} initialData={initialData} venueId={id} />;
+  return <VenueFormView mode={'edit'} initialData={initialData} venueId={id} />;
 };
 
 export default Page;

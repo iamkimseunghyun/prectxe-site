@@ -21,14 +21,14 @@ import { MapPin } from 'lucide-react';
 
 import { uploadGalleryImages } from '@/lib/utils';
 import MultiImageBox from '@/components/image/multi-image-box';
-import FormSubmitButton from '@/components/form-submit-button';
+import FormSubmitButton from '@/components/layout/form-submit-button';
 import {
   CreateVenueInput,
   createVenueSchema,
   ImageData,
   Venue,
 } from '@/lib/schemas';
-import { createVenue, updateVenue } from '@/app/(page)/venues/actions';
+import { createVenue, updateVenue } from '@/modules/venues/server/actions';
 
 type VenueFormProps = {
   mode: 'create' | 'edit';
@@ -37,7 +37,12 @@ type VenueFormProps = {
   userId?: string;
 };
 
-const VenueForm = ({ mode, initialData, venueId, userId }: VenueFormProps) => {
+const VenueFormView = ({
+  mode,
+  initialData,
+  venueId,
+  userId,
+}: VenueFormProps) => {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const {
@@ -209,4 +214,4 @@ const VenueForm = ({ mode, initialData, venueId, userId }: VenueFormProps) => {
   );
 };
 
-export default VenueForm;
+export default VenueFormView;

@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 import { prisma } from '@/lib/db/prisma';
-import ArtworkFormView from '@/modules/artworks/ui/view/artwork-form-view';
+import ArtworkFormView from '@/modules/artworks/ui/views/artwork-form-view';
 import { getArtworkById } from '@/modules/artworks/server/actions';
 export const metadata: Metadata = {
   title: '작품 수정',

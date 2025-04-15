@@ -27,7 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { Event } from '@/lib/schemas';
-import { CreateArtistModal } from '@/components/page/event/create-artist-modal';
+import { CreateArtistModal } from '@/modules/events/ui/components/create-artist-modal';
 
 interface OrganizersSectionProps {
   control: Control<Event>;

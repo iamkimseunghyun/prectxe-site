@@ -1,8 +1,8 @@
 import React from 'react';
 
-import VenueForm from '@/components/page/venue/venue-form';
 import { Metadata } from 'next';
 import getSession from '@/lib/session';
+import VenueFormView from '@/modules/venues/ui/views/venue-form-view';
 
 export const metadata: Metadata = {
   title: '장소 등록',
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 const Page = async () => {
   const session = await getSession();
-  return <VenueForm mode={'create'} userId={session.id} />;
+  return <VenueFormView mode={'create'} userId={session.id} />;
 };
 
 export default Page;

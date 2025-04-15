@@ -2,8 +2,8 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 
-import EventCard from '@/components/page/event/event-card';
-import { getAllEvents } from '@/app/(page)/events/actions';
+import { getAllEvents } from '@/modules/events/server/actions';
+import EventCard from '@/modules/events/ui/section/event-card';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 86400;

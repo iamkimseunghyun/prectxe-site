@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import CarouselGallery from '@/components/image/carousel-gallery';
 import { Metadata } from 'next';
-import { getVenueById } from '@/app/(page)/venues/actions';
-import AdminButton from '@/components/admin-button';
+
+import AdminButton from '@/components/layout/admin-button';
 import getSession from '@/lib/session';
-import BreadcrumbNav from '@/components/breadcrum-nav';
+import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import canManage from '@/lib/can-manage';
+import { getVenueById } from '@/modules/venues/server/actions';
 
 export async function generateMetadata({
   params,

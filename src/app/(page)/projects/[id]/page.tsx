@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { prisma } from '@/lib/db/prisma';
 import { getProjectWithCache } from '@/modules/projects/server/actions';
-import { ProjectDetailView } from '@/modules/projects/ui/view/project-detail-view';
+import { ProjectDetailView } from '@/modules/projects/ui/views/project-detail-view';
 import { formatDateForInput } from '@/lib/utils';
 
 // src/app/projects/[id]/page.tsx

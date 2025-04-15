@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { formatDate, getImageUrl } from '@/lib/utils';
 import Image from 'next/image';
-import { getEventsByArtistId } from '@/app/(page)/events/actions';
+import { getEventsByArtistId } from '@/modules/events/server/actions';
 
-const EventList = async ({ artistId }: { artistId: string }) => {
+const EventListView = async ({ artistId }: { artistId: string }) => {
   const events = await getEventsByArtistId(artistId);
   if (events.length === 0) {
     return (
@@ -46,4 +46,4 @@ const EventList = async ({ artistId }: { artistId: string }) => {
   );
 };
 
-export default EventList;
+export default EventListView;
