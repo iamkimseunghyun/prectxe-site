@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { getAllEvents } from '@/modules/events/server/actions';
 import EventCard from '@/modules/events/ui/section/event-card';
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-static';
 export const revalidate = 86400;
 
 const Page = async () => {

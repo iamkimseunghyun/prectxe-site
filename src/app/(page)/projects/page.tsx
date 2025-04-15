@@ -1,6 +1,6 @@
 import { ProjectListView } from '@/modules/projects/ui/views/project-list-view';
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-static';
 export const revalidate = 86400;
 
 interface PageProps {

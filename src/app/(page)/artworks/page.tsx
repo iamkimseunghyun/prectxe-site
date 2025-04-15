@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import React from 'react';
 import { ArtworkListView } from '@/modules/artworks/ui/views/artwork-list-view';
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-static';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {

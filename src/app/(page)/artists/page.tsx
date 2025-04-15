@@ -10,7 +10,7 @@ import GridSkeleton from '@/components/layout/skeleton/grid-skeleton';
 import { ArtistListView } from '@/modules/artists/ui/views/artist-list-view';
 import { getArtistsPage } from '@/modules/artists/server/actions';
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-static';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
