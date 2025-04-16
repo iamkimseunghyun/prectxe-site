@@ -25,7 +25,14 @@ html {
 
 body {
   font-family: Arial, Helvetica, sans-serif;
-  overflow-y: scroll;
+  /*overflow-y: scroll;*/
+}
+
+/* 데스크탑 크기 이상에서만 스크롤바 항상 표시 */
+@media (min-width: 1024px) { /* 예시: lg 브레이크포인트 */
+  body {
+    overflow-y: scroll;
+  }
 }
 
 @layer base {

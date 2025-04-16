@@ -11,7 +11,6 @@ import { ArtistListView } from '@/modules/artists/ui/views/artist-list-view';
 import { getArtistsPage } from '@/modules/artists/server/actions';
 
 export const dynamic = 'force-static';
-export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: '아티스트',

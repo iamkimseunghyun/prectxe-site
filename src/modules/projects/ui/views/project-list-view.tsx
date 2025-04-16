@@ -1,8 +1,18 @@
-import { Suspense } from 'react';
 import { ProjectCard } from '@/modules/projects/ui/section/project-card';
 
 import { getAllProjects } from '@/modules/projects/server/actions';
 import SelectFilter from '@/modules/projects/ui/components/select-filter';
+import CardSkeleton from '@/components/layout/skeleton/card-skeleton';
+import { Suspense } from 'react';
+
+// Define the Skeleton component for loading state
+const ProjectListSkeleton = () => (
+  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+    {Array.from({ length: 6 }).map((_, i) => (
+      <CardSkeleton key={i} />
+    ))}
+  </div>
+);
 
 interface ProjectsViewProps {
   params: {
@@ -13,7 +23,8 @@ interface ProjectsViewProps {
   };
 }
 
-export const ProjectListView = async ({ params }: ProjectsViewProps) => {
+// Rename the async data fetching part for clarity and Suspense usage
+async function FilteredProjectList({ params }: ProjectsViewProps) {
   const year = params?.year ?? 'all-year';
   const category = params?.category ?? 'all-category';
   const sort = params?.sort ?? 'latest';
@@ -21,6 +32,24 @@ export const ProjectListView = async ({ params }: ProjectsViewProps) => {
 
   const projects = await getAllProjects(year, category, sort, search);
 
+  if (projects.data?.length === 0) {
+    return (
+      <div className="flex min-h-[200px] flex-col items-center justify-center rounded-lg bg-gray-50 text-gray-500">
+        <p>프로젝트가 없습니다.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {projects.data?.map((project) => (
+        <ProjectCard key={project.id} project={project} />
+      ))}
+    </div>
+  );
+}
+
+export const ProjectListView = async ({ params }: ProjectsViewProps) => {
   const categories = [
     { value: 'exhibition', label: '전시' },
     { value: 'performance', label: '공연' },
@@ -28,9 +57,10 @@ export const ProjectListView = async ({ params }: ProjectsViewProps) => {
     { value: 'workshop', label: '워크숍' },
   ];
 
+  const currentYear = new Date().getFullYear();
   const years = Array.from(
-    { length: new Date().getFullYear() - 2017 },
-    (_, i) => new Date().getFullYear() - i
+    { length: currentYear - 2017 }, // length 계산 확인
+    (_, i) => currentYear - i
   );
 
   return (
@@ -43,28 +73,17 @@ export const ProjectListView = async ({ params }: ProjectsViewProps) => {
         </p>
       </div>
 
-      <Suspense>
-        <div className="mb-8">
-          <SelectFilter
-            years={years}
-            categories={categories}
-            pathname="projects"
-          />
-        </div>
-      </Suspense>
+      <div className="mb-8">
+        <SelectFilter
+          years={years}
+          categories={categories}
+          pathname="projects"
+        />
+      </div>
 
-      <Suspense>
-        {projects.data?.length !== 0 ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {projects.data?.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
-        ) : (
-          <div className="flex min-h-[200px] flex-col items-center justify-center rounded-lg bg-gray-50 text-gray-500">
-            <p>프로젝트가 없습니다.</p>
-          </div>
-        )}
+      {/* Project List Section with Suspense for loading */}
+      <Suspense fallback={<ProjectListSkeleton />}>
+        <FilteredProjectList params={params} />
       </Suspense>
     </div>
   );

@@ -1,7 +1,6 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTransition } from 'react';
 
 import {
   Select,
@@ -10,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import CardSkeleton from '@/components/layout/skeleton/card-skeleton';
 
 interface FilterProps {
   years?: number[];
@@ -22,22 +20,19 @@ interface FilterProps {
 const SelectFilter = ({ years, categories, pathname }: FilterProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
 
   const selectedYear = searchParams.get('year') ?? 'all-year';
   const selectedCategory = searchParams.get('category') ?? 'all-category';
   const selectedSort = searchParams.get('sort') ?? 'latest';
 
   const updateSearchParams = (key: string, value: string | null) => {
-    startTransition(() => {
-      const params = new URLSearchParams(searchParams);
-      if (!value || value === 'all') {
-        params.delete(key);
-      } else {
-        params.set(key, value);
-      }
-      router.push(`/${pathname}?${params.toString()}`);
-    });
+    const params = new URLSearchParams(searchParams);
+    if (value === null || value === 'all-year' || value === 'all-category') {
+      params.delete(key);
+    } else {
+      params.set(key, value);
+    }
+    router.replace(`/${pathname}?${params.toString()}`);
   };
 
   const onYearChange = (year: string) => {
@@ -58,7 +53,7 @@ const SelectFilter = ({ years, categories, pathname }: FilterProps) => {
   return (
     <>
       <div className="flex flex-wrap gap-4 rounded-lg bg-gray-50 p-4">
-        <div className="w-48">
+        <div className="w-auto flex-shrink-0 sm:w-48">
           <Select value={selectedYear} onValueChange={onYearChange}>
             <SelectTrigger>
               <SelectValue placeholder="연도 선택" />
@@ -75,7 +70,7 @@ const SelectFilter = ({ years, categories, pathname }: FilterProps) => {
         </div>
 
         {categories && (
-          <div className="w-48">
+          <div className="w-auto flex-shrink-0 sm:w-48">
             <Select value={selectedCategory} onValueChange={onCategoryChange}>
               <SelectTrigger>
                 <SelectValue placeholder="카테고리 선택" />
@@ -94,7 +89,7 @@ const SelectFilter = ({ years, categories, pathname }: FilterProps) => {
             </Select>
           </div>
         )}
-        <div className="w-48">
+        <div className="w-auto flex-shrink-0 sm:w-48">
           <Select value={selectedSort} onValueChange={onSortChange}>
             <SelectTrigger>
               <SelectValue placeholder="정렬" />
@@ -106,16 +101,6 @@ const SelectFilter = ({ years, categories, pathname }: FilterProps) => {
           </Select>
         </div>
       </div>
-
-      {isPending && (
-        <div className="mt-8">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <CardSkeleton key={i} />
-            ))}
-          </div>
-        </div>
-      )}
     </>
   );
 };
