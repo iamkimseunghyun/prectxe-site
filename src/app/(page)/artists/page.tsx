@@ -11,6 +11,7 @@ import { ArtistListView } from '@/modules/artists/ui/views/artist-list-view';
 import { getArtistsPage } from '@/modules/artists/server/actions';
 
 export const dynamic = 'force-static';
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: '아티스트',
@@ -37,7 +38,7 @@ const Page = async ({
     <div className="mx-auto max-w-5xl px-4 py-8">
       <PageHeader
         title="아티스트"
-        description="PRECTXE의 모든 아티스트들을 만나보세요"
+        description="PRECTXE와 함께했던 모든 아티스트들을 만나보세요"
       />
 
       {/* 검색과 필터는 별도의 Suspense 경계로 분리 */}
