@@ -134,10 +134,14 @@ const NavBar = ({
 
             <button
               onClick={toggleMenu}
-              className="relative z-[60] ml-2 p-2 text-blue-200 focus:outline-none"
+              className="relative z-[60] ml-2 p-2 text-black/40 focus:outline-none"
               aria-label="Toggle menu"
             >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {isMenuOpen ? (
+                <X size={24} className="text-blue-200" />
+              ) : (
+                <Menu size={24} />
+              )}
             </button>
           </div>
         </div>
@@ -147,7 +151,7 @@ const NavBar = ({
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            className="fixed left-0 top-0 z-50 w-full rounded-b-md bg-black pb-16 pt-16 shadow-lg md:hidden"
+            className="fixed left-0 top-0 z-50 w-full rounded-b-sm bg-black pb-16 pt-16 shadow-lg md:hidden"
             initial={{ y: '-100%' }}
             animate={{ y: isMenuOpen ? '0%' : '-100%' }}
             exit={{ y: '-100%' }}
@@ -159,10 +163,10 @@ const NavBar = ({
                   <Link
                     href={item.href}
                     className={cn(
-                      'block py-2 text-3xl font-medium transition-colors hover:text-blue-500/60',
+                      'block py-2 text-3xl font-medium transition-colors',
                       pathname === item.href
                         ? 'text-blue-200'
-                        : 'text-blue-300/40'
+                        : 'text-blue-500/60'
                     )}
                     onClick={() => setIsMenuOpen(false)} // Close menu when item is clicked
                   >
