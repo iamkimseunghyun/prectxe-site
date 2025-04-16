@@ -35,7 +35,7 @@ const Page = async ({
   );
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-10">
       <PageHeader
         title="아티스트"
         description="PRECTXE와 함께했던 모든 아티스트들을 만나보세요"

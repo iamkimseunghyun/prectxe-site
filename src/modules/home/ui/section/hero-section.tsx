@@ -4,7 +4,7 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-const MotionDiv = motion.div;
+import React from 'react';
 
 const text = `PRECTXE`;
 
@@ -26,7 +26,7 @@ export function HeroSection() {
 
       <div className="container relative mx-auto px-4 py-20">
         <div className="mx-auto max-w-4xl space-y-8 text-center">
-          <MotionDiv
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -53,9 +53,9 @@ export function HeroSection() {
                 </motion.span>
               ))}
             </motion.h1>
-          </MotionDiv>
+          </motion.div>
 
-          <MotionDiv
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -63,9 +63,9 @@ export function HeroSection() {
             <p className="text-xl text-gray-600 md:text-2xl">
               기술로 빚어내는 창의적 실험, 혁신적인 디지털 아트 플랫폼
             </p>
-          </MotionDiv>
+          </motion.div>
 
-          <MotionDiv
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
@@ -79,7 +79,7 @@ export function HeroSection() {
                 프로젝트 보기
               </Button>
             </Link>
-          </MotionDiv>
+          </motion.div>
         </div>
       </div>
     </section>

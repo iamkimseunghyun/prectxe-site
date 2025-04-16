@@ -5,9 +5,9 @@ import { socialIcons } from '@/lib/constants/constants';
 export function Footer() {
   return (
     <footer className="border-t bg-white">
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-4 sm:py-12">
         {/* 좌측: 로고 및 설명 */}
-        <div className="mb-12 flex flex-col items-center justify-center">
+        <div className="mb-2 flex flex-col items-center justify-center sm:mb-12">
           <h2 className="mb-4 text-4xl font-bold">PRECTXE</h2>
           <p className="hidden max-w-xl text-gray-600 sm:block sm:text-xl">
             {/* Digital art festival showcasing innovative works at the

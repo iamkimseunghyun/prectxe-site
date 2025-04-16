@@ -40,7 +40,7 @@ const ArtistCard = ({ artist }: ArtistCardProps) => {
     <Link
       key={artist.id}
       href={`/artists/${artist.id}`}
-      className="group relative block aspect-square overflow-hidden rounded-lg shadow-md transition-shadow duration-300 hover:shadow-xl" // Added group and shadow
+      className="group relative block aspect-square overflow-hidden rounded-sm shadow-md transition-shadow duration-300 hover:shadow-xl" // Added group and shadow
     >
       <Image
         src={getImageUrl(`${artist.mainImageUrl}`, 'smaller')}
