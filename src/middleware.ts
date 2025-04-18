@@ -36,6 +36,8 @@ const publicDynamicPatterns = [
 const privatePathPatterns = [
   /^\/artists\/[^/]+\/edit$/, // /artists/[id]/edit 패턴
   /^\/artists\/new$/, // /artists/new 패턴
+  /^\/artworks\/[^/]+\/edit$/, // /artists/[id]/edit 패턴
+  /^\/artworks\/new$/, // /artists/new 패턴
   /^\/events\/[^/]+\/edit$/, // /events/[id]/edit 패턴
   /^\/events\/new$/, // /events/new 패턴
   /^\/projects\/[^/]+\/edit$/, // /projects/[id]/edit 패턴
