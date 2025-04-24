@@ -15,6 +15,18 @@ export const venueSchema = z.object({
   images: z.array(baseImageSchema).min(1, {
     message: '갤러리 이미지를 1개 이상 등록해주세요.',
   }),
+  // projectVenue: z.array(
+  //   z.object({
+  //     projectId: z.string(),
+  //     venueId: z.string(),
+  //     Project: z.object({
+  //       id: z.string(),
+  //       title: z.string(),
+  //       year: z.number(),
+  //       mainImageUrl: z.string().nullable(),
+  //     }),
+  //   })
+  // ),
 });
 
 // 장소 생성/수정 스키마

@@ -11,6 +11,8 @@ import {
   updateProjectSchema,
 } from '@/lib/schemas';
 import { CACHE_TIMES } from '@/lib/constants/constants';
+import { extractCloudflareImageId } from '@/lib/utils';
+import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
 
 export const getAllProjectsWithCache = next_cache(
   async (year?: string, category?: string, sort?: string, search?: string) => {
@@ -236,82 +238,111 @@ export async function createProject(formData: FormData, userId: string) {
 
 export async function updateProject(formData: FormData, projectId: string) {
   try {
-    // 부분 업데이트를 위한 객체 생성
-    const updateData: UpdateProjectInput = {};
+    // 1. 기존 프로젝트 정보 가져오기 (이미지 삭제 처리를 위해)
+    const existingProject = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: { images: true },
+    });
 
-    // 각 필드 조건부 추가 (값이 제공된 경우에만 업데이트)
-    const title = formData.get('title')?.toString();
-    if (title) updateData.title = title;
+    if (!existingProject) {
+      return { ok: false, error: '프로젝트를 찾을 수 없습니다.' };
+    }
 
-    const year = formData.get('year')?.toString();
-    if (year) updateData.year = parseInt(year);
+    // 2. 폼 데이터에서 필요한 정보 추출
+    const updateData: UpdateProjectInput = {
+      title: formData.get('title')?.toString(),
+      year: formData.get('year')
+        ? parseInt(formData.get('year')?.toString() || '')
+        : undefined,
+      category: formData.get('category')?.toString() as ProjectCategory,
+      description: formData.get('description')?.toString() || '',
+      about: formData.get('about')?.toString() || '',
+      startDate: formData.get('startDate')?.toString(),
+      endDate: formData.get('endDate')?.toString(),
+      mainImageUrl: formData.get('mainImageUrl')?.toString(),
+    };
 
-    const category = formData.get('category')?.toString();
-    if (category) updateData.category = category as ProjectCategory;
-
-    const description = formData.get('description')?.toString();
-    if (description) updateData.description = description;
-
-    const about = formData.get('about')?.toString();
-    if (about) updateData.about = about;
-
-    const startDate = formData.get('startDate')?.toString();
-    if (startDate) updateData.startDate = startDate;
-
-    const endDate = formData.get('endDate')?.toString();
-    if (endDate) updateData.endDate = endDate;
-
-    const mainImageUrl = formData.get('mainImageUrl')?.toString();
-    if (mainImageUrl) updateData.mainImageUrl = mainImageUrl;
-
-    // 이미지 업데이트
+    // 3. 이미지 데이터 처리
     const galleryDataStr = formData.get('images')?.toString();
-    if (galleryDataStr) {
-      const galleryData = JSON.parse(galleryDataStr);
-      if (Array.isArray(galleryData) && galleryData.length > 0) {
-        updateData.images = galleryData;
+    const newImages = galleryDataStr ? JSON.parse(galleryDataStr) : [];
+
+    if (newImages.length > 0) {
+      updateData.images = newImages;
+    }
+
+    // 4. 아티스트 데이터 처리
+    const artistsDataStr = formData.get('projectArtists')?.toString();
+    const newArtists = artistsDataStr ? JSON.parse(artistsDataStr) : [];
+
+    if (newArtists.length > 0) {
+      updateData.projectArtists = newArtists;
+    }
+
+    // 5. 데이터 유효성 검사
+    const validatedResult = updateProjectSchema.safeParse(updateData);
+    if (!validatedResult.success) {
+      return { ok: false, error: '입력 값이 올바르지 않습니다.' };
+    }
+
+    // 검증된 데이터를 사용
+    const validatedData = validatedResult.data;
+
+    // 6. Cloudflare 이미지 삭제 처리
+    // 6.1. 메인 이미지 처리
+    if (
+      validatedData.mainImageUrl &&
+      existingProject.mainImageUrl !== validatedData.mainImageUrl
+    ) {
+      const imageId = extractCloudflareImageId(existingProject.mainImageUrl);
+      if (imageId) {
+        await deleteCloudflareImage(imageId);
+        console.log(`메인 이미지 삭제됨: ${imageId}`);
       }
     }
 
-    // 프로젝트 아티스트 업데이트
-    const projectArtistsStr = formData.get('projectArtists')?.toString();
-    if (projectArtistsStr) {
-      const projectArtists = JSON.parse(projectArtistsStr);
-      if (Array.isArray(projectArtists) && projectArtists.length > 0) {
-        updateData.projectArtists = projectArtists;
+    // 6.2. 갤러리 이미지 처리
+    if (validatedData.images && existingProject.images.length > 0) {
+      // 새 이미지 URL 목록
+      const newImageUrls = validatedData.images.map((img) => img.imageUrl);
+
+      // 삭제해야 할 이미지 찾기
+      for (const existingImg of existingProject.images) {
+        if (!newImageUrls.includes(existingImg.imageUrl)) {
+          const imageId = extractCloudflareImageId(existingImg.imageUrl);
+          if (imageId) {
+            await deleteCloudflareImage(imageId);
+            console.log(`갤러리 이미지 삭제됨: ${imageId}`);
+          }
+        }
       }
     }
 
-    const validatedData = updateProjectSchema.safeParse(updateData);
-    if (!validatedData.success) {
-      return { ok: false, error: '입력값이 올바르지 않습니다.' };
-    }
-
-    // Prisma에서 사용할 수 있는 형식으로 변환
-    const prismaUpdateData: Partial<Prisma.ProjectUpdateInput> = {
-      title: updateData.title,
-      year: updateData.year,
-      category: updateData.category,
-      description: updateData.description,
-      about: updateData.about,
-      mainImageUrl: updateData.mainImageUrl as string,
+    // 7. Prisma 업데이트 데이터 준비
+    const prismaUpdateData: Prisma.ProjectUpdateInput = {
+      title: validatedData.title,
+      year: validatedData.year,
+      category: validatedData.category,
+      description: validatedData.description,
+      about: validatedData.about,
+      mainImageUrl: validatedData.mainImageUrl as string,
+      updatedAt: new Date(),
     };
 
     // 날짜 필드 변환
     if (updateData.startDate) {
-      prismaUpdateData.startDate = new Date(updateData.startDate);
+      prismaUpdateData.startDate = new Date(validatedData.startDate!);
     }
 
     if (updateData.endDate) {
-      prismaUpdateData.endDate = new Date(updateData.endDate);
+      prismaUpdateData.endDate = new Date(validatedData.endDate!);
     }
 
     // 이미지와 아티스트 관계 처리
-    if (updateData.images) {
+    if (validatedData.images) {
       prismaUpdateData.images = {
         deleteMany: {},
         createMany: {
-          data: updateData.images.map((image) => ({
+          data: validatedData.images.map((image) => ({
             imageUrl: image.imageUrl,
             alt: image.alt || '',
             order: image.order,
@@ -320,11 +351,11 @@ export async function updateProject(formData: FormData, projectId: string) {
       };
     }
 
-    if (updateData.projectArtists) {
+    if (validatedData.projectArtists) {
       prismaUpdateData.projectArtists = {
         deleteMany: {},
         createMany: {
-          data: updateData.projectArtists
+          data: validatedData.projectArtists
             .filter((pa) => pa.artistId)
             .map((pa) => ({
               artistId: pa.artistId,
@@ -333,22 +364,17 @@ export async function updateProject(formData: FormData, projectId: string) {
       };
     }
 
-    // 프로젝트 업데이트
+    // 8. 프로젝트 업데이트 실행
     const project = await prisma.project.update({
       where: { id: projectId },
-      data: { ...prismaUpdateData, updatedAt: new Date() },
+      data: prismaUpdateData,
       include: {
         images: true,
-        projectArtists: {
-          include: {
-            artist: true,
-          },
-        },
+        projectArtists: { include: { artist: true } },
       },
     });
 
     // 캐시 무효화
-    revalidatePath('/');
     revalidatePath(`/projects/${project.id}`);
     return { ok: true, data: project };
   } catch (error) {
@@ -365,23 +391,67 @@ export async function updateProject(formData: FormData, projectId: string) {
     return {
       ok: false,
       error:
-        error instanceof Error ? error.message : '프로젝트 페이지 수정 실패',
+        error instanceof Error
+          ? error.message
+          : '프로젝트 페이지 수정에 실패했습니다',
     };
   }
 }
 
 export async function deleteProject(projectId: string) {
   try {
+    // 1. 프로젝트 정보와 관련 이미지 정보 가져오기
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        images: true,
+      },
+    });
+
+    if (!project) {
+      return { success: false, error: '프로젝트를 찾을 수 없습니다. ' };
+    }
+
+    // 2. Cloudflare에서 이미지 삭제
+    // 2.1. 메인 이미지 삭제
+    if (project.mainImageUrl) {
+      const mainImageId = extractCloudflareImageId(project.mainImageUrl);
+      if (mainImageId) {
+        await deleteCloudflareImage(mainImageId);
+        console.log(`메인 이미지 삭제됨: ${mainImageId}`);
+      }
+    }
+
+    // 2.2. 갤러리 이미지들 삭제
+    if (project.images && project.images.length > 0) {
+      for (const image of project.images) {
+        const imageId = extractCloudflareImageId(image.imageUrl);
+        if (imageId) {
+          await deleteCloudflareImage(imageId);
+          console.log(`갤러리 이미지 삭제됨: ${imageId}`);
+        }
+      }
+    }
+
+    // 3. 데이터베이스에서 프로젝트 삭제 (관계 데이터는 cascade 삭제됨)
     await prisma.project.delete({
       where: {
         id: projectId,
       },
     });
+
+    // 4. 캐시 무효화
     revalidatePath('/');
     revalidatePath('/projects');
     return { success: true };
   } catch (error) {
-    console.error(error);
-    return { success: false };
+    console.error('프로젝트 삭제 실패: ', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : '프로젝트 삭제 중 오류가 발생했습니다.',
+    };
   }
 }

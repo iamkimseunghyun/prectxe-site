@@ -26,13 +26,13 @@ import {
   CreateVenueInput,
   createVenueSchema,
   ImageData,
-  Venue,
+  UpdateVenueInput,
 } from '@/lib/schemas';
 import { createVenue, updateVenue } from '@/modules/venues/server/actions';
 
 type VenueFormProps = {
   mode: 'create' | 'edit';
-  initialData?: CreateVenueInput;
+  initialData?: CreateVenueInput | UpdateVenueInput;
   venueId?: string;
   userId?: string;
 };
@@ -65,6 +65,8 @@ const VenueFormView = ({
     },
   });
 
+  console.log('Form Errors:', errors); // <-- Add this line
+
   // 갤러리 이미지 훅
   const {
     multiImagePreview,
@@ -90,7 +92,7 @@ const VenueFormView = ({
     return formData;
   };
 
-  const onSubmit = handleSubmit(async (data: Venue) => {
+  const onSubmit = handleSubmit(async (data: CreateVenueInput) => {
     setIsSubmitting(true);
     try {
       if (multiImagePreview.length > 0) {
@@ -104,7 +106,8 @@ const VenueFormView = ({
           ? await updateVenue(formData, venueId!)
           : await createVenue(formData, userId!);
 
-      if (!result.ok) throw new Error(result.error);
+      // throw 대신 return 사용
+      if (!result.ok) return new Error(result.error);
       router.push(`/venues/${result.data?.id}`);
     } catch (error) {
       console.error('Error: ', error);

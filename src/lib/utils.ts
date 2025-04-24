@@ -104,6 +104,12 @@ export const uploadGalleryImages = async (previews: ImagePreview[]) => {
   );
 };
 
+export const extractCloudflareImageId = (url: string) => {
+  const regex = /imagedelivery\.net\/[^\/]+\/([^\/]+)/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+};
+
 /**
  * 이벤트 예매 가능 여부를 확인하는 함수
  * @param startDate 이벤트 시작 날짜

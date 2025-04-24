@@ -5,6 +5,8 @@ import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
 import { z } from 'zod';
 import { CACHE_TIMES, PAGINATION } from '@/lib/constants/constants';
 import { Event, eventSchema, EventType } from '@/lib/schemas';
+import { extractCloudflareImageId } from '@/lib/utils';
+import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
 
 export async function createEvent(
   input: z.infer<typeof eventSchema>,
@@ -66,37 +68,54 @@ export async function createEvent(
 
 export async function updateEvent(id: string, input: Event) {
   try {
-    // 입력 값 검증
-    const validatedData = eventSchema.parse(input);
-
-    // 이벤트 존재 여부 확인
+    // 1. 기존 이벤트 정보 가져오기
     const existingEvent = await prisma.event.findUnique({
       where: { id },
+      include: { images: true },
     });
 
     if (!existingEvent) {
-      return { error: '이벤트를 찾을 수 없습니다.' };
+      return { ok: false, error: '이벤트를 찾을 수 없습니다.' };
     }
 
-    // 이벤트 업데이트
+    // 2. 데이터 유효성 검사 (input을 바로 검증)
+    const validationResult = eventSchema.safeParse(input);
+    if (!validationResult.success) {
+      return {
+        ok: false,
+        error: `입력 값이 올바르지 않습니다: ${validationResult.error.errors[0].message}`,
+      };
+    }
+
+    // 검증된 데이터 사용
+    const validatedData = validationResult.data;
+
+    // 3. Cloudflare 이미지 삭제 처리 (메인 이미지)
+    if (
+      validatedData.mainImageUrl &&
+      existingEvent.mainImageUrl !== validatedData.mainImageUrl
+    ) {
+      const imageId = extractCloudflareImageId(existingEvent.mainImageUrl);
+      if (imageId) {
+        await deleteCloudflareImage(imageId);
+        console.log(`메인 이미지 삭제됨: ${imageId}`);
+      }
+    }
+
+    // 4. 이벤트 업데이트 실행 (트랜잭션 사용)
     await prisma.$transaction(async (tx) => {
       // 기존 주최자, 티켓 정보 삭제
       await tx.eventOrganizer.deleteMany({
-        where: {
-          eventId: id,
-        },
+        where: { eventId: id },
       });
+
       await tx.eventTicket.deleteMany({
-        where: {
-          eventId: id,
-        },
+        where: { eventId: id },
       });
 
       // 이벤트 정보 업데이트
       await tx.event.update({
-        where: {
-          id,
-        },
+        where: { id },
         data: {
           title: validatedData.title,
           subtitle: validatedData.subtitle,
@@ -107,13 +126,13 @@ export async function updateEvent(id: string, input: Event) {
           endDate: new Date(validatedData.endDate),
           mainImageUrl: validatedData.mainImageUrl,
           venueId: validatedData.venueId,
-          // 새로운 주최자 정보 생성
+          // 새 주최자 정보 생성
           organizers: {
             createMany: {
               data: validatedData.organizers,
             },
           },
-          // 새로운 티켓 정보 생성
+          // 새 티켓 정보 생성
           tickets: {
             createMany: {
               data: validatedData.tickets,
@@ -122,29 +141,68 @@ export async function updateEvent(id: string, input: Event) {
         },
       });
     });
+
+    // 5. 캐시 무효화
     revalidatePath('/events');
     revalidatePath(`/events/${id}`);
     return { ok: true, data: { id } };
   } catch (error) {
+    console.error('이벤트 수정 실패:', error);
+
     if (error instanceof z.ZodError) {
-      return { error: error.errors[0].message };
+      return { ok: false, error: error.errors[0].message };
     }
-    return { error: '이벤트 수정 중 오류가 발생했습니다.' };
+
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : '이벤트 수정 중 오류가 발생했습니다.',
+    };
   }
 }
 
 export async function deleteEvent(id: string) {
   try {
+    // 1. 이벤트 정보와 관련 이미지 정보 가져오기
+    const event = await prisma.event.findUnique({
+      where: { id },
+      include: {
+        organizers: true,
+        tickets: true,
+      },
+    });
+
+    if (!event) {
+      return { success: false, error: '이벤트를 찾을 수 없습니다. ' };
+    }
+
+    if (event.mainImageUrl) {
+      const mainImageId = extractCloudflareImageId(event.mainImageUrl);
+      if (mainImageId) {
+        await deleteCloudflareImage(mainImageId);
+        console.log(`메인 이미지 삭제됨: ${mainImageId}`);
+      }
+    }
+
     await prisma.event.delete({
       where: {
         id: id,
       },
     });
     revalidatePath('/');
+    revalidatePath('/events');
     return { success: true };
   } catch (error) {
-    console.error(error);
-    return { success: false };
+    console.error('이벤트 삭제 실패: ', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : '이벤트 삭제 중 오류가 발생했습니다.',
+    };
   }
 }
 
