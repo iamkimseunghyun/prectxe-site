@@ -26,11 +26,7 @@ export const isoDateStringSchema = z
 export const emailSchema = z.string().email('유효한 이메일 주소를 입력하세요');
 
 // URL 스키마
-export const urlSchema = z
-  .string()
-  .url('유효한 URL을 입력하세요')
-  .optional()
-  .nullable();
+export const urlSchema = z.string().url('유효한 URL을 입력하세요').optional();
 
 // 비어있지 않은 텍스트 스키마
 export const nonEmptyStringSchema = z.string().min(1, '이 필드는 필수입니다');

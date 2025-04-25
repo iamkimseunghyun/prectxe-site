@@ -1,5 +1,6 @@
 import InstagramIcon from '@/components/icons/instagram';
 import YoutubeIcon from '@/components/icons/youtube';
+import { LucideMail } from 'lucide-react';
 
 export const categories = [
   { value: 'exhibition', label: '전시' },
@@ -34,6 +35,11 @@ export const socialIcons = [
     name: 'YouTube',
     href: 'https://www.youtube.com/@prectxe',
     icon: YoutubeIcon,
+  },
+  {
+    name: 'Email',
+    href: 'mailto:info@laaf.kr>',
+    icon: LucideMail,
   },
 ];
 

@@ -12,15 +12,17 @@ export function Footer() {
           <p className="hidden max-w-xl text-gray-600 sm:block sm:text-xl">
             {/* Digital art festival showcasing innovative works at the
               intersection of technology and creativity.*/}
-            기술과 창의성이 만나는 혁신적인 디지털 아트 플랫폼
+            기술과 창의성이 만나는 디지털 아트 플랫폼
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-8">
           {/* 우측: 링크 및 소셜 */}
           <div className="flex flex-col items-center justify-center">
             {/* 소셜 링크 */}
             <div>
-              <h3 className="mb-3 text-sm font-semibold">Follow Us</h3>
+              <h3 className="mb-3 flex items-center justify-center text-sm font-semibold">
+                Contact Us
+              </h3>
               <ul className="flex gap-4">
                 {socialIcons.map((social) => (
                   <li key={social.name}>
@@ -37,11 +39,6 @@ export function Footer() {
                 ))}
               </ul>
             </div>
-          </div>
-          {/* 연락처 */}
-          <div className="flex flex-col items-center justify-center">
-            <h3 className="mb-3 text-sm font-semibold">Contact</h3>
-            <p className="text-gray-600">info@laaf.kr</p>
           </div>
         </div>
 

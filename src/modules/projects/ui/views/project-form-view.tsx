@@ -146,8 +146,6 @@ const ProjectFormView = ({
         setUploadStatus('프로젝트 정보 저장 중...');
         setUploadProgress(70);
 
-        // const formData = prepareFormData(data, data.images);
-
         const result =
           mode === 'edit'
             ? await updateProject(data, projectId!)

@@ -29,33 +29,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const artwork = await prisma.artwork.findUnique({
-    where: { id: id },
-    select: {
-      title: true,
-      description: true,
-      year: true,
-      media: true,
-      size: true,
-      style: true,
-      images: {
-        select: {
-          imageUrl: true,
-        },
-        take: 1,
-      },
-      artists: {
-        select: {
-          artist: {
-            select: {
-              name: true,
-              nameKr: true,
-            },
-          },
-        },
-      },
-    },
-  });
+  const artwork = await getArtworkById(id);
 
   if (!artwork) {
     return {
@@ -138,8 +112,8 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
+                <CarouselPrevious className="absolute left-4 top-1/2" />
+                <CarouselNext className="absolute right-4 top-1/2" />
               </Carousel>
             </div>
           </section>

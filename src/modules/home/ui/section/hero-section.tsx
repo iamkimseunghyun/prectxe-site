@@ -61,7 +61,7 @@ export function HeroSection() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <p className="text-xl text-gray-600 md:text-2xl">
-              기술로 빚어내는 창의적 실험, 혁신적인 디지털 아트 플랫폼
+              기술이 빚는 창의적 활동, 혁신적인 디지털 아트 플랫폼
             </p>
           </motion.div>
 

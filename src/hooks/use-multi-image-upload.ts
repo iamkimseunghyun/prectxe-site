@@ -1,4 +1,4 @@
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 
 import { getCloudflareImageUrl } from '@/lib/cdn/cloudflare';
 import validateImageFile from '@/lib/utils';
@@ -46,6 +46,20 @@ export function useMultiImageUpload({
 
   const [error, setError] = useState('');
 
+  // 이미지 변경 시 onGalleryChange 호출하는 useEffect 추가
+  useEffect(() => {
+    if (onGalleryChange && multiImagePreview.length >= 0) {
+      const baseImages: BaseImage[] = multiImagePreview.map(
+        ({ imageUrl, alt, order }) => ({
+          imageUrl,
+          alt,
+          order,
+        })
+      );
+      onGalleryChange(baseImages);
+    }
+  }, [multiImagePreview, onGalleryChange]);
+
   // handleSingleFileUpload 함수 추가
   const handleSingleFileUpload = async (
     file: File,
@@ -56,7 +70,7 @@ export function useMultiImageUpload({
 
     const previewUrl = URL.createObjectURL(file);
 
-    const preview = {
+    return {
       preview: previewUrl,
       file,
       uploadURL: uploadURL,
@@ -64,8 +78,6 @@ export function useMultiImageUpload({
       alt: file.name || 'No description',
       order: startIndex + index,
     };
-    console.log('Created preview object:', preview);
-    return preview;
   };
 
   const handleMultiImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -94,18 +106,7 @@ export function useMultiImageUpload({
       );
 
       setMultiImagePreview((prev) => {
-        const updatedPreviews = [...prev, ...filteredPreviews];
-
-        const baseImages: BaseImage[] = updatedPreviews.map(
-          ({ imageUrl, alt, order }) => ({
-            imageUrl,
-            alt,
-            order,
-          })
-        );
-
-        onGalleryChange?.(baseImages);
-        return updatedPreviews;
+        return [...prev, ...filteredPreviews];
       });
     } catch (error) {
       console.error('Error handling gallery images:', error);
@@ -119,24 +120,12 @@ export function useMultiImageUpload({
 
   const removeMultiImage = (index: number) => {
     setMultiImagePreview((prev) => {
-      const newPreviews = prev
+      return prev
         .filter((_, i) => i !== index)
         .map((preview, i) => ({
           ...preview,
           order: i,
         }));
-
-      const baseImages: BaseImage[] = newPreviews.map(
-        ({ imageUrl, alt, order }) => ({
-          imageUrl,
-          alt,
-          order,
-        })
-      );
-
-      // 이미지 제거 시에도 콜백 호출
-      onGalleryChange?.(baseImages);
-      return newPreviews;
     });
   };
   return {

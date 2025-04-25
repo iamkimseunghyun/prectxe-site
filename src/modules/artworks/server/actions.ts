@@ -6,14 +6,11 @@ import { notFound } from 'next/navigation';
 import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
 
 import { CACHE_TIMES, PAGINATION } from '@/lib/constants/constants';
-import {
-  createArtworkSchema,
-  UpdateArtworkInput,
-  updateArtworkSchema,
-} from '@/lib/schemas';
+import { createArtworkSchema, updateArtworkSchema } from '@/lib/schemas';
 import { extractCloudflareImageId } from '@/lib/utils';
 import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
 import { Prisma } from '@prisma/client';
+import { z } from 'zod';
 
 export const getArtworksByArtistIdWithCache = next_cache(
   async (artistId: string) => {
@@ -145,49 +142,41 @@ export async function getMoreArtworks(page = 0) {
   return getArtworksPage(page, PAGINATION.ARTWORKS_PAGE_SIZE);
 }
 
-export async function createArtwork(formData: FormData, userId: string) {
+export async function createArtwork(
+  data: z.infer<typeof createArtworkSchema>,
+  userId: string
+) {
   try {
-    const rawData = {
-      title: formData.get('title'),
-      size: formData.get('size'),
-      media: formData.get('media'),
-      year: Number(formData.get('year')),
-      description: formData.get('description'),
-      style: formData.get('style'),
-      images: JSON.parse(formData.get('images')?.toString() || '[]'),
-      artists: JSON.parse(formData.get('artists')?.toString() || '[]'),
-    };
+    const result = createArtworkSchema.safeParse(data);
 
-    console.log('Artists data received:', rawData.artists); // 로깅 추가
-
-    const validatedData = createArtworkSchema.safeParse(rawData);
-
-    if (!validatedData.success) {
-      const errorMessage = validatedData.error.issues
+    if (!result.success) {
+      const errorMessage = result.error.issues
         .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
         .join(', ');
       return { ok: false, error: errorMessage };
     }
 
+    const validatedData = result.data;
+
     // Create artwork with Prisma
     const artwork = await prisma.artwork.create({
       data: {
-        title: validatedData.data.title,
-        size: validatedData.data.size,
-        media: validatedData.data.media,
-        year: validatedData.data.year,
-        description: validatedData.data.description,
-        style: validatedData.data.style,
+        title: validatedData.title,
+        size: validatedData.size,
+        media: validatedData.media,
+        year: validatedData.year,
+        description: validatedData.description,
+        style: validatedData.style,
         userId: userId,
         images: {
-          create: validatedData.data.images.map((image) => ({
+          create: validatedData.images.map((image) => ({
             imageUrl: image.imageUrl,
             alt: image.alt,
             order: image.order,
           })),
         },
         artists: {
-          create: validatedData.data.artists.map((artist: any) => ({
+          create: validatedData.artists.map((artist: any) => ({
             artistId: artist.artistId,
           })),
         },
@@ -226,7 +215,10 @@ export async function createArtwork(formData: FormData, userId: string) {
   }
 }
 
-export async function updateArtwork(formData: FormData, artworkId: string) {
+export async function updateArtwork(
+  data: z.infer<typeof updateArtworkSchema>,
+  artworkId: string
+) {
   try {
     // 1. 기존 프로젝트 정보 가져오기 (이미지 삭제 처리를 위해)
     const existingArtwork = await prisma.artwork.findUnique({
@@ -239,48 +231,40 @@ export async function updateArtwork(formData: FormData, artworkId: string) {
     }
 
     // 2. 폼 데이터에서 필요한 정보 추출
-    const updateData: UpdateArtworkInput = {
-      title: formData.get('title')?.toString() || '',
-      size: formData.get('size')?.toString() || '',
-      media: formData.get('media')?.toString() || '',
-      year: formData.get('year')
-        ? parseInt(formData.get('year')?.toString() || '')
-        : undefined,
-      description: formData.get('description')?.toString() || '',
-      style: formData.get('style')?.toString() || '',
-    };
 
     // 3. 이미지 데이터 처리
-    const galleryDataStr = formData.get('images')?.toString();
-    const newImages = galleryDataStr ? JSON.parse(galleryDataStr) : [];
-
-    if (newImages.length > 0) {
-      updateData.images = newImages;
-    }
+    // const galleryDataStr = formData.get('images')?.toString();
+    // const newImages = galleryDataStr ? JSON.parse(galleryDataStr) : [];
+    //
+    // if (newImages.length > 0) {
+    //   updateData.images = newImages;
+    // }
 
     // 4. 아티스트 데이터 처리
-    const artistsDataStr = formData.get('artists')?.toString();
-    const newArtists = artistsDataStr ? JSON.parse(artistsDataStr) : [];
-
-    if (newArtists.length > 0) {
-      updateData.artists = newArtists;
-    }
+    // const artistsDataStr = formData.get('artists')?.toString();
+    // const newArtists = artistsDataStr ? JSON.parse(artistsDataStr) : [];
+    //
+    // if (newArtists.length > 0) {
+    //   updateData.artists = newArtists;
+    // }
 
     // 5. 데이터 유효성 검사
-    const validatedData = updateArtworkSchema.safeParse(updateData);
+    const result = updateArtworkSchema.safeParse(data);
 
-    if (!validatedData.success) {
+    if (!result.success) {
       return {
         ok: false,
         error: `입력 값이 올바르지 않습니다.`,
       };
     }
 
+    const validatedData = result.data;
+
     // 6. Cloudflare 이미지 삭제 처리
     // 6.1 갤러리 이미지 처리
-    if (updateData.images && existingArtwork.images.length > 0) {
+    if (validatedData.images && existingArtwork.images.length > 0) {
       // 새 이미지 URL 목록
-      const newImageUrls = updateData.images.map((img) => img.imageUrl);
+      const newImageUrls = validatedData.images.map((img) => img.imageUrl);
 
       // 삭제해야 할 이미지 찾기
       for (const existingArtworkImage of existingArtwork.images) {
@@ -298,21 +282,21 @@ export async function updateArtwork(formData: FormData, artworkId: string) {
 
     // 7. Prisma 업데이트 데이터 준비
     const prismaUpdateData: Prisma.ArtworkUpdateInput = {
-      title: updateData.title,
-      size: updateData.size,
-      media: updateData.media,
-      year: updateData.year,
-      description: updateData.description,
-      style: updateData.style,
+      title: validatedData.title,
+      size: validatedData.size,
+      media: validatedData.media,
+      year: validatedData.year,
+      description: validatedData.description,
+      style: validatedData.style,
       updatedAt: new Date(),
     };
 
     // 이미지와 아트워크 관계 처리
-    if (updateData.images) {
+    if (validatedData.images) {
       prismaUpdateData.images = {
         deleteMany: {},
         createMany: {
-          data: updateData.images.map((image) => ({
+          data: validatedData.images.map((image) => ({
             imageUrl: image.imageUrl,
             alt: image.alt || '',
             order: image.order,
@@ -321,11 +305,11 @@ export async function updateArtwork(formData: FormData, artworkId: string) {
       };
     }
 
-    if (updateData.artists) {
+    if (validatedData.artists) {
       prismaUpdateData.artists = {
         deleteMany: {},
         createMany: {
-          data: updateData.artists
+          data: validatedData.artists
             .filter((pa) => pa.artistId)
             .map((pa) => ({
               artistId: pa.artistId,
