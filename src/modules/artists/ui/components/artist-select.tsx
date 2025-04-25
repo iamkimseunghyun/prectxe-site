@@ -1,7 +1,6 @@
-// components/project/artist-select.tsx
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +13,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getImageUrl } from '@/lib/utils';
 import { X } from 'lucide-react';
+import Spinner from '@/components/icons/spinner';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
+import { getMoreArtists } from '@/modules/artists/server/actions';
+import { PAGINATION } from '@/lib/constants/constants';
 
 type Artist = {
   id: string;
@@ -55,10 +58,21 @@ const ArtistSelect = ({
     onChange(selectedArtists.filter((pa) => pa.artistId !== artistId));
   };
 
+  const {
+    items: updatedArtists,
+    isLoading,
+    isLastPage,
+    trigger,
+    loadMoreItems,
+  } = useInfiniteScroll({
+    fetchFunction: getMoreArtists,
+    initialData: artists,
+    pageSize: PAGINATION.ARTISTS_PAGE_SIZE, // 페이지 크기 명시적으로 전달
+  });
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <label className="text-sm font-medium">참여 아티스트</label>
         <div className="flex flex-wrap gap-2 rounded-md border p-4">
           {selectedArtists.map(({ artist }) => (
             <div
@@ -99,7 +113,7 @@ const ArtistSelect = ({
               </DialogHeader>
               <ScrollArea className="max-h-[60vh] pr-4">
                 <div className="space-y-4">
-                  {(artists ?? []) // null 이나 undefined일 경우 빈 배열 사용
+                  {(updatedArtists ?? []) // null 이나 undefined일 경우 빈 배열 사용
                     .filter((artist) => !selectedIds.includes(artist.id))
                     .map((artist) => (
                       <div
@@ -129,8 +143,29 @@ const ArtistSelect = ({
                         </Button>
                       </div>
                     ))}
-                  {artists.filter((artist) => !selectedIds.includes(artist.id))
-                    .length === 0 && (
+
+                  {!isLastPage && (
+                    <span
+                      ref={trigger}
+                      className="mt-2 flex items-center justify-center"
+                    >
+                      {isLoading ? (
+                        <Spinner />
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          onClick={() => loadMoreItems()}
+                          className="mt-2 flex items-center justify-center text-muted-foreground"
+                        >
+                          더 보기
+                        </Button>
+                      )}
+                    </span>
+                  )}
+
+                  {updatedArtists.filter(
+                    (artist) => !selectedIds.includes(artist.id)
+                  ).length === 0 && (
                     <p className="text-center text-muted-foreground">
                       추가할 수 있는 아티스트가 없습니다.
                     </p>

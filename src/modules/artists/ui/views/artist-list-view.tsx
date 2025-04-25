@@ -6,6 +6,7 @@ import ArtistCard from '@/modules/artists/ui/section/artist-card';
 import { getMoreArtists } from '@/modules/artists/server/actions';
 import Spinner from '@/components/icons/spinner';
 import React from 'react';
+import { Button } from '@/components/ui/button';
 
 // 기본적인 이미지 타입
 interface ImageData {
@@ -63,13 +64,24 @@ export function ArtistListView({ initialArtists }: ArtistGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {artists.map((artist) => (
-        <ArtistCard key={artist.id} artist={artist} />
-      ))}
+    <div>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {artists.map((artist) => (
+          <ArtistCard key={artist.id} artist={artist} />
+        ))}
+      </div>
       {!isLastPage && (
-        <span ref={trigger} className="mx-auto">
-          {isLoading ? <Spinner /> : '더 보기'}
+        <span ref={trigger} className="mt-10 flex items-center justify-center">
+          {isLoading ? (
+            <Spinner />
+          ) : (
+            <Button
+              variant="ghost"
+              className="mt-10 flex items-center justify-center text-muted-foreground"
+            >
+              더 보기
+            </Button>
+          )}
         </span>
       )}
     </div>

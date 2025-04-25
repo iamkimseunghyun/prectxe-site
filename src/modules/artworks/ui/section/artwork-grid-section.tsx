@@ -10,6 +10,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Spinner from '@/components/icons/spinner';
 import React from 'react';
+import { Button } from '@/components/ui/button';
 
 type ArtworkWithImages = {
   id: string;
@@ -60,44 +61,58 @@ const ArtworkGridSection = ({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {artworks.map((artwork) => (
-        <Link key={artwork.id} href={`/artworks/${artwork.id}`}>
-          <Card className="overflow-hidden transition-shadow hover:shadow-lg">
-            <CardHeader>
-              <CardTitle className="line-clamp-1">{artwork.title}</CardTitle>
-            </CardHeader>
+    <div>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {artworks.map((artwork) => (
+          <Link key={artwork.id} href={`/artworks/${artwork.id}`}>
+            <Card className="overflow-hidden transition-shadow hover:shadow-lg">
+              <CardHeader>
+                <CardTitle className="line-clamp-1">{artwork.title}</CardTitle>
+              </CardHeader>
 
-            <CardContent>
-              {artwork.images[0] && (
-                <div className="relative aspect-video w-full overflow-hidden rounded-lg">
-                  <Image
-                    src={getImageUrl(`${artwork.images[0].imageUrl}`, 'public')}
-                    alt={artwork.images[0].alt}
-                    fill
-                    priority
-                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                    placeholder="blur"
-                    blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='100%25' height='100%25' fill='%23f3f4f6'/%3E%3C/svg%3E"
-                    className="object-cover"
-                  />
+              <CardContent>
+                {artwork.images[0] && (
+                  <div className="relative aspect-video w-full overflow-hidden rounded-lg">
+                    <Image
+                      src={getImageUrl(
+                        `${artwork.images[0].imageUrl}`,
+                        'public'
+                      )}
+                      alt={artwork.images[0].alt}
+                      fill
+                      priority
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      placeholder="blur"
+                      blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='100%25' height='100%25' fill='%23f3f4f6'/%3E%3C/svg%3E"
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm text-gray-500">
+                    {artwork.year}년 | {artwork.media}
+                  </p>
+                  <p className="text-sm text-gray-500">크기: {artwork.size}</p>
+                  <p className="line-clamp-2 text-sm">{artwork.description}</p>
                 </div>
-              )}
-
-              <div className="mt-4 space-y-2">
-                <p className="text-sm text-gray-500">
-                  {artwork.year}년 | {artwork.media}
-                </p>
-                <p className="text-sm text-gray-500">크기: {artwork.size}</p>
-                <p className="line-clamp-2 text-sm">{artwork.description}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      ))}
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
       {!isLastPage && (
-        <span ref={trigger} className="mx-auto">
-          {isLoading ? <Spinner /> : '더 보기'}
+        <span ref={trigger} className="mt-10 flex items-center justify-center">
+          {isLoading ? (
+            <Spinner />
+          ) : (
+            <Button
+              variant="ghost"
+              className="mt-10 flex items-center justify-center text-muted-foreground"
+            >
+              더 보기
+            </Button>
+          )}
         </span>
       )}
     </div>

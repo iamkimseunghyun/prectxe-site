@@ -1,9 +1,10 @@
 import { ChangeEvent } from 'react';
-import { UseFormRegisterReturn } from 'react-hook-form';
+import { ControllerRenderProps, UseFormRegisterReturn } from 'react-hook-form';
 import { ImagePlus, X } from 'lucide-react';
 import Image from 'next/image';
 import { getImageUrl } from '@/lib/utils';
 
+type RegisterType = UseFormRegisterReturn | ControllerRenderProps<any, string>;
 // Core types
 interface BaseImage {
   imageUrl: string;
@@ -19,12 +20,12 @@ interface ImagePreview extends BaseImage {
 interface ImagePreviewItemProps {
   preview: ImagePreview;
   index: number;
-  register: UseFormRegisterReturn;
+  register: RegisterType;
   onRemove: () => void;
 }
 
 interface MultiImageSectionProps {
-  register: UseFormRegisterReturn;
+  register: RegisterType;
   previews?: ImagePreview[];
   error?: string;
   handleMultiImageChange: (e: ChangeEvent<HTMLInputElement>) => Promise<void>;

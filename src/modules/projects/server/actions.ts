@@ -7,12 +7,13 @@ import { Prisma } from '@prisma/client';
 import {
   createProjectSchema,
   ProjectCategory,
-  UpdateProjectInput,
+  projectSchema,
   updateProjectSchema,
 } from '@/lib/schemas';
 import { CACHE_TIMES } from '@/lib/constants/constants';
 import { extractCloudflareImageId } from '@/lib/utils';
 import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
+import { z } from 'zod';
 
 export const getAllProjectsWithCache = next_cache(
   async (year?: string, category?: string, sort?: string, search?: string) => {
@@ -172,26 +173,17 @@ export async function getProjectById(projectId: string) {
   return getProjectWithCache(projectId);
 }
 
-export async function createProject(formData: FormData, userId: string) {
+export async function createProject(
+  data: z.infer<typeof projectSchema>,
+  userId: string
+) {
   try {
-    const rawData = {
-      title: formData.get('title'),
-      year: Number(formData.get('year')),
-      category: formData.get('category'),
-      description: formData.get('description'),
-      about: formData.get('about'),
-      mainImageUrl: formData.get('mainImageUrl'),
-      startDate: formData.get('startDate'),
-      endDate: formData.get('endDate'),
-      images: JSON.parse(formData.get('images')?.toString() || '[]'),
-      projectArtists: JSON.parse(
-        formData.get('projectArtists')?.toString() || '[]'
-      ),
-    };
-
-    const validatedData = createProjectSchema.safeParse(rawData);
+    const validatedData = createProjectSchema.safeParse(data);
     if (!validatedData.success) {
-      return { ok: false, error: '입력값이 올바르지 않습니다.' };
+      return {
+        ok: false,
+        error: `입력값이 올바르지 않습니다: ${validatedData.error.message}`,
+      };
     }
 
     const project = await prisma.project.create({
@@ -236,7 +228,10 @@ export async function createProject(formData: FormData, userId: string) {
   }
 }
 
-export async function updateProject(formData: FormData, projectId: string) {
+export async function updateProject(
+  data: z.infer<typeof updateProjectSchema>,
+  projectId: string
+) {
   try {
     // 1. 기존 프로젝트 정보 가져오기 (이미지 삭제 처리를 위해)
     const existingProject = await prisma.project.findUnique({
@@ -248,38 +243,8 @@ export async function updateProject(formData: FormData, projectId: string) {
       return { ok: false, error: '프로젝트를 찾을 수 없습니다.' };
     }
 
-    // 2. 폼 데이터에서 필요한 정보 추출
-    const updateData: UpdateProjectInput = {
-      title: formData.get('title')?.toString(),
-      year: formData.get('year')
-        ? parseInt(formData.get('year')?.toString() || '')
-        : undefined,
-      category: formData.get('category')?.toString() as ProjectCategory,
-      description: formData.get('description')?.toString() || '',
-      about: formData.get('about')?.toString() || '',
-      startDate: formData.get('startDate')?.toString(),
-      endDate: formData.get('endDate')?.toString(),
-      mainImageUrl: formData.get('mainImageUrl')?.toString(),
-    };
-
-    // 3. 이미지 데이터 처리
-    const galleryDataStr = formData.get('images')?.toString();
-    const newImages = galleryDataStr ? JSON.parse(galleryDataStr) : [];
-
-    if (newImages.length > 0) {
-      updateData.images = newImages;
-    }
-
-    // 4. 아티스트 데이터 처리
-    const artistsDataStr = formData.get('projectArtists')?.toString();
-    const newArtists = artistsDataStr ? JSON.parse(artistsDataStr) : [];
-
-    if (newArtists.length > 0) {
-      updateData.projectArtists = newArtists;
-    }
-
     // 5. 데이터 유효성 검사
-    const validatedResult = updateProjectSchema.safeParse(updateData);
+    const validatedResult = updateProjectSchema.safeParse(data);
     if (!validatedResult.success) {
       return { ok: false, error: '입력 값이 올바르지 않습니다.' };
     }
@@ -329,11 +294,11 @@ export async function updateProject(formData: FormData, projectId: string) {
     };
 
     // 날짜 필드 변환
-    if (updateData.startDate) {
+    if (validatedData.startDate) {
       prismaUpdateData.startDate = new Date(validatedData.startDate!);
     }
 
-    if (updateData.endDate) {
+    if (validatedData.endDate) {
       prismaUpdateData.endDate = new Date(validatedData.endDate!);
     }
 
