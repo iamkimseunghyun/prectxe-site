@@ -9,7 +9,7 @@ import { Edit, Globe } from 'lucide-react';
 import Link from 'next/link';
 
 import AdminButton from '@/components/layout/admin-button';
-import getSession from '@/lib/session';
+import getSession from '@/lib/auth/session';
 
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import canManage from '@/lib/can-manage';

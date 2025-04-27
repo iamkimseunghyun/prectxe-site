@@ -12,9 +12,12 @@ export const venueSchema = z.object({
     .max(1000, '설명은 1000자 이내로 입력해주세요.')
     .transform(sanitizedTextTransformer),
   address: z.string(),
-  images: z.array(baseImageSchema).min(1, {
-    message: '갤러리 이미지를 1개 이상 등록해주세요.',
-  }),
+  images: z
+    .array(baseImageSchema)
+    .min(1, {
+      message: '갤러리 이미지를 1개 이상 등록해주세요.',
+    })
+    .default([]),
   // projectVenue: z.array(
   //   z.object({
   //     projectId: z.string(),

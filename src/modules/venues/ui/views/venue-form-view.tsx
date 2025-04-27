@@ -25,10 +25,18 @@ import FormSubmitButton from '@/components/layout/form-submit-button';
 import {
   CreateVenueInput,
   createVenueSchema,
-  ImageData,
   UpdateVenueInput,
 } from '@/lib/schemas';
 import { createVenue, updateVenue } from '@/modules/venues/server/actions';
+import { z } from 'zod';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 
 type VenueFormProps = {
   mode: 'create' | 'edit';
@@ -45,13 +53,7 @@ const VenueFormView = ({
 }: VenueFormProps) => {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const {
-    register,
-    handleSubmit,
-    setError,
-    setValue,
-    formState: { errors },
-  } = useForm<CreateVenueInput>({
+  const form = useForm<CreateVenueInput>({
     resolver: zodResolver(createVenueSchema),
     defaultValues: initialData || {
       name: '',
@@ -65,8 +67,6 @@ const VenueFormView = ({
     },
   });
 
-  console.log('Form Errors:', errors); // <-- Add this line
-
   // 갤러리 이미지 훅
   const {
     multiImagePreview,
@@ -76,48 +76,36 @@ const VenueFormView = ({
   } = useMultiImageUpload({
     initialImages: initialData?.images,
     onGalleryChange: (galleryData) => {
-      setValue('images', galleryData);
+      form.setValue('images', galleryData);
     },
   });
 
-  const prepareFormData = (
-    data: CreateVenueInput,
-    galleryData: ImageData[]
-  ) => {
-    const formData = new FormData();
-    formData.append('name', data.name);
-    formData.append('description', data.description);
-    formData.append('address', data.address);
-    formData.append('images', JSON.stringify(galleryData));
-    return formData;
-  };
+  const onSubmit = form.handleSubmit(
+    async (data: z.infer<typeof createVenueSchema>) => {
+      setIsSubmitting(true);
+      try {
+        if (multiImagePreview.length > 0) {
+          await uploadGalleryImages(multiImagePreview);
+        }
 
-  const onSubmit = handleSubmit(async (data: CreateVenueInput) => {
-    setIsSubmitting(true);
-    try {
-      if (multiImagePreview.length > 0) {
-        await uploadGalleryImages(multiImagePreview);
+        const result =
+          mode === 'edit'
+            ? await updateVenue(data, venueId!)
+            : await createVenue(data, userId!);
+
+        // throw 대신 return 사용
+        if (!result.ok) return new Error(result.error);
+        router.push(`/venues/${result.data?.id}`);
+      } catch (error) {
+        console.error('Error: ', error);
+        form.setError('root', {
+          message: error instanceof Error ? error.message : '장소 등록 실패',
+        });
+      } finally {
+        setIsSubmitting(false);
       }
-      // 기존 이미지와 새 이미지를 합쳐서 FormData 생성
-      const formData = prepareFormData(data, data.images);
-
-      const result =
-        mode === 'edit'
-          ? await updateVenue(formData, venueId!)
-          : await createVenue(formData, userId!);
-
-      // throw 대신 return 사용
-      if (!result.ok) return new Error(result.error);
-      router.push(`/venues/${result.data?.id}`);
-    } catch (error) {
-      console.error('Error: ', error);
-      setError('root', {
-        message: error instanceof Error ? error.message : '장소 등록 실패',
-      });
-    } finally {
-      setIsSubmitting(false);
     }
-  });
+  );
   /*  const onValid = async () => {
     await onSubmit();
   };*/
@@ -127,91 +115,118 @@ const VenueFormView = ({
         <CardHeader>
           <CardTitle>{mode === 'create' ? '장소 등록' : '장소 수정'}</CardTitle>
         </CardHeader>
-        <form onSubmit={onSubmit}>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">장소 이름</label>
-              <Input
-                placeholder="장소 이름을 입력하세요."
-                {...register('name')}
-                type="text"
+        <Form {...form}>
+          <form onSubmit={onSubmit}>
+            <CardContent className="space-y-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-medium">
+                      장소 이름
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="장소 이름을 입력하세요."
+                        {...field}
+                        type="text"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.name && (
-                <p id="name-error" className="text-sm text-destructive">
-                  {errors.name.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">소개</label>
-              <Textarea
-                {...register('description')}
-                placeholder="장소에 대해 간단히 설명해주세요."
-                rows={10}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-medium">소개</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="장소에 대해 간단히 설명해주세요."
+                        rows={10}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.description && (
-                <span className="text-sm text-red-500">
-                  {errors.description.message}
-                </span>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address">주소</Label>
-              <div className="flex gap-2">
-                <Input
-                  {...register('address')}
-                  placeholder="주소를 입력해주세요."
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    /* Implement map selection */
-                  }}
-                >
-                  <MapPin className="h-4 w-4" />
-                </Button>
-              </div>
-              {errors.address && (
-                <span className="text-sm text-red-500">
-                  {errors.address.message}
-                </span>
-              )}
-            </div>
 
-            {/* 갤러리 이미지 섹션 */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">장소 사진</label>
-              <MultiImageBox
-                register={register('images')}
-                previews={multiImagePreview}
-                handleMultiImageChange={handleMultiImageChange}
-                removeMultiImage={removeMultiImage}
-                error={fileError}
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-medium">주소</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="주소를 입력해주세요." />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          /* Implement map selection */
+                        }}
+                      >
+                        <MapPin className="h-4 w-4" />
+                      </Button>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-end gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-            >
-              취소
-            </Button>
-            <FormSubmitButton
-              type="submit"
-              loading={isSubmitting}
-              loadingText={mode === 'edit' ? '수정하기' : '등록하기'}
-            >
-              {mode === 'edit' ? '수정하기' : '등록하기'}
-            </FormSubmitButton>
-          </CardFooter>
-          {errors.root && (
-            <p className="text-sm text-red-500">{errors.root.message}</p>
-          )}
-        </form>
+
+              {/* 갤러리 이미지 섹션 */}
+              <FormField
+                control={form.control}
+                name="images"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm font-medium">
+                      장소 사진
+                    </FormLabel>
+                    <FormControl>
+                      <MultiImageBox
+                        register={field}
+                        previews={multiImagePreview}
+                        handleMultiImageChange={handleMultiImageChange}
+                        removeMultiImage={removeMultiImage}
+                        error={fileError}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+            <CardFooter className="flex justify-end gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                disabled={isSubmitting}
+              >
+                취소
+              </Button>
+              <FormSubmitButton
+                type="submit"
+                loading={isSubmitting}
+                loadingText={mode === 'edit' ? '수정하기' : '등록하기'}
+                disabled={isSubmitting}
+              >
+                {mode === 'edit' ? '수정하기' : '등록하기'}
+              </FormSubmitButton>
+            </CardFooter>
+            {form.formState.errors.root && (
+              <p className="text-sm text-red-500">
+                {form.formState.errors.root.message}
+              </p>
+            )}
+          </form>
+        </Form>
       </Card>
     </div>
   );

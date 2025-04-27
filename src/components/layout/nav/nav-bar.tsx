@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import GlobalSearch from '@/components/search/global-search';
+import GlobalSearch from '@/modules/home/ui/components/global-search';
 
 interface NavBarProps {
   canEdit?: boolean;

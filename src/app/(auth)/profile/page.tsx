@@ -1,4 +1,4 @@
-import { makeLogout } from '@/lib/make-login';
+import { makeLogout } from '@/lib/auth/make-login';
 import { Button } from '@/components/ui/button';
 import { redirect } from 'next/navigation';
 

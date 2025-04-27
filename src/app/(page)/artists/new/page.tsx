@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Metadata } from 'next';
-import getSession from '@/lib/session';
+import getSession from '@/lib/auth/session';
 import ArtistFormView from '@/modules/artists/ui/views/artist-form-view';
 
 export const metadata: Metadata = {

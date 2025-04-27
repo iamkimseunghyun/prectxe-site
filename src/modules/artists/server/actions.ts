@@ -281,12 +281,6 @@ export async function updateArtist(
 
     // 2. 폼 데이터에서 필요한 정보 추출
     // 3. 이미지 데이터 처리
-    // const galleryDataStr = formData.get('images')?.toString();
-    // const newImages = galleryDataStr ? JSON.parse(galleryDataStr) : [];
-
-    // if (newImages.length > 0) {
-    //   updateData.images = newImages;
-    // }
 
     // 4. 데이터 유효성 검사
     const result = updateArtistSchema.safeParse(data);
@@ -327,7 +321,7 @@ export async function updateArtist(
     }
 
     // 7. Prisma 업데이트 데이터 준비
-    const prismaUpdateData: Prisma.ArtistUpdateInput = {
+    const prismaUpdateData = {
       name: validatedData.name,
       nameKr: validatedData.nameKr,
       mainImageUrl: validatedData.mainImageUrl,
@@ -337,22 +331,20 @@ export async function updateArtist(
       homepage: validatedData.homepage,
       biography: validatedData.biography,
       cv: validatedData.cv,
-      updatedAt: new Date(),
+      images: {
+        ...(validatedData.images &&
+          validatedData.images.length > 0 && {
+            deleteMany: {},
+            createMany: {
+              data: validatedData.images.map((image) => ({
+                imageUrl: image.imageUrl,
+                alt: image.alt || '',
+                order: image.order,
+              })),
+            },
+          }),
+      },
     };
-
-    // 이미지와 아티스트 관계 처리
-    if (validatedData.images) {
-      prismaUpdateData.images = {
-        deleteMany: {},
-        createMany: {
-          data: validatedData.images.map((image) => ({
-            imageUrl: image.imageUrl,
-            alt: image.alt || '',
-            order: image.order,
-          })),
-        },
-      };
-    }
 
     // 8. 아티스트 업데이트 실행
     const artist = await prisma.artist.update({

@@ -232,22 +232,6 @@ export async function updateArtwork(
 
     // 2. 폼 데이터에서 필요한 정보 추출
 
-    // 3. 이미지 데이터 처리
-    // const galleryDataStr = formData.get('images')?.toString();
-    // const newImages = galleryDataStr ? JSON.parse(galleryDataStr) : [];
-    //
-    // if (newImages.length > 0) {
-    //   updateData.images = newImages;
-    // }
-
-    // 4. 아티스트 데이터 처리
-    // const artistsDataStr = formData.get('artists')?.toString();
-    // const newArtists = artistsDataStr ? JSON.parse(artistsDataStr) : [];
-    //
-    // if (newArtists.length > 0) {
-    //   updateData.artists = newArtists;
-    // }
-
     // 5. 데이터 유효성 검사
     const result = updateArtworkSchema.safeParse(data);
 

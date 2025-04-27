@@ -2,10 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/prisma';
-import { createVenueSchema } from '@/lib/schemas';
+import { createVenueSchema, updateVenueSchema } from '@/lib/schemas';
 import { extractCloudflareImageId } from '@/lib/utils';
 import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
 import { Prisma } from '@prisma/client';
+import { z } from 'zod';
 
 export async function getVenueById(venueId: string) {
   const result = prisma.venue.findUnique({
@@ -53,36 +54,40 @@ export async function getAllVenues(page: number = 1, limit: number = 9) {
   }
 }
 
-export async function createVenue(data: FormData, userId: string) {
+export async function createVenue(
+  data: z.infer<typeof createVenueSchema>,
+  userId: string
+) {
   try {
-    const formData = {
-      name: data.get('name') as string,
-      description: data.get('description') as string,
-      address: data.get('address') as string,
-      images: JSON.parse(data.get('images') as string) || '[]',
-    };
-    console.log('Server received data:', data);
+    // const formData = {
+    //   name: data.get('name') as string,
+    //   description: data.get('description') as string,
+    //   address: data.get('address') as string,
+    //   images: JSON.parse(data.get('images') as string) || '[]',
+    // };
+    // console.log('Server received data:', data);
 
-    const validatedData = createVenueSchema.safeParse(formData);
-    if (!validatedData.success) {
-      console.error('Validation errors:', validatedData.error.errors);
+    const validatedResult = createVenueSchema.safeParse(data);
+    if (!validatedResult.success) {
+      console.error('Validation errors:', validatedResult.error.errors);
       return { ok: false, error: '장소 정보 입력 값이 올바르지 않습니다.' };
     }
 
-    console.log('Validated data:', validatedData.data);
+    const validatedData = validatedResult.data;
+
     const venue = await prisma.venue.create({
       data: {
-        name: validatedData.data.name,
-        description: validatedData.data.description,
-        address: validatedData.data.address,
+        name: validatedData.name,
+        description: validatedData.description,
+        address: validatedData.address,
         userId,
       },
       select: { id: true },
     });
     // venueImageUrls 별도 생성
-    if (validatedData.data.images.length > 0) {
+    if (validatedData.images.length > 0) {
       await prisma.venueImage.createMany({
-        data: validatedData.data.images.map((image) => ({
+        data: validatedData.images.map((image) => ({
           venueId: venue.id,
           imageUrl: image.imageUrl,
           alt: image.alt || '',
@@ -91,9 +96,6 @@ export async function createVenue(data: FormData, userId: string) {
       });
     }
     revalidatePath('/venues');
-
-    console.log('Created venue:', venue);
-
     return { ok: true, data: { id: venue.id } };
   } catch (error) {
     console.error('Failed to new venue:', error);
@@ -101,7 +103,10 @@ export async function createVenue(data: FormData, userId: string) {
   }
 }
 
-export async function updateVenue(formData: FormData, venueId: string) {
+export async function updateVenue(
+  data: z.infer<typeof updateVenueSchema>,
+  venueId: string
+) {
   try {
     // 1. 기존 베뉴 정보 가져오기 (이미지 삭제 처리를 위해)
     const existingVenue = await prisma.venue.findUnique({
@@ -113,22 +118,7 @@ export async function updateVenue(formData: FormData, venueId: string) {
       return { ok: false, error: '베뉴를 찾을 수 없습니다.' };
     }
 
-    // 더 안전한 방식
-    const galleryData = JSON.parse(formData.get('images')?.toString() || '[]');
-    // const projectVenue = JSON.parse(
-    //   formData.get('projectVenue')?.toString() || '[]'
-    // );
-
-    // 업데이트 데이터 준비
-    const updateData = {
-      name: formData.get('name')?.toString() || '',
-      description: formData.get('description')?.toString() || '',
-      address: formData.get('address')?.toString() || '',
-      images: galleryData,
-      // projectVenue: projectVenue,
-    };
-
-    const validatedResult = createVenueSchema.safeParse(updateData);
+    const validatedResult = updateVenueSchema.safeParse(data);
 
     if (!validatedResult.success) {
       console.error('Validation errors:', validatedResult.error);
@@ -176,13 +166,16 @@ export async function updateVenue(formData: FormData, venueId: string) {
       // },
       images: {
         deleteMany: {},
-        createMany: {
-          data: validatedData.images.map((image) => ({
-            imageUrl: image.imageUrl,
-            alt: image.alt || '',
-            order: image.order,
-          })),
-        },
+        ...(validatedData.images &&
+          validatedData.images.length > 0 && {
+            createMany: {
+              data: validatedData.images.map((image) => ({
+                imageUrl: image.imageUrl,
+                alt: image.alt || '',
+                order: image.order,
+              })),
+            },
+          }),
       },
     };
 
@@ -193,11 +186,10 @@ export async function updateVenue(formData: FormData, venueId: string) {
       },
       data: {
         ...prismaUpdateData,
-        updatedAt: new Date(),
       },
       include: {
         images: true,
-        projectVenue: true,
+        // projectVenue: true,
       },
     });
 

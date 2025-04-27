@@ -5,7 +5,7 @@ import CarouselGallery from '@/components/image/carousel-gallery';
 import { Metadata } from 'next';
 
 import AdminButton from '@/components/layout/admin-button';
-import getSession from '@/lib/session';
+import getSession from '@/lib/auth/session';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import canManage from '@/lib/can-manage';
 import { getVenueById } from '@/modules/venues/server/actions';

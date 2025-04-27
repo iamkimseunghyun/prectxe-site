@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn, getImageUrl } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
-import { globalSearch } from '@/app/actions';
+import { globalSearch } from '@/modules/home/server/actions';
 import Image from 'next/image';
 import Link from 'next/link';
 

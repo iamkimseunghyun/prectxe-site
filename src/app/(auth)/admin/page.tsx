@@ -14,7 +14,7 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import getSession from '@/lib/session';
+import getSession from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 
 const Page = () => {

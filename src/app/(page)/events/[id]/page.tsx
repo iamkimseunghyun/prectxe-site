@@ -13,7 +13,7 @@ import {
   isEventBookingClosed,
 } from '@/lib/utils';
 import AdminButton from '@/components/layout/admin-button';
-import getSession from '@/lib/session';
+import getSession from '@/lib/auth/session';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import canManage from '@/lib/can-manage';
 import { Metadata } from 'next';

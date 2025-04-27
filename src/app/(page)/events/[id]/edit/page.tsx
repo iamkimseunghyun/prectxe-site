@@ -2,7 +2,7 @@ import { prisma } from '@/lib/db/prisma';
 
 import { notFound } from 'next/navigation';
 
-import getSession from '@/lib/session';
+import getSession from '@/lib/auth/session';
 
 import { Event } from '@/lib/schemas';
 import { getEventById } from '@/modules/events/server/actions';

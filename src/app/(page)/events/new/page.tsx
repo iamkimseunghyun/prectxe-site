@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma';
-import getSession from '@/lib/session';
+import getSession from '@/lib/auth/session';
 import { EventFormView } from '@/modules/events/ui/views/event-form-view';
 
 const Page = async () => {

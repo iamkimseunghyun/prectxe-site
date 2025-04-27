@@ -33,6 +33,7 @@ const eslintConfig = [
   js.configs.recommended,
   {
     languageOptions: {
+      globals: { Bun: 'readonly' },
       parserOptions: {
         project: './tsconfig.json',
       },

@@ -7,9 +7,13 @@
   },
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:bun": "bun --bun next dev --turbopack",
     "build": "prisma generate && next build --no-lint",
+    "build:bun": "bunx prisma generate && bun next build --no-lint",
     "start": "next start",
+    "start:bun": "bun --bun next start",
     "lint": "next lint",
+    "lint:bun": "bunn --bun next lint",
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
     "postinstall": "[ -z \"$CI\" ] && prisma generate || echo Skip prisma in CI",
@@ -29,9 +33,9 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-toast": "^1.2.6",
+    "@types/bun": "^1.2.10",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
-    "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "embla-carousel-react": "^8.5.2",
@@ -73,6 +77,5 @@
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
-  },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  }
 }

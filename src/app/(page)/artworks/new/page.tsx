@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import getSession from '@/lib/session';
+import getSession from '@/lib/auth/session';
 import ArtworkFormView from '@/modules/artworks/ui/views/artwork-form-view';
 import { getArtistsPage } from '@/modules/artists/server/actions';
 

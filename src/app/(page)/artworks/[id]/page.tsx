@@ -11,7 +11,7 @@ import {
 import Image from 'next/image';
 
 import AdminButton from '@/components/layout/admin-button';
-import getSession from '@/lib/session';
+import getSession from '@/lib/auth/session';
 import Link from 'next/link';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import canManage from '@/lib/can-manage';

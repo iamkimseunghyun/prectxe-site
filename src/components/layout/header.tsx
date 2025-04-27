@@ -1,8 +1,9 @@
 import NavBar from '@/components/layout/nav/nav-bar';
-import getSession from '@/lib/session';
-import canManage from '@/lib/can-manage';
+import getSession from '@/lib/auth/session';
+
 import { prisma } from '@/lib/db/prisma';
 import { redirect } from 'next/navigation';
+import canManage from '@/lib/auth/make-login';
 
 const Header = async () => {
   const session = await getSession();

@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import CarouselGallery from '@/components/image/carousel-gallery';
 import AdminButton from '@/components/layout/admin-button';
 import { getProjectWithCache } from '@/modules/projects/server/actions';
-import getSession from '@/lib/session';
+import getSession from '@/lib/auth/session';
 import canManage from '@/lib/can-manage';
 
 export const ProjectDetailView = async ({ id }: { id: string }) => {
