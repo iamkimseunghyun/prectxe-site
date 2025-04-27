@@ -12,12 +12,13 @@ import AdminButton from '@/components/layout/admin-button';
 import getSession from '@/lib/auth/session';
 
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
-import canManage from '@/lib/can-manage';
+
 import { Metadata } from 'next';
 import { prisma } from '@/lib/db/prisma';
 import ArtworkListSection from '@/modules/artworks/ui/section/artwork-list-section';
 import { getArtistById } from '@/modules/artists/server/actions';
 import EventListView from '@/modules/events/ui/views/event-list-view';
+import canManage from '@/lib/auth/make-login';
 
 export async function generateMetadata({
   params,

@@ -15,11 +15,12 @@ import {
 import AdminButton from '@/components/layout/admin-button';
 import getSession from '@/lib/auth/session';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
-import canManage from '@/lib/can-manage';
+
 import { Metadata } from 'next';
 import { prisma } from '@/lib/db/prisma';
 import Link from 'next/link';
 import { getEventById } from '@/modules/events/server/actions';
+import canManage from '@/lib/auth/make-login';
 
 export async function generateMetadata({
   params,
