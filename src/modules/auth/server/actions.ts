@@ -2,10 +2,10 @@
 
 import { prisma } from '@/lib/db/prisma';
 
-import { redirect } from 'next/navigation';
 import { makeLogin } from '@/lib/auth/make-login';
 import { z } from 'zod';
 import { signInSchema, signUpSchema } from '@/lib/schemas';
+import bcrypt from 'bcryptjs';
 
 export async function signUp(data: z.infer<typeof signUpSchema>) {
   const result = signUpSchema.safeParse(data);
@@ -21,8 +21,8 @@ export async function signUp(data: z.infer<typeof signUpSchema>) {
     };
   }
   try {
-    // const hashedPassword = await bcrypt.hash(result.data.password, 12);
-    const hashedPassword = await Bun.password.hash(result.data.password);
+    const hashedPassword = await bcrypt.hash(result.data.password, 12);
+    // const hashedPassword = await Bun.password.hash(result.data.password);
 
     const user = await prisma.user.create({
       data: {
@@ -36,7 +36,7 @@ export async function signUp(data: z.infer<typeof signUpSchema>) {
     });
 
     await makeLogin(user.id);
-    return redirect('/profile');
+    return { success: true, redirect: '/auth/signin' };
   } catch (error) {
     console.error('Failed to create user:', error);
     return {
@@ -79,11 +79,11 @@ export const signIn = async (data: z.infer<typeof signInSchema>) => {
       };
     }
 
-    const ok = await Bun.password.verify(user.password, result.data.password);
-
+    // const ok = await Bun.password.verify(result.data.password, user.password);
+    const ok = await bcrypt.compare(result.data.password, user.password);
     if (ok) {
       await makeLogin(user!.id);
-      return redirect('/profile');
+      return { success: true, redirect: '/profile' };
     } else {
       return {
         success: false,

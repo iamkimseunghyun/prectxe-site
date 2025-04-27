@@ -15,8 +15,10 @@ import { z } from 'zod';
 import { signInSchema } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from '@/modules/auth/server/actions';
+import { useRouter } from 'next/navigation';
 
 const SignInFormSection = () => {
+  const router = useRouter();
   const form = useForm<z.infer<typeof signInSchema>>({
     defaultValues: {
       username: '',
@@ -29,6 +31,10 @@ const SignInFormSection = () => {
     async (data: z.infer<typeof signInSchema>) => {
       try {
         const result = await signIn(data);
+
+        if (result.success && result.redirect) {
+          router.push(result.redirect);
+        }
 
         if (result && !result.success && result.errors) {
           const serverErrors = result.errors;

@@ -15,8 +15,10 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { useRouter } from 'next/navigation';
 
 const SignUpFormSection = () => {
+  const router = useRouter();
   const form = useForm<z.infer<typeof signUpSchema>>({
     defaultValues: {
       username: '',
@@ -29,7 +31,11 @@ const SignUpFormSection = () => {
 
   const onSubmit = form.handleSubmit(
     async (data: z.infer<typeof signUpSchema>) => {
-      await signUp(data);
+      const result = await signUp(data);
+
+      if (result.success && result.redirect) {
+        router.push(result.redirect);
+      }
     }
   );
   return (
