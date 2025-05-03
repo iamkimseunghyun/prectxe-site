@@ -15,7 +15,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import React, { useState } from 'react';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
 
@@ -163,16 +162,7 @@ const VenueFormView = ({
                     <FormLabel className="text-sm font-medium">주소</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="주소를 입력해주세요." />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          /* Implement map selection */
-                        }}
-                      >
-                        <MapPin className="h-4 w-4" />
-                      </Button>
+                      <MapPin className="h-4 w-4" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
