@@ -161,8 +161,19 @@ const VenueFormView = ({
                   <FormItem className="space-y-2">
                     <FormLabel className="text-sm font-medium">주소</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="주소를 입력해주세요." />
-                      <MapPin className="h-4 w-4" />
+                      <div className="flex items-center gap-4">
+                        <Input {...field} placeholder="주소를 입력해주세요." />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            /* Implement map selection */
+                          }}
+                        >
+                          <MapPin className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
