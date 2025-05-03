@@ -17,12 +17,32 @@ type SearchResult = {
 /**
  * 전역 검색 기능을 위한 서버 액션
  * 아티스트, 작품, 이벤트, 프로젝트, 장소를 검색합니다.
+ * 검색어의 공백 변화에 덜 민감하게 동작하도록 개선.
  */
 export const globalSearch = next_cache(
   async (query: string, limit: number = 10): Promise<SearchResult[]> => {
-    if (!query || query.length < 2) {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery || trimmedQuery.length < 2) {
       return [];
     }
+
+    // 검색어를 공백 기준으로 분리하고 빈 문자열 제거
+    const searchTerms = trimmedQuery
+      .replace(/\s+/g, ' ')
+      .split(' ')
+      .filter((term) => term.length > 0);
+
+    // 검색어가 없으면 빈 배열 반환
+    if (searchTerms.length === 0) {
+      return [];
+    }
+
+    // 각 검색어가 포함되어야 하는 AND 조건 생성 함수
+    const createAndConditions = (field: string) => ({
+      AND: searchTerms.map((term) => ({
+        [field]: { contains: term, mode: 'insensitive' },
+      })),
+    });
 
     try {
       // 병렬로 여러 타입의 데이터 검색
@@ -31,9 +51,9 @@ export const globalSearch = next_cache(
         prisma.artist.findMany({
           where: {
             OR: [
-              { name: { contains: query, mode: 'insensitive' } },
-              { nameKr: { contains: query, mode: 'insensitive' } },
-              { biography: { contains: query, mode: 'insensitive' } },
+              createAndConditions('name'),
+              createAndConditions('nameKr'),
+              createAndConditions('biography'),
             ],
           },
           select: {
@@ -50,8 +70,8 @@ export const globalSearch = next_cache(
         prisma.artwork.findMany({
           where: {
             OR: [
-              { title: { contains: query, mode: 'insensitive' } },
-              { description: { contains: query, mode: 'insensitive' } },
+              createAndConditions('title'),
+              createAndConditions('description'),
             ],
           },
           select: {
@@ -72,9 +92,9 @@ export const globalSearch = next_cache(
         prisma.event.findMany({
           where: {
             OR: [
-              { title: { contains: query, mode: 'insensitive' } },
-              { subtitle: { contains: query, mode: 'insensitive' } },
-              { description: { contains: query, mode: 'insensitive' } },
+              createAndConditions('title'),
+              createAndConditions('subtitle'),
+              createAndConditions('description'),
             ],
           },
           select: {
@@ -91,9 +111,9 @@ export const globalSearch = next_cache(
         prisma.project.findMany({
           where: {
             OR: [
-              { title: { contains: query, mode: 'insensitive' } },
-              { about: { contains: query, mode: 'insensitive' } },
-              { description: { contains: query, mode: 'insensitive' } },
+              createAndConditions('title'),
+              createAndConditions('about'), // 혹은 원래 로직 유지
+              createAndConditions('description'), // 혹은 원래 로직 유지
             ],
           },
           select: {
@@ -109,9 +129,9 @@ export const globalSearch = next_cache(
         prisma.venue.findMany({
           where: {
             OR: [
-              { name: { contains: query, mode: 'insensitive' } },
-              { description: { contains: query, mode: 'insensitive' } },
-              { address: { contains: query, mode: 'insensitive' } },
+              createAndConditions('name'),
+              createAndConditions('description'), // 혹은 원래 로직 유지
+              createAndConditions('address'), // 혹은 원래 로직 유지
             ],
           },
           select: {

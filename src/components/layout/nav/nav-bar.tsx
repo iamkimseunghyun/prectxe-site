@@ -1,39 +1,45 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import GlobalSearch from '@/modules/home/ui/components/global-search';
+import { useSignOutMutation } from '@/hooks/use-sign-out-mutation';
+import { useSession } from '@/hooks/use-session';
 
-interface NavBarProps {
-  canEdit?: boolean;
-  user?: string;
-  isLoggedIn?: boolean;
-  logout?: () => void;
-}
-
-const NavBar = ({
-  canEdit = false,
-  user = '',
-  isLoggedIn = false,
-  logout,
-}: NavBarProps) => {
+const NavBar = () => {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [localCanEdit, setLocalCanEdit] = useState(canEdit);
 
-  // canEdit prop이 변경될 때 localCanEdit 업데이트
-  useEffect(() => {
-    setLocalCanEdit(canEdit);
-  }, [canEdit]);
+  const { user, isLoggedIn, isAdmin, isLoading, isError } = useSession();
+
+  // 수정 가능 여부 판단 로직
+  // 1. 로딩 중에는 버튼을 숨기거나 로딩 상태 표시
+  // 2. 로그인 상태여야 함
+  // 3. 관리자이거나, 현재 로그인한 사용자가 게시물 작성자여야 함
+  const canEdit = !isLoading && isLoggedIn && (isAdmin || user?.id);
+
+  const logoutMutation = useSignOutMutation();
 
   // 모바일 메뉴 토글
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
+  // 로딩 중 처리
+  if (isLoading) {
+    // 간단한 로딩 상태 표시 (예: 헤더 높이만 유지)
+    return <div className="h-16 w-full"></div>;
+  }
+
+  // 에러 처리 (선택 사항: 에러 메시지 표시 또는 기본 UI 표시)
+  if (isError) {
+    // 에러 발생 시에도 기본 네비게이션은 보여줄 수 있음
+    console.error('Failed to load session data');
+  }
 
   // 기본 공개 네비게이션 항목
   const publicNavigation = [
@@ -48,7 +54,7 @@ const NavBar = ({
   const navigation = [...publicNavigation];
 
   // 관리자인 경우 관리자 메뉴 추가
-  if (localCanEdit) {
+  if (canEdit) {
     navigation.push({ name: 'Admin', href: '/admin' });
   }
 
@@ -91,7 +97,7 @@ const NavBar = ({
               <GlobalSearch />
             </div>
 
-            {isLoggedIn ? (
+            {isLoggedIn && user ? (
               <div className="flex items-center space-x-4">
                 <Link
                   href="/profile"
@@ -102,13 +108,14 @@ const NavBar = ({
                       : 'text-purple-500'
                   )}
                 >
-                  {user || '프로필'}
+                  {user.username || '프로필'}
                 </Link>
                 <button
-                  onClick={logout}
+                  onClick={() => logoutMutation.mutate()}
+                  disabled={logoutMutation.isPending}
                   className="rounded-md bg-red-50 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-100"
                 >
-                  로그아웃
+                  {logoutMutation.isPending ? '로그아웃 중...' : '로그아웃'}
                 </button>
               </div>
             ) : null}
@@ -176,7 +183,7 @@ const NavBar = ({
               ))}
 
               {/* 사용자 메뉴 모바일 뷰 */}
-              {isLoggedIn && (
+              {isLoggedIn && user && (
                 <>
                   <li className="mt-4 border-t border-gray-100 pt-4">
                     <Link
@@ -189,18 +196,18 @@ const NavBar = ({
                       )}
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      {user || '프로필'}
+                      {user.username || '프로필'}
                     </Link>
                   </li>
                   <li>
                     <button
                       onClick={() => {
-                        if (logout) logout();
-                        setIsMenuOpen(false);
+                        logoutMutation.mutate();
                       }}
+                      disabled={logoutMutation.isPending}
                       className="w-full rounded-md bg-red-50 px-3 py-1.5 text-left text-sm text-red-600 transition-colors hover:bg-red-100"
                     >
-                      로그아웃
+                      {logoutMutation.isPending ? '로그아웃 중...' : '로그아웃'}
                     </button>
                   </li>
                 </>

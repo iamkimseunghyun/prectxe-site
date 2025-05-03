@@ -16,9 +16,16 @@ import { signInSchema } from '@/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from '@/modules/auth/server/actions';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+type SignInFormValues = z.infer<typeof signInSchema>;
 
 const SignInFormSection = () => {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
   const form = useForm<z.infer<typeof signInSchema>>({
     defaultValues: {
       username: '',
@@ -27,32 +34,79 @@ const SignInFormSection = () => {
     resolver: zodResolver(signInSchema),
   });
 
-  const onSubmit = form.handleSubmit(
-    async (data: z.infer<typeof signInSchema>) => {
-      try {
-        const result = await signIn(data);
-
-        if (result.success && result.redirect) {
-          router.push(result.redirect);
-        }
-
-        if (result && !result.success && result.errors) {
-          const serverErrors = result.errors;
-
-          // 필드별 에러 설정
-          Object.entries(serverErrors).forEach(([key, value]) => {
-            if (key !== '_form' && value) {
-              form.setError(key as keyof z.infer<typeof signInSchema>, {
-                type: 'server',
-                message: value.join(', '),
-              });
-            }
+  const mutation = useMutation({
+    mutationFn: signIn, // 서버 액션 사용
+    onSuccess: async (data) => {
+      if (data.success && data.redirect) {
+        // 로그인 성공 시 세션 쿼리 무효화
+        await queryClient.invalidateQueries({ queryKey: ['session'] });
+        router.push(data.redirect); // 리다이렉트
+        toast({ title: '로그인 성공' });
+      } else if (data.errors) {
+        // 서버 액션에서 반환된 에러 처리
+        if (data.errors._form) {
+          form.setError('root.serverError', {
+            // react-hook-form의 root 에러
+            message: data.errors._form.join(', '),
           });
         }
-      } catch (error) {
-        console.error('Unexpected error during sign in:', error);
+        Object.entries(data.errors).forEach(([key, value]) => {
+          if (key !== '_form' && value) {
+            form.setError(key as keyof SignInFormValues, {
+              message: value.join(', '),
+            });
+          }
+        });
+        toast({
+          title: '로그인 실패',
+          description:
+            data.errors._form?.join(', ') || '입력 정보를 확인해주세요.',
+          variant: 'destructive',
+        });
       }
+    },
+    onError: (error) => {
+      console.error('Sign in mutation error:', error);
+      form.setError('root.serverError', {
+        message: '로그인 중 오류가 발생했습니다.',
+      });
+      toast({
+        title: '로그인 오류',
+        description: '서버 오류가 발생했습니다.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const onSubmit = form.handleSubmit(
+    (data: z.infer<typeof signInSchema>) => {
+      mutation.mutate(data);
     }
+    // async (data: z.infer<typeof signInSchema>) => {
+    //   try {
+    //     const result = await signIn(data);
+    //
+    //     if (result.success && result.redirect) {
+    //       router.push(result.redirect);
+    //     }
+    //
+    //     if (result && !result.success && result.errors) {
+    //       const serverErrors = result.errors;
+    //
+    //       // 필드별 에러 설정
+    //       Object.entries(serverErrors).forEach(([key, value]) => {
+    //         if (key !== '_form' && value) {
+    //           form.setError(key as keyof z.infer<typeof signInSchema>, {
+    //             type: 'server',
+    //             message: value.join(', '),
+    //           });
+    //         }
+    //       });
+    //     }
+    //   } catch (error) {
+    //     console.error('Unexpected error during sign in:', error);
+    //   }
+    // }
   );
   return (
     <div className="flex items-center justify-center">

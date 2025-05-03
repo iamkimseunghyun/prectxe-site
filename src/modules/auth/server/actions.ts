@@ -1,11 +1,35 @@
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
-
-import { makeLogin } from '@/lib/auth/make-login';
 import { z } from 'zod';
 import { signInSchema, signUpSchema } from '@/lib/schemas';
 import bcrypt from 'bcryptjs';
+import { getIronSession } from 'iron-session';
+import { cookies } from 'next/headers';
+
+interface SessionContent {
+  id?: string;
+  name?: string;
+  isAdmin?: boolean;
+}
+
+export default async function getSession() {
+  return getIronSession<SessionContent>(await cookies(), {
+    cookieName: 'prectxe',
+    password: process.env.COOKIE_PASSWORD!,
+  });
+}
+
+export async function makeLogin(userId: string) {
+  const session = await getSession();
+  session.id = userId;
+  await session.save();
+}
+
+export async function makeLogout() {
+  const session = await getSession();
+  session.destroy();
+}
 
 export async function signUp(data: z.infer<typeof signUpSchema>) {
   const result = signUpSchema.safeParse(data);
@@ -99,6 +123,19 @@ export const signIn = async (data: z.infer<typeof signInSchema>) => {
     return {
       success: false,
       errors: { _form: ['로그인 처리 중 오류가 발생했습니다.'] },
+    };
+  }
+};
+
+export const signOut = async () => {
+  try {
+    await makeLogout();
+    return { success: true };
+  } catch (error) {
+    console.error('Sign in error:', error);
+    return {
+      success: false,
+      errors: { _form: ['로그아웃 처리 중 오류가 발생했습니다.'] },
     };
   }
 };

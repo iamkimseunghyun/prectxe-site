@@ -10,6 +10,7 @@ import { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from '@/components/ui/toaster';
+import Providers from '@/modules/providers';
 
 // 메타데이터 설정
 export const metadata: Metadata = {
@@ -110,14 +111,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
       >
-        <Header />
-        <main className="pt-[var(--header-height)]">
-          {children}
-          <Analytics />
-          <SpeedInsights />
-          <Toaster />
-        </main>
-        <Footer />
+        <Providers>
+          <Header />
+          <main className="pt-[var(--header-height)]">
+            {children}
+            <Analytics />
+            <SpeedInsights />
+            <Toaster />
+          </main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );
