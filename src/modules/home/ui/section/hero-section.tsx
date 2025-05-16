@@ -60,8 +60,8 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <p className="text-xl text-gray-600 md:text-2xl">
-              기술이 빚는 창의적 활동, 혁신적인 디지털 아트 플랫폼
+            <p className="text-xl text-black md:text-2xl">
+              음악, 예술, 기술이 만드는 세계
             </p>
           </motion.div>
 
