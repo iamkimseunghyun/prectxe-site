@@ -107,7 +107,7 @@ export const signIn = async (data: z.infer<typeof signInSchema>) => {
     const ok = await bcrypt.compare(result.data.password, user.password);
     if (ok) {
       await makeLogin(user!.id);
-      return { success: true, redirect: '/profile' };
+      return { success: true, redirect: '/admin' };
     } else {
       return {
         success: false,

@@ -43,7 +43,6 @@ const privatePathPatterns = [
   /^\/venues\/[^/]+\/edit$/, // /venues/[id]/edit 패턴
   /^\/venues\/new$/, // /venues/new 패턴
   /^\/admin\/?.*$/, // 모든 /admin 경로
-  /^\/profile\/?.*$/, // 모든 /profile 경로
 ];
 
 /**
@@ -96,9 +95,9 @@ export async function middleware(req: NextRequest) {
   }
   // 로그인한 사용자
   else {
-    // 로그인 전용 URL(signin/signup)에 접근하면 프로필로 리다이렉트
+    // 로그인 전용 URL(signin/signup)에 접근하면 관리자 페이지로 리다이렉트
     if (isPublicOnlyUrl) {
-      return NextResponse.redirect(new URL('/profile', req.nextUrl.toString()));
+      return NextResponse.redirect(new URL('/admin', req.nextUrl.toString()));
     }
 
     // 그 외에는 정상 진행
@@ -118,7 +117,6 @@ export const config = {
     '/artworks/:path*',
     '/programs/:path*',
     '/auth/:path*',
-    '/profile/:path*',
     '/admin/:path*',
   ],
 };

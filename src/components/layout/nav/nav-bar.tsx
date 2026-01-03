@@ -99,15 +99,15 @@ const NavBar = () => {
             {isLoggedIn && user ? (
               <div className="flex items-center space-x-4">
                 <Link
-                  href="/profile"
+                  href="/admin"
                   className={cn(
                     'text-sm font-medium transition-colors hover:text-purple-600',
-                    pathname === '/profile'
+                    pathname.startsWith('/admin')
                       ? 'text-purple-700'
                       : 'text-purple-500'
                   )}
                 >
-                  {user.username || '프로필'}
+                  {user.username}
                 </Link>
                 <button
                   onClick={() => logoutMutation.mutate()}
@@ -183,33 +183,20 @@ const NavBar = () => {
 
               {/* 사용자 메뉴 모바일 뷰 */}
               {isLoggedIn && user && (
-                <>
-                  <li className="mt-4 border-t border-gray-100 pt-4">
-                    <Link
-                      href="/profile"
-                      className={cn(
-                        'block py-2 text-base font-medium transition-colors hover:text-purple-600',
-                        pathname === '/profile'
-                          ? 'text-purple-700'
-                          : 'text-purple-500'
-                      )}
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {user.username || '프로필'}
-                    </Link>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => {
-                        logoutMutation.mutate();
-                      }}
-                      disabled={logoutMutation.isPending}
-                      className="w-full rounded-md bg-red-50 px-3 py-1.5 text-left text-sm text-red-600 transition-colors hover:bg-red-100"
-                    >
-                      {logoutMutation.isPending ? '로그아웃 중...' : '로그아웃'}
-                    </button>
-                  </li>
-                </>
+                <li className="mt-4 border-t border-gray-700 pt-4">
+                  <button
+                    onClick={() => {
+                      logoutMutation.mutate();
+                      setIsMenuOpen(false);
+                    }}
+                    disabled={logoutMutation.isPending}
+                    className="rounded-md bg-red-900/30 px-4 py-2 text-base text-red-300 transition-colors hover:bg-red-900/50"
+                  >
+                    {logoutMutation.isPending
+                      ? '로그아웃 중...'
+                      : `${user.username} 로그아웃`}
+                  </button>
+                </li>
               )}
             </ul>
           </motion.div>
