@@ -1,8 +1,6 @@
 import Image from 'next/image';
 import { getProgramBySlug } from '@/modules/programs/server/actions';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import {
   artistInitials,
@@ -55,43 +53,30 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
           />
         </div>
       )}
-      <header className="mb-6">
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <Badge variant="outline">{program.type}</Badge>
-          <Badge>{program.status}</Badge>
-        </div>
+      <header className="mb-8">
         <h1 className="text-3xl font-bold">{program.title}</h1>
-        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          {start && end && (
-            <span className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" /> {formatEventDate(start, end)}
-            </span>
-          )}
+        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-neutral-500">
+          {start && end && <span>{formatEventDate(start, end)}</span>}
           {(program.city || program.venue) && (
-            <span className="flex items-center gap-1">
-              <MapPin className="h-4 w-4" />
-              {[program.city, program.venue].filter(Boolean).join(' · ')}
-            </span>
+            <span>{[program.city, program.venue].filter(Boolean).join(' · ')}</span>
           )}
           <ShareButton
             title={program.title}
             text={program.summary || program.description || undefined}
-            className="ml-auto inline-flex items-center gap-1 rounded text-xs underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="ml-auto text-xs text-neutral-400 hover:text-neutral-600"
           />
         </div>
       </header>
 
       {program.description && (
-        <section className="prose prose-neutral dark:prose-invert mb-10 max-w-none">
-          <h2>Story</h2>
-          <p className="whitespace-pre-line">{program.description}</p>
-        </section>
+        <p className="mb-12 whitespace-pre-line leading-relaxed text-neutral-700">
+          {program.description}
+        </p>
       )}
 
       {program.credits?.length ? (
-        <section className="mb-10">
-          <h2 className="mb-3 text-xl font-semibold">Credits</h2>
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+        <section className="mb-12">
+          <ul className="flex flex-wrap gap-4">
             {program.credits.map((c) => {
               const kr = c.artist?.nameKr || null;
               const en = c.artist?.name || null;
@@ -102,28 +87,21 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
                 <li key={`${c.programId}-${c.artistId}`}>
                   <Link
                     href={`/artists/${c.artistId}`}
-                    className="group flex items-center gap-3 rounded-md border p-3 transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    aria-label={`${name} 아티스트 상세 보기`}
+                    className="flex items-center gap-2 text-sm text-neutral-600 transition-colors hover:text-neutral-900"
                   >
-                    <Avatar className="h-10 w-10">
+                    <Avatar className="h-8 w-8">
                       {img ? (
                         <AvatarImage
                           src={getImageUrl(img, 'thumbnail')}
                           alt={name}
                         />
                       ) : (
-                        <AvatarFallback>{initials}</AvatarFallback>
+                        <AvatarFallback className="text-xs">
+                          {initials}
+                        </AvatarFallback>
                       )}
                     </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{name}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {c.artist?.city || c.artist?.country || ''}
-                      </p>
-                    </div>
-                    <Badge variant="outline" className="shrink-0">
-                      {c.role}
-                    </Badge>
+                    <span>{name}</span>
                   </Link>
                 </li>
               );
@@ -134,7 +112,6 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
 
       {program.images?.length ? (
         <section className="mb-10">
-          <h2 className="mb-3 text-xl font-semibold">Gallery</h2>
           <ProgramGallery
             images={program.images.map((i) => ({
               id: i.id,
@@ -145,17 +122,6 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
         </section>
       ) : null}
 
-      {(program.city || program.venue) && (
-        <section className="mb-10">
-          <h2 className="mb-3 text-xl font-semibold">Map</h2>
-          <div className="flex items-center gap-2 rounded-md border p-4 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            {[program.city, program.venue].filter(Boolean).join(' · ')}
-          </div>
-        </section>
-      )}
-
-      {/* Footer actions simplified: calendar removed; share kept in header */}
     </article>
   );
 }

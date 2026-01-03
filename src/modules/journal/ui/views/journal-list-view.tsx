@@ -6,12 +6,7 @@ export async function JournalListView() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
-      <header className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">Journal</h1>
-        <p className="text-muted-foreground">
-          에디토리얼, 노트, 인터뷰를 모아봅니다.
-        </p>
-      </header>
+      <h1 className="mb-8 text-3xl font-bold">Journal</h1>
 
       {(!data || data.length === 0) && (
         <div className="rounded-lg bg-gray-50 p-8 text-center text-gray-500">

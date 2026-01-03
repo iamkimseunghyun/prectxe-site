@@ -8,7 +8,6 @@ export function ArticleCard({
   article: {
     slug: string;
     title: string;
-    excerpt?: string | null;
     cover?: string | null;
     publishedAt: Date | string | null;
   };
@@ -17,27 +16,24 @@ export function ArticleCard({
   const date = article.publishedAt
     ? new Date(article.publishedAt).toLocaleDateString('ko-KR')
     : '';
+
   return (
     <Link href={`/journal/${article.slug}`} className="group block">
-      <div className="relative mb-3 aspect-[4/3] w-full overflow-hidden rounded-lg bg-gray-100">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
         {cover && (
           <Image
             src={cover}
             alt={article.title}
             fill
-            className="object-cover transition-transform group-hover:scale-[1.02]"
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         )}
       </div>
-      <h3 className="mb-1 line-clamp-1 text-lg font-semibold">
-        {article.title}
-      </h3>
-      {article.excerpt && (
-        <p className="line-clamp-2 text-sm text-muted-foreground">
-          {article.excerpt}
-        </p>
-      )}
-      <p className="mt-2 text-xs text-muted-foreground">{date}</p>
+      <div className="mt-3">
+        <h3 className="font-medium text-neutral-900">{article.title}</h3>
+        {date && <p className="mt-1 text-sm text-neutral-500">{date}</p>}
+      </div>
     </Link>
   );
 }
