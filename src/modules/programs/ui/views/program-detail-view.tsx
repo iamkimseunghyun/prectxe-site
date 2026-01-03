@@ -58,7 +58,9 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-neutral-500">
           {start && end && <span>{formatEventDate(start, end)}</span>}
           {(program.city || program.venue) && (
-            <span>{[program.city, program.venue].filter(Boolean).join(' · ')}</span>
+            <span>
+              {[program.city, program.venue].filter(Boolean).join(' · ')}
+            </span>
           )}
           <ShareButton
             title={program.title}
@@ -121,7 +123,6 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
           />
         </section>
       ) : null}
-
     </article>
   );
 }

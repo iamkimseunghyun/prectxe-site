@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -23,37 +23,72 @@ type GalleryImage = { id: string; imageUrl: string; alt: string };
 export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
-  const [api, setApi] = useState<CarouselApi | null>(null);
+  const [modalApi, setModalApi] = useState<CarouselApi | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isPaused, setIsPaused] = useState(false);
 
+  // Auto-scroll effect
   useEffect(() => {
-    if (!open || !api) return;
-    api.scrollTo(index, true);
-  }, [open, api, index]);
+    const container = scrollRef.current;
+    if (!container || isPaused || open) return;
+
+    const speed = 0.5; // pixels per frame
+    let animationId: number;
+
+    const scroll = () => {
+      if (container.scrollLeft >= container.scrollWidth - container.clientWidth) {
+        container.scrollLeft = 0;
+      } else {
+        container.scrollLeft += speed;
+      }
+      animationId = requestAnimationFrame(scroll);
+    };
+
+    animationId = requestAnimationFrame(scroll);
+    return () => cancelAnimationFrame(animationId);
+  }, [isPaused, open]);
+
+  // Modal carousel sync
+  useEffect(() => {
+    if (!open || !modalApi) return;
+    modalApi.scrollTo(index, true);
+  }, [open, modalApi, index]);
+
+  const handleImageClick = useCallback((i: number) => {
+    setIndex(i);
+    setOpen(true);
+  }, []);
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {/* Horizontal scroll gallery */}
+      <div
+        ref={scrollRef}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        onTouchStart={() => setIsPaused(true)}
+        onTouchEnd={() => setIsPaused(false)}
+        className="-mx-4 flex gap-3 overflow-x-auto px-4 scrollbar-hide"
+      >
         {images.map((img, i) => (
           <button
             key={img.id}
             type="button"
-            onClick={() => {
-              setIndex(i);
-              setOpen(true);
-            }}
-            className="group relative aspect-[4/3] overflow-hidden rounded-md"
-            aria-label="이미지 확대 보기"
+            onClick={() => handleImageClick(i)}
+            className="group relative aspect-[4/3] w-64 shrink-0 overflow-hidden sm:w-72"
           >
             <Image
               src={getImageUrl(img.imageUrl, 'thumbnail')}
               alt={img.alt}
               fill
+              sizes="(min-width: 640px) 288px, 256px"
               className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           </button>
         ))}
       </div>
 
+      {/* Fullscreen modal */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           showCloseButton={false}
@@ -64,7 +99,7 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
           </DialogHeader>
           <div className="relative">
             <Carousel
-              setApi={setApi}
+              setApi={setModalApi}
               opts={{ loop: true }}
               className="w-full bg-black"
             >
@@ -80,10 +115,8 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
                         className="object-contain"
                         priority={false}
                       />
-                      {/* Bottom caption overlay (hide filename) */}
                       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-white">
                         <div className="mx-auto flex max-w-5xl items-end justify-between gap-3 text-xs sm:text-sm">
-                          {/* File name/alt hidden per request */}
                           <span className="shrink-0 rounded bg-white/10 px-2 py-0.5">
                             {i + 1} / {images.length}
                           </span>
