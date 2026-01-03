@@ -27,11 +27,9 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Drag state
+  // Drag state - use refs for values that change during drag
   const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
-  const [hasDragged, setHasDragged] = useState(false);
+  const dragState = useRef({ startX: 0, scrollLeft: 0, hasDragged: false });
 
   // Auto-scroll effect
   useEffect(() => {
@@ -63,23 +61,23 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
     modalApi.scrollTo(index, true);
   }, [open, modalApi, index]);
 
-  const handleImageClick = useCallback(
-    (i: number) => {
-      if (hasDragged) return; // Prevent click after drag
-      setIndex(i);
-      setOpen(true);
-    },
-    [hasDragged]
-  );
+  const handleImageClick = useCallback((i: number) => {
+    if (dragState.current.hasDragged) return; // Prevent click after drag
+    setIndex(i);
+    setOpen(true);
+  }, []);
 
   // Drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     const container = scrollRef.current;
     if (!container) return;
+    e.preventDefault(); // Prevent text selection
     setIsDragging(true);
-    setHasDragged(false);
-    setStartX(e.pageX - container.offsetLeft);
-    setScrollLeft(container.scrollLeft);
+    dragState.current = {
+      startX: e.clientX,
+      scrollLeft: container.scrollLeft,
+      hasDragged: false,
+    };
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -87,23 +85,28 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
     const container = scrollRef.current;
     if (!container) return;
     e.preventDefault();
-    const x = e.pageX - container.offsetLeft;
-    const walk = (x - startX) * 1.5; // scroll speed multiplier
-    container.scrollLeft = scrollLeft - walk;
-    if (Math.abs(x - startX) > 5) {
-      setHasDragged(true); // Mark as dragged if moved more than 5px
+    const dx = e.clientX - dragState.current.startX;
+    container.scrollLeft = dragState.current.scrollLeft - dx;
+    if (Math.abs(dx) > 5) {
+      dragState.current.hasDragged = true;
     }
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
-    // Reset hasDragged after a short delay to allow click prevention
-    setTimeout(() => setHasDragged(false), 100);
+    // Reset hasDragged after a short delay
+    setTimeout(() => {
+      dragState.current.hasDragged = false;
+    }, 50);
   };
 
   const handleMouseLeave = () => {
-    setIsDragging(false);
-    setHasDragged(false);
+    if (isDragging) {
+      setIsDragging(false);
+      setTimeout(() => {
+        dragState.current.hasDragged = false;
+      }, 50);
+    }
     setIsPaused(false);
   };
 
@@ -119,25 +122,28 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
         onMouseUp={handleMouseUp}
         onTouchStart={() => setIsPaused(true)}
         onTouchEnd={() => setIsPaused(false)}
-        className={`scrollbar-hide -mx-4 flex gap-3 overflow-x-auto px-4 ${
+        className={`scrollbar-hide -mx-4 flex gap-3 overflow-x-auto px-4 select-none ${
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         }`}
       >
         {images.map((img, i) => (
-          <button
+          <div
             key={img.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             onClick={() => handleImageClick(i)}
+            onKeyDown={(e) => e.key === 'Enter' && handleImageClick(i)}
             className="group relative aspect-[4/3] w-64 shrink-0 overflow-hidden sm:w-72"
           >
             <Image
               src={getImageUrl(img.imageUrl, 'thumbnail')}
               alt={img.alt}
               fill
+              draggable={false}
               sizes="(min-width: 640px) 288px, 256px"
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className="pointer-events-none object-cover transition-transform duration-300 group-hover:scale-105"
             />
-          </button>
+          </div>
         ))}
       </div>
 
