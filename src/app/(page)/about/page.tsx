@@ -22,19 +22,12 @@ const Page = () => {
 
       <div className="container mx-auto px-4">
         {/* Hero */}
-        <section className="pb-16 pt-20 md:pb-24 md:pt-32">
-          <div className="max-w-2xl">
-            <h1 className="text-4xl font-bold tracking-tight text-neutral-900 md:text-5xl">
-              기술과 예술이
-              <br />
-              만나는 곳
-            </h1>
-            <p className="mt-6 text-lg leading-relaxed text-neutral-600 md:text-xl">
-              PRECTXE는 2018년부터 디지털 아트 씬을 탐구해온 플랫폼입니다.
-              <br className="hidden md:block" />
-              전시, 공연, 파티를 기획하고 그 과정을 기록합니다.
-            </p>
-          </div>
+        <section className="pb-16 pt-24 md:pb-24 md:pt-40">
+          <p className="max-w-2xl text-xl leading-relaxed text-neutral-900 md:text-2xl">
+            PRECTXE는 2018년부터 디지털 아트 씬을 탐구해온 플랫폼입니다.
+            <br className="hidden md:block" />
+            전시, 공연, 파티를 기획하고 그 과정을 기록합니다.
+          </p>
         </section>
 
         {/* What we do */}
