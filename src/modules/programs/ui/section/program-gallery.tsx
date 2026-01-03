@@ -27,16 +27,25 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
 
+  // Drag state
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [hasDragged, setHasDragged] = useState(false);
+
   // Auto-scroll effect
   useEffect(() => {
     const container = scrollRef.current;
-    if (!container || isPaused || open) return;
+    if (!container || isPaused || open || isDragging) return;
 
     const speed = 0.5; // pixels per frame
     let animationId: number;
 
     const scroll = () => {
-      if (container.scrollLeft >= container.scrollWidth - container.clientWidth) {
+      if (
+        container.scrollLeft >=
+        container.scrollWidth - container.clientWidth
+      ) {
         container.scrollLeft = 0;
       } else {
         container.scrollLeft += speed;
@@ -46,7 +55,7 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
 
     animationId = requestAnimationFrame(scroll);
     return () => cancelAnimationFrame(animationId);
-  }, [isPaused, open]);
+  }, [isPaused, open, isDragging]);
 
   // Modal carousel sync
   useEffect(() => {
@@ -54,10 +63,49 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
     modalApi.scrollTo(index, true);
   }, [open, modalApi, index]);
 
-  const handleImageClick = useCallback((i: number) => {
-    setIndex(i);
-    setOpen(true);
-  }, []);
+  const handleImageClick = useCallback(
+    (i: number) => {
+      if (hasDragged) return; // Prevent click after drag
+      setIndex(i);
+      setOpen(true);
+    },
+    [hasDragged]
+  );
+
+  // Drag handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const container = scrollRef.current;
+    if (!container) return;
+    setIsDragging(true);
+    setHasDragged(false);
+    setStartX(e.pageX - container.offsetLeft);
+    setScrollLeft(container.scrollLeft);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    const container = scrollRef.current;
+    if (!container) return;
+    e.preventDefault();
+    const x = e.pageX - container.offsetLeft;
+    const walk = (x - startX) * 1.5; // scroll speed multiplier
+    container.scrollLeft = scrollLeft - walk;
+    if (Math.abs(x - startX) > 5) {
+      setHasDragged(true); // Mark as dragged if moved more than 5px
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    // Reset hasDragged after a short delay to allow click prevention
+    setTimeout(() => setHasDragged(false), 100);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+    setHasDragged(false);
+    setIsPaused(false);
+  };
 
   return (
     <div>
@@ -65,10 +113,15 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
       <div
         ref={scrollRef}
         onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
+        onMouseLeave={handleMouseLeave}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
         onTouchStart={() => setIsPaused(true)}
         onTouchEnd={() => setIsPaused(false)}
-        className="-mx-4 flex gap-3 overflow-x-auto px-4 scrollbar-hide"
+        className={`scrollbar-hide -mx-4 flex gap-3 overflow-x-auto px-4 ${
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
       >
         {images.map((img, i) => (
           <button
