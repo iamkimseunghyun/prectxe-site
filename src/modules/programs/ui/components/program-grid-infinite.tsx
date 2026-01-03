@@ -62,11 +62,7 @@ export function ProgramGridInfinite({
     <>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((p) => (
-          <Link
-            key={p.id}
-            href={`/programs/${p.slug}`}
-            aria-label={`${p.title} 자세히 보기`}
-          >
+          <Link key={p.id} href={`/programs/${p.slug}`}>
             <ProgramCard
               program={{
                 slug: p.slug,
@@ -86,13 +82,8 @@ export function ProgramGridInfinite({
       </div>
       <span ref={trigger} aria-hidden className="block h-1 w-full" />
       {isLoading && (
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          불러오는 중...
-        </div>
-      )}
-      {isLastPage && items.length > 0 && (
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          마지막입니다.
+        <div className="mt-8 text-center text-sm text-neutral-400">
+          Loading...
         </div>
       )}
     </>

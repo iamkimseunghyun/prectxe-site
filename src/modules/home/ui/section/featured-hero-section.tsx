@@ -33,7 +33,9 @@ export async function FeaturedHeroSection() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white md:p-12">
-              <h1 className="text-3xl font-bold md:text-5xl">{featured.title}</h1>
+              <h1 className="text-3xl font-bold md:text-5xl">
+                {featured.title}
+              </h1>
               {(when || where) && (
                 <p className="mt-2 text-sm text-white/80 md:text-base">
                   {[when, where].filter(Boolean).join(' · ')}
