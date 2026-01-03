@@ -5,7 +5,7 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const auth = await requireAdmin();
@@ -14,7 +14,7 @@ export async function DELETE(
         { ok: false, error: auth.error },
         { status: 401 }
       );
-    const { slug } = params;
+    const { slug } = await params;
     await prisma.article.delete({ where: { slug } });
     revalidatePath('/admin/journal');
     revalidatePath('/journal');

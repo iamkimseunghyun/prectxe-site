@@ -5,7 +5,7 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAdmin();
@@ -14,7 +14,7 @@ export async function DELETE(
         { ok: false, error: auth.error },
         { status: 401 }
       );
-    const { id } = params;
+    const { id } = await params;
     await prisma.program.delete({ where: { id } });
     revalidatePath('/admin/programs');
     revalidatePath('/programs');
