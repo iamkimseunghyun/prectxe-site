@@ -5,16 +5,17 @@ import { revalidatePath } from 'next/cache';
 import { articleCreateSchema, articleUpdateSchema } from '@/lib/schemas';
 import { requireAdmin } from '@/lib/auth/require-admin';
 
-export async function listArticles() {
+export async function listArticles(options?: { includeUnpublished?: boolean }) {
   try {
     const articles = await prisma.article.findMany({
-      where: { publishedAt: { not: null } },
+      where: options?.includeUnpublished ? {} : { publishedAt: { not: null } },
       orderBy: { publishedAt: 'desc' },
       select: {
         slug: true,
         title: true,
         excerpt: true,
         cover: true,
+        tags: true,
         publishedAt: true,
       },
     });

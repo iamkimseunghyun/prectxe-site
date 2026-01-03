@@ -1,294 +1,191 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { prisma } from '@/lib/db/prisma';
+import { AdminStatsCard } from '@/components/admin/admin-stats-card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Archive,
-  Image as ImageIcon,
-  MapPin,
-  PlusCircle,
+  FileText,
   Users,
+  MapPin,
+  Image as ImageIcon,
 } from 'lucide-react';
 import Link from 'next/link';
-import getSession from '@/lib/auth/session';
-import { redirect } from 'next/navigation';
-import { prisma } from '@/lib/db/prisma';
 
-const Page = async () => {
-  const handleLogout = async () => {
-    'use server';
-    const session = await getSession();
-    if (session.id) {
-      session.destroy();
-    }
-    redirect('/');
-  };
-
+export default async function Page() {
   // Stats (safe fallbacks when DB empty or unavailable)
   const counts = await Promise.allSettled([
     prisma.program.count(),
-    prisma.program.count({ where: { status: 'upcoming' } as any }),
-    prisma.program.count({ where: { status: 'completed' } as any }),
-    prisma.artist.count(),
     prisma.article.count(),
-    prisma.article.count({
-      where: {
-        publishedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
-      },
-    }),
+    prisma.artist.count(),
+    prisma.venue.count(),
+    prisma.artwork.count(),
   ]);
+
   const getNum = (i: number) =>
     counts[i].status === 'fulfilled' ? counts[i].value : 0;
-  const totalPrograms = getNum(0);
-  const upcomingPrograms = getNum(1);
-  const completedPrograms = getNum(2);
-  const totalArtists = getNum(3);
-  const totalArticles = getNum(4);
-  const articlesLast30 = getNum(5);
 
+  const stats = [
+    {
+      title: 'Programs',
+      value: getNum(0),
+      icon: Archive,
+      href: '/admin/programs',
+    },
+    {
+      title: 'Journal',
+      value: getNum(1),
+      icon: FileText,
+      href: '/admin/journal',
+    },
+    {
+      title: 'Artists',
+      value: getNum(2),
+      icon: Users,
+      href: '/admin/artists',
+    },
+    {
+      title: 'Venues',
+      value: getNum(3),
+      icon: MapPin,
+      href: '/admin/venues',
+    },
+    {
+      title: 'Artworks',
+      value: getNum(4),
+      icon: ImageIcon,
+      href: '/admin/artworks',
+    },
+  ];
+
+  // Recent activity
   let recentPrograms: {
     id: string;
     title: string;
+    type: string;
     status: string;
-    startAt: Date | null;
+    updatedAt: Date;
   }[] = [];
+
+  let recentArticles: {
+    slug: string;
+    title: string;
+    publishedAt: Date | null;
+    updatedAt: Date;
+  }[] = [];
+
   try {
-    recentPrograms = await prisma.program.findMany({
-      orderBy: [{ updatedAt: 'desc' }],
-      take: 5,
-      select: { id: true, title: true, status: true, startAt: true },
-    });
+    [recentPrograms, recentArticles] = await Promise.all([
+      prisma.program.findMany({
+        orderBy: [{ updatedAt: 'desc' }],
+        take: 5,
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          status: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.article.findMany({
+        orderBy: [{ updatedAt: 'desc' }],
+        take: 5,
+        select: { slug: true, title: true, publishedAt: true, updatedAt: true },
+      }),
+    ]);
   } catch {
-    recentPrograms = [];
+    // Silent fail for empty DB
   }
 
   return (
-    <div className="mx-auto max-w-7xl p-8">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <form action={handleLogout}>
-          <Button variant="outline">Log Out</Button>
-        </form>
+    <div className="space-y-8">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {stats.map((stat) => (
+          <Link key={stat.title} href={stat.href}>
+            <AdminStatsCard
+              title={stat.title}
+              value={stat.value}
+              icon={stat.icon}
+            />
+          </Link>
+        ))}
       </div>
 
-      {/* Stats */}
-      <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-3">
+      {/* Recent Activity */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Recent Programs */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Programs</CardDescription>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">
-            {totalPrograms}
-            <span className="ml-2 text-sm font-normal text-muted-foreground">
-              ({upcomingPrograms} 예정 / {completedPrograms} 완료)
-            </span>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Artists</CardDescription>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">
-            {totalArtists}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Journal</CardDescription>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">
-            {totalArticles}
-            <span className="ml-2 text-sm font-normal text-muted-foreground">
-              최근 30일 {articlesLast30}
-            </span>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-        {/* Auth Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Archive className="h-6 w-6" />
-              Admin
-            </CardTitle>
-            <CardDescription>
-              Manage Admin user and their information
-            </CardDescription>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">최근 수정된 프로그램</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-4">
-              <Link href="/auth/signup">
-                <Button className="w-full" variant="outline">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add New Manager
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-        {/* Programs Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Archive className="h-6 w-6" />
-              Programs
-            </CardTitle>
-            <CardDescription>
-              Create and manage Programs (exhibition/live/party)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4">
-              <Link href="/admin/programs/new">
-                <Button className="w-full" variant="outline">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add New Program
-                </Button>
-              </Link>
-
-              <Link href="/admin/programs">
-                <Button className="w-full" variant="outline">
-                  Manage Programs
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Artists Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-6 w-6" />
-              Artists
-            </CardTitle>
-            <CardDescription>
-              Manage festival artists and their information
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4">
-              <Link href="/artists/new">
-                <Button className="w-full" variant="outline">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add New Artist
-                </Button>
-              </Link>
-
-              <Link href="/admin/artists">
-                <Button className="w-full" variant="outline">
-                  Manage Artists
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Artworks Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ImageIcon className="h-6 w-6" />
-              Artworks
-            </CardTitle>
-            <CardDescription>
-              Manage artwork collections and details
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4">
-              <Link href="/artworks/new">
-                <Button className="w-full" variant="outline">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add New Artwork
-                </Button>
-              </Link>
-              <Link href="/artworks">
-                <Button className="w-full" variant="outline">
-                  View All Artworks
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Journal Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ImageIcon className="h-6 w-6" />
-              Journal
-            </CardTitle>
-            <CardDescription>Write and manage editorial posts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4">
-              <Link href="/admin/journal/new">
-                <Button className="w-full" variant="outline">
-                  New Post
-                </Button>
-              </Link>
-              <Link href="/admin/journal">
-                <Button className="w-full" variant="outline">
-                  Manage Journal
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Programs */}
-      <Card>
-        <CardHeader>
-          <CardTitle>최근 수정된 프로그램</CardTitle>
-          <CardDescription>빠르게 이어서 작업하세요.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full table-auto text-sm">
-              <thead className="bg-muted/40 text-left">
-                <tr>
-                  <th className="p-3">제목</th>
-                  <th className="w-28 p-3">상태</th>
-                  <th className="w-40 p-3">시작일</th>
-                  <th className="w-24 p-3">관리</th>
-                </tr>
-              </thead>
-              <tbody>
+            {recentPrograms.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                아직 등록된 프로그램이 없습니다.
+              </p>
+            ) : (
+              <div className="space-y-3">
                 {recentPrograms.map((p) => (
-                  <tr key={p.id} className="border-t">
-                    <td className="truncate p-3">{p.title}</td>
-                    <td className="p-3">{p.status}</td>
-                    <td className="p-3">
-                      {p.startAt
-                        ? new Date(p.startAt).toLocaleDateString('ko-KR')
-                        : '-'}
-                    </td>
-                    <td className="p-3">
-                      <Link
-                        href={`/admin/programs/${p.id}/edit`}
-                        className="text-blue-600 underline"
-                      >
-                        편집
-                      </Link>
-                    </td>
-                  </tr>
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between rounded-md border px-3 py-2"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{p.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {p.type} · {p.status}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/admin/programs/${p.id}/edit`}
+                      className="ml-2 shrink-0 text-xs text-blue-600 hover:underline"
+                    >
+                      편집
+                    </Link>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Journal */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">최근 수정된 글</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentArticles.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                아직 등록된 글이 없습니다.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {recentArticles.map((a) => (
+                  <div
+                    key={a.slug}
+                    className="flex items-center justify-between rounded-md border px-3 py-2"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{a.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {a.publishedAt
+                          ? new Date(a.publishedAt).toLocaleDateString('ko-KR')
+                          : '미발행'}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/admin/journal/${a.slug}/edit`}
+                      className="ml-2 shrink-0 text-xs text-blue-600 hover:underline"
+                    >
+                      편집
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
-};
-
-export default Page;
+}
