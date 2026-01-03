@@ -3,8 +3,6 @@ import './globals.css';
 
 import React from 'react';
 
-import { Footer } from '@/components/layout/footer';
-
 import Header from '@/components/layout/header';
 import { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/next';
@@ -113,13 +111,12 @@ export default function RootLayout({
       >
         <Providers>
           <Header />
-          <main className="pt-[var(--header-height)]">
+          <main className="flex-1 pt-[var(--header-height)]">
             {children}
             <Analytics />
             <SpeedInsights />
             <Toaster />
           </main>
-          <Footer />
         </Providers>
       </body>
     </html>
