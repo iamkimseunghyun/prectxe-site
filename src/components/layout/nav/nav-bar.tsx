@@ -187,7 +187,9 @@ const NavBar = () => {
                     disabled={logoutMutation.isPending}
                     className="text-sm text-neutral-400 transition-colors hover:text-neutral-600"
                   >
-                    {logoutMutation.isPending ? '...' : `Logout (${user.username})`}
+                    {logoutMutation.isPending
+                      ? '...'
+                      : `Logout (${user.username})`}
                   </button>
                 </li>
               )}

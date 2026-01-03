@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Button } from '@/components/ui/button';
 import { listPrograms } from '@/modules/programs/server/actions';
 import { formatEventDate, getImageUrl } from '@/lib/utils';
 
@@ -20,54 +19,54 @@ export async function FeaturedHeroSection() {
     : '/images/placeholder.png';
 
   return (
-    <section className="relative overflow-hidden border-b bg-gradient-to-b from-neutral-50 to-white">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
-        <div className="grid gap-6 sm:grid-cols-2 sm:items-center">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight text-neutral-900 md:text-5xl">
-              Feed‑first Discovery
-            </h1>
-            <p className="mt-3 max-w-xl text-base text-neutral-600 md:text-lg">
-              가장 가까운 프로그램을 먼저. 전시, 라이브, 파티를 빠르게
-              확인하세요.
-            </p>
-
-            {featured ? (
-              <div className="mt-4 space-y-1 text-sm text-neutral-600">
-                <p className="font-medium">{featured.title}</p>
-                {(when || where) && (
-                  <p className="text-neutral-500">
-                    {[when, where].filter(Boolean).join(' · ')}
-                  </p>
-                )}
-              </div>
-            ) : null}
-
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <Link href="/programs?status=completed">
-                <Button size="lg">아카이브 보기</Button>
-              </Link>
-              <Link
-                href="/journal"
-                className="text-sm text-neutral-600 underline hover:text-neutral-900"
-              >
-                최근 소식
-              </Link>
-            </div>
-            <p className="mt-3 text-xs text-neutral-500">⌘K / Ctrl+K 로 검색</p>
-          </div>
-
-          <div className="relative hidden aspect-[16/10] overflow-hidden rounded-2xl border bg-neutral-100 sm:block">
+    <section className="min-h-[calc(100vh-var(--header-height))]">
+      {featured ? (
+        <Link href={`/programs/${featured.slug}`} className="block h-full">
+          <div className="relative h-[70vh] w-full">
             <Image
               src={hero}
-              alt={featured ? featured.title : 'PRECTXE hero visual'}
+              alt={featured.title}
               fill
               priority
-              sizes="(min-width: 1024px) 600px, 50vw"
+              sizes="100vw"
               className="object-cover"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-6 text-white md:p-12">
+              <h1 className="text-3xl font-bold md:text-5xl">{featured.title}</h1>
+              {(when || where) && (
+                <p className="mt-2 text-sm text-white/80 md:text-base">
+                  {[when, where].filter(Boolean).join(' · ')}
+                </p>
+              )}
+            </div>
           </div>
+        </Link>
+      ) : (
+        <div className="flex h-[70vh] items-center justify-center">
+          <p className="text-neutral-400">프로그램이 없습니다</p>
         </div>
+      )}
+
+      <div className="flex items-center justify-center gap-6 py-8">
+        <Link
+          href="/programs"
+          className="text-sm text-neutral-500 transition-colors hover:text-neutral-900"
+        >
+          Archive
+        </Link>
+        <Link
+          href="/journal"
+          className="text-sm text-neutral-500 transition-colors hover:text-neutral-900"
+        >
+          Journal
+        </Link>
+        <Link
+          href="/about"
+          className="text-sm text-neutral-500 transition-colors hover:text-neutral-900"
+        >
+          About
+        </Link>
       </div>
     </section>
   );
