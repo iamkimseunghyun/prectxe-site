@@ -10,6 +10,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { signInSchema } from '@/lib/schemas';
@@ -18,6 +19,8 @@ import { signIn } from '@/modules/auth/server/actions';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 
 type SignInFormValues = z.infer<typeof signInSchema>;
 
@@ -35,18 +38,15 @@ const SignInFormSection = () => {
   });
 
   const mutation = useMutation({
-    mutationFn: signIn, // 서버 액션 사용
+    mutationFn: signIn,
     onSuccess: async (data) => {
       if (data.success && data.redirect) {
-        // 로그인 성공 시 세션 쿼리 무효화
         await queryClient.invalidateQueries({ queryKey: ['session'] });
-        router.push(data.redirect); // 리다이렉트
+        router.push(data.redirect);
         toast({ title: '로그인 성공' });
       } else if (data.errors) {
-        // 서버 액션에서 반환된 에러 처리
         if (data.errors._form) {
           form.setError('root.serverError', {
-            // react-hook-form의 root 에러
             message: data.errors._form.join(', '),
           });
         }
@@ -78,94 +78,77 @@ const SignInFormSection = () => {
     },
   });
 
-  const onSubmit = form.handleSubmit(
-    (data: z.infer<typeof signInSchema>) => {
-      mutation.mutate(data);
-    }
-    // async (data: z.infer<typeof signInSchema>) => {
-    //   try {
-    //     const result = await signIn(data);
-    //
-    //     if (result.success && result.redirect) {
-    //       router.push(result.redirect);
-    //     }
-    //
-    //     if (result && !result.success && result.errors) {
-    //       const serverErrors = result.errors;
-    //
-    //       // 필드별 에러 설정
-    //       Object.entries(serverErrors).forEach(([key, value]) => {
-    //         if (key !== '_form' && value) {
-    //           form.setError(key as keyof z.infer<typeof signInSchema>, {
-    //             type: 'server',
-    //             message: value.join(', '),
-    //           });
-    //         }
-    //       });
-    //     }
-    //   } catch (error) {
-    //     console.error('Unexpected error during sign in:', error);
-    //   }
-    // }
-  );
-  return (
-    <div className="flex items-center justify-center">
-      <Form {...form}>
-        <form
-          onSubmit={onSubmit}
-          className="flex w-full max-w-xl flex-col gap-3"
-        >
-          <div className="flex flex-col gap-4">
-            <FormField
-              control={form.control}
-              name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>사용자 이름</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="text"
-                      {...field}
-                      placeholder="사용자 이름을 입력하세요."
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>비밀번호</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      {...field}
-                      placeholder="비밀번호를 입력하세요."
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="flex gap-x-4">
-            <button
-              type="submit"
-              className="rounded-lg bg-rose-400 p-4 text-white hover:bg-rose-300"
-            >
-              로그인
-            </button>
+  const onSubmit = form.handleSubmit((data: z.infer<typeof signInSchema>) => {
+    mutation.mutate(data);
+  });
 
-            <span className="rounded-lg bg-teal-500 p-4 text-white hover:bg-teal-400">
-              <a href="/auth/signup">회원 가입</a>
-            </span>
-          </div>
-        </form>
-      </Form>
-    </div>
+  return (
+    <Form {...form}>
+      <form onSubmit={onSubmit} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>사용자 이름</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  {...field}
+                  placeholder="사용자 이름을 입력하세요"
+                  className="h-11"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>비밀번호</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  {...field}
+                  placeholder="비밀번호를 입력하세요"
+                  className="h-11"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button
+          type="submit"
+          className="mt-2 h-11 w-full"
+          disabled={mutation.isPending}
+        >
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              로그인 중...
+            </>
+          ) : (
+            '로그인'
+          )}
+        </Button>
+
+        <div className="text-center text-sm text-zinc-500">
+          계정이 없으신가요?{' '}
+          <Link
+            href="/auth/signup"
+            className="font-medium text-zinc-900 hover:underline"
+          >
+            회원가입
+          </Link>
+        </div>
+      </form>
+    </Form>
   );
 };
+
 export default SignInFormSection;
