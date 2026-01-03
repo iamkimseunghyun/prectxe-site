@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import SingleImageBox from '@/components/image/single-image-box';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
-import { uploadImage } from '@/lib/utils';
+import { uploadImage, slugify, containsKorean } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
 type Initial = {
@@ -42,9 +42,33 @@ export function JournalFormView({
   const [intent, setIntent] = useState<'default' | 'continue' | 'new'>(
     'default'
   );
+  // 슬러그 수동 편집 여부 추적 (편집 모드거나 사용자가 직접 수정한 경우)
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(
+    Boolean(initial?.slug)
+  );
+  // 제목에 한글이 포함되어 있는지 확인
+  const titleHasKorean = containsKorean(form.title || '');
 
   const handleChange = (k: keyof Initial, v: any) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  // 제목 변경 시 자동 슬러그 생성
+  const handleTitleChange = (title: string) => {
+    handleChange('title', title);
+    // 슬러그가 수동 편집되지 않았으면 자동 생성 시도
+    if (!slugManuallyEdited) {
+      const generatedSlug = slugify(title);
+      if (generatedSlug) {
+        handleChange('slug', generatedSlug);
+      }
+    }
+  };
+
+  // 슬러그 직접 편집 시
+  const handleSlugChange = (slug: string) => {
+    handleChange('slug', slug);
+    setSlugManuallyEdited(true);
+  };
 
   const {
     preview,
@@ -122,7 +146,7 @@ export function JournalFormView({
           <label className="mb-1 block text-sm">제목</label>
           <Input
             value={form.title as any}
-            onChange={(e) => handleChange('title', e.target.value)}
+            onChange={(e) => handleTitleChange(e.target.value)}
             required
           />
         </div>
@@ -130,11 +154,20 @@ export function JournalFormView({
           <label className="mb-1 block text-sm">슬러그</label>
           <Input
             value={form.slug as any}
-            onChange={(e) => handleChange('slug', e.target.value)}
+            onChange={(e) => handleSlugChange(e.target.value)}
             required
             aria-invalid={slugAvailable === false}
+            placeholder={
+              titleHasKorean ? '영문 슬러그를 입력하세요' : undefined
+            }
           />
           <p className="mt-1 text-xs">
+            {/* 한글 제목일 때 안내 메시지 */}
+            {titleHasKorean && !form.slug && (
+              <span className="text-amber-600">
+                💡 영문 슬러그를 입력하세요 (예: exhibition-opening)
+              </span>
+            )}
             {slugChecking && (
               <span className="text-muted-foreground">확인 중…</span>
             )}

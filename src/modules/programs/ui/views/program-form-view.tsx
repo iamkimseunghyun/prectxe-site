@@ -19,6 +19,8 @@ import {
   formatArtistName,
   uploadImage,
   uploadGalleryImages,
+  slugify,
+  containsKorean,
 } from '@/lib/utils';
 import ArtistSelect from '@/modules/artists/ui/components/artist-select';
 import { X } from 'lucide-react';
@@ -70,6 +72,12 @@ export function ProgramFormView({
   );
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // 슬러그 수동 편집 여부 추적 (편집 모드거나 사용자가 직접 수정한 경우)
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(
+    Boolean(initial?.slug)
+  );
+  // 제목에 한글이 포함되어 있는지 확인
+  const titleHasKorean = containsKorean(form.title || '');
 
   const [credits, setCredits] = useState<Credit[]>([]);
 
@@ -99,6 +107,24 @@ export function ProgramFormView({
 
   const handleChange = (key: keyof ProgramCreateInput, value: any) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  // 제목 변경 시 자동 슬러그 생성
+  const handleTitleChange = (title: string) => {
+    handleChange('title', title);
+    // 슬러그가 수동 편집되지 않았으면 자동 생성 시도
+    if (!slugManuallyEdited) {
+      const generatedSlug = slugify(title);
+      if (generatedSlug) {
+        handleChange('slug', generatedSlug);
+      }
+    }
+  };
+
+  // 슬러그 직접 편집 시
+  const handleSlugChange = (slug: string) => {
+    handleChange('slug', slug);
+    setSlugManuallyEdited(true);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,7 +226,7 @@ export function ProgramFormView({
           <label className="mb-1 block text-sm">제목</label>
           <Input
             value={form.title as any}
-            onChange={(e) => handleChange('title', e.target.value)}
+            onChange={(e) => handleTitleChange(e.target.value)}
             required
             aria-invalid={!!fieldErrors.title}
           />
@@ -212,11 +238,20 @@ export function ProgramFormView({
           <label className="mb-1 block text-sm">슬러그</label>
           <Input
             value={form.slug as any}
-            onChange={(e) => handleChange('slug', e.target.value)}
+            onChange={(e) => handleSlugChange(e.target.value)}
             required
             aria-invalid={slugAvailable === false}
+            placeholder={
+              titleHasKorean ? '영문 슬러그를 입력하세요' : undefined
+            }
           />
           <p className="mt-1 text-xs">
+            {/* 한글 제목일 때 안내 메시지 */}
+            {titleHasKorean && !form.slug && (
+              <span className="text-amber-600">
+                💡 영문 슬러그를 입력하세요 (예: exhibition-opening)
+              </span>
+            )}
             {slugChecking && (
               <span className="text-muted-foreground">확인 중…</span>
             )}

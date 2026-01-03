@@ -167,6 +167,33 @@ export const formatEventDate = (startDate: Date, endDate: Date): string => {
   return `${formattedStart} - ${formatDate(endDate)}`;
 };
 
+/**
+ * 텍스트에 한글이 포함되어 있는지 확인
+ */
+export function containsKorean(text: string): boolean {
+  return /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(text);
+}
+
+/**
+ * 텍스트를 URL 슬러그로 변환
+ * - 영문/숫자만 포함된 경우: 자동 생성
+ * - 한글 포함된 경우: null 반환 (수동 입력 필요)
+ */
+export function slugify(text: string): string | null {
+  if (!text.trim()) return null;
+
+  // 한글이 포함되면 자동 생성 불가
+  if (containsKorean(text)) return null;
+
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // 특수문자 제거
+    .replace(/\s+/g, '-') // 공백을 하이픈으로
+    .replace(/-+/g, '-') // 연속 하이픈 정리
+    .replace(/^-|-$/g, ''); // 앞뒤 하이픈 제거
+}
+
 // Format artist name as "KR (EN)" with graceful fallback
 export function formatArtistName(
   kr?: string | null,
