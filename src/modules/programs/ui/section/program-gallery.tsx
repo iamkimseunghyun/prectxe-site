@@ -122,7 +122,7 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
         onMouseUp={handleMouseUp}
         onTouchStart={() => setIsPaused(true)}
         onTouchEnd={() => setIsPaused(false)}
-        className={`scrollbar-hide -mx-4 flex gap-3 overflow-x-auto px-4 select-none ${
+        className={`scrollbar-hide -mx-4 flex select-none gap-3 overflow-x-auto px-4 ${
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         }`}
       >
