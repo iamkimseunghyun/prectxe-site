@@ -1,6 +1,6 @@
 import { OptimizedImage } from '@/components/image/optimization/optimized-image';
+import type { Artwork } from '@/lib/schemas';
 import { cn, getImageUrl } from '@/lib/utils';
-import { Artwork } from '@/lib/schemas';
 
 interface ArtworkHeroProps {
   artwork: Artwork;

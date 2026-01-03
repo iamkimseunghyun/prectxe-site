@@ -1,12 +1,12 @@
+import Image from 'next/image';
 import {
-  Carousel as ShadcnCarousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  Carousel as ShadcnCarousel,
 } from '@/components/ui/carousel';
 import { getImageUrl } from '@/lib/utils';
-import Image from 'next/image';
 
 type CarouselProps = {
   images: { imageUrl: string; alt?: string }[];

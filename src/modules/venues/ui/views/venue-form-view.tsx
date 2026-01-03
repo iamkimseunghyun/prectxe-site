@@ -1,10 +1,14 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-
-import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import { MapPin } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import type { z } from 'zod';
+import MultiImageBox from '@/components/image/multi-image-box';
+import FormSubmitButton from '@/components/layout/form-submit-button';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -12,22 +16,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { MapPin } from 'lucide-react';
-
-import { uploadGalleryImages } from '@/lib/utils';
-import MultiImageBox from '@/components/image/multi-image-box';
-import FormSubmitButton from '@/components/layout/form-submit-button';
-import {
-  CreateVenueInput,
-  createVenueSchema,
-  UpdateVenueInput,
-} from '@/lib/schemas';
-import { createVenue, updateVenue } from '@/modules/venues/server/actions';
-import { z } from 'zod';
 import {
   Form,
   FormControl,
@@ -36,6 +24,16 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import {
+  type CreateVenueInput,
+  createVenueSchema,
+  type UpdateVenueInput,
+} from '@/lib/schemas';
+import { uploadGalleryImages } from '@/lib/utils';
+import { createVenue, updateVenue } from '@/modules/venues/server/actions';
 
 type VenueFormProps = {
   mode: 'create' | 'edit';

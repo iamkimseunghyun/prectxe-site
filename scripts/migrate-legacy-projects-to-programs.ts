@@ -13,9 +13,9 @@
 
 import {
   PrismaClient,
-  ProgramStatus,
-  ProgramType,
-  ProjectCategory,
+  type ProgramStatus,
+  type ProgramType,
+  type ProjectCategory,
 } from '@prisma/client';
 
 const prisma = new PrismaClient();

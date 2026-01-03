@@ -1,13 +1,13 @@
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
-import React from 'react';
-
-import Header from '@/components/layout/header';
-import { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import type { Metadata } from 'next';
+import type React from 'react';
+import Header from '@/components/layout/header';
 import { Toaster } from '@/components/ui/toaster';
+import GlobalSearch from '@/modules/home/ui/components/global-search';
 import Providers from '@/modules/providers';
 
 // 메타데이터 설정
@@ -111,11 +111,12 @@ export default function RootLayout({
       >
         <Providers>
           <Header />
-          <main className="flex-1 pt-[var(--header-height)]">
+          <main className="flex-1">
             {children}
             <Analytics />
             <SpeedInsights />
             <Toaster />
+            <GlobalSearch />
           </main>
         </Providers>
       </body>

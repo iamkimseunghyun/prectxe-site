@@ -1,6 +1,6 @@
-import { cn } from '@/lib/utils';
-import { HTMLAttributes } from 'react';
 import Image from 'next/image';
+import type { HTMLAttributes } from 'react';
+import { cn } from '@/lib/utils';
 
 interface OptimizedImageProps extends HTMLAttributes<HTMLDivElement> {
   src: string;

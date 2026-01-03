@@ -1,15 +1,15 @@
-import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
-import Image from 'next/image';
-import { formatArtistName, formatEventDate, getImageUrl } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 import { Calendar } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import CarouselGallery from '@/components/image/carousel-gallery';
 import AdminButton from '@/components/layout/admin-button';
-import { getProjectWithCache } from '@/modules/projects/server/actions';
-import getSession from '@/lib/auth/session';
+import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import canManage from '@/lib/auth/make-login';
+import getSession from '@/lib/auth/session';
+import { formatArtistName, formatEventDate, getImageUrl } from '@/lib/utils';
+import { getProjectWithCache } from '@/modules/projects/server/actions';
 
 export const ProjectDetailView = async ({ id }: { id: string }) => {
   const project = await getProjectWithCache(id);

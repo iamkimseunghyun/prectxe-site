@@ -1,9 +1,12 @@
 'use client';
 
+import { X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import MultiImageBox from '@/components/image/multi-image-box';
+import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -11,25 +14,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import SingleImageBox from '@/components/image/single-image-box';
-import MultiImageBox from '@/components/image/multi-image-box';
+import { Textarea } from '@/components/ui/textarea';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
+import { toast } from '@/hooks/use-toast';
 import {
-  formatArtistName,
-  uploadImage,
-  uploadGalleryImages,
-  slugify,
-  containsKorean,
-} from '@/lib/utils';
-import ArtistSelect from '@/modules/artists/ui/components/artist-select';
-import { X } from 'lucide-react';
-import {
-  ProgramCreateInput,
+  type ProgramCreateInput,
   ProgramStatusEnum,
   ProgramTypeEnum,
 } from '@/lib/schemas/program';
-import { toast } from '@/hooks/use-toast';
+import {
+  containsKorean,
+  formatArtistName,
+  slugify,
+  uploadGalleryImages,
+  uploadImage,
+} from '@/lib/utils';
+import ArtistSelect from '@/modules/artists/ui/components/artist-select';
+
+function Label({
+  children,
+  required,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+}) {
+  return (
+    <label className="mb-1 block text-sm font-medium">
+      {children}
+      {required && <span className="ml-0.5 text-red-500">*</span>}
+    </label>
+  );
+}
 
 type Credit = {
   artistId: string;
@@ -221,293 +237,333 @@ export function ProgramFormView({
 
   return (
     <form onSubmit={submit} className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-sm">제목</label>
-          <Input
-            value={form.title as any}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            required
-            aria-invalid={!!fieldErrors.title}
-          />
-          {fieldErrors.title && (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.title}</p>
-          )}
-        </div>
-        <div>
-          <label className="mb-1 block text-sm">슬러그</label>
-          <Input
-            value={form.slug as any}
-            onChange={(e) => handleSlugChange(e.target.value)}
-            required
-            aria-invalid={slugAvailable === false}
-            placeholder={
-              titleHasKorean ? '영문 슬러그를 입력하세요' : undefined
-            }
-          />
-          <p className="mt-1 text-xs">
-            {/* 한글 제목일 때 안내 메시지 */}
-            {titleHasKorean && !form.slug && (
-              <span className="text-amber-600">
-                💡 영문 슬러그를 입력하세요 (예: exhibition-opening)
-              </span>
+      {/* 기본 정보 */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">기본 정보</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <Label required>제목</Label>
+            <Input
+              value={form.title as any}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              required
+              aria-invalid={!!fieldErrors.title}
+            />
+            {fieldErrors.title && (
+              <p className="mt-1 text-xs text-red-600">{fieldErrors.title}</p>
             )}
-            {slugChecking && (
-              <span className="text-muted-foreground">확인 중…</span>
+          </div>
+          <div>
+            <Label required>슬러그</Label>
+            <Input
+              value={form.slug as any}
+              onChange={(e) => handleSlugChange(e.target.value)}
+              required
+              aria-invalid={slugAvailable === false}
+              placeholder={
+                titleHasKorean ? '영문 슬러그를 입력하세요' : undefined
+              }
+            />
+            <p className="mt-1 text-xs">
+              {titleHasKorean && !form.slug && (
+                <span className="text-amber-600">
+                  영문 슬러그를 입력하세요 (예: exhibition-opening)
+                </span>
+              )}
+              {slugChecking && (
+                <span className="text-muted-foreground">확인 중…</span>
+              )}
+              {slugAvailable === true && !slugChecking && (
+                <span className="text-green-600">
+                  사용 가능한 슬러그입니다.
+                </span>
+              )}
+              {slugAvailable === false && !slugChecking && (
+                <span className="text-red-600">
+                  중복된 슬러그입니다. 다른 값을 입력하세요.
+                </span>
+              )}
+              {fieldErrors.slug && (
+                <span className="ml-2 text-red-600">{fieldErrors.slug}</span>
+              )}
+            </p>
+          </div>
+          <div>
+            <Label required>유형</Label>
+            <Select
+              value={form.type as any}
+              onValueChange={(v) => handleChange('type', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="유형" />
+              </SelectTrigger>
+              <SelectContent>
+                {ProgramTypeEnum.options.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {fieldErrors.type && (
+              <p className="mt-1 text-xs text-red-600">{fieldErrors.type}</p>
             )}
-            {slugAvailable === true && !slugChecking && (
-              <span className="text-green-600">사용 가능한 슬러그입니다.</span>
-            )}
-            {slugAvailable === false && !slugChecking && (
-              <span className="text-red-600">
-                중복된 슬러그입니다. 다른 값을 입력하세요.
-              </span>
-            )}
-            {fieldErrors.slug && (
-              <span className="ml-2 text-red-600">{fieldErrors.slug}</span>
-            )}
-          </p>
-        </div>
-        <div>
-          <label className="mb-1 block text-sm">유형</label>
-          <Select
-            value={form.type as any}
-            onValueChange={(v) => handleChange('type', v)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="유형" />
-            </SelectTrigger>
-            <SelectContent>
-              {ProgramTypeEnum.options.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {fieldErrors.type && (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.type}</p>
-          )}
-        </div>
-        <div>
-          <label className="mb-1 block text-sm">상태</label>
-          <Select
-            value={form.status as any}
-            onValueChange={(v) => handleChange('status', v)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="상태" />
-            </SelectTrigger>
-            <SelectContent>
-              {ProgramStatusEnum.options.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label className="mb-1 block text-sm">시작일</label>
-          <Input
-            type="date"
-            value={form.startAt as any}
-            onChange={(e) => handleChange('startAt', e.target.value)}
-            required
-            aria-invalid={!!fieldErrors.startAt}
-          />
-          {fieldErrors.startAt && (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.startAt}</p>
-          )}
-        </div>
-        <div>
-          <label className="mb-1 block text-sm">종료일</label>
-          <Input
-            type="date"
-            value={form.endAt as any}
-            onChange={(e) => handleChange('endAt', e.target.value)}
-            aria-invalid={!!fieldErrors.endAt}
-          />
-          {fieldErrors.endAt && (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.endAt}</p>
-          )}
-        </div>
-        <div>
-          <label className="mb-1 block text-sm">도시</label>
-          <Input
-            value={form.city as any}
-            onChange={(e) => handleChange('city', e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm">장소</label>
-          <Input
-            value={form.venue as any}
-            onChange={(e) => handleChange('venue', e.target.value)}
-          />
-        </div>
-      </div>
+          </div>
+          <div>
+            <Label>상태</Label>
+            <Select
+              value={form.status as any}
+              onValueChange={(v) => handleChange('status', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="상태" />
+              </SelectTrigger>
+              <SelectContent>
+                {ProgramStatusEnum.options.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div>
-        <label className="mb-1 block text-sm">요약</label>
-        <Textarea
-          value={form.summary as any}
-          onChange={(e) => handleChange('summary', e.target.value)}
-          rows={3}
-        />
-      </div>
-      <div>
-        <label className="mb-1 block text-sm">설명</label>
-        <Textarea
-          value={form.description as any}
-          onChange={(e) => handleChange('description', e.target.value)}
-          rows={6}
-        />
-      </div>
+      {/* 일정 & 장소 */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">일정 & 장소</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <Label required>시작일</Label>
+            <Input
+              type="date"
+              value={form.startAt as any}
+              onChange={(e) => handleChange('startAt', e.target.value)}
+              required
+              aria-invalid={!!fieldErrors.startAt}
+            />
+            {fieldErrors.startAt && (
+              <p className="mt-1 text-xs text-red-600">{fieldErrors.startAt}</p>
+            )}
+          </div>
+          <div>
+            <Label>종료일</Label>
+            <Input
+              type="date"
+              value={form.endAt as any}
+              onChange={(e) => handleChange('endAt', e.target.value)}
+              aria-invalid={!!fieldErrors.endAt}
+            />
+            {fieldErrors.endAt && (
+              <p className="mt-1 text-xs text-red-600">{fieldErrors.endAt}</p>
+            )}
+          </div>
+          <div>
+            <Label>도시</Label>
+            <Input
+              value={form.city as any}
+              onChange={(e) => handleChange('city', e.target.value)}
+            />
+          </div>
+          <div>
+            <Label>장소</Label>
+            <Input
+              value={form.venue as any}
+              onChange={(e) => handleChange('venue', e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-2 block text-sm">대표 이미지</label>
-          <SingleImageBox
-            register={{ name: 'heroUrl', onBlur: () => {}, ref: () => {} }}
-            preview={preview}
-            displayUrl={displayUrl}
-            error={fileError}
-            handleImageChange={handleImageChange}
-            aspectRatio="video"
-          />
-          {fileError && (
-            <div className="mt-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  await retryUpload(async (file: File, url: string) => {
-                    const fd = new FormData();
-                    fd.append('file', file);
-                    await fetch(url, { method: 'POST', body: fd });
-                  });
-                }}
-              >
-                업로드 재시도
-              </Button>
-            </div>
-          )}
-        </div>
-        <div>
-          <label className="mb-2 block text-sm">갤러리 이미지</label>
-          <MultiImageBox
-            register={{ name: 'images', onBlur: () => {}, ref: () => {} }}
-            previews={multiImagePreview as any}
-            handleMultiImageChange={handleMultiImageChange}
-            removeMultiImage={removeMultiImage}
-            error={galleryError}
-            onRetryUpload={async (idx) => {
-              await retryAtWithProgress(idx);
-            }}
-          />
-          {galleryError && (
-            <p className="mt-1 text-xs text-red-600">{galleryError}</p>
-          )}
-        </div>
-      </div>
+      {/* 콘텐츠 */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">콘텐츠</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>요약</Label>
+            <Textarea
+              value={form.summary as any}
+              onChange={(e) => handleChange('summary', e.target.value)}
+              rows={3}
+            />
+          </div>
+          <div>
+            <Label>설명</Label>
+            <Textarea
+              value={form.description as any}
+              onChange={(e) => handleChange('description', e.target.value)}
+              rows={6}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-      <div>
-        <label className="mb-2 block text-sm">크레딧(아티스트 + 역할)</label>
-        <ArtistSelect
-          value={
-            credits.map(({ artistId, artist }) => ({ artistId, artist })) as any
-          }
-          onChange={(arr: any[]) => {
-            // 새 선택값과 기존 role을 머지
-            setCredits((prev) => {
-              const map = new Map(prev.map((c) => [c.artistId, c] as const));
-              return arr.map((x: any) =>
-                map.has(x.artistId)
-                  ? {
-                      ...map.get(x.artistId)!,
-                      artistId: x.artistId,
-                      artist: x.artist,
-                    }
-                  : { artistId: x.artistId, artist: x.artist, role: 'artist' }
-              );
-            });
-          }}
-        />
-
-        {credits.length > 0 && (
-          <div className="mt-3 space-y-2">
-            {credits.map((c, idx) => (
-              <div
-                key={c.artistId}
-                className="flex items-center gap-3 rounded-md border p-3"
-              >
-                <div className="flex-1">
-                  <div className="text-sm font-medium">
-                    {formatArtistName(c.artist.nameKr as any, c.artist.name)}
-                  </div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">역할</span>
-                    <Input
-                      value={c.role}
-                      onChange={(e) =>
-                        setCredits((prev) => {
-                          const next = [...prev];
-                          next[idx] = { ...prev[idx], role: e.target.value };
-                          return next;
-                        })
-                      }
-                      placeholder="artist / curator / vj ..."
-                      className="h-8 max-w-[240px]"
-                    />
-                    <div className="flex flex-wrap gap-1">
-                      {[
-                        'artist',
-                        'curator',
-                        'vj',
-                        'dj',
-                        'producer',
-                        'performer',
-                        'writer',
-                        'composer',
-                      ].map((r) => (
-                        <button
-                          key={r}
-                          type="button"
-                          className="rounded border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
-                          onClick={() =>
-                            setCredits((prev) => {
-                              const next = [...prev];
-                              next[idx] = { ...prev[idx], role: r };
-                              return next;
-                            })
-                          }
-                        >
-                          {r}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+      {/* 미디어 */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">미디어</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label>대표 이미지</Label>
+            <SingleImageBox
+              register={{ name: 'heroUrl', onBlur: () => {}, ref: () => {} }}
+              preview={preview}
+              displayUrl={displayUrl}
+              error={fileError}
+              handleImageChange={handleImageChange}
+              aspectRatio="video"
+            />
+            {fileError && (
+              <div className="mt-2">
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label="크레딧 제거"
-                  onClick={() =>
-                    setCredits((prev) =>
-                      prev.filter((p) => p.artistId !== c.artistId)
-                    )
-                  }
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    await retryUpload(async (file: File, url: string) => {
+                      const fd = new FormData();
+                      fd.append('file', file);
+                      await fetch(url, { method: 'POST', body: fd });
+                    });
+                  }}
                 >
-                  <X className="h-4 w-4" />
+                  업로드 재시도
                 </Button>
               </div>
-            ))}
+            )}
           </div>
-        )}
-      </div>
+          <div>
+            <Label>갤러리 이미지</Label>
+            <MultiImageBox
+              register={{ name: 'images', onBlur: () => {}, ref: () => {} }}
+              previews={multiImagePreview as any}
+              handleMultiImageChange={handleMultiImageChange}
+              removeMultiImage={removeMultiImage}
+              error={galleryError}
+              onRetryUpload={async (idx) => {
+                await retryAtWithProgress(idx);
+              }}
+            />
+            {galleryError && (
+              <p className="mt-1 text-xs text-red-600">{galleryError}</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 크레딧 */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">크레딧</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ArtistSelect
+            value={
+              credits.map(({ artistId, artist }) => ({
+                artistId,
+                artist,
+              })) as any
+            }
+            onChange={(arr: any[]) => {
+              // 새 선택값과 기존 role을 머지
+              setCredits((prev) => {
+                const map = new Map(prev.map((c) => [c.artistId, c] as const));
+                return arr.map((x: any) =>
+                  map.has(x.artistId)
+                    ? {
+                        ...map.get(x.artistId)!,
+                        artistId: x.artistId,
+                        artist: x.artist,
+                      }
+                    : { artistId: x.artistId, artist: x.artist, role: 'artist' }
+                );
+              });
+            }}
+          />
+
+          {credits.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {credits.map((c, idx) => (
+                <div
+                  key={c.artistId}
+                  className="flex items-center gap-3 rounded-md border p-3"
+                >
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">
+                      {formatArtistName(c.artist.nameKr as any, c.artist.name)}
+                    </div>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        역할
+                      </span>
+                      <Input
+                        value={c.role}
+                        onChange={(e) =>
+                          setCredits((prev) => {
+                            const next = [...prev];
+                            next[idx] = { ...prev[idx], role: e.target.value };
+                            return next;
+                          })
+                        }
+                        placeholder="artist / curator / vj ..."
+                        className="h-8 max-w-[240px]"
+                      />
+                      <div className="flex flex-wrap gap-1">
+                        {[
+                          'artist',
+                          'curator',
+                          'vj',
+                          'dj',
+                          'producer',
+                          'performer',
+                          'writer',
+                          'composer',
+                        ].map((r) => (
+                          <button
+                            key={r}
+                            type="button"
+                            className="rounded border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
+                            onClick={() =>
+                              setCredits((prev) => {
+                                const next = [...prev];
+                                next[idx] = { ...prev[idx], role: r };
+                                return next;
+                              })
+                            }
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="크레딧 제거"
+                    onClick={() =>
+                      setCredits((prev) =>
+                        prev.filter((p) => p.artistId !== c.artistId)
+                      )
+                    }
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="flex justify-end gap-3">
         <Button

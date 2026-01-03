@@ -1,5 +1,5 @@
-import ArtistFormView from '@/modules/artists/ui/views/artist-form-view';
 import { getArtistById } from '@/modules/artists/server/actions';
+import ArtistFormView from '@/modules/artists/ui/views/artist-form-view';
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const id = (await params).id;

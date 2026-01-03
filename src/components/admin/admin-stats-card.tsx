@@ -1,10 +1,10 @@
+import type { LucideIcon } from 'lucide-react';
 import {
   Card,
   CardContent,
-  CardHeader,
   CardDescription,
+  CardHeader,
 } from '@/components/ui/card';
-import { type LucideIcon } from 'lucide-react';
 
 interface AdminStatsCardProps {
   title: string;

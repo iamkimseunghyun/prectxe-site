@@ -1,7 +1,7 @@
-import { JournalFormView } from '@/modules/journal/ui/views/journal-form-view';
-import { createArticle } from '@/modules/journal/server/actions';
-import getSession from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
+import getSession from '@/lib/auth/session';
+import { createArticle } from '@/modules/journal/server/actions';
+import { JournalFormView } from '@/modules/journal/ui/views/journal-form-view';
 
 export default async function Page() {
   async function onSubmit(formData: any) {

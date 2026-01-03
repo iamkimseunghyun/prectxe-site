@@ -3,19 +3,19 @@
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Carousel,
+  type CarouselApi,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from '@/components/ui/carousel';
 import { getImageUrl } from '@/lib/utils';
 
 type GalleryImage = { id: string; imageUrl: string; alt: string };

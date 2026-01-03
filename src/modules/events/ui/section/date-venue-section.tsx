@@ -1,5 +1,5 @@
-import { Control } from 'react-hook-form';
-
+import type { Control } from 'react-hook-form';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
@@ -7,6 +7,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -14,9 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
 import type { Event } from '@/lib/schemas';
-import { Input } from '@/components/ui/input';
 
 interface DateVenueSectionProps {
   control: Control<Event>;

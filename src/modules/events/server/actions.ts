@@ -1,12 +1,12 @@
 'use server';
 
-import { prisma } from '@/lib/db/prisma';
-import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
+import { unstable_cache as next_cache, revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { CACHE_TIMES, PAGINATION } from '@/lib/constants/constants';
-import { Event, eventSchema, EventType } from '@/lib/schemas';
-import { extractCloudflareImageId } from '@/lib/utils';
 import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
+import { CACHE_TIMES, PAGINATION } from '@/lib/constants/constants';
+import { prisma } from '@/lib/db/prisma';
+import { type Event, type EventType, eventSchema } from '@/lib/schemas';
+import { extractCloudflareImageId } from '@/lib/utils';
 
 export async function createEvent(
   input: z.infer<typeof eventSchema>,

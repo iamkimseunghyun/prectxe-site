@@ -1,15 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
-
 import { Button } from '@/components/ui/button';
-
-import { deleteProject } from '@/modules/projects/server/actions';
-import { deleteArtwork } from '@/modules/artworks/server/actions';
+import { useToast } from '@/hooks/use-toast';
 import { deleteArtist } from '@/modules/artists/server/actions';
-import { deleteVenue } from '@/modules/venues/server/actions';
+import { deleteArtwork } from '@/modules/artworks/server/actions';
 import { deleteEvent } from '@/modules/events/server/actions';
+import { deleteProject } from '@/modules/projects/server/actions';
+import { deleteVenue } from '@/modules/venues/server/actions';
 
 const AdminButton = ({
   id,

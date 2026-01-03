@@ -1,7 +1,7 @@
-import { Card } from '@/components/ui/card';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import Image from 'next/image';
+import { Card } from '@/components/ui/card';
 
 interface ProjectCardProps {
   project: {

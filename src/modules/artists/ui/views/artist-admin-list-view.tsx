@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/db/prisma';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { prisma } from '@/lib/db/prisma';
 import { ArtistTable } from '../components/artist-table';
 
 export async function ArtistAdminListView() {

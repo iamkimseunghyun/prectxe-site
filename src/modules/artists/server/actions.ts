@@ -1,28 +1,27 @@
 'use server';
 
-import { prisma } from '@/lib/db/prisma';
+import { Prisma } from '@prisma/client';
 
 import {
-  revalidatePath,
   unstable_cache as next_cache,
+  revalidatePath,
   unstable_cacheTag,
 } from 'next/cache';
-
+import type { z } from 'zod';
+import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
 import {
   CACHE_TIMES,
   PAGINATION,
   SELECT_FIELDS,
 } from '@/lib/constants/constants';
+import { prisma } from '@/lib/db/prisma';
 import {
   artistSchema,
-  SimpleArtist,
+  type SimpleArtist,
   simpleArtistSchema,
   updateArtistSchema,
 } from '@/lib/schemas';
 import { extractCloudflareImageId } from '@/lib/utils';
-import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
-import { Prisma } from '@prisma/client';
-import { z } from 'zod';
 
 export const getArtistByIdWithCache =
   // next_cache(

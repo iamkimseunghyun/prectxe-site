@@ -1,12 +1,12 @@
 'use client';
 
-import { PAGINATION } from '@/lib/constants/constants';
-import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
-import ArtistCard from '@/modules/artists/ui/section/artist-card';
-import { getMoreArtists } from '@/modules/artists/server/actions';
-import Spinner from '@/components/icons/spinner';
 import React from 'react';
+import Spinner from '@/components/icons/spinner';
 import { Button } from '@/components/ui/button';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
+import { PAGINATION } from '@/lib/constants/constants';
+import { getMoreArtists } from '@/modules/artists/server/actions';
+import ArtistCard from '@/modules/artists/ui/section/artist-card';
 
 // 기본적인 이미지 타입
 interface ImageData {

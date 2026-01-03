@@ -1,14 +1,12 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
+import type { Venue } from '@prisma/client';
 import { MapPin } from 'lucide-react';
-import Link from 'next/link';
-
-import { Venue } from '@prisma/client';
-import { getImageUrl } from '@/lib/utils';
-
 import Image from 'next/image';
-import { ImageData } from '@/lib/schemas';
+import Link from 'next/link';
+import { Card, CardContent } from '@/components/ui/card';
+import type { ImageData } from '@/lib/schemas';
+import { getImageUrl } from '@/lib/utils';
 
 interface VenueListProps {
   initialData: {

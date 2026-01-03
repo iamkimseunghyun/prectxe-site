@@ -15,7 +15,9 @@ export async function JournalListView() {
       )}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {data?.map((a) => <ArticleCard key={a.slug} article={a as any} />)}
+        {data?.map((a) => (
+          <ArticleCard key={a.slug} article={a as any} />
+        ))}
       </div>
     </div>
   );

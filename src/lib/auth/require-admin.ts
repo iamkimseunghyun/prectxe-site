@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/db/prisma';
 import getSession from '@/lib/auth/session';
+import { prisma } from '@/lib/db/prisma';
 
 export async function requireAdmin() {
   const session = await getSession();

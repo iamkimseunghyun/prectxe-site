@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { deleteArtist } from '@/modules/artists/server/actions';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { deleteArtist } from '@/modules/artists/server/actions';
 
 export async function DELETE(
   _req: Request,

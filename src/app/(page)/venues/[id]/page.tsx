@@ -1,15 +1,13 @@
 import { Calendar, MapPin, Share2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import type { Metadata } from 'next';
 import CarouselGallery from '@/components/image/carousel-gallery';
-import { Metadata } from 'next';
-
 import AdminButton from '@/components/layout/admin-button';
-import getSession from '@/lib/auth/session';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
-
-import { getVenueById } from '@/modules/venues/server/actions';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import canManage from '@/lib/auth/make-login';
+import getSession from '@/lib/auth/session';
+import { getVenueById } from '@/modules/venues/server/actions';
 
 export async function generateMetadata({
   params,

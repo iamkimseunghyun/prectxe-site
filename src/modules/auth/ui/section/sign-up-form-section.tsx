@@ -1,11 +1,14 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { signUpSchema } from '@/lib/schemas';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { signUp } from '@/modules/auth/server/actions';
+import type { z } from 'zod';
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -15,12 +18,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { useMutation } from '@tanstack/react-query';
-import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
+import { signUpSchema } from '@/lib/schemas';
+import { signUp } from '@/modules/auth/server/actions';
 
 type SignUpFormValues = z.infer<typeof signUpSchema>;
 

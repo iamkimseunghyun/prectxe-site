@@ -1,6 +1,6 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { formatDate, getImageUrl } from '@/lib/utils';
-import Image from 'next/image';
 import { getEventsByArtistId } from '@/modules/events/server/actions';
 
 const EventListView = async ({ artistId }: { artistId: string }) => {

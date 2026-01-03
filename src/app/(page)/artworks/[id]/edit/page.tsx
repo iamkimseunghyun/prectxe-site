@@ -1,8 +1,8 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db/prisma';
-import ArtworkFormView from '@/modules/artworks/ui/views/artwork-form-view';
 import { getArtworkById } from '@/modules/artworks/server/actions';
+import ArtworkFormView from '@/modules/artworks/ui/views/artwork-form-view';
 export const metadata: Metadata = {
   title: '작품 수정',
   robots: { index: false, follow: false },

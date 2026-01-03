@@ -1,7 +1,7 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import getSession from '@/lib/auth/session';
-import ArtworkFormView from '@/modules/artworks/ui/views/artwork-form-view';
 import { getArtistsPage } from '@/modules/artists/server/actions';
+import ArtworkFormView from '@/modules/artworks/ui/views/artwork-form-view';
 
 export const metadata: Metadata = {
   title: '작품 등록',

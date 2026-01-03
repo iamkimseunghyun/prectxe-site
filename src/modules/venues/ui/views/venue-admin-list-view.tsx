@@ -1,5 +1,5 @@
-import { getAllVenues } from '@/modules/venues/server/actions';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { getAllVenues } from '@/modules/venues/server/actions';
 import { VenueTable } from '../components/venue-table';
 
 export async function VenueAdminListView() {

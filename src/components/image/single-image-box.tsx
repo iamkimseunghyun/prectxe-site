@@ -1,8 +1,11 @@
 'use client';
 
-import { ChangeEvent } from 'react';
 import { ImagePlus } from 'lucide-react';
-import { ControllerRenderProps, UseFormRegisterReturn } from 'react-hook-form';
+import type { ChangeEvent } from 'react';
+import type {
+  ControllerRenderProps,
+  UseFormRegisterReturn,
+} from 'react-hook-form';
 
 interface ImagePreview {
   url: string;

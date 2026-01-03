@@ -1,14 +1,11 @@
-import PageHeader from '@/components/layout/page-header';
+import type { Metadata } from 'next';
 
 import { Suspense } from 'react';
-import { Metadata } from 'next';
-
-import { PAGINATION } from '@/lib/constants/constants';
-
+import PageHeader from '@/components/layout/page-header';
 import GridSkeleton from '@/components/layout/skeleton/grid-skeleton';
-
-import { ArtistListView } from '@/modules/artists/ui/views/artist-list-view';
+import { PAGINATION } from '@/lib/constants/constants';
 import { getArtistsPage } from '@/modules/artists/server/actions';
+import { ArtistListView } from '@/modules/artists/ui/views/artist-list-view';
 
 export const dynamic = 'force-static';
 export const revalidate = 86400;

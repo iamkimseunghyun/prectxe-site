@@ -1,7 +1,7 @@
 import Image from 'next/image';
-import { getArticleBySlug } from '@/modules/journal/server/actions';
-import { getImageUrl } from '@/lib/utils';
 import ArticleSchema from '@/components/seo/article-schema';
+import { getImageUrl } from '@/lib/utils';
+import { getArticleBySlug } from '@/modules/journal/server/actions';
 
 export async function JournalDetailView({ slug }: { slug: string }) {
   const article = await getArticleBySlug(slug);

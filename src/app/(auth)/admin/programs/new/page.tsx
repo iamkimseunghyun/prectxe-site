@@ -1,7 +1,7 @@
-import { ProgramFormView } from '@/modules/programs/ui/views/program-form-view';
-import { createProgram } from '@/modules/programs/server/actions';
-import getSession from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
+import getSession from '@/lib/auth/session';
+import { createProgram } from '@/modules/programs/server/actions';
+import { ProgramFormView } from '@/modules/programs/ui/views/program-form-view';
 
 export default async function Page() {
   async function onSubmit(formData: any) {

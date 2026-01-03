@@ -1,17 +1,17 @@
-import React, { useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   CalendarDays,
-  MapPin,
+  ChevronRight,
   Clock,
+  Filter as FilterIcon,
+  Heart,
+  MapPin,
+  Moon,
   PlayCircle,
   Search as SearchIcon,
-  Filter as FilterIcon,
-  ChevronRight,
-  Heart,
   Sun,
-  Moon,
 } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 
 /**
  * PRECTXE Web Wireframes & UI Kit (v0.1)

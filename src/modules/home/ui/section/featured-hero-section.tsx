@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import Image from 'next/image';
-import { listPrograms } from '@/modules/programs/server/actions';
+import Link from 'next/link';
 import { formatEventDate, getImageUrl } from '@/lib/utils';
+import { listPrograms } from '@/modules/programs/server/actions';
 
 export async function FeaturedHeroSection() {
   // Archive-first: pick the most recent completed program; fallback to upcoming
@@ -19,7 +19,7 @@ export async function FeaturedHeroSection() {
     : '/images/placeholder.png';
 
   return (
-    <section className="min-h-[calc(100vh-var(--header-height))]">
+    <section className="min-h-screen">
       {featured ? (
         <Link href={`/programs/${featured.slug}`} className="block h-full">
           <div className="relative h-[70vh] w-full">

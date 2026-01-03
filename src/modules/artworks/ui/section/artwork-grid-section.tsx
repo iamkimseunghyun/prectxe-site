@@ -1,16 +1,15 @@
 'use client';
 
-import { PAGINATION } from '@/lib/constants/constants';
-import { getMoreArtworks } from '@/modules/artworks/server/actions';
-
-import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
-import { getImageUrl } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import Link from 'next/link';
 import Image from 'next/image';
-import Spinner from '@/components/icons/spinner';
+import Link from 'next/link';
 import React from 'react';
+import Spinner from '@/components/icons/spinner';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
+import { PAGINATION } from '@/lib/constants/constants';
+import { getImageUrl } from '@/lib/utils';
+import { getMoreArtworks } from '@/modules/artworks/server/actions';
 
 type ArtworkWithImages = {
   id: string;

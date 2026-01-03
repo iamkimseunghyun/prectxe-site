@@ -1,16 +1,16 @@
 import Image from 'next/image';
-import { getProgramBySlug } from '@/modules/programs/server/actions';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
+import ProgramSchema from '@/components/seo/program-schema';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   artistInitials,
   formatArtistName,
   formatEventDate,
   getImageUrl,
 } from '@/lib/utils';
-import ProgramSchema from '@/components/seo/program-schema';
-import ProgramGallery from '@/modules/programs/ui/section/program-gallery';
+import { getProgramBySlug } from '@/modules/programs/server/actions';
 import ShareButton from '@/modules/programs/ui/components/share-button';
+import ProgramGallery from '@/modules/programs/ui/section/program-gallery';
 
 export async function ProgramDetailView({ slug }: { slug: string }) {
   const program = await getProgramBySlug(slug);

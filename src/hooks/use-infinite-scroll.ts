@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { PAGINATION } from '@/lib/constants/constants';
 
 interface UseInfiniteScrollOptions<T> {

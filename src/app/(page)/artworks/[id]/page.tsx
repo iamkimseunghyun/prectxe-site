@@ -1,6 +1,12 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@radix-ui/react-select';
+import type { Metadata } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
+import AdminButton from '@/components/layout/admin-button';
+import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
+import ArtworkSchema from '@/components/seo/artwork-schema';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Carousel,
   CarouselContent,
@@ -8,21 +14,12 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import Image from 'next/image';
-
-import AdminButton from '@/components/layout/admin-button';
-import getSession from '@/lib/auth/session';
-import Link from 'next/link';
-import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
-
-import { Metadata } from 'next';
-import { prisma } from '@/lib/db/prisma';
-
-import { formatArtistName, getImageUrl } from '@/lib/utils';
-import { ImageData } from '@/lib/schemas';
-import ArtworkSchema from '@/components/seo/artwork-schema';
-import { getArtworkById } from '@/modules/artworks/server/actions';
 import canManage from '@/lib/auth/make-login';
+import getSession from '@/lib/auth/session';
+import { prisma } from '@/lib/db/prisma';
+import type { ImageData } from '@/lib/schemas';
+import { formatArtistName, getImageUrl } from '@/lib/utils';
+import { getArtworkById } from '@/modules/artworks/server/actions';
 
 export async function generateMetadata({
   params,

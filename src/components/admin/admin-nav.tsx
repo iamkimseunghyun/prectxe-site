@@ -1,17 +1,17 @@
 'use client';
 
+import {
+  Archive,
+  FileText,
+  Image,
+  LayoutDashboard,
+  type LucideIcon,
+  MapPin,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import {
-  LayoutDashboard,
-  Archive,
-  FileText,
-  Users,
-  MapPin,
-  Image,
-  type LucideIcon,
-} from 'lucide-react';
 
 interface NavItem {
   value: string;

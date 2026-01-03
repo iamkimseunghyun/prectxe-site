@@ -1,25 +1,21 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-
-import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { Button } from '@/components/ui/button';
-
-import { useRouter } from 'next/navigation';
-import { toast } from '@/hooks/use-toast';
-
-import { formatDateForForm, uploadImage } from '@/lib/utils';
-import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import SingleImageBox from '@/components/image/single-image-box';
-
-import { Event, eventSchema, EventStatus, EventType } from '@/lib/schemas';
+import { Button } from '@/components/ui/button';
+import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
+import { toast } from '@/hooks/use-toast';
+import { type Event, EventStatus, EventType, eventSchema } from '@/lib/schemas';
+import { formatDateForForm, uploadImage } from '@/lib/utils';
 import { createEvent, updateEvent } from '@/modules/events/server/actions';
-import TicketsSection from '@/modules/events/ui/section/ticket-section';
-import DateVenueSection from '@/modules/events/ui/section/date-venue-section';
 import BasicInfoSection from '@/modules/events/ui/section/basic-info-section';
+import DateVenueSection from '@/modules/events/ui/section/date-venue-section';
 import OrganizersSection from '@/modules/events/ui/section/organizer-section';
+import TicketsSection from '@/modules/events/ui/section/ticket-section';
 
 interface EventFormProps {
   mode: 'create' | 'edit';

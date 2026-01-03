@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { DeleteButton } from '@/components/admin/delete-button';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -9,8 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { DeleteButton } from '@/components/admin/delete-button';
 
 type Article = {
   slug: string;

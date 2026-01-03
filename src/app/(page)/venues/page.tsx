@@ -1,5 +1,5 @@
-import VenueListView from '@/modules/venues/ui/views/venue-list-view';
 import { getAllVenues } from '@/modules/venues/server/actions';
+import VenueListView from '@/modules/venues/ui/views/venue-list-view';
 
 const VenuesPage = async ({
   searchParams,

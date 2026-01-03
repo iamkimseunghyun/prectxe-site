@@ -1,5 +1,5 @@
-import { listProgramsPaged } from '@/modules/programs/server/actions';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { listProgramsPaged } from '@/modules/programs/server/actions';
 import { ProgramTable } from '../components/program-table';
 
 export async function ProgramAdminListView() {

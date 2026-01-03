@@ -1,10 +1,10 @@
-import React from 'react';
-import { prisma } from '@/lib/db/prisma';
-import getSession from '@/lib/auth/session';
+import { LogOut } from 'lucide-react';
 import { redirect } from 'next/navigation';
+import type React from 'react';
 import { AdminNav } from '@/components/admin/admin-nav';
 import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
+import getSession from '@/lib/auth/session';
+import { prisma } from '@/lib/db/prisma';
 
 async function handleLogout() {
   'use server';

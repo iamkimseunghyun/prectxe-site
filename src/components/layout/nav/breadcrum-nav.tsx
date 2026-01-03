@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import { EntityType, ROUTE_CONFIG } from '@/lib/route-config';
+import Link from 'next/link';
 import CopyUrlButton from '@/components/layout/nav/copy-url-button';
+import { type EntityType, ROUTE_CONFIG } from '@/lib/route-config';
 
 interface BreadcrumbNavProps {
   entityType: EntityType;

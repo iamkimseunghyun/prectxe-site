@@ -1,11 +1,11 @@
 'use server';
 
-import { prisma } from '@/lib/db/prisma';
-import { z } from 'zod';
-import { signInSchema, signUpSchema } from '@/lib/schemas';
 import bcrypt from 'bcryptjs';
 import { getIronSession } from 'iron-session';
 import { cookies } from 'next/headers';
+import type { z } from 'zod';
+import { prisma } from '@/lib/db/prisma';
+import { signInSchema, signUpSchema } from '@/lib/schemas';
 
 interface SessionContent {
   id?: string;

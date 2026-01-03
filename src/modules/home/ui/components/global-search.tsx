@@ -1,7 +1,5 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Calendar,
   Clock,
@@ -13,23 +11,26 @@ import {
   User,
   X,
 } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogOverlay,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
-  DialogDescription,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { cn, getImageUrl } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
+import { cn, getImageUrl } from '@/lib/utils';
 import { globalSearch } from '@/modules/home/server/actions';
-import Image from 'next/image';
-import Link from 'next/link';
 
 type SearchResult = {
   id: string;
@@ -231,14 +232,15 @@ const GlobalSearch = () => {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
+      {/* 플로팅 검색 버튼 */}
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          size="sm"
-          className="flex h-9 w-9 items-center justify-center gap-x-4 rounded-2xl p-0 sm:h-9 sm:w-auto sm:px-3 sm:py-2"
+          size="icon"
+          className="fixed bottom-6 right-6 z-40 h-12 w-12 rounded-full border-neutral-200 bg-white shadow-lg transition-all hover:scale-105 hover:shadow-xl"
+          aria-label="검색 열기 (⌘K)"
         >
-          <Search className="h-4 w-4 text-black/40" />
-          <span className="sr-only text-black/40 sm:not-sr-only">Search</span>
+          <Search className="h-5 w-5 text-neutral-600" />
         </Button>
       </DialogTrigger>
 

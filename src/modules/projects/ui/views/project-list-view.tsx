@@ -1,9 +1,8 @@
-import { ProjectCard } from '@/modules/projects/ui/section/project-card';
-
+import { Suspense } from 'react';
+import CardSkeleton from '@/components/layout/skeleton/card-skeleton';
 import { getAllProjects } from '@/modules/projects/server/actions';
 import SelectFilter from '@/modules/projects/ui/components/select-filter';
-import CardSkeleton from '@/components/layout/skeleton/card-skeleton';
-import { Suspense } from 'react';
+import { ProjectCard } from '@/modules/projects/ui/section/project-card';
 
 // Define the Skeleton component for loading state
 const ProjectListSkeleton = () => (

@@ -1,6 +1,6 @@
+import Link from 'next/link';
 import { listArticles } from '@/modules/journal/server/actions';
 import { ArticleCard } from '@/modules/journal/ui/section/article-card';
-import Link from 'next/link';
 
 export async function JournalHighlightsSection() {
   const { data } = await listArticles();

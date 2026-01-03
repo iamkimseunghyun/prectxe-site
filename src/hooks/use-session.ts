@@ -1,6 +1,7 @@
 // hooks/useSession.ts
 import { useQuery } from '@tanstack/react-query';
-import { SessionData } from '@/app/api/auth/session/route';
+import type { SessionData } from '@/app/api/auth/session/route';
+
 // API 응답 타입 import
 
 // API 호출 함수 (NavBar에서 사용한 것과 동일)

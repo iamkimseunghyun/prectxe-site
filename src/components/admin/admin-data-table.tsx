@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { DeleteButton, type AdminResource } from './delete-button';
+import { type AdminResource, DeleteButton } from './delete-button';
 
 interface Column<T> {
   key: string;

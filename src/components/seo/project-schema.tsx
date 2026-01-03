@@ -1,5 +1,5 @@
-import { ProjectCategory, projectSchema } from '@/lib/schemas';
 import { z } from 'zod';
+import { type ProjectCategory, projectSchema } from '@/lib/schemas';
 
 const categoryToSchemaType: Record<ProjectCategory, string> = {
   exhibition: 'ExhibitionEvent',
@@ -96,4 +96,5 @@ const ProjectSchema = ({ project }: { project: ProjectSchemaSEO }) => {
 };
 
 export default ProjectSchema;
+
 import { formatArtistName } from '@/lib/utils';

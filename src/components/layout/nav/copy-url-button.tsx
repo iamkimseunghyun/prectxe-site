@@ -1,8 +1,8 @@
 'use client';
 
+import { CopyCheckIcon, CopyIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { CopyCheckIcon, CopyIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const CopyUrlButton = () => {

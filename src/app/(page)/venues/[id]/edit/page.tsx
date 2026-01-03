@@ -1,8 +1,8 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db/prisma';
-import VenueFormView from '@/modules/venues/ui/views/venue-form-view';
 import { getVenueById } from '@/modules/venues/server/actions';
+import VenueFormView from '@/modules/venues/ui/views/venue-form-view';
 
 export const metadata: Metadata = {
   title: '장소 프로필 수정',

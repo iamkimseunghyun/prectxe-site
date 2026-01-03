@@ -1,18 +1,15 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-
-import {
-  formatDate,
-  formatDateForInput,
-  uploadGalleryImages,
-  uploadSingleImage,
-} from '@/lib/utils';
-import { categories } from '@/lib/constants/constants';
+import type { z } from 'zod';
+import UploadProgress from '@/components/icons/upload-progress';
+import MultiImageBox from '@/components/image/multi-image-box';
+import SingleImageBox from '@/components/image/single-image-box';
+import FormSubmitButton from '@/components/layout/form-submit-button';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -21,6 +18,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -31,34 +36,26 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-
-import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
-import SingleImageBox from '@/components/image/single-image-box';
-import MultiImageBox from '@/components/image/multi-image-box';
-import UploadProgress from '@/components/icons/upload-progress';
-import FormSubmitButton from '@/components/layout/form-submit-button';
-
+import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
+import { categories } from '@/lib/constants/constants';
 import {
-  CreateProjectInput,
+  type CreateProjectInput,
   createProjectSchema,
-  projectSchema,
-  UpdateProjectInput,
+  type projectSchema,
+  type UpdateProjectInput,
 } from '@/lib/schemas';
-import { Button } from '@/components/ui/button';
+import {
+  formatDate,
+  formatDateForInput,
+  uploadGalleryImages,
+  uploadSingleImage,
+} from '@/lib/utils';
+import ArtistSelect from '@/modules/artists/ui/components/artist-select';
 import {
   createProject,
   updateProject,
 } from '@/modules/projects/server/actions';
-import ArtistSelect from '@/modules/artists/ui/components/artist-select';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 
 type ProjectFormProps = {
   mode: 'create' | 'edit';

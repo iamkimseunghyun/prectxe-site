@@ -1,8 +1,8 @@
 import React, { Suspense } from 'react';
 import GridSkeleton from '@/components/layout/skeleton/grid-skeleton';
-import ArtworkGridSection from '@/modules/artworks/ui/section/artwork-grid-section';
-import { getArtworksPage } from '@/modules/artworks/server/actions';
 import { PAGINATION } from '@/lib/constants/constants';
+import { getArtworksPage } from '@/modules/artworks/server/actions';
+import ArtworkGridSection from '@/modules/artworks/ui/section/artwork-grid-section';
 
 export const ArtworkListView = async () => {
   const initialArtworks = await getArtworksPage(

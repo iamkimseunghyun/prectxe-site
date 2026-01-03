@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { ImagePreview } from '@/lib/schemas';
 import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from '@/lib/constants/constants';
+import type { ImagePreview } from '@/lib/schemas';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -105,7 +105,7 @@ export const uploadGalleryImages = async (previews: ImagePreview[]) => {
 };
 
 export const extractCloudflareImageId = (url: string) => {
-  const regex = /imagedelivery\.net\/[^\/]+\/([^\/]+)/;
+  const regex = /imagedelivery\.net\/[^/]+\/([^/]+)/;
   const match = url.match(regex);
   return match ? match[1] : null;
 };

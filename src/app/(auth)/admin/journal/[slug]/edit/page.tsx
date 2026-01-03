@@ -1,10 +1,10 @@
-import { JournalFormView } from '@/modules/journal/ui/views/journal-form-view';
+import { redirect } from 'next/navigation';
+import getSession from '@/lib/auth/session';
 import {
   getArticleBySlug,
   updateArticle,
 } from '@/modules/journal/server/actions';
-import getSession from '@/lib/auth/session';
-import { redirect } from 'next/navigation';
+import { JournalFormView } from '@/modules/journal/ui/views/journal-form-view';
 
 export default async function Page({
   params,

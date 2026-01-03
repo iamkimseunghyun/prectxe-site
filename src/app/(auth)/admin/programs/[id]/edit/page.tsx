@@ -1,11 +1,11 @@
-import { ProgramFormView } from '@/modules/programs/ui/views/program-form-view';
+import { redirect } from 'next/navigation';
+import getSession from '@/lib/auth/session';
+import { prisma } from '@/lib/db/prisma';
 import {
   getProgramBySlug,
   updateProgram,
 } from '@/modules/programs/server/actions';
-import { prisma } from '@/lib/db/prisma';
-import getSession from '@/lib/auth/session';
-import { redirect } from 'next/navigation';
+import { ProgramFormView } from '@/modules/programs/ui/views/program-form-view';
 
 export async function generateStaticParams() {
   const programs = await prisma.program.findMany({ select: { id: true } });

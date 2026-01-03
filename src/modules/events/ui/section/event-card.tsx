@@ -1,3 +1,7 @@
+import { Calendar, Clock, MapPin } from 'lucide-react';
+import Image from 'next/image';
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
 import {
   Card,
   CardContent,
@@ -6,11 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import Image from 'next/image';
 import { formatEventDate, getImageUrl } from '@/lib/utils';
-import { Calendar, Clock, MapPin } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import React from 'react';
 
 type EventStatus = 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
 type EventType =

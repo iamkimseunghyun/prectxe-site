@@ -1,10 +1,8 @@
+import { notFound } from 'next/navigation';
+import getSession from '@/lib/auth/session';
 import { prisma } from '@/lib/db/prisma';
 
-import { notFound } from 'next/navigation';
-
-import getSession from '@/lib/auth/session';
-
-import { Event } from '@/lib/schemas';
+import type { Event } from '@/lib/schemas';
 import { getEventById } from '@/modules/events/server/actions';
 import { EventFormView } from '@/modules/events/ui/views/event-form-view';
 

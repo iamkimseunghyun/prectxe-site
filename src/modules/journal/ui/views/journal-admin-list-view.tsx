@@ -1,5 +1,5 @@
-import { listArticles } from '@/modules/journal/server/actions';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { listArticles } from '@/modules/journal/server/actions';
 import { ArticleTable } from '../components/article-table';
 
 export async function JournalAdminListView() {

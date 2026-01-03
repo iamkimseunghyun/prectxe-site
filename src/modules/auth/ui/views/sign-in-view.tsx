@@ -1,7 +1,7 @@
-import React from 'react';
-import SignInFormSection from '@/modules/auth/ui/section/sign-in-form-section';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import Link from 'next/link';
+import React from 'react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import SignInFormSection from '@/modules/auth/ui/section/sign-in-form-section';
 
 const SignInView = () => {
   return (

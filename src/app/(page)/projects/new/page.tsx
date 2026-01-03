@@ -1,10 +1,8 @@
+import type { Metadata } from 'next';
 import React from 'react';
-
-import { Metadata } from 'next';
 import getSession from '@/lib/auth/session';
-
-import ProjectFormView from '@/modules/projects/ui/views/project-form-view';
 import { getArtistsPage } from '@/modules/artists/server/actions';
+import ProjectFormView from '@/modules/projects/ui/views/project-form-view';
 
 export const metadata: Metadata = {
   title: '프로젝트 등록',

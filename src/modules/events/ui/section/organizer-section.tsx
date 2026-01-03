@@ -1,6 +1,7 @@
-import { Control, useFieldArray } from 'react-hook-form';
 import { Plus, Trash2 } from 'lucide-react';
-
+import { type Control, useFieldArray } from 'react-hook-form';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
@@ -8,7 +9,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -16,8 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -170,4 +169,5 @@ const OrganizersSection = ({
   );
 };
 export default OrganizersSection;
+
 import { formatArtistName } from '@/lib/utils';

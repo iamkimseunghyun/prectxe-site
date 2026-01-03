@@ -1,6 +1,10 @@
 'use client';
 
+import { X } from 'lucide-react';
 import React, { useState } from 'react';
+import Spinner from '@/components/icons/spinner';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,15 +12,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { formatArtistName, getImageUrl } from '@/lib/utils';
-import { X } from 'lucide-react';
-import Spinner from '@/components/icons/spinner';
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
-import { getMoreArtists } from '@/modules/artists/server/actions';
 import { PAGINATION } from '@/lib/constants/constants';
+import { formatArtistName, getImageUrl } from '@/lib/utils';
+import { getMoreArtists } from '@/modules/artists/server/actions';
 
 type Artist = {
   id: string;

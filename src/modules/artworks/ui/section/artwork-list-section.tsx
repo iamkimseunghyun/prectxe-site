@@ -1,6 +1,6 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { getImageUrl } from '@/lib/utils';
-import Image from 'next/image';
 import { getArtworksByArtistId } from '@/modules/artworks/server/actions';
 
 const ArtworkListSection = async ({ artistId }: { artistId: string }) => {

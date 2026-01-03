@@ -1,8 +1,8 @@
 'use client';
 
-import { StatusChips } from './status-chips';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
+import { StatusChips } from './status-chips';
 
 export function ProgramFilters({ pathname }: { pathname: string }) {
   // Keep URL in a clean state when users land with old params

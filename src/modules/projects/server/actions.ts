@@ -1,19 +1,18 @@
 'use server';
 
-import { prisma } from '@/lib/db/prisma';
-import { revalidatePath, unstable_cache as next_cache } from 'next/cache';
-
 import { Prisma } from '@prisma/client';
+import { unstable_cache as next_cache, revalidatePath } from 'next/cache';
+import type { z } from 'zod';
+import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
+import { CACHE_TIMES } from '@/lib/constants/constants';
+import { prisma } from '@/lib/db/prisma';
 import {
   createProjectSchema,
-  ProjectCategory,
-  projectSchema,
+  type ProjectCategory,
+  type projectSchema,
   updateProjectSchema,
 } from '@/lib/schemas';
-import { CACHE_TIMES } from '@/lib/constants/constants';
 import { extractCloudflareImageId } from '@/lib/utils';
-import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
-import { z } from 'zod';
 
 export const getAllProjectsWithCache = next_cache(
   async (year?: string, category?: string, sort?: string, search?: string) => {

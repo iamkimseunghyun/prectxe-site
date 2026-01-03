@@ -1,11 +1,14 @@
 'use client';
 
-import { ChangeEvent } from 'react';
-import { ControllerRenderProps, UseFormRegisterReturn } from 'react-hook-form';
-import { ImagePlus, X, RotateCcw } from 'lucide-react';
+import { ImagePlus, RotateCcw, X } from 'lucide-react';
 import Image from 'next/image';
-import { getImageUrl } from '@/lib/utils';
+import type { ChangeEvent } from 'react';
+import type {
+  ControllerRenderProps,
+  UseFormRegisterReturn,
+} from 'react-hook-form';
 import { Button } from '@/components/ui/button';
+import { getImageUrl } from '@/lib/utils';
 
 // Accept either RHF register return or controller field, or a minimal shape used here
 type RegisterType =

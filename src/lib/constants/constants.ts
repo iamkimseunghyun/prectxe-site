@@ -1,6 +1,6 @@
+import { LucideMail } from 'lucide-react';
 import InstagramIcon from '@/components/icons/instagram';
 import YoutubeIcon from '@/components/icons/youtube';
-import { LucideMail } from 'lucide-react';
 
 export const categories = [
   { value: 'exhibition', label: '전시' },

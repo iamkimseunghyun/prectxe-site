@@ -1,5 +1,5 @@
-import { getArtworksPage } from '@/modules/artworks/server/actions';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { getArtworksPage } from '@/modules/artworks/server/actions';
 import { ArtworkTable } from '../components/artwork-table';
 
 export async function ArtworkAdminListView() {

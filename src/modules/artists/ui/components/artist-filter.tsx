@@ -1,6 +1,7 @@
 // components/artists/ArtistFilter.tsx
 'use client';
 
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Select,
   SelectContent,
@@ -8,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useRouter, useSearchParams } from 'next/navigation';
 
 const categories = [
   { value: 'all', label: '전체' },

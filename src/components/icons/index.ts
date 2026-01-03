@@ -1,3 +1,3 @@
 export * from './instagram';
-export * from './youtube';
 export * from './types';
+export * from './youtube';

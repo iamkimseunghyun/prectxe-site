@@ -1,4 +1,4 @@
-import { ArtworkResponse } from '@/lib/schemas/seo';
+import type { ArtworkResponse } from '@/lib/schemas/seo';
 import { formatArtistName } from '@/lib/utils';
 
 const ArtworkSchema = ({ artwork }: { artwork: ArtworkResponse }) => {

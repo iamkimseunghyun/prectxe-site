@@ -1,9 +1,13 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import type { z } from 'zod';
+import MultiImageBox from '@/components/image/multi-image-box';
+import FormSubmitButton from '@/components/layout/form-submit-button';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -12,27 +16,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-
-import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
-import { uploadGalleryImages } from '@/lib/utils';
-import MultiImageBox from '@/components/image/multi-image-box';
-
-import FormSubmitButton from '@/components/layout/form-submit-button';
-
-import {
-  Artwork,
-  CreateArtworkInput,
-  createArtworkSchema,
-  UpdateArtworkInput,
-} from '@/lib/schemas';
-import {
-  createArtwork,
-  updateArtwork,
-} from '@/modules/artworks/server/actions';
-import ArtistSelect from '@/modules/artists/ui/components/artist-select';
 import {
   Form,
   FormControl,
@@ -41,7 +24,21 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { z } from 'zod';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import {
+  type Artwork,
+  type CreateArtworkInput,
+  createArtworkSchema,
+  type UpdateArtworkInput,
+} from '@/lib/schemas';
+import { uploadGalleryImages } from '@/lib/utils';
+import ArtistSelect from '@/modules/artists/ui/components/artist-select';
+import {
+  createArtwork,
+  updateArtwork,
+} from '@/modules/artworks/server/actions';
 
 type ArtworkFormProps = {
   mode: 'create' | 'edit';

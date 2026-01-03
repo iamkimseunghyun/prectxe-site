@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useState } from 'react';
+import { type ChangeEvent, useEffect, useState } from 'react';
 
 import { getCloudflareImageUrl } from '@/lib/cdn/cloudflare';
 import validateImageFile from '@/lib/utils';

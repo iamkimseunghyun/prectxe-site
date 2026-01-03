@@ -1,6 +1,6 @@
-import { ButtonHTMLAttributes, ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Button } from '@/components/ui/button';
 
 export interface FormSubmitButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement> {

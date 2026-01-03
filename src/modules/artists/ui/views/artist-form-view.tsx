@@ -1,8 +1,14 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import type { z } from 'zod';
+import MultiImageBox from '@/components/image/multi-image-box';
+import SingleImageBox from '@/components/image/single-image-box';
+import FormSubmitButton from '@/components/layout/form-submit-button';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -10,27 +16,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import React, { useState } from 'react';
-
-import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
-import SingleImageBox from '@/components/image/single-image-box';
-import { Button } from '@/components/ui/button';
-
-import MultiImageBox from '@/components/image/multi-image-box';
-import { uploadGalleryImages, uploadSingleImage } from '@/lib/utils';
-
-import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
-import FormSubmitButton from '@/components/layout/form-submit-button';
-import {
-  artistSchema,
-  CreateArtistInput,
-  createArtistSchema,
-  UpdateArtistInput,
-} from '@/lib/schemas';
-import { createArtist, updateArtist } from '@/modules/artists/server/actions';
-import { z } from 'zod';
 import {
   Form,
   FormControl,
@@ -39,6 +24,18 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
+import {
+  type artistSchema,
+  type CreateArtistInput,
+  createArtistSchema,
+  type UpdateArtistInput,
+} from '@/lib/schemas';
+import { uploadGalleryImages, uploadSingleImage } from '@/lib/utils';
+import { createArtist, updateArtist } from '@/modules/artists/server/actions';
 
 type ArtistFormProps = {
   mode: 'create' | 'edit';

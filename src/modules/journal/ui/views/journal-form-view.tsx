@@ -1,13 +1,29 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import SingleImageBox from '@/components/image/single-image-box';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import SingleImageBox from '@/components/image/single-image-box';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
-import { uploadImage, slugify, containsKorean } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { containsKorean, slugify, uploadImage } from '@/lib/utils';
+
+function Label({
+  children,
+  required,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+}) {
+  return (
+    <label className="mb-1 block text-sm font-medium">
+      {children}
+      {required && <span className="ml-0.5 text-red-500">*</span>}
+    </label>
+  );
+}
 
 type Initial = {
   slug?: string;
@@ -141,113 +157,142 @@ export function JournalFormView({
 
   return (
     <form onSubmit={submit} className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-sm">제목</label>
-          <Input
-            value={form.title as any}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm">슬러그</label>
-          <Input
-            value={form.slug as any}
-            onChange={(e) => handleSlugChange(e.target.value)}
-            required
-            aria-invalid={slugAvailable === false}
-            placeholder={
-              titleHasKorean ? '영문 슬러그를 입력하세요' : undefined
-            }
-          />
-          <p className="mt-1 text-xs">
-            {/* 한글 제목일 때 안내 메시지 */}
-            {titleHasKorean && !form.slug && (
-              <span className="text-amber-600">
-                💡 영문 슬러그를 입력하세요 (예: exhibition-opening)
-              </span>
+      {/* 기본 정보 */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">기본 정보</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <Label required>제목</Label>
+            <Input
+              value={form.title as any}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <Label required>슬러그</Label>
+            <Input
+              value={form.slug as any}
+              onChange={(e) => handleSlugChange(e.target.value)}
+              required
+              aria-invalid={slugAvailable === false}
+              placeholder={
+                titleHasKorean ? '영문 슬러그를 입력하세요' : undefined
+              }
+            />
+            <p className="mt-1 text-xs">
+              {titleHasKorean && !form.slug && (
+                <span className="text-amber-600">
+                  영문 슬러그를 입력하세요 (예: exhibition-opening)
+                </span>
+              )}
+              {slugChecking && (
+                <span className="text-muted-foreground">확인 중…</span>
+              )}
+              {slugAvailable === true && !slugChecking && (
+                <span className="text-green-600">
+                  사용 가능한 슬러그입니다.
+                </span>
+              )}
+              {slugAvailable === false && !slugChecking && (
+                <span className="text-red-600">중복된 슬러그입니다.</span>
+              )}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 콘텐츠 */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">콘텐츠</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>요약</Label>
+            <Textarea
+              rows={3}
+              value={form.excerpt ?? ''}
+              onChange={(e) => handleChange('excerpt', e.target.value)}
+            />
+          </div>
+          <div>
+            <Label required>본문</Label>
+            <Textarea
+              rows={10}
+              value={form.body ?? ''}
+              onChange={(e) => handleChange('body', e.target.value)}
+              required
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 미디어 & 메타 */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">미디어 & 메타</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label>커버 이미지</Label>
+            <SingleImageBox
+              register={{ name: 'cover', onBlur: () => {}, ref: () => {} }}
+              preview={preview}
+              displayUrl={displayUrl}
+              error={fileError}
+              handleImageChange={handleImageChange}
+              aspectRatio="video"
+            />
+            {fileError && (
+              <div className="mt-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    if (imageFile) {
+                      await uploadImage(imageFile, uploadURL);
+                      finalizeUpload();
+                    }
+                  }}
+                >
+                  업로드 재시도
+                </Button>
+              </div>
             )}
-            {slugChecking && (
-              <span className="text-muted-foreground">확인 중…</span>
-            )}
-            {slugAvailable === true && !slugChecking && (
-              <span className="text-green-600">사용 가능한 슬러그입니다.</span>
-            )}
-            {slugAvailable === false && !slugChecking && (
-              <span className="text-red-600">중복된 슬러그입니다.</span>
-            )}
-          </p>
-        </div>
-      </div>
-      <div>
-        <label className="mb-1 block text-sm">요약</label>
-        <Textarea
-          rows={3}
-          value={form.excerpt ?? ''}
-          onChange={(e) => handleChange('excerpt', e.target.value)}
-        />
-      </div>
-      <div>
-        <label className="mb-1 block text-sm">본문</label>
-        <Textarea
-          rows={10}
-          value={form.body ?? ''}
-          onChange={(e) => handleChange('body', e.target.value)}
-        />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-2 block text-sm">커버</label>
-          <SingleImageBox
-            register={{ name: 'cover', onBlur: () => {}, ref: () => {} }}
-            preview={preview}
-            displayUrl={displayUrl}
-            error={fileError}
-            handleImageChange={handleImageChange}
-            aspectRatio="video"
-          />
-          {fileError && (
-            <div className="mt-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  if (imageFile) {
-                    await uploadImage(imageFile, uploadURL);
-                    finalizeUpload();
-                  }
-                }}
-              >
-                업로드 재시도
-              </Button>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <Label>태그 (쉼표 구분)</Label>
+              <Input
+                value={(form.tags ?? []).join(', ')}
+                onChange={(e) =>
+                  handleChange(
+                    'tags',
+                    e.target.value
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter(Boolean)
+                  )
+                }
+                placeholder="ex. interview, note, production"
+              />
             </div>
-          )}
-        </div>
-        <div>
-          <label className="mb-2 block text-sm">태그(쉼표 구분)</label>
-          <Input
-            value={(form.tags ?? []).join(', ')}
-            onChange={(e) =>
-              handleChange(
-                'tags',
-                e.target.value
-                  .split(',')
-                  .map((s) => s.trim())
-                  .filter(Boolean)
-              )
-            }
-            placeholder="ex. interview, note, production"
-          />
-          <label className="mb-1 mt-4 block text-sm">발행일</label>
-          <Input
-            type="date"
-            value={form.publishedAt ?? ''}
-            onChange={(e) => handleChange('publishedAt', e.target.value)}
-          />
-        </div>
-      </div>
+            <div>
+              <Label>발행일</Label>
+              <Input
+                type="date"
+                value={form.publishedAt ?? ''}
+                onChange={(e) => handleChange('publishedAt', e.target.value)}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex justify-end gap-3">
         <Button
           type="submit"

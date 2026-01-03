@@ -1,9 +1,9 @@
 'use server';
 
-import { prisma } from '@/lib/db/prisma';
-import { formatArtistName } from '@/lib/utils';
 import { unstable_cache as next_cache } from 'next/cache';
 import { CACHE_TIMES } from '@/lib/constants/constants';
+import { prisma } from '@/lib/db/prisma';
+import { formatArtistName } from '@/lib/utils';
 
 type SearchResult = {
   id: string;
