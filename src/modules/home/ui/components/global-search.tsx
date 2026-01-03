@@ -144,7 +144,7 @@ const GlobalSearch = () => {
     return () => {
       document.removeEventListener('keydown', handleEscKey);
     };
-  }, [open]);
+  }, [handleEscKey]);
 
   // handleSearch 함수 수정
   const handleSearch = async () => {

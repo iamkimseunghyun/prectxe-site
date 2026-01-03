@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 import UploadProgress from '@/components/icons/upload-progress';
@@ -45,12 +45,7 @@ import {
   type projectSchema,
   type UpdateProjectInput,
 } from '@/lib/schemas';
-import {
-  formatDate,
-  formatDateForInput,
-  uploadGalleryImages,
-  uploadSingleImage,
-} from '@/lib/utils';
+import { formatDate, formatDateForInput, uploadSingleImage } from '@/lib/utils';
 import ArtistSelect from '@/modules/artists/ui/components/artist-select';
 import {
   createProject,
@@ -217,7 +212,7 @@ const ProjectFormView = ({
                         variant="outline"
                         className="mt-2"
                         onClick={async () => {
-                          const fd = new FormData();
+                          const _fd = new FormData();
                           if (imageFile as any) {
                             await uploadSingleImage(imageFile!, uploadURL);
                             finalizeUpload();

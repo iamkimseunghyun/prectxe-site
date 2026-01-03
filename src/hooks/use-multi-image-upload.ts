@@ -186,7 +186,7 @@ export function useMultiImageUpload({
         return next;
       });
       return true;
-    } catch (e) {
+    } catch (_e) {
       setMultiImagePreview((prev) => {
         const next = [...prev];
         if (next[index])
@@ -227,7 +227,7 @@ export function useMultiImageUpload({
           } as ImagePreview;
           return next;
         });
-      } catch (e) {
+      } catch (_e) {
         fail++;
         setMultiImagePreview((prev) => {
           const next = [...prev];

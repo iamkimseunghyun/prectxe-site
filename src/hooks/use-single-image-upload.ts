@@ -92,7 +92,7 @@ export function useSingleImageUpload({
         setError('');
         setUploadURL('');
         return true;
-      } catch (e) {
+      } catch (_e) {
         setError('이미지 업로드에 실패했습니다. 다시 시도해 주세요.');
         return false;
       } finally {

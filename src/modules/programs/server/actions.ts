@@ -54,15 +54,13 @@ export const listProgramsWithCache = next_cache(
       ...(status === 'past' && { status: 'completed' }),
       ...(dateRange && { startAt: dateRange as any }),
       ...(type && type !== 'all-type' && { type: type as any }),
-      ...(city &&
-        city.trim() && { city: { contains: city, mode: 'insensitive' } }),
-      ...(search &&
-        search.trim() && {
-          OR: [
-            { title: { contains: search, mode: 'insensitive' } },
-            { summary: { contains: search, mode: 'insensitive' } },
-          ],
-        }),
+      ...(city?.trim() && { city: { contains: city, mode: 'insensitive' } }),
+      ...(search?.trim() && {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { summary: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
     };
 
     const orderBy: Prisma.ProgramOrderByWithRelationInput =
@@ -121,15 +119,13 @@ function buildWhere(params: ListProgramsParams): Prisma.ProgramWhereInput {
     ...(status === 'past' && { status: 'completed' }),
     ...(dateRange && { startAt: dateRange as any }),
     ...(type && type !== 'all-type' && { type: type as any }),
-    ...(city &&
-      city.trim() && { city: { contains: city, mode: 'insensitive' } }),
-    ...(search &&
-      search.trim() && {
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { summary: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
+    ...(city?.trim() && { city: { contains: city, mode: 'insensitive' } }),
+    ...(search?.trim() && {
+      OR: [
+        { title: { contains: search, mode: 'insensitive' } },
+        { summary: { contains: search, mode: 'insensitive' } },
+      ],
+    }),
   };
 }
 

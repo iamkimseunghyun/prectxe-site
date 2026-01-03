@@ -11,7 +11,7 @@ import {
   Search as SearchIcon,
   Sun,
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 /**
  * PRECTXE Web Wireframes & UI Kit (v0.1)
@@ -106,8 +106,7 @@ const Button = ({
     xl: 'h-14 px-6 text-base',
   }[size];
   const styles = {
-    primary:
-      'bg-neutral-100 text-neutral-900 hover:bg-white ' + tokens.radius.lg,
+    primary: `bg-neutral-100 text-neutral-900 hover:bg-white ${tokens.radius.lg}`,
     secondary:
       'bg-neutral-800 text-neutral-100 hover:bg-neutral-700 ' +
       tokens.radius.lg +
@@ -185,7 +184,7 @@ const Input = ({
   </div>
 );
 
-const Toggle = ({ value, onChange }) => (
+const _Toggle = ({ value, onChange }) => (
   <button
     onClick={onChange}
     className={cn(
@@ -332,7 +331,7 @@ const Hero = () => (
   </div>
 );
 
-const CalendarStrip = () => {
+const _CalendarStrip = () => {
   const days = useMemo(() => {
     const today = new Date();
     const out = [];

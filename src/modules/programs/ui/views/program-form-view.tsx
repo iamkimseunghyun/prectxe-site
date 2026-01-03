@@ -27,7 +27,6 @@ import {
   containsKorean,
   formatArtistName,
   slugify,
-  uploadGalleryImages,
   uploadImage,
 } from '@/lib/utils';
 import ArtistSelect from '@/modules/artists/ui/components/artist-select';
@@ -63,7 +62,9 @@ export function ProgramFormView({
   onSubmit,
 }: {
   initial?: Partial<ProgramCreateInput> & { id?: string };
-  onSubmit: (data: any) => Promise<{ ok?: boolean; error?: string } | void>;
+  onSubmit: (
+    data: any
+  ) => Promise<{ ok?: boolean; error?: string } | undefined>;
 }) {
   const [form, setForm] = useState<Partial<ProgramCreateInput>>({
     title: initial?.title ?? '',

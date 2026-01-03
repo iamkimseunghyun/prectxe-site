@@ -35,13 +35,13 @@ export function useInfiniteScroll<T extends { id: string }>({
     // join ids to build a lightweight signature
     try {
       return (
-        (resetKey !== undefined ? String(resetKey) + '|' : '') +
+        (resetKey !== undefined ? `${String(resetKey)}|` : '') +
         arr.map((i) => i.id).join('|')
       );
     } catch {
       // fallback if arr malformed
       return (
-        (resetKey !== undefined ? String(resetKey) + '|' : '') +
+        (resetKey !== undefined ? `${String(resetKey)}|` : '') +
         String(arr?.length ?? 0)
       );
     }
@@ -56,7 +56,7 @@ export function useInfiniteScroll<T extends { id: string }>({
     itemIdsRef.current = new Set((initialData || []).map((item) => item.id));
     setPage(1);
     setIsLastPage(false);
-  }, [initialData, resetKey]);
+  }, [initialData, makeSignature]);
 
   // 무한 스크롤 로직
   const loadMoreItems = useCallback(async () => {

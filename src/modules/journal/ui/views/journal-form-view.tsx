@@ -40,7 +40,9 @@ export function JournalFormView({
   onSubmit,
 }: {
   initial?: Initial;
-  onSubmit: (data: any) => Promise<{ ok?: boolean; error?: string } | void>;
+  onSubmit: (
+    data: any
+  ) => Promise<{ ok?: boolean; error?: string } | undefined>;
 }) {
   const [form, setForm] = useState<Initial>({
     title: initial?.title ?? '',

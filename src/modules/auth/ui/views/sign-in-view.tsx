@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import SignInFormSection from '@/modules/auth/ui/section/sign-in-form-section';
 

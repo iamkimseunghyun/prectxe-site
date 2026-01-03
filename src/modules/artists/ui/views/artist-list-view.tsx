@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import Spinner from '@/components/icons/spinner';
 import { Button } from '@/components/ui/button';
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';

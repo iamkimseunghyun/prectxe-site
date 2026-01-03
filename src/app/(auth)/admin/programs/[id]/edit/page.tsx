@@ -1,10 +1,7 @@
 import { redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
 import { prisma } from '@/lib/db/prisma';
-import {
-  getProgramBySlug,
-  updateProgram,
-} from '@/modules/programs/server/actions';
+import { updateProgram } from '@/modules/programs/server/actions';
 import { ProgramFormView } from '@/modules/programs/ui/views/program-form-view';
 
 export async function generateStaticParams() {

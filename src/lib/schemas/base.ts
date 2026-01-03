@@ -18,7 +18,7 @@ export const dateSchema = z.preprocess((arg) => {
 // ISO 날짜 문자열 스키마
 export const isoDateStringSchema = z
   .string()
-  .refine((value) => !isNaN(Date.parse(value)), {
+  .refine((value) => !Number.isNaN(Date.parse(value)), {
     message: '유효한 날짜 형식이어야 합니다',
   });
 

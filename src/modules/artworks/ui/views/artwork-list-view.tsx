@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import GridSkeleton from '@/components/layout/skeleton/grid-skeleton';
 import { PAGINATION } from '@/lib/constants/constants';
 import { getArtworksPage } from '@/modules/artworks/server/actions';

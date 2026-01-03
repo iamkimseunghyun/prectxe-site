@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import React from 'react';
 import getSession from '@/lib/auth/session';
 import { getArtistsPage } from '@/modules/artists/server/actions';
 import ProjectFormView from '@/modules/projects/ui/views/project-form-view';

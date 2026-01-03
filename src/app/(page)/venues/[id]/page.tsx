@@ -26,10 +26,10 @@ export async function generateMetadata({
 
   return {
     title: venue.name,
-    description: venue.description.substring(0, 155) + '...',
+    description: `${venue.description.substring(0, 155)}...`,
     openGraph: {
       title: `${venue.name} - PRECTXE 전시 공간`,
-      description: venue.description.substring(0, 155) + '...',
+      description: `${venue.description.substring(0, 155)}...`,
       images: venue.images.map((img) => ({
         url: img.imageUrl,
         alt: img.alt,

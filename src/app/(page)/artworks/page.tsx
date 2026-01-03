@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 
-import React from 'react';
 import { ArtworkListView } from '@/modules/artworks/ui/views/artwork-list-view';
 
 export const dynamic = 'force-static';

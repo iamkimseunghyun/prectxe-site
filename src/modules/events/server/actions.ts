@@ -210,7 +210,7 @@ export const getAllEventsWithCache = next_cache(
   async (year?: string, type?: string, sort?: string, search?: string) => {
     try {
       const where = {
-        ...(year && year !== 'all-year' && { year: parseInt(year) }),
+        ...(year && year !== 'all-year' && { year: parseInt(year, 10) }),
         ...(type &&
           type !== 'all-type' && {
             type: type as EventType,

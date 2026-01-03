@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 import MultiImageBox from '@/components/image/multi-image-box';
@@ -32,7 +32,6 @@ import {
   createVenueSchema,
   type UpdateVenueInput,
 } from '@/lib/schemas';
-import { uploadGalleryImages } from '@/lib/utils';
 import { createVenue, updateVenue } from '@/modules/venues/server/actions';
 
 type VenueFormProps = {

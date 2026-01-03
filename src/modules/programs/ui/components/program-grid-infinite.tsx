@@ -56,7 +56,7 @@ export function ProgramGridInfinite({
 
   useEffect(() => {
     // Nothing to do here; hook resets on initialItems change via props
-  }, [initialItems]);
+  }, []);
 
   return (
     <>

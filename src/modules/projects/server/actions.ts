@@ -18,7 +18,7 @@ export const getAllProjectsWithCache = next_cache(
   async (year?: string, category?: string, sort?: string, search?: string) => {
     try {
       const where = {
-        ...(year && year !== 'all-year' && { year: parseInt(year) }),
+        ...(year && year !== 'all-year' && { year: parseInt(year, 10) }),
         ...(category &&
           category !== 'all-category' && {
             category: category as ProjectCategory,
