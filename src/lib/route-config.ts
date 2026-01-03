@@ -1,4 +1,4 @@
-// lib/route-config.ts
+// docs/route-config.ts
 
 export type EntityType =
   | 'artwork'

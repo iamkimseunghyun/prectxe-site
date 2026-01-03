@@ -11,16 +11,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     select: { id: true, updatedAt: true },
   });
 
-  const events = await prisma.event.findMany({
-    select: { id: true, updatedAt: true },
-  });
-
   const artworks = await prisma.artwork.findMany({
     select: { id: true, updatedAt: true },
   });
 
-  const projects = await prisma.project.findMany({
-    select: { id: true, updatedAt: true },
+  // Legacy routes (events/projects) are deprecated; omit from sitemap
+
+  const programs = await prisma.program.findMany({
+    select: { slug: true, updatedAt: true },
   });
 
   const venues = await prisma.venue.findMany({
@@ -35,14 +33,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
+      url: `${baseUrl}/programs`,
+      lastModified: new Date(),
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/journal`,
+      lastModified: new Date(),
+      priority: 0.6,
+    },
+    {
       url: `${baseUrl}/about`,
       lastModified: new Date(),
       priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/events`,
-      lastModified: new Date(),
-      priority: 0.8,
     },
     {
       url: `${baseUrl}/artists`,
@@ -51,11 +54,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${baseUrl}/artworks`,
-      lastModified: new Date(),
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/projects`,
       lastModified: new Date(),
       priority: 0.8,
     },
@@ -73,13 +71,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  // 동적 라우트 - 이벤트
-  const eventRoutes: MetadataRoute.Sitemap = events.map((event) => ({
-    url: `${baseUrl}/events/${event.id}`,
-    lastModified: event.updatedAt,
-    priority: 0.7,
-  }));
-
   // 동적 라우트 - 작품
   const artworkRoutes: MetadataRoute.Sitemap = artworks.map((artwork) => ({
     url: `${baseUrl}/artworks/${artwork.id}`,
@@ -87,11 +78,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  // 동적 라우트 - 프로젝트
-  const projectRoutes: MetadataRoute.Sitemap = projects.map((project) => ({
-    url: `${baseUrl}/projects/${project.id}`,
-    lastModified: project.updatedAt,
-    priority: 0.6,
+  // 동적 라우트 - 프로그램
+  const programRoutes: MetadataRoute.Sitemap = programs.map((p) => ({
+    url: `${baseUrl}/programs/${p.slug}`,
+    lastModified: p.updatedAt,
+    priority: 0.8,
   }));
 
   // 동적 라우트 - 베뉴
@@ -104,9 +95,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticRoutes,
     ...artistRoutes,
-    ...eventRoutes,
     ...artworkRoutes,
-    ...projectRoutes,
+    ...programRoutes,
     ...venueRoutes,
   ];
 }

@@ -18,7 +18,7 @@ import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import { Metadata } from 'next';
 import { prisma } from '@/lib/db/prisma';
 
-import { getImageUrl } from '@/lib/utils';
+import { formatArtistName, getImageUrl } from '@/lib/utils';
 import { ImageData } from '@/lib/schemas';
 import ArtworkSchema from '@/components/seo/artwork-schema';
 import { getArtworkById } from '@/modules/artworks/server/actions';
@@ -39,7 +39,7 @@ export async function generateMetadata({
   }
 
   const artists = artwork.artists
-    .map((a) => `${a.artist.nameKr} (${a.artist.name})`)
+    .map((a) => formatArtistName(a.artist.nameKr as any, a.artist.name as any))
     .join(', ');
   const details = [
     artwork.year && `Year: ${artwork.year}`,
@@ -156,10 +156,10 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                                   `${artistRelation.artist.mainImageUrl}`,
                                   'thumbnail'
                                 )}
-                                alt={
-                                  artistRelation.artist.nameKr ||
-                                  artistRelation.artist.name
-                                }
+                                alt={formatArtistName(
+                                  artistRelation.artist.nameKr as any,
+                                  artistRelation.artist.name as any
+                                )}
                                 fill
                                 sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                                 placeholder="blur"
@@ -170,8 +170,10 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
                           )}
                           <div>
                             <p className="font-medium">
-                              {artistRelation.artist.nameKr ||
-                                artistRelation.artist.name}
+                              {formatArtistName(
+                                artistRelation.artist.nameKr as any,
+                                artistRelation.artist.name as any
+                              )}
                             </p>
                           </div>
                         </Link>

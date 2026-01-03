@@ -79,6 +79,7 @@ export function EventFormView({
     uploadURL,
     handleImageChange,
     displayUrl,
+    finalizeUpload,
   } = useSingleImageUpload({
     initialImage: initialData?.mainImageUrl ?? '',
     onImageUrlChange: (url) => {
@@ -94,6 +95,7 @@ export function EventFormView({
       // 이미지 파일이 있는 경우에만 Cloudflare에 실제 업로드 진행
       if (imageFile) {
         await uploadImage(imageFile, uploadURL);
+        finalizeUpload();
       }
 
       const values = form.getValues();
@@ -180,6 +182,22 @@ export function EventFormView({
                     handleImageChange={handleImageChange}
                     aspectRatio="square"
                   />
+                  {fileError && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="mt-2"
+                      onClick={async () => {
+                        if (imageFile) {
+                          await uploadImage(imageFile, uploadURL);
+                          finalizeUpload();
+                        }
+                      }}
+                    >
+                      업로드 재시도
+                    </Button>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

@@ -7,3 +7,5 @@ export * from './event';
 export * from './project';
 export * from './venue';
 export * from './auth';
+export * from './program';
+export * from './article';

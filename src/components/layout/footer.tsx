@@ -16,8 +16,27 @@ export function Footer() {
           </p>
         </div>
         <div className="grid grid-cols-1 gap-8">
-          {/* 우측: 링크 및 소셜 */}
-          <div className="flex flex-col items-center justify-center">
+          {/* 링크 및 소셜 */}
+          <div className="flex flex-col items-center justify-center gap-6">
+            <nav className="text-sm text-gray-600">
+              <ul className="flex flex-wrap justify-center gap-4 sm:gap-6">
+                <li>
+                  <Link href="/programs" className="hover:text-black">
+                    Programs
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/journal" className="hover:text-black">
+                    Journal
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/about" className="hover:text-black">
+                    About
+                  </Link>
+                </li>
+              </ul>
+            </nav>
             {/* 소셜 링크 */}
             <div>
               <h3 className="mb-3 flex items-center justify-center text-sm font-semibold">

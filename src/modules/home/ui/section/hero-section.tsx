@@ -3,83 +3,43 @@
 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import Image from 'next/image';
 import React from 'react';
-
-const text = `PRECTXE`;
-
-const staggerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-};
 
 export function HeroSection() {
   return (
-    <section className="relative flex h-screen items-center overflow-hidden bg-gradient-to-b from-white to-gray-50 sm:h-[70dvh]">
-      {/* 배경 블롭 효과 */}
-      <div className="absolute inset-0 h-full w-full">
-        <div className="blob absolute left-10 top-20 h-96 w-96 rounded-full bg-purple-400 opacity-70 blur-2xl" />
-        {/* 크기 증가, blur 감소 */}
-        <div className="blob-delay-2 absolute right-10 top-40 h-96 w-96 rounded-full bg-blue-400 opacity-70 blur-2xl" />
-        <div className="blob-delay-4 absolute -bottom-8 left-20 h-96 w-96 rounded-full bg-pink-400 opacity-70 blur-2xl" />
-      </div>
-
-      <div className="container relative mx-auto px-4 py-20">
-        <div className="mx-auto max-w-4xl space-y-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <motion.h1
-              initial="hidden"
-              animate="visible"
-              variants={{
-                visible: {
-                  transition: {
-                    staggerChildren: 0.2,
-                  },
-                },
-              }}
-              className="text-6xl font-bold tracking-tight md:text-7xl"
-            >
-              {text.split('').map((letter, index) => (
-                <motion.span
-                  key={index}
-                  variants={staggerVariants}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent"
-                >
-                  {letter}
-                </motion.span>
-              ))}
-            </motion.h1>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <p className="text-xl text-black md:text-2xl">
-              음악, 예술, 기술이 만드는 세계
+    <section className="relative overflow-hidden border-b bg-gradient-to-b from-neutral-50 to-white">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
+        <div className="grid gap-6 sm:grid-cols-2 sm:items-center">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight text-neutral-900 md:text-5xl">
+              Feed‑first Discovery
+            </h1>
+            <p className="mt-3 max-w-xl text-base text-neutral-600 md:text-lg">
+              Next Up 중심의 간결한 탐색. 전시, 라이브, 파티를 빠르게
+              확인하세요.
             </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="flex justify-center gap-4 pt-4"
-          >
-            <Link href="/projects">
-              <Button
-                size="lg"
-                className="rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
-              >
-                프로젝트 보기
-              </Button>
-            </Link>
-          </motion.div>
+            <div className="mt-6 flex gap-3">
+              <Link href="/programs?status=upcoming">
+                <Button size="lg">발견하기</Button>
+              </Link>
+              <Link href="/programs?status=completed">
+                <Button variant="outline" size="lg">
+                  아카이브
+                </Button>
+              </Link>
+            </div>
+          </div>
+          <div className="relative hidden aspect-[16/10] overflow-hidden rounded-2xl border bg-neutral-100 sm:block">
+            <Image
+              src="/images/placeholder.png"
+              alt="PRECTXE hero visual"
+              fill
+              priority
+              sizes="(min-width: 1024px) 600px, 50vw"
+              className="object-cover"
+            />
+          </div>
         </div>
       </div>
     </section>

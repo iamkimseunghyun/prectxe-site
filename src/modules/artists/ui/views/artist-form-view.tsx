@@ -82,6 +82,7 @@ const ArtistFormView = ({
     uploadURL,
     handleImageChange,
     displayUrl,
+    finalizeUpload,
   } = useSingleImageUpload({
     initialImage: initialData?.mainImageUrl ?? '',
     onImageUrlChange: (url) => {
@@ -90,13 +91,18 @@ const ArtistFormView = ({
   });
 
   // 갤러리 이미지 훅
-  const { multiImagePreview, error, handleMultiImageChange, removeMultiImage } =
-    useMultiImageUpload({
-      initialImages: initialData?.images,
-      onGalleryChange: (galleryData) => {
-        form.setValue('images', galleryData);
-      },
-    });
+  const {
+    multiImagePreview,
+    error,
+    handleMultiImageChange,
+    removeMultiImage,
+    markAllAsUploaded,
+  } = useMultiImageUpload({
+    initialImages: initialData?.images,
+    onGalleryChange: (galleryData) => {
+      form.setValue('images', galleryData);
+    },
+  });
 
   const onSubmit = form.handleSubmit(
     async (data: z.infer<typeof artistSchema>) => {
@@ -104,9 +110,12 @@ const ArtistFormView = ({
       try {
         if (imageFile) {
           await uploadSingleImage(imageFile, uploadURL);
+          finalizeUpload();
         }
-        if (multiImagePreview.length > 0) {
-          await uploadGalleryImages(multiImagePreview);
+        const toUpload = multiImagePreview.filter((p) => (p as any).file);
+        if (toUpload.length > 0) {
+          await uploadGalleryImages(toUpload as any);
+          markAllAsUploaded();
         }
 
         const result =

@@ -9,7 +9,7 @@ export const categories = [
   { value: 'workshop', label: '워크숍' },
 ] as const;
 
-export const MAX_FILE_SIZE = 500 * 10240 * 10240; // 5MB
+export const MAX_FILE_SIZE = 50 * 10240 * 10240; // 50MB
 export const ALLOWED_FILE_TYPES = [
   'image/jpeg',
   'image/jpg',
@@ -64,6 +64,8 @@ export const CACHE_TIMES = {
   EVENT_DETAIL: 3600, // 이벤트 상세 (1시간)
   PROJECTS_LIST: 3600, // 프로젝트 목록 (1시간)
   PROJECT_DETAIL: 7200, // 프로젝트 상세 (2시간)
+  PROGRAMS_LIST: 1800, // 프로그램 목록 (30분)
+  PROGRAM_DETAIL: 3600, // 프로그램 상세 (1시간)
 };
 
 // 공통 선택 필드 (Prisma select)

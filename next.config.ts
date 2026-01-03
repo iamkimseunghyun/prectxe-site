@@ -29,6 +29,33 @@ const nextConfig: NextConfig = {
     ],
     formats: ['image/webp'],
   },
+  async redirects() {
+    if (process.env.ENABLE_PROGRAM_REDIRECTS !== '1') return [];
+    return [
+      // Legacy to new program detail by slug
+      {
+        source: '/projects/:slug',
+        destination: '/programs/:slug',
+        permanent: true,
+      },
+      {
+        source: '/events/:slug',
+        destination: '/programs/:slug',
+        permanent: true,
+      },
+      // Merge Discover/Archive into Programs
+      {
+        source: '/discover',
+        destination: '/programs?status=upcoming',
+        permanent: true,
+      },
+      {
+        source: '/archive',
+        destination: '/programs?status=completed',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

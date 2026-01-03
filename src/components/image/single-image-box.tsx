@@ -1,3 +1,5 @@
+'use client';
+
 import { ChangeEvent } from 'react';
 import { ImagePlus } from 'lucide-react';
 import { ControllerRenderProps, UseFormRegisterReturn } from 'react-hook-form';
@@ -7,8 +9,11 @@ interface ImagePreview {
   isCloudflare: boolean;
 }
 
-// Register 타입을 유니온 타입으로 변경
-type RegisterType = UseFormRegisterReturn | ControllerRenderProps<any, string>;
+// Accept either RHF register return or controller field, or a minimal shape used here
+type RegisterType =
+  | UseFormRegisterReturn
+  | ControllerRenderProps<any, string>
+  | { name: string; onBlur: () => void; ref: any };
 
 interface SingleImageSectionProps {
   register: RegisterType;

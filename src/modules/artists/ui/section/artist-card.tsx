@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { getImageUrl } from '@/lib/utils';
+import { formatArtistName, getImageUrl } from '@/lib/utils';
 
 interface ImageData {
   id: string;
@@ -35,6 +35,7 @@ interface ArtistCardProps {
 
 const ArtistCard = ({ artist }: ArtistCardProps) => {
   const location = [artist.city, artist.country].filter(Boolean).join(', ');
+  const displayName = formatArtistName(artist.nameKr, artist.name);
 
   return (
     <Link
@@ -44,7 +45,7 @@ const ArtistCard = ({ artist }: ArtistCardProps) => {
     >
       <Image
         src={getImageUrl(`${artist.mainImageUrl}`, 'smaller')}
-        alt={artist.name}
+        alt={displayName}
         fill
         priority // Keep priority only if it's above the fold on initial load
         sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
@@ -57,12 +58,7 @@ const ArtistCard = ({ artist }: ArtistCardProps) => {
 
       {/* Text Content */}
       <div className="absolute inset-0 flex flex-col justify-end p-4 text-white">
-        <h3 className="text-xl font-bold drop-shadow-md">{artist.name}</h3>
-        {artist.nameKr && (
-          <p className="text-sm font-medium text-gray-200 drop-shadow-md">
-            {artist.nameKr}
-          </p>
-        )}
+        <h3 className="text-xl font-bold drop-shadow-md">{displayName}</h3>
         {location && (
           <p className="mt-1 text-xs text-gray-300 drop-shadow-md">
             {location}

@@ -13,7 +13,7 @@ export interface SessionData {
   user: SessionUser | null;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   console.time('Total /api/auth/session'); // 전체 시간 측정 시작
   try {
     console.time('getSession');

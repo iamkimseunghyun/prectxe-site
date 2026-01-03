@@ -13,7 +13,7 @@
     "start": "next start",
     "start:bun": "bun --bun next start",
     "lint": "next lint",
-    "lint:bun": "bunn --bun next lint",
+    "lint:bun": "bun --bun next lint",
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
     "postinstall": "[ -z \"$CI\" ] && prisma generate || echo Skip prisma in CI",

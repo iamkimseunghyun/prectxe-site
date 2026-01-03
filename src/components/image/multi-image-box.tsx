@@ -1,10 +1,17 @@
+'use client';
+
 import { ChangeEvent } from 'react';
 import { ControllerRenderProps, UseFormRegisterReturn } from 'react-hook-form';
-import { ImagePlus, X } from 'lucide-react';
+import { ImagePlus, X, RotateCcw } from 'lucide-react';
 import Image from 'next/image';
 import { getImageUrl } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
-type RegisterType = UseFormRegisterReturn | ControllerRenderProps<any, string>;
+// Accept either RHF register return or controller field, or a minimal shape used here
+type RegisterType =
+  | UseFormRegisterReturn
+  | ControllerRenderProps<any, string>
+  | { name: string; onBlur: () => void; ref: any };
 // Core types
 interface BaseImage {
   imageUrl: string;
@@ -15,6 +22,9 @@ interface BaseImage {
 interface ImagePreview extends BaseImage {
   preview: string;
   file: File | null;
+  error?: string;
+  status?: 'idle' | 'uploading' | 'done' | 'error';
+  progress?: number;
 }
 
 interface ImagePreviewItemProps {
@@ -30,6 +40,7 @@ interface MultiImageSectionProps {
   error?: string;
   handleMultiImageChange: (e: ChangeEvent<HTMLInputElement>) => Promise<void>;
   removeMultiImage: (index: number) => void;
+  onRetryUpload?: (index: number) => Promise<void>;
 }
 
 // Sub-components
@@ -53,6 +64,21 @@ const ImagePreviewItem = ({
         unoptimized={!!preview.file}
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
       />
+      {preview.status === 'uploading' && (
+        <div className="absolute inset-0 rounded-md bg-black/30 p-2">
+          <div className="absolute bottom-2 left-2 right-2">
+            <div className="h-2 w-full overflow-hidden rounded bg-white/20">
+              <div
+                className="h-2 bg-white/80"
+                style={{ width: `${preview.progress ?? 0}%` }}
+              />
+            </div>
+            <div className="mt-1 text-right text-[10px] text-white">
+              {preview.progress ?? 0}%
+            </div>
+          </div>
+        </div>
+      )}
 
       <button
         type="button"
@@ -108,18 +134,33 @@ const MultiImageBox = ({
   error,
   handleMultiImageChange,
   removeMultiImage,
+  onRetryUpload,
 }: MultiImageSectionProps) => {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
         {previews.map((preview, index) => (
-          <ImagePreviewItem
-            key={`${preview.imageUrl}-${index}`}
-            preview={preview}
-            index={index}
-            register={register}
-            onRemove={() => removeMultiImage(index)}
-          />
+          <div key={`${preview.imageUrl}-${index}`} className="relative">
+            <ImagePreviewItem
+              preview={preview}
+              index={index}
+              register={register}
+              onRemove={() => removeMultiImage(index)}
+            />
+            {preview.error && onRetryUpload && (
+              <div className="absolute bottom-2 right-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 px-2"
+                  onClick={() => onRetryUpload(index)}
+                >
+                  <RotateCcw className="mr-1 h-3 w-3" /> 재시도
+                </Button>
+              </div>
+            )}
+          </div>
         ))}
         <UploadButton />
       </div>

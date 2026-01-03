@@ -20,6 +20,7 @@ export function useSingleImageUpload({
   const [error, setError] = useState('');
   const [uploadURL, setUploadURL] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,5 +64,41 @@ export function useSingleImageUpload({
     handleImageChange,
     imageUrl,
     displayUrl,
+    finalizeUpload: () => {
+      // If imageUrl has been assigned from Cloudflare, mark preview as cloudflare and clear temp states
+      if (imageUrl) {
+        setPreview({ url: imageUrl, isCloudflare: true });
+      }
+      setImageFile(null);
+      setError('');
+      setUploadURL('');
+    },
+    uploading,
+    retryUpload: async (
+      uploader: (file: File, url: string) => Promise<any>
+    ) => {
+      if (!imageFile) return false;
+      try {
+        setUploading(true);
+        const { uploadURL: newURL, imageUrl: newImg } =
+          await getCloudflareImageUrl();
+        setUploadURL(newURL);
+        setImageUrl(newImg);
+        await uploader(imageFile, newURL);
+        // finalize on success
+        if (newImg) {
+          setPreview({ url: newImg, isCloudflare: true });
+        }
+        setImageFile(null);
+        setError('');
+        setUploadURL('');
+        return true;
+      } catch (e) {
+        setError('이미지 업로드에 실패했습니다. 다시 시도해 주세요.');
+        return false;
+      } finally {
+        setUploading(false);
+      }
+    },
   };
 }

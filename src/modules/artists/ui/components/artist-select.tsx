@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getImageUrl } from '@/lib/utils';
+import { formatArtistName, getImageUrl } from '@/lib/utils';
 import { X } from 'lucide-react';
 import Spinner from '@/components/icons/spinner';
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
@@ -21,7 +21,10 @@ import { PAGINATION } from '@/lib/constants/constants';
 type Artist = {
   id: string;
   name: string;
+  nameKr?: string | null;
   mainImageUrl: string | null;
+  city?: string | null;
+  country?: string | null;
 };
 
 type ProjectArtist = {
@@ -36,11 +39,12 @@ interface ArtistSelectProps {
 }
 
 const ArtistSelect = ({
-  artists = [],
+  artists,
   value: selectedArtists = [],
   onChange,
 }: ArtistSelectProps) => {
   const [open, setOpen] = useState(false);
+  const stableInitial = React.useMemo(() => artists ?? [], [artists]);
 
   // 선택된 아티스트 ID 목록
   const selectedIds = selectedArtists.map((pa) => pa.artistId);
@@ -66,7 +70,7 @@ const ArtistSelect = ({
     loadMoreItems,
   } = useInfiniteScroll({
     fetchFunction: getMoreArtists,
-    initialData: artists,
+    initialData: stableInitial,
     pageSize: PAGINATION.ARTISTS_PAGE_SIZE, // 페이지 크기 명시적으로 전달
   });
 
@@ -83,13 +87,25 @@ const ArtistSelect = ({
                 {artist.mainImageUrl ? (
                   <AvatarImage
                     src={getImageUrl(artist.mainImageUrl, 'public')}
-                    alt={artist.name}
+                    alt={formatArtistName(
+                      artist.nameKr as any,
+                      artist.name as any
+                    )}
                   />
                 ) : (
-                  <AvatarFallback>{artist.name.slice(0, 2)}</AvatarFallback>
+                  <AvatarFallback>
+                    {(artist.name || '')
+                      .split(' ')
+                      .map((n) => n[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase()}
+                  </AvatarFallback>
                 )}
               </Avatar>
-              <span className="text-sm">{artist.name}</span>
+              <span className="text-sm">
+                {formatArtistName(artist.nameKr as any, artist.name as any)}
+              </span>
               <Button
                 variant="ghost"
                 size="icon"
@@ -125,15 +141,28 @@ const ArtistSelect = ({
                             {artist.mainImageUrl ? (
                               <AvatarImage
                                 src={getImageUrl(artist.mainImageUrl, 'public')}
-                                alt={artist.name}
+                                alt={formatArtistName(
+                                  artist.nameKr as any,
+                                  artist.name as any
+                                )}
                               />
                             ) : (
                               <AvatarFallback>
-                                {artist.name.slice(0, 2).toUpperCase()}
+                                {(artist.name || '')
+                                  .split(' ')
+                                  .map((n) => n[0])
+                                  .slice(0, 2)
+                                  .join('')
+                                  .toUpperCase()}
                               </AvatarFallback>
                             )}
                           </Avatar>
-                          <span className="font-medium">{artist.name}</span>
+                          <span className="font-medium">
+                            {formatArtistName(
+                              artist.nameKr as any,
+                              artist.name as any
+                            )}
+                          </span>
                         </div>
                         <Button
                           size="sm"

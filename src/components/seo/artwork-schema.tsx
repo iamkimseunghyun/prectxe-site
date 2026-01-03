@@ -1,4 +1,5 @@
 import { ArtworkResponse } from '@/lib/schemas/seo';
+import { formatArtistName } from '@/lib/utils';
 
 const ArtworkSchema = ({ artwork }: { artwork: ArtworkResponse }) => {
   const jsonLd = {
@@ -9,7 +10,7 @@ const ArtworkSchema = ({ artwork }: { artwork: ArtworkResponse }) => {
     // 작가 정보
     creator: artwork.artists.map((art) => ({
       '@type': 'Person',
-      name: `${art.artist.nameKr} (${art.artist.name})`,
+      name: formatArtistName(art.artist.nameKr as any, art.artist.name as any),
     })),
     // 작품 속성
     artMedium: artwork.media || undefined,

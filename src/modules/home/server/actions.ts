@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
+import { formatArtistName } from '@/lib/utils';
 import { unstable_cache as next_cache } from 'next/cache';
 import { CACHE_TIMES } from '@/lib/constants/constants';
 
@@ -155,9 +156,7 @@ export const globalSearch = next_cache(
         // Artist results
         ...artists.map((artist) => ({
           id: artist.id,
-          title: artist.nameKr
-            ? `${artist.nameKr} (${artist.name})`
-            : artist.name,
+          title: formatArtistName(artist.nameKr as any, artist.name as any),
           type: 'artist' as const,
           imageUrl: artist.mainImageUrl,
           description: artist.biography?.substring(0, 100) || null,

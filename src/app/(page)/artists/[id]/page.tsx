@@ -12,6 +12,7 @@ import AdminButton from '@/components/layout/admin-button';
 import getSession from '@/lib/auth/session';
 
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
+import { formatArtistName } from '@/lib/utils';
 
 import { Metadata } from 'next';
 import { prisma } from '@/lib/db/prisma';
@@ -72,16 +73,22 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <BreadcrumbNav entityType="artist" title={artist.name} />
+      <BreadcrumbNav
+        entityType="artist"
+        title={formatArtistName(artist.nameKr as any, artist.name as any)}
+      />
       <div className="grid gap-6 md:grid-cols-2">
         {/* 프로필 섹션 */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>
-                <div className="space-y-2">
-                  <p>{artist.nameKr}</p>
-                  <p className="text-base">{artist.name}</p>
+                <div className="space-y-1">
+                  <p>
+                    {artist.nameKr
+                      ? `${artist.nameKr} (${artist.name})`
+                      : artist.name}
+                  </p>
                 </div>
               </CardTitle>
               {canEdit && (
@@ -99,7 +106,10 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
               <div className="relative aspect-square overflow-hidden rounded-lg">
                 <Image
                   src={`${artist.mainImageUrl}/smaller`}
-                  alt={artist.name!}
+                  alt={formatArtistName(
+                    artist.nameKr as any,
+                    artist.name as any
+                  )}
                   fill
                   priority
                   sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"

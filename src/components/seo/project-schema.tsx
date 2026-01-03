@@ -58,7 +58,7 @@ const ProjectSchema = ({ project }: { project: ProjectSchemaSEO }) => {
     // 참여 아티스트
     performer: project.projectArtists.map((pa) => ({
       '@type': 'Person',
-      name: `${pa.nameKr} (${pa.name})`,
+      name: formatArtistName(pa.nameKr as any, pa.name as any),
     })),
     // 이미지
     image: [
@@ -96,3 +96,4 @@ const ProjectSchema = ({ project }: { project: ProjectSchemaSEO }) => {
 };
 
 export default ProjectSchema;
+import { formatArtistName } from '@/lib/utils';

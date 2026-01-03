@@ -106,13 +106,19 @@ const ProjectFormView = ({
   });
 
   // 싱글 이미지 업로드 훅
-  const { preview, imageFile, uploadURL, handleImageChange, displayUrl } =
-    useSingleImageUpload({
-      initialImage: initialData?.mainImageUrl,
-      onImageUrlChange: (url) => {
-        form.setValue('mainImageUrl', url);
-      },
-    });
+  const {
+    preview,
+    imageFile,
+    uploadURL,
+    handleImageChange,
+    displayUrl,
+    finalizeUpload,
+  } = useSingleImageUpload({
+    initialImage: initialData?.mainImageUrl,
+    onImageUrlChange: (url) => {
+      form.setValue('mainImageUrl', url);
+    },
+  });
 
   // 갤러리 이미지 훅
   const {
@@ -120,6 +126,9 @@ const ProjectFormView = ({
     error: fileError,
     handleMultiImageChange,
     removeMultiImage,
+    markAllAsUploaded,
+    retryAtWithProgress,
+    uploadPendingWithProgress,
   } = useMultiImageUpload({
     initialImages: initialData?.images,
     onGalleryChange: (galleryData) => {
@@ -136,11 +145,13 @@ const ProjectFormView = ({
 
         if (imageFile) {
           await uploadSingleImage(imageFile, uploadURL);
+          finalizeUpload();
         }
-        if (multiImagePreview.length > 0) {
-          setUploadStatus('갤러리 이미지 업로드 중...');
-          setUploadProgress(40);
-          await uploadGalleryImages(multiImagePreview);
+        const { successCount, failCount } = await uploadPendingWithProgress();
+        setUploadStatus('갤러리 이미지 업로드 중...');
+        setUploadProgress(60);
+        if (failCount > 0) {
+          setUploadStatus(`${failCount}개 실패. 재시도 가능.`);
         }
 
         setUploadStatus('프로젝트 정보 저장 중...');
@@ -202,6 +213,23 @@ const ProjectFormView = ({
                         handleImageChange={handleImageChange}
                       />
                     </FormControl>
+                    {fileError && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="mt-2"
+                        onClick={async () => {
+                          const fd = new FormData();
+                          if (imageFile as any) {
+                            await uploadSingleImage(imageFile!, uploadURL);
+                            finalizeUpload();
+                          }
+                        }}
+                      >
+                        업로드 재시도
+                      </Button>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -329,6 +357,9 @@ const ProjectFormView = ({
                         error={fileError}
                         handleMultiImageChange={handleMultiImageChange}
                         removeMultiImage={removeMultiImage}
+                        onRetryUpload={async (idx) => {
+                          await retryAtWithProgress(idx);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />

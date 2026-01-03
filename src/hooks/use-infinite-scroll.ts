@@ -7,12 +7,19 @@ interface UseInfiniteScrollOptions<T> {
   fetchFunction: (page: number, query?: string) => Promise<T[]>;
   initialData: T[];
   pageSize?: number;
+  /**
+   * Optional reset key to explicitly control when the list should reset
+   * (e.g., when filters change). If provided, it will be included in the
+   * change signature comparison to avoid unnecessary resets.
+   */
+  resetKey?: string | number;
 }
 
 export function useInfiniteScroll<T extends { id: string }>({
   fetchFunction,
   initialData,
   pageSize = PAGINATION.DEFAULT_PAGE_SIZE, // 기본 페이지 크기 설정
+  resetKey,
 }: UseInfiniteScrollOptions<T>) {
   const [items, setItems] = useState<T[]>(initialData);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,14 +29,34 @@ export function useInfiniteScroll<T extends { id: string }>({
 
   // 중복 방지를 위한 ID 추적
   const itemIdsRef = useRef(new Set(initialData.map((item) => item.id)));
+  const prevInitSigRef = useRef<string>('');
+
+  const makeSignature = (arr: T[]): string => {
+    // join ids to build a lightweight signature
+    try {
+      return (
+        (resetKey !== undefined ? String(resetKey) + '|' : '') +
+        arr.map((i) => i.id).join('|')
+      );
+    } catch {
+      // fallback if arr malformed
+      return (
+        (resetKey !== undefined ? String(resetKey) + '|' : '') +
+        String(arr?.length ?? 0)
+      );
+    }
+  };
 
   // 초기 데이터나 검색어 변경 시 상태 초기화
   useEffect(() => {
-    setItems(initialData);
-    itemIdsRef.current = new Set(initialData.map((item) => item.id));
+    const sig = makeSignature(initialData || []);
+    if (sig === prevInitSigRef.current) return; // guard to prevent redundant resets
+    prevInitSigRef.current = sig;
+    setItems(initialData || []);
+    itemIdsRef.current = new Set((initialData || []).map((item) => item.id));
     setPage(1);
     setIsLastPage(false);
-  }, [initialData]);
+  }, [initialData, resetKey]);
 
   // 무한 스크롤 로직
   const loadMoreItems = useCallback(async () => {

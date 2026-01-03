@@ -72,6 +72,9 @@ const VenueFormView = ({
     error: fileError,
     handleMultiImageChange,
     removeMultiImage,
+    markAllAsUploaded,
+    retryAtWithProgress,
+    uploadPendingWithProgress,
   } = useMultiImageUpload({
     initialImages: initialData?.images,
     onGalleryChange: (galleryData) => {
@@ -83,8 +86,11 @@ const VenueFormView = ({
     async (data: z.infer<typeof createVenueSchema>) => {
       setIsSubmitting(true);
       try {
-        if (multiImagePreview.length > 0) {
-          await uploadGalleryImages(multiImagePreview);
+        const { successCount, failCount } = await uploadPendingWithProgress();
+        if (failCount > 0) {
+          form.setError('root', {
+            message: `${failCount}개 이미지 업로드 실패. 재시도 하세요.`,
+          });
         }
 
         const result =
@@ -196,6 +202,9 @@ const VenueFormView = ({
                         handleMultiImageChange={handleMultiImageChange}
                         removeMultiImage={removeMultiImage}
                         error={fileError}
+                        onRetryUpload={async (idx) => {
+                          await retryAtWithProgress(idx);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />

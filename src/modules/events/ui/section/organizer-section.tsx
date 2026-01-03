@@ -34,6 +34,7 @@ interface OrganizersSectionProps {
   artists: {
     id: string;
     name: string;
+    nameKr?: string | null;
   }[];
   userId: string;
 }
@@ -107,7 +108,10 @@ const OrganizersSection = ({
                             <SelectContent>
                               {artists.map((artist) => (
                                 <SelectItem key={artist.id} value={artist.id}>
-                                  {artist.name}
+                                  {formatArtistName(
+                                    artist.nameKr as any,
+                                    artist.name
+                                  )}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -166,3 +170,4 @@ const OrganizersSection = ({
   );
 };
 export default OrganizersSection;
+import { formatArtistName } from '@/lib/utils';

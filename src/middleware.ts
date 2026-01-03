@@ -15,21 +15,23 @@ const publicOnlyUrls: Urls = {
 const staticPublicUrls: Urls = {
   '/': true,
   '/about': true,
+  // '/discover': true,
+  // '/archive': true,
+  '/journal': true,
   '/artists': true,
   '/artworks': true,
-  '/events': true,
-  '/projects': true,
   '/venues': true,
+  '/programs': true,
 };
 
 // 다이나믹 라우팅 패턴 (정규표현식 형태로 정의)
 // 공개적으로 접근 가능한 다이나믹 경로 패턴
 const publicDynamicPatterns = [
   /^\/artists\/[^/]+$/, // /artists/[id] 패턴 (상세 보기만 허용)
-  /^\/events\/[^/]+$/, // /events/[id] 패턴 (상세 보기만 허용)
-  /^\/projects\/[^/]+$/, // /projects/[id] 패턴 (상세 보기만 허용)
   /^\/venues\/[^/]+$/, // /venues/[id] 패턴 (상세 보기만 허용)
   /^\/artworks\/[^/]+$/, // /artworks/[id] 패턴 (상세 보기만 허용)
+  /^\/programs\/[^/]+$/, // /programs/[slug] 패턴 (상세 보기 허용)
+  /^\/journal\/[^/]+$/, // /journal/[slug] 패턴 (상세 보기 허용)
 ];
 
 // 로그인이 필요한 특정 패턴 (더 구체적인 패턴이 우선 적용됨)
@@ -38,10 +40,6 @@ const privatePathPatterns = [
   /^\/artists\/new$/, // /artists/new 패턴
   /^\/artworks\/[^/]+\/edit$/, // /artists/[id]/edit 패턴
   /^\/artworks\/new$/, // /artists/new 패턴
-  /^\/events\/[^/]+\/edit$/, // /events/[id]/edit 패턴
-  /^\/events\/new$/, // /events/new 패턴
-  /^\/projects\/[^/]+\/edit$/, // /projects/[id]/edit 패턴
-  /^\/projects\/new$/, // /projects/new 패턴
   /^\/venues\/[^/]+\/edit$/, // /venues/[id]/edit 패턴
   /^\/venues\/new$/, // /venues/new 패턴
   /^\/admin\/?.*$/, // 모든 /admin 경로
@@ -112,11 +110,13 @@ export const config = {
   matcher: [
     '/',
     '/about',
+    // '/discover',
+    // '/archive',
+    '/journal/:path*',
     '/artists/:path*',
-    '/events/:path*',
-    '/projects/:path*',
     '/venues/:path*',
     '/artworks/:path*',
+    '/programs/:path*',
     '/auth/:path*',
     '/profile/:path*',
     '/admin/:path*',

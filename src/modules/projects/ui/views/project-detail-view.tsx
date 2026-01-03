@@ -1,6 +1,6 @@
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import Image from 'next/image';
-import { formatEventDate, getImageUrl } from '@/lib/utils';
+import { formatArtistName, formatEventDate, getImageUrl } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from 'lucide-react';
 import Link from 'next/link';
@@ -82,16 +82,24 @@ export const ProjectDetailView = async ({ id }: { id: string }) => {
                     <Image
                       src={getImageUrl(artist.mainImageUrl, 'thumbnail')!}
                       fill
-                      alt={artist.name}
+                      alt={formatArtistName(
+                        artist.nameKr as any,
+                        artist.name as any
+                      )}
                     />
                   ) : (
                     <AvatarFallback>
-                      {artist.name.slice(0, 2).toUpperCase()}
+                      {(artist.name || '')
+                        .split(' ')
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase()}
                     </AvatarFallback>
                   )}
                 </Avatar>
                 <span className="text-center font-medium group-hover:text-accent-foreground">
-                  {artist.name}
+                  {formatArtistName(artist.nameKr as any, artist.name as any)}
                 </span>
               </Link>
             ))}

@@ -7,6 +7,87 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// -------- Feed-first Program model (non-breaking addition) --------
+enum ProgramType {
+  exhibition
+  live
+  party
+  workshop
+  talk
+}
+
+enum ProgramStatus {
+  upcoming
+  completed
+}
+
+model Program {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String
+  summary     String?
+  description String?
+  type        ProgramType
+  status      ProgramStatus @default(upcoming)
+  startAt     DateTime
+  endAt       DateTime?
+  city        String?
+  heroUrl     String?
+  // Free-text fields to replace structured tables
+  venue       String?
+  organizer   String?
+
+  userId  String
+  venueId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // venue     Venue?         @relation(fields: [venueId], references: [id])
+
+  images  ProgramImage[]
+  credits ProgramCredit[]
+}
+
+model ProgramImage {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  alt       String
+  order     Int      @default(0)
+  programId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  program   Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+}
+
+model ProgramCredit {
+  programId String
+  artistId  String
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  program   Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@id([programId, artistId])
+}
+
+model Article {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  excerpt     String?
+  body        String
+  cover       String?
+  tags        String[]
+  publishedAt DateTime?
+  authorId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  author      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+}
+
 model User {
   id        String    @id @default(cuid())
   username  String?   @unique
@@ -19,8 +100,10 @@ model User {
   artworks  Artwork[]
   events    Event[]
   posts     Post[]
+  articles  Article[]
   projects  Project[]
   venues    Venue[]
+  programs  Program[]
 }
 
 model Post {
@@ -139,6 +222,7 @@ model Artist {
   images          ArtistImage[]
   eventOrganizers EventOrganizer[]
   projectArtists  ProjectArtist[]
+  programCredits  ProgramCredit[]
 }
 
 model ArtistImage {
@@ -192,6 +276,7 @@ model Venue {
   projectVenue ProjectVenue[]
   user         User           @relation(fields: [userId], references: [id])
   images       VenueImage[]
+  // programs     Program[]
 }
 
 model VenueImage {

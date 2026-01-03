@@ -167,6 +167,33 @@ export const formatEventDate = (startDate: Date, endDate: Date): string => {
   return `${formattedStart} - ${formatDate(endDate)}`;
 };
 
+// Format artist name as "KR (EN)" with graceful fallback
+export function formatArtistName(
+  kr?: string | null,
+  en?: string | null
+): string {
+  const krSafe = (kr || '').trim();
+  const enSafe = (en || '').trim();
+  if (krSafe && enSafe) return `${krSafe} (${enSafe})`;
+  return krSafe || enSafe || 'Unknown';
+}
+
+// Build initials from English name, fallback to first 2 chars of KR
+export function artistInitials(en?: string | null, kr?: string | null): string {
+  const enSafe = (en || '').trim();
+  if (enSafe) {
+    return enSafe
+      .split(' ')
+      .filter(Boolean)
+      .map((n) => n[0]!)
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  }
+  const krSafe = (kr || '').trim();
+  return krSafe.substring(0, 2) || 'A';
+}
+
 export default function validateImageFile(file: File) {
   // 파일 접근 가능 여부 확인
   try {
