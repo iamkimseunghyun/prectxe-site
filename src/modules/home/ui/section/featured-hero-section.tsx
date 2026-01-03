@@ -8,7 +8,8 @@ export async function FeaturedHeroSection() {
   // Archive-first: pick the most recent completed program; fallback to upcoming
   const completed = await listPrograms({ status: 'completed' });
   const upcoming = await listPrograms({ status: 'upcoming' });
-  const featured = (completed.data ?? [])[0] ?? (upcoming.data ?? [])[0] ?? null;
+  const featured =
+    (completed.data ?? [])[0] ?? (upcoming.data ?? [])[0] ?? null;
 
   const start = featured?.startAt ? new Date(featured.startAt) : null;
   const end = featured?.endAt ? new Date(featured.endAt) : start;
@@ -48,7 +49,7 @@ export async function FeaturedHeroSection() {
               </Link>
               <Link
                 href="/journal"
-                className="text-sm underline text-neutral-600 hover:text-neutral-900"
+                className="text-sm text-neutral-600 underline hover:text-neutral-900"
               >
                 최근 소식
               </Link>
