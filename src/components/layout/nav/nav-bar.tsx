@@ -100,21 +100,16 @@ const NavBar = () => {
               <div className="flex items-center space-x-4">
                 <Link
                   href="/admin"
-                  className={cn(
-                    'text-sm font-medium transition-colors hover:text-purple-600',
-                    pathname.startsWith('/admin')
-                      ? 'text-purple-700'
-                      : 'text-purple-500'
-                  )}
+                  className="text-sm text-neutral-500 transition-colors hover:text-neutral-900"
                 >
                   {user.username}
                 </Link>
                 <button
                   onClick={() => logoutMutation.mutate()}
                   disabled={logoutMutation.isPending}
-                  className="rounded-md bg-red-50 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-100"
+                  className="text-sm text-neutral-400 transition-colors hover:text-neutral-600"
                 >
-                  {logoutMutation.isPending ? '로그아웃 중...' : '로그아웃'}
+                  {logoutMutation.isPending ? '...' : 'Logout'}
                 </button>
               </div>
             ) : null}
@@ -140,11 +135,11 @@ const NavBar = () => {
 
             <button
               onClick={toggleMenu}
-              className="relative z-[60] ml-2 p-2 text-black/40 focus:outline-none"
+              className="relative z-[60] ml-2 p-2 text-neutral-400 focus:outline-none"
               aria-label="Toggle menu"
             >
               {isMenuOpen ? (
-                <X size={24} className="text-blue-200" />
+                <X size={24} className="text-neutral-600" />
               ) : (
                 <Menu size={24} />
               )}
@@ -157,24 +152,24 @@ const NavBar = () => {
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            className="fixed left-0 top-0 z-50 w-full rounded-b-sm bg-black pb-16 pt-16 shadow-lg md:hidden"
+            className="fixed left-0 top-0 z-50 w-full border-b border-neutral-200 bg-white pb-16 pt-16 shadow-sm md:hidden"
             initial={{ y: '-100%' }}
             animate={{ y: isMenuOpen ? '0%' : '-100%' }}
             exit={{ y: '-100%' }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
-            <ul className="flex flex-col items-center justify-center space-y-6 px-6">
+            <ul className="flex flex-col items-center justify-center space-y-4 px-6">
               {navigation.map((item) => (
                 <li key={item.name}>
                   <Link
                     href={item.href}
                     className={cn(
-                      'block py-2 text-3xl font-medium transition-colors',
+                      'block py-2 text-2xl transition-colors',
                       pathname === item.href
-                        ? 'text-blue-200'
-                        : 'text-blue-500/60'
+                        ? 'text-neutral-900'
+                        : 'text-neutral-400'
                     )}
-                    onClick={() => setIsMenuOpen(false)} // Close menu when item is clicked
+                    onClick={() => setIsMenuOpen(false)}
                   >
                     {item.name}
                   </Link>
@@ -183,18 +178,16 @@ const NavBar = () => {
 
               {/* 사용자 메뉴 모바일 뷰 */}
               {isLoggedIn && user && (
-                <li className="mt-4 border-t border-gray-700 pt-4">
+                <li className="mt-4 border-t border-neutral-200 pt-4">
                   <button
                     onClick={() => {
                       logoutMutation.mutate();
                       setIsMenuOpen(false);
                     }}
                     disabled={logoutMutation.isPending}
-                    className="rounded-md bg-red-900/30 px-4 py-2 text-base text-red-300 transition-colors hover:bg-red-900/50"
+                    className="text-sm text-neutral-400 transition-colors hover:text-neutral-600"
                   >
-                    {logoutMutation.isPending
-                      ? '로그아웃 중...'
-                      : `${user.username} 로그아웃`}
+                    {logoutMutation.isPending ? '...' : `Logout (${user.username})`}
                   </button>
                 </li>
               )}

@@ -4,66 +4,66 @@ import { socialIcons } from '@/lib/constants/constants';
 
 export function Footer() {
   return (
-    <footer className="border-t bg-white">
-      <div className="container mx-auto px-4 py-4 sm:py-12">
-        {/* 좌측: 로고 및 설명 */}
-        <div className="mb-2 flex flex-col items-center justify-center sm:mb-12">
-          <h2 className="mb-4 text-4xl font-bold">PRECTXE</h2>
-          <p className="hidden max-w-xl text-gray-600 sm:block sm:text-xl">
-            {/* Digital art festival showcasing innovative works at the
-              intersection of technology and creativity.*/}
-            기술과 창의성이 만나는 디지털 아트 플랫폼
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-8">
-          {/* 링크 및 소셜 */}
-          <div className="flex flex-col items-center justify-center gap-6">
-            <nav className="text-sm text-gray-600">
-              <ul className="flex flex-wrap justify-center gap-4 sm:gap-6">
-                <li>
-                  <Link href="/programs" className="hover:text-black">
-                    Programs
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/journal" className="hover:text-black">
-                    Journal
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/about" className="hover:text-black">
-                    About
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-            {/* 소셜 링크 */}
-            <div>
-              <h3 className="mb-3 flex items-center justify-center text-sm font-semibold">
-                Contact Us
-              </h3>
-              <ul className="flex gap-4">
-                {socialIcons.map((social) => (
-                  <li key={social.name}>
-                    <Link
-                      href={social.href}
-                      className="text-gray-600 transition-colors hover:text-black"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <social.icon className="size-6" />
-                      <span className="sr-only"> {social.name}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+    <footer className="border-t border-neutral-200 bg-white">
+      <div className="container mx-auto px-4 py-8 md:py-12">
+        <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+          {/* 로고 */}
+          <div>
+            <Link href="/" className="text-sm font-medium text-neutral-900">
+              PRECTXE
+            </Link>
+          </div>
+
+          {/* 링크 */}
+          <nav className="text-sm text-neutral-500">
+            <ul className="flex gap-6">
+              <li>
+                <Link
+                  href="/programs"
+                  className="transition-colors hover:text-neutral-900"
+                >
+                  Archive
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/journal"
+                  className="transition-colors hover:text-neutral-900"
+                >
+                  Journal
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/about"
+                  className="transition-colors hover:text-neutral-900"
+                >
+                  About
+                </Link>
+              </li>
+            </ul>
+          </nav>
+
+          {/* 소셜 */}
+          <div className="flex gap-4">
+            {socialIcons.map((social) => (
+              <Link
+                key={social.name}
+                href={social.href}
+                className="text-neutral-400 transition-colors hover:text-neutral-600"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <social.icon className="size-5" />
+                <span className="sr-only">{social.name}</span>
+              </Link>
+            ))}
           </div>
         </div>
 
         {/* 카피라이트 */}
-        <div className="mt-8 border-t pt-8 text-center text-sm text-gray-600">
-          © {new Date().getFullYear()} PRECTXE. All rights reserved.
+        <div className="mt-8 border-t border-neutral-200 pt-8 text-xs text-neutral-400">
+          © {new Date().getFullYear()} PRECTXE
         </div>
       </div>
     </footer>
