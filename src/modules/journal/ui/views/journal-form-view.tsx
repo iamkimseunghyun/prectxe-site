@@ -54,6 +54,9 @@ export function JournalFormView({
     publishedAt: initial?.publishedAt ?? '',
   });
 
+  // 공개 상태 (publishedAt이 있으면 공개)
+  const [isPublished, setIsPublished] = useState(Boolean(initial?.publishedAt));
+
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [slugChecking, setSlugChecking] = useState(false);
   const slugTimer = useRef<any>(null);
@@ -69,6 +72,19 @@ export function JournalFormView({
 
   const handleChange = (k: keyof Initial, v: any) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  // 공개/비공개 토글 핸들러
+  const handlePublishToggle = (checked: boolean) => {
+    setIsPublished(checked);
+    if (checked) {
+      // 공개: 현재 날짜로 설정
+      const today = new Date().toISOString().split('T')[0];
+      handleChange('publishedAt', today);
+    } else {
+      // 비공개: null로 설정
+      handleChange('publishedAt', null);
+    }
+  };
 
   // 제목 변경 시 자동 슬러그 생성
   const handleTitleChange = (title: string) => {
@@ -284,12 +300,23 @@ export function JournalFormView({
               />
             </div>
             <div>
-              <Label>발행일</Label>
-              <Input
-                type="date"
-                value={form.publishedAt ?? ''}
-                onChange={(e) => handleChange('publishedAt', e.target.value)}
-              />
+              <Label>공개 설정</Label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={isPublished}
+                  onChange={(e) => handlePublishToggle(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <span className="text-sm">
+                  {isPublished ? '공개됨' : '비공개 (초안)'}
+                </span>
+              </label>
+              {isPublished && form.publishedAt && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  발행일: {form.publishedAt}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>

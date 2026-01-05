@@ -1,5 +1,62 @@
 # Development Log
 
+## 2026-01-05
+
+### CLAUDE.md 개선
+- 프로젝트 구조 및 모듈 아키텍처 상세 설명 추가
+- 데이터베이스 모델 및 인증 시스템 문서화
+- 이미지 업로드 아키텍처 (Cloudflare) 설명 추가
+- 환경 변수, UI 레이아웃, 개발 워크플로우 문서화
+- 핵심 기술 패턴 (Server Actions, TanStack Query, Zod) 추가
+
+### 메인 페이지 리디자인
+
+**모바일 반응형 개선** (`featured-hero-section.tsx`):
+- 히어로 이미지 높이: `h-[60vh] md:h-[70vh]` (모바일에서 더 작게)
+- 텍스트 크기: `text-2xl sm:text-3xl md:text-5xl` → `text-xl sm:text-2xl md:text-3xl`
+- 패딩: `p-4 sm:p-6 md:p-12` 단계별 조정
+- 네비게이션 링크: `text-xs sm:text-sm md:text-base` 반응형 적용
+
+**미니멀 디자인 전환**:
+- 데이터 쿼리 변경: `listPrograms()` → Prisma 직접 쿼리로 아티스트 정보 포함
+- ProgramCredit을 통한 아티스트 정보 추출 및 표시
+- 날짜/장소 정보 완전 제거
+- 타이포그래피:
+  - 제목: `font-serif font-light tracking-wide`
+  - 아티스트: `font-sans font-light tracking-wider text-white/80`
+
+**레이아웃 변경**:
+- 텍스트 위치: 하단 → 정중앙 (`inset-0 flex items-center justify-center`)
+- 텍스트 정렬: `text-center` 적용
+- 배경 그라디언트 제거
+
+**가독성 개선**:
+- 블러 배경 박스 추가: `backdrop-blur-md bg-black/40`
+- 부드러운 모서리: `rounded-xl`
+- 반응형 패딩: `px-8 py-6 sm:px-12 sm:py-8`
+- 어떤 배경 이미지에서도 텍스트 가독성 보장
+
+**결과**: 갤러리 느낌의 미니멀하고 우아한 메인 페이지
+
+### 저널 공개/비공개 토글 기능
+
+**journal-form-view.tsx 수정**:
+- 발행 상태 추적: `isPublished` state 추가 (초기값: `Boolean(initial?.publishedAt)`)
+- 토글 핸들러 구현: `handlePublishToggle`
+  - 공개 시: `publishedAt`을 현재 날짜로 설정
+  - 비공개 시: `publishedAt`을 null로 설정
+- UI 변경: 날짜 입력 필드를 체크박스 토글로 교체
+  - 상태 표시: "공개됨" 또는 "비공개 (초안)"
+  - 공개 상태일 때 발행일 표시
+
+**기존 인프라 활용**:
+- `listArticles()`: 이미 `publishedAt: { not: null }` 필터링으로 공개 글만 표시
+- 관리자 뷰: `includeUnpublished: true` 옵션으로 모든 글 표시
+
+**결과**: 초안 저장 및 공개/비공개 전환 기능 완성
+
+---
+
 ## 2026-01-04
 
 ### Form Design Improvements
