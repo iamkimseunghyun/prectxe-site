@@ -1,5 +1,198 @@
 # Development Log
 
+## 2026-01-06
+
+### 이미지 표시 문제 해결
+
+**문제**: 저널 리스트 및 상세 페이지에서 이미지가 표시되지 않음
+
+**원인 분석**:
+- ArticleCard와 JournalDetailView에서 조건부 렌더링 사용
+- Cloudflare 결제 이슈로 이미지 업로드 실패 (404 에러)
+- 업로드 실패 시에도 잘못된 이미지 ID가 DB에 저장됨
+
+**해결 방법**:
+1. **이미지 표시 로직 통일** (`article-card.tsx`, `journal-detail-view.tsx`):
+   - ProgramCard 패턴 적용: 항상 이미지 렌더링
+   - `getImageUrl()` 함수가 null 처리 및 placeholder 반환
+   - 조건부 렌더링 제거 → 일관성 있는 UI
+
+2. **업로드 에러 처리 강화** (`journal-form-view.tsx`):
+   ```typescript
+   // Before
+   if (imageFile) {
+     await uploadImage(imageFile, uploadURL);
+     finalizeUpload();
+   }
+
+   // After
+   if (imageFile) {
+     const uploadSuccess = await uploadImage(imageFile, uploadURL);
+     if (!uploadSuccess) {
+       toast({ title: '이미지 업로드 실패', variant: 'destructive' });
+       return; // 폼 제출 중단
+     }
+     finalizeUpload();
+   }
+   ```
+
+**결과**: 업로드 실패 시 잘못된 데이터 저장 방지, 일관성 있는 이미지 표시
+
+---
+
+### 사용자 경험 개선 (UX Improvements)
+
+#### 1. 네비게이션 메뉴 추가
+
+**변경 내용**:
+- 모든 리스트 및 상세 페이지에 하단 네비게이션 메뉴 추가
+- 일관된 메뉴 구조: Home, Archive, Journal, About
+- 상세 페이지에서 구분선(`border-t`) 및 상단 여백(`mt-12 pt-8`) 적용
+
+**수정 파일**:
+- `programs-view.tsx` - 프로그램 리스트
+- `journal-list-view.tsx` - 저널 리스트
+- `program-detail-view.tsx` - 프로그램 상세
+- `journal-detail-view.tsx` - 저널 상세
+
+**디자인**:
+```tsx
+<div className="flex items-center justify-center gap-4 py-6 text-xs sm:gap-6 sm:py-8 sm:text-sm md:text-base">
+  <Link href="/">Home</Link>
+  <Link href="/programs">Archive</Link>
+  <Link href="/journal">Journal</Link>
+  <Link href="/about">About</Link>
+</div>
+```
+
+#### 2. 어드민 개선사항
+
+**alert/confirm → Toast/Dialog 전환** (`delete-button.tsx`):
+- 삭제 확인: `window.confirm()` → AlertDialog 컴포넌트
+- 에러 알림: `window.alert()` → Toast 알림 (destructive variant)
+- 성공 알림: Toast 추가 ("삭제 완료")
+
+**Before**:
+```typescript
+if (!confirm('정말 삭제하시겠어요?')) return;
+// ...
+catch (e) {
+  alert(message);
+}
+```
+
+**After**:
+```typescript
+<AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+  <AlertDialogContent>
+    <AlertDialogTitle>삭제 확인</AlertDialogTitle>
+    <AlertDialogDescription>정말 삭제하시겠어요?</AlertDialogDescription>
+    <AlertDialogFooter>
+      <AlertDialogCancel>취소</AlertDialogCancel>
+      <AlertDialogAction onClick={onDelete}>삭제</AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+```
+
+**관리자 헤더 개선** (`header.tsx`):
+- 홈페이지 링크 추가 (새 탭으로 열림)
+- 플로팅 pill 디자인에 통합
+
+**최신순 정렬 적용**:
+- 프로그램 어드민: `createdAt: 'desc'` (status 없을 때)
+- 저널 어드민: `createdAt: 'desc'` (includeUnpublished일 때)
+- 아티스트/베뉴/아트워크: 이미 `createdAt: 'desc'` 적용됨
+
+#### 3. 저널 폼 미리보기 모달
+
+**기능**: 저장 전 게시글 미리보기
+
+**구현** (`journal-form-view.tsx`):
+- "미리보기" 버튼 추가 (저장 버튼 옆)
+- Dialog 컴포넌트로 전체화면 모달 표시
+- 현재 폼 데이터를 journal-detail-view 스타일로 렌더링
+- 표시 내용:
+  - 커버 이미지 (preview URL 또는 placeholder)
+  - 제목, 요약, 본문
+  - 태그, 발행일
+- 닫기 버튼으로 편집으로 복귀
+
+**UI 구조**:
+```tsx
+<Dialog open={showPreview} onOpenChange={setShowPreview}>
+  <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+    <DialogHeader>
+      <DialogTitle>미리보기</DialogTitle>
+    </DialogHeader>
+    {/* 커버 이미지, 제목, 메타정보, 요약, 본문 */}
+  </DialogContent>
+</Dialog>
+```
+
+#### 4. URL 클립보드 복사 기능
+
+**신규 컴포넌트** (`copy-url-button.tsx`):
+- 현재 페이지 URL을 클립보드에 복사
+- Link 아이콘 표시 (텍스트 없음)
+- 복사 성공/실패 시 Toast 알림
+- `aria-label`로 접근성 보장
+
+**적용 위치**:
+- 프로그램 상세: ShareButton 제거 → CopyUrlButton 교체
+- 저널 상세: CopyUrlButton 추가 (날짜 옆)
+
+**구현**:
+```typescript
+const handleCopy = async () => {
+  const url = window.location.href;
+  await navigator.clipboard.writeText(url);
+  toast({ title: '링크 복사됨', description: '현재 페이지 URL을 클립보드에 복사했습니다.' });
+};
+```
+
+#### 5. 저널 상세페이지 정리
+
+**변경**: 작성자 닉네임 제거
+- Before: `{date} · {author.username}`
+- After: `{date}` (날짜만 표시)
+
+**이유**: 저널 콘텐츠 중심으로 미니멀하게 표시
+
+---
+
+### 기술적 개선사항
+
+**CLAUDE.md 문서 업데이트**:
+1. `check:fix` 명령어 추가
+2. 인증 미들웨어 상세 설명
+3. 데이터 페칭 캐싱 전략 문서화
+
+**파일 구조**:
+- 신규: `src/components/shared/copy-url-button.tsx`
+- 수정: 12개 파일 (372 추가, 77 삭제)
+
+---
+
+### 커밋 정보
+
+```
+0bc599a feat: improve UX with navigation, modals, and clipboard features
+```
+
+**주요 변경사항**:
+- 네비게이션 메뉴 추가 (리스트/상세 페이지)
+- Alert → Toast/Dialog 전환 (어드민)
+- 저널 미리보기 모달 추가
+- 어드민 리스트 최신순 정렬
+- URL 클립보드 복사 기능 (아이콘만)
+- 저널 상세 작성자 닉네임 제거
+- 어드민 홈페이지 링크 추가
+- 저널 이미지 표시 개선
+- 업로드 에러 처리 강화
+
+---
+
 ## 2026-01-05
 
 ### CLAUDE.md 개선
