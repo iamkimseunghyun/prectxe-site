@@ -27,6 +27,7 @@ export const programBaseSchema = z.object({
     .nullable(),
   venue: z.string().optional().nullable(),
   organizer: z.string().optional().nullable(),
+  isFeatured: z.boolean().optional().default(false),
 });
 
 export const programCreateSchema = programBaseSchema.extend({

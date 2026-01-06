@@ -12,6 +12,7 @@ export const articleBaseSchema = z.object({
     .nullable(),
   tags: z.array(z.string()).optional().default([]),
   publishedAt: z.string().optional().nullable(), // YYYY-MM-DD
+  isFeatured: z.boolean().optional().default(false),
 });
 
 export const articleCreateSchema = articleBaseSchema;

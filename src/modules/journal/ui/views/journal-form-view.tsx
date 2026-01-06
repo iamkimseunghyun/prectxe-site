@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ type Initial = {
   cover?: string | null;
   tags?: string[];
   publishedAt?: string | null;
+  isFeatured?: boolean;
 };
 
 export function JournalFormView({
@@ -59,6 +61,7 @@ export function JournalFormView({
     cover: initial?.cover ?? '',
     tags: initial?.tags ?? [],
     publishedAt: initial?.publishedAt ?? '',
+    isFeatured: initial?.isFeatured ?? false,
   });
 
   // 공개 상태 (publishedAt이 있으면 공개)
@@ -333,6 +336,24 @@ export function JournalFormView({
                   발행일: {form.publishedAt}
                 </p>
               )}
+            </div>
+            <div>
+              <Label>메인 노출 설정</Label>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="featured"
+                  checked={form.isFeatured as boolean}
+                  onCheckedChange={(checked: boolean) =>
+                    handleChange('isFeatured', Boolean(checked))
+                  }
+                />
+                <label
+                  htmlFor="featured"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  메인 페이지에 노출
+                </label>
+              </div>
             </div>
           </div>
         </CardContent>

@@ -4,14 +4,15 @@ import { prisma } from '@/lib/db/prisma';
 import { getImageUrl } from '@/lib/utils';
 
 export async function FeaturedHeroSection() {
-  // Archive-first: pick the most recent completed program; fallback to upcoming
-  const completed = await prisma.program.findFirst({
-    where: { status: 'completed' },
-    orderBy: { startAt: 'desc' },
+  // 1. Check for featured content (program or article)
+  const featuredProgram = await prisma.program.findFirst({
+    where: { isFeatured: true },
+    orderBy: { updatedAt: 'desc' },
     select: {
       slug: true,
       title: true,
       heroUrl: true,
+      updatedAt: true,
       credits: {
         select: {
           artist: {
@@ -25,45 +26,121 @@ export async function FeaturedHeroSection() {
     },
   });
 
-  const upcoming = await prisma.program.findFirst({
-    where: { status: 'upcoming' },
-    orderBy: { startAt: 'asc' },
+  const featuredArticle = await prisma.article.findFirst({
+    where: { isFeatured: true, publishedAt: { not: null } },
+    orderBy: { updatedAt: 'desc' },
     select: {
       slug: true,
       title: true,
-      heroUrl: true,
-      credits: {
-        select: {
-          artist: {
-            select: {
-              name: true,
-              nameKr: true,
+      cover: true,
+      updatedAt: true,
+    },
+  });
+
+  // Choose between featured program and article (most recently updated)
+  let featured:
+    | { type: 'program'; data: typeof featuredProgram }
+    | { type: 'article'; data: typeof featuredArticle }
+    | null = null;
+
+  if (featuredProgram && featuredArticle) {
+    featured =
+      featuredProgram.updatedAt > featuredArticle.updatedAt
+        ? { type: 'program', data: featuredProgram }
+        : { type: 'article', data: featuredArticle };
+  } else if (featuredProgram) {
+    featured = { type: 'program', data: featuredProgram };
+  } else if (featuredArticle) {
+    featured = { type: 'article', data: featuredArticle };
+  }
+
+  // 2. Fallback to default logic if no featured content
+  if (!featured) {
+    const completed = await prisma.program.findFirst({
+      where: { status: 'completed' },
+      orderBy: { startAt: 'desc' },
+      select: {
+        slug: true,
+        title: true,
+        heroUrl: true,
+        updatedAt: true,
+        credits: {
+          select: {
+            artist: {
+              select: {
+                name: true,
+                nameKr: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
 
-  const featured = completed ?? upcoming;
+    const upcoming = await prisma.program.findFirst({
+      where: { status: 'upcoming' },
+      orderBy: { startAt: 'asc' },
+      select: {
+        slug: true,
+        title: true,
+        heroUrl: true,
+        updatedAt: true,
+        credits: {
+          select: {
+            artist: {
+              select: {
+                name: true,
+                nameKr: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
-  const artists = featured?.credits
-    .map((c) => c.artist.name || c.artist.nameKr)
-    .filter(Boolean)
-    .join(', ');
+    const fallbackProgram = completed ?? upcoming;
+    if (fallbackProgram) {
+      featured = { type: 'program', data: fallbackProgram };
+    }
+  }
 
-  const hero = featured?.heroUrl
-    ? getImageUrl(featured.heroUrl, 'public')
-    : '/images/placeholder.png';
+  // 3. Extract display data
+  const artists =
+    featured?.type === 'program'
+      ? featured.data?.credits
+          .map((c) => c.artist.name || c.artist.nameKr)
+          .filter(Boolean)
+          .join(', ')
+      : undefined;
+
+  const hero =
+    featured?.type === 'program'
+      ? featured.data?.heroUrl
+        ? getImageUrl(featured.data.heroUrl, 'public')
+        : '/images/placeholder.png'
+      : featured?.type === 'article'
+        ? featured.data?.cover
+          ? getImageUrl(featured.data.cover, 'public')
+          : '/images/placeholder.png'
+        : '/images/placeholder.png';
+
+  const slug = featured?.data?.slug;
+  const title = featured?.data?.title;
+  const linkHref =
+    featured?.type === 'program'
+      ? `/programs/${slug}`
+      : featured?.type === 'article'
+        ? `/journal/${slug}`
+        : '/';
 
   return (
     <section className="min-h-screen">
-      {featured ? (
-        <Link href={`/programs/${featured.slug}`} className="block h-full">
+      {featured && slug && title ? (
+        <Link href={linkHref} className="block h-full">
           <div className="relative h-[60vh] w-full md:h-[70vh]">
             <Image
               src={hero}
-              alt={featured.title}
+              alt={title}
               fill
               priority
               sizes="100vw"
@@ -72,7 +149,7 @@ export async function FeaturedHeroSection() {
             <div className="absolute inset-0 flex items-center justify-center p-6 text-white md:p-12">
               <div className="max-w-4xl space-y-2 rounded-xl bg-black/40 px-8 py-6 text-center backdrop-blur-md sm:px-12 sm:py-8">
                 <h1 className="font-serif text-xl font-light tracking-wide sm:text-2xl md:text-3xl">
-                  {featured.title}
+                  {title}
                 </h1>
                 {artists && (
                   <p className="font-sans text-xs font-light tracking-wider text-white/80 sm:text-sm">

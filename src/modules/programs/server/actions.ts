@@ -203,6 +203,7 @@ export async function createProgram(input: unknown, _userId: string) {
       heroUrl: data.heroUrl ?? null,
       venue: data.venue ?? null,
       organizer: data.organizer ?? null,
+      isFeatured: data.isFeatured ?? false,
       userId: auth.userId!,
       images: data.images
         ? {
@@ -265,6 +266,7 @@ export async function updateProgram(id: string, input: unknown) {
       heroUrl: data.heroUrl ?? null,
       venue: data.venue ?? null,
       organizer: data.organizer ?? null,
+      isFeatured: data.isFeatured ?? false,
       images: data.images
         ? {
             deleteMany: {},

@@ -76,6 +76,7 @@ export async function createArticle(input: unknown, authorId?: string | null) {
       cover: a.cover ?? null,
       tags: a.tags ?? [],
       publishedAt: a.publishedAt ? new Date(a.publishedAt) : null,
+      isFeatured: a.isFeatured ?? false,
       authorId: auth.userId ?? authorId ?? null,
     },
     select: { slug: true },
@@ -106,6 +107,7 @@ export async function updateArticle(slug: string, input: unknown) {
       cover: a.cover ?? null,
       tags: a.tags ?? [],
       publishedAt: a.publishedAt ? new Date(a.publishedAt) : null,
+      isFeatured: a.isFeatured ?? false,
     },
     select: { slug: true },
   });

@@ -33,6 +33,7 @@ model Program {
   endAt       DateTime?
   city        String?
   heroUrl     String?
+  isFeatured  Boolean       @default(false)
   // Free-text fields to replace structured tables
   venue       String?
   organizer   String?
@@ -82,6 +83,7 @@ model Article {
   cover       String?
   tags        String[]
   publishedAt DateTime?
+  isFeatured  Boolean   @default(false)
   authorId    String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
