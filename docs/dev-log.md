@@ -73,6 +73,52 @@
 84a75b0 chore: apply biome formatting
 ```
 
+### Featured Content System - Single Featured Enforcement
+
+**추가 요구사항**: 여러 컨텐츠에 featured 체크 시 충돌 방지
+
+**구현 내용**:
+
+1. **단일 Featured 컨텐츠 보장**:
+   - 새 컨텐츠를 featured로 설정 시, 다른 모든 컨텐츠 자동 unfeatured
+   - Prisma transaction으로 원자성 보장
+   ```typescript
+   // createProgram / updateProgram
+   if (data.isFeatured) {
+     await prisma.$transaction([
+       prisma.program.updateMany({
+         where: { isFeatured: true },
+         data: { isFeatured: false },
+       }),
+       prisma.article.updateMany({
+         where: { isFeatured: true },
+         data: { isFeatured: false },
+       }),
+     ]);
+   }
+   ```
+   - createArticle / updateArticle도 동일한 로직 적용
+
+2. **캐시 무효화**:
+   - 모든 create/update 액션에 `revalidatePath('/')` 추가
+   - Featured 변경 시 홈페이지 즉시 갱신
+
+3. **관리자 대시보드 표시**:
+   - `/admin` 페이지에 "현재 메인 페이지 표시 중" 섹션 추가
+   - Featured 컨텐츠 썸네일, 제목, 메타데이터 표시
+   - 편집 페이지로 바로 이동 가능한 링크
+   - Star 아이콘으로 시각적 강조
+
+**결과**:
+- ✅ 시스템 전체에서 단 하나의 featured 컨텐츠만 존재
+- ✅ 관리자가 현재 메인 노출 컨텐츠를 대시보드에서 확인 가능
+- ✅ Featured 변경 시 홈페이지 자동 갱신
+
+**커밋**:
+```
+ce847d7 feat: enforce single featured content and add admin dashboard display
+```
+
 ---
 
 ### 이미지 표시 문제 해결
