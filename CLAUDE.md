@@ -70,12 +70,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Schema Location**: `prisma/schema.prisma`
 - **Key Models**:
   - `Program` - Main content type (replaces legacy Event/Project models)
-    - Fields: slug (unique), title, type (exhibition/live/party/workshop/talk), status (upcoming/completed), startAt, endAt
+    - Fields: slug (unique), title, type (exhibition/live/party/workshop/talk), status (upcoming/completed), startAt, endAt, isFeatured
     - Relations: ProgramImage[], ProgramCredit[] (many-to-many with Artist)
     - Free-text fields: venue, organizer (legacy Venue model slated for removal)
-  - `Article` - Journal entries with slug, title, body, cover, tags, publishedAt
+  - `Article` - Journal entries with slug, title, body, cover, tags, publishedAt, isFeatured
   - `Artist` - Artist profiles with name (en/kr), biography, images
   - `User` - Authentication with role (ADMIN/USER), manages programs/articles
+- **Featured Content System**:
+  - Both `Program` and `Article` have `isFeatured` boolean flag for homepage display
+  - Only one content item can be featured at a time (enforced via Prisma transactions)
+  - Setting new featured content automatically unfeatures all other content
+  - Homepage displays featured content with title and artists (programs) or title only (articles)
+  - Admin dashboard shows currently featured content with thumbnail and edit link
 - **Legacy Models**: Event, Project (being phased out in favor of Program)
 - **Migrations**: After schema changes, run `bunx prisma migrate dev -n "description"` then `bunx prisma generate`
 
