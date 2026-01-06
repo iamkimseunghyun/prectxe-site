@@ -27,14 +27,12 @@ const Header = () => {
           Admin
         </Link>
         <span className="text-neutral-600">·</span>
-        <a
+        <Link
           href="/"
-          target="_blank"
-          rel="noopener noreferrer"
           className="text-neutral-300 transition-colors hover:text-white"
         >
           홈
-        </a>
+        </Link>
         <span className="text-neutral-600">·</span>
         <span className="text-neutral-400">{user?.username}</span>
         <button

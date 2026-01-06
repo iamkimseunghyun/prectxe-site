@@ -2,6 +2,100 @@
 
 ## 2026-01-06
 
+### Admin List Pagination & Navigation Fix
+
+**목적**: 어드민 목록 페이지에 페이지네이션 추가 및 네비게이션 개선
+
+**구현 내용**:
+
+1. **페이지네이션 컴포넌트 생성**:
+   - `AdminPagination` 컴포넌트: 10개 단위 페이지네이션
+   - URL 쿼리 파라미터로 페이지 상태 관리 (`?page=2`)
+   - 이전/다음 버튼, 페이지 번호 버튼
+   - 긴 페이지 목록은 ellipsis로 축약 (1 ... 3 4 5 ... 10)
+   - "총 N개 항목" 표시
+
+2. **Server Actions 페이지네이션 지원**:
+   - `listProgramsPaged`: 기존 함수 pageSize를 100→10으로 변경
+   - `listArticlesPaged`: 새로 추가 (journal용)
+   - `listArtistsPaged`: 새로 추가 (artists용)
+   - `listArtworksPaged`: 새로 추가 (artworks용)
+   - `getAllVenues`: 기존 함수 limit를 100→10으로 변경
+   - 모든 함수가 `{ page, pageSize, total, items }` 형식으로 통일
+
+3. **Page 컴포넌트 업데이트** (모든 어드민 목록 페이지):
+   - `searchParams`로 페이지 번호 받아서 View에 전달
+   - Programs, Journal, Artists, Artworks, Venues 모두 동일한 패턴
+
+4. **View 컴포넌트 업데이트**:
+   - 페이지 prop 추가
+   - paged 함수 호출로 변경
+   - AdminPagination 컴포넌트 추가
+
+5. **어드민 네비게이션 개선**:
+   - 홈 링크를 `target="_blank"` 제거 → 일반 Link로 변경
+   - 같은 창에서 홈으로 이동 (UX 개선)
+
+**결과**:
+- ✅ 모든 어드민 목록 페이지에 10개 단위 페이지네이션 적용
+- ✅ URL 기반 페이지 관리로 뒤로가기/앞으로가기 지원
+- ✅ 일관된 페이지네이션 UI/UX
+- ✅ 서버 컴포넌트로 SEO 친화적
+- ✅ 홈 링크 새창 열기 제거로 더 나은 네비게이션
+
+**파일 변경**:
+- 생성: `src/components/admin/admin-pagination.tsx`
+- 수정: `src/components/layout/header.tsx` (홈 링크 수정)
+- 수정: 5개 page.tsx 파일 (programs, journal, artists, artworks, venues)
+- 수정: 5개 admin-list-view.tsx 파일 (programs, journal, artists, artworks, venues)
+- 수정: `src/modules/journal/server/actions.ts` (listArticlesPaged 추가)
+- 수정: `src/modules/artists/server/actions.ts` (listArtistsPaged 추가)
+- 수정: `src/modules/artworks/server/actions.ts` (listArtworksPaged 추가)
+
+---
+
+## 2026-01-06
+
+### Cleanup: Tags and Global Search Removal
+
+**목적**: 현재 규모에서 실질적 가치가 없는 기능 제거 및 향후 재구현 대비
+
+**배경**:
+- **Tags**: 관리자 테이블에만 표시, 검색/필터링/SEO 미사용, 저널 글 수 적어 분류 불필요
+- **Global Search**: Programs와 Journal(메인 콘텐츠)은 검색 안 됨, 레거시 모델(Event/Project) 위주로 검색
+
+**제거 내용**:
+
+1. **Journal Tags 필드 제거**:
+   - `journal-form-view.tsx`: 태그 입력 폼 및 미리보기 표시 제거
+   - `article-table.tsx`: 태그 컬럼 제거, colSpan 4→3 수정
+   - DB 스키마는 보존 (향후 재활용 가능)
+
+2. **Global Search 기능 제거**:
+   - `src/modules/home/ui/components/global-search.tsx` 파일 삭제
+   - `src/app/layout.tsx`: GlobalSearch 컴포넌트 import 및 사용 제거
+   - `src/modules/home/server/actions.ts`: globalSearch 함수 제거 (파일에 주석만 남김)
+
+**결과**:
+- ✅ 불필요한 UI 복잡도 제거
+- ✅ 토큰/번들 사이즈 감소
+- ✅ DB 스키마 보존으로 향후 재구현 용이
+- ✅ 코드베이스 단순화
+
+**향후 계획**:
+- 콘텐츠가 50개 이상으로 증가하면 재구현 고려
+- 재구현 시 Programs와 Journal 검색 포함 필수
+- Tags는 카테고리/필터링 기능과 함께 추가
+
+**파일 변경**:
+- 삭제: `src/modules/home/ui/components/global-search.tsx`
+- 수정: `src/app/layout.tsx`, `src/modules/home/server/actions.ts`
+- 수정: `src/modules/journal/ui/views/journal-form-view.tsx`, `src/modules/journal/ui/components/article-table.tsx`
+
+---
+
+## 2026-01-06
+
 ### Program Form Enhancements
 
 **목적**: 프로그램 등록 폼에 저널 폼과 동일한 기능 추가 및 레이아웃 개선

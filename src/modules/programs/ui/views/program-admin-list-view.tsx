@@ -1,13 +1,20 @@
 import { AdminHeader } from '@/components/admin/admin-header';
+import { AdminPagination } from '@/components/admin/admin-pagination';
 import { listProgramsPaged } from '@/modules/programs/server/actions';
 import { ProgramTable } from '../components/program-table';
 
-export async function ProgramAdminListView() {
-  const { items } = await listProgramsPaged({
-    page: 1,
-    pageSize: 100,
+interface ProgramAdminListViewProps {
+  page: number;
+}
+
+export async function ProgramAdminListView({ page }: ProgramAdminListViewProps) {
+  const { items, total, pageSize } = await listProgramsPaged({
+    page,
+    pageSize: 10,
     includeDrafts: true,
   });
+
+  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div>
@@ -18,6 +25,7 @@ export async function ProgramAdminListView() {
         actionHref="/admin/programs/new"
       />
       <ProgramTable data={items} />
+      <AdminPagination currentPage={page} totalPages={totalPages} totalItems={total} />
     </div>
   );
 }

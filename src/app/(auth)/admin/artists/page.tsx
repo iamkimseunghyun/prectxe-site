@@ -1,5 +1,11 @@
 import { ArtistAdminListView } from '@/modules/artists/ui/views/artist-admin-list-view';
 
-export default function Page() {
-  return <ArtistAdminListView />;
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
+}
+
+export default async function Page({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const page = Number(params.page) || 1;
+  return <ArtistAdminListView page={page} />;
 }

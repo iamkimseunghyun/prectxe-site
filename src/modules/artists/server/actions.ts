@@ -467,3 +467,33 @@ export async function deleteArtist(artistId: string) {
     };
   }
 }
+
+export async function listArtistsPaged(params: {
+  page?: number;
+  pageSize?: number;
+} = {}) {
+  const { page = 1, pageSize = 10 } = params;
+
+  try {
+    const [total, items] = await Promise.all([
+      prisma.artist.count(),
+      prisma.artist.findMany({
+        orderBy: { updatedAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        select: {
+          id: true,
+          name: true,
+          nameKr: true,
+          city: true,
+          country: true,
+        },
+      }),
+    ]);
+
+    return { page, pageSize, total, items };
+  } catch (e) {
+    console.error('Artists paged list error:', e);
+    return { page, pageSize, total: 0, items: [] as any[] };
+  }
+}

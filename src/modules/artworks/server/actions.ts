@@ -384,3 +384,50 @@ export async function deleteArtwork(id: string) {
     };
   }
 }
+
+export async function listArtworksPaged(params: {
+  page?: number;
+  pageSize?: number;
+} = {}) {
+  const { page = 1, pageSize = 10 } = params;
+
+  try {
+    const [total, items] = await Promise.all([
+      prisma.artwork.count(),
+      prisma.artwork.findMany({
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          year: true,
+          media: true,
+          size: true,
+          images: {
+            select: {
+              id: true,
+              imageUrl: true,
+              alt: true,
+            },
+          },
+          artists: {
+            select: {
+              artist: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
+
+    return { page, pageSize, total, items };
+  } catch (e) {
+    console.error('Artworks paged list error:', e);
+    return { page, pageSize, total: 0, items: [] as any[] };
+  }
+}

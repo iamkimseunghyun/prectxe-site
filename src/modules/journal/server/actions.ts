@@ -34,6 +34,47 @@ export async function listArticles(options?: { includeUnpublished?: boolean }) {
   }
 }
 
+export async function listArticlesPaged(params: {
+  page?: number;
+  pageSize?: number;
+  includeUnpublished?: boolean;
+} = {}) {
+  const { page = 1, pageSize = 10, includeUnpublished = false } = params;
+
+  try {
+    const where = includeUnpublished ? {} : { publishedAt: { not: null } };
+    const orderBy = includeUnpublished
+      ? { createdAt: 'desc' as const }
+      : { publishedAt: 'desc' as const };
+
+    const [total, items] = await Promise.all([
+      prisma.article.count({ where }),
+      prisma.article.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        select: {
+          slug: true,
+          title: true,
+          excerpt: true,
+          cover: true,
+          tags: true,
+          publishedAt: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    return { page, pageSize, total, items };
+  } catch (e) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Journal listArticlesPaged fallback (DB error):', e);
+    }
+    return { page, pageSize, total: 0, items: [] as any[] };
+  }
+}
+
 export async function getArticleBySlug(slug: string) {
   try {
     const article = await prisma.article.findUnique({

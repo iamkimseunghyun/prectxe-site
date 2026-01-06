@@ -1,13 +1,19 @@
 import { AdminHeader } from '@/components/admin/admin-header';
-import { prisma } from '@/lib/db/prisma';
+import { AdminPagination } from '@/components/admin/admin-pagination';
+import { listArtistsPaged } from '@/modules/artists/server/actions';
 import { ArtistTable } from '../components/artist-table';
 
-export async function ArtistAdminListView() {
-  const artists = await prisma.artist.findMany({
-    orderBy: { updatedAt: 'desc' },
-    select: { id: true, name: true, nameKr: true, city: true, country: true },
-    take: 100,
+interface ArtistAdminListViewProps {
+  page: number;
+}
+
+export async function ArtistAdminListView({ page }: ArtistAdminListViewProps) {
+  const { items, total, pageSize } = await listArtistsPaged({
+    page,
+    pageSize: 10,
   });
+
+  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div>
@@ -17,7 +23,8 @@ export async function ArtistAdminListView() {
         actionLabel="새 아티스트"
         actionHref="/artists/new"
       />
-      <ArtistTable data={artists} />
+      <ArtistTable data={items} />
+      <AdminPagination currentPage={page} totalPages={totalPages} totalItems={total} />
     </div>
   );
 }

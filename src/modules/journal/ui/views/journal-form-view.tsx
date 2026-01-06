@@ -303,22 +303,6 @@ export function JournalFormView({
           </div>
           <div className="space-y-4">
             <div>
-              <Label>태그 (쉼표 구분)</Label>
-              <Input
-                value={(form.tags ?? []).join(', ')}
-                onChange={(e) =>
-                  handleChange(
-                    'tags',
-                    e.target.value
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                  )
-                }
-                placeholder="ex. interview, note, production"
-              />
-            </div>
-            <div>
               <Label>공개 설정</Label>
               <label className="flex items-center gap-2">
                 <input
@@ -414,21 +398,11 @@ export function JournalFormView({
             <h1 className="text-3xl font-bold">{form.title || '제목 없음'}</h1>
 
             {/* 메타 정보 */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-              {form.publishedAt && <time>{form.publishedAt}</time>}
-              {form.tags && form.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {form.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full bg-neutral-100 px-3 py-1 text-xs"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+            {form.publishedAt && (
+              <div className="text-sm text-muted-foreground">
+                <time>{form.publishedAt}</time>
+              </div>
+            )}
 
             {/* 요약 */}
             {form.excerpt && (

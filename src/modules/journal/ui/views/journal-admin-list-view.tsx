@@ -1,10 +1,20 @@
 import { AdminHeader } from '@/components/admin/admin-header';
-import { listArticles } from '@/modules/journal/server/actions';
+import { AdminPagination } from '@/components/admin/admin-pagination';
+import { listArticlesPaged } from '@/modules/journal/server/actions';
 import { ArticleTable } from '../components/article-table';
 
-export async function JournalAdminListView() {
-  const { data } = await listArticles({ includeUnpublished: true });
-  const items = data ?? [];
+interface JournalAdminListViewProps {
+  page: number;
+}
+
+export async function JournalAdminListView({ page }: JournalAdminListViewProps) {
+  const { items, total, pageSize } = await listArticlesPaged({
+    page,
+    pageSize: 10,
+    includeUnpublished: true,
+  });
+
+  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div>
@@ -15,6 +25,7 @@ export async function JournalAdminListView() {
         actionHref="/admin/journal/new"
       />
       <ArticleTable data={items} />
+      <AdminPagination currentPage={page} totalPages={totalPages} totalItems={total} />
     </div>
   );
 }

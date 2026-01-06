@@ -1,9 +1,19 @@
 import { AdminHeader } from '@/components/admin/admin-header';
-import { getArtworksPage } from '@/modules/artworks/server/actions';
+import { AdminPagination } from '@/components/admin/admin-pagination';
+import { listArtworksPaged } from '@/modules/artworks/server/actions';
 import { ArtworkTable } from '../components/artwork-table';
 
-export async function ArtworkAdminListView() {
-  const artworks = await getArtworksPage(0, 100);
+interface ArtworkAdminListViewProps {
+  page: number;
+}
+
+export async function ArtworkAdminListView({ page }: ArtworkAdminListViewProps) {
+  const { items, total, pageSize } = await listArtworksPaged({
+    page,
+    pageSize: 10,
+  });
+
+  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div>
@@ -13,7 +23,8 @@ export async function ArtworkAdminListView() {
         actionLabel="새 작품"
         actionHref="/artworks/new"
       />
-      <ArtworkTable data={artworks} />
+      <ArtworkTable data={items} />
+      <AdminPagination currentPage={page} totalPages={totalPages} totalItems={total} />
     </div>
   );
 }

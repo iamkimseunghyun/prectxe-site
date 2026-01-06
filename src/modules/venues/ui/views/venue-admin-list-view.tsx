@@ -1,9 +1,14 @@
 import { AdminHeader } from '@/components/admin/admin-header';
+import { AdminPagination } from '@/components/admin/admin-pagination';
 import { getAllVenues } from '@/modules/venues/server/actions';
 import { VenueTable } from '../components/venue-table';
 
-export async function VenueAdminListView() {
-  const { venues } = await getAllVenues(1, 100);
+interface VenueAdminListViewProps {
+  page: number;
+}
+
+export async function VenueAdminListView({ page }: VenueAdminListViewProps) {
+  const { venues, total, totalPages } = await getAllVenues(page, 10);
 
   return (
     <div>
@@ -14,6 +19,7 @@ export async function VenueAdminListView() {
         actionHref="/venues/new"
       />
       <VenueTable data={venues} />
+      <AdminPagination currentPage={page} totalPages={totalPages} totalItems={total} />
     </div>
   );
 }
