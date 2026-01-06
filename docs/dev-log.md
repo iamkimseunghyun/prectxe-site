@@ -2,6 +2,79 @@
 
 ## 2026-01-06
 
+### Featured Content System
+
+**목적**: 관리자가 홈페이지 메인에 노출할 컨텐츠를 직접 선택할 수 있는 시스템 구현
+
+**배경**:
+- 기존: 완료된 프로그램 중 최신 것 → 없으면 upcoming 프로그램 표시
+- 문제: 큐레이션 불가능, 저널 컨텐츠 노출 불가
+- 요구사항: 프로그램과 저널 모두에서 메인 노출 컨텐츠 선택 가능
+
+**구현 내용**:
+
+1. **Database 스키마 변경**:
+   ```prisma
+   model Program {
+     // ...
+     isFeatured Boolean @default(false)
+   }
+
+   model Article {
+     // ...
+     isFeatured Boolean @default(false)
+   }
+   ```
+   - `bunx prisma db push`로 스키마 동기화
+
+2. **Validation 스키마 업데이트**:
+   - `src/lib/schemas/program.ts`: `isFeatured: z.boolean().optional().default(false)`
+   - `src/lib/schemas/article.ts`: 동일하게 추가
+
+3. **어드민 폼 UI 개선**:
+   - `program-form-view.tsx`: "메인 페이지에 노출" 체크박스 추가
+   - `journal-form-view.tsx`: 동일한 체크박스 추가
+   - 위치: Status 필드 옆 (프로그램), 공개 설정 아래 (저널)
+   - UI 컴포넌트: shadcn/ui Checkbox 사용 (`bunx shadcn@latest add checkbox`)
+
+4. **Server Actions 업데이트**:
+   - `programs/server/actions.ts`: createProgram, updateProgram에 isFeatured 처리
+   - `journal/server/actions.ts`: createArticle, updateArticle에 isFeatured 처리
+
+5. **Homepage Hero Section 로직 변경**:
+   ```typescript
+   // 우선순위:
+   // 1. isFeatured=true인 Program 또는 Article (최근 업데이트 순)
+   // 2. Fallback: 완료된 프로그램 → upcoming 프로그램
+
+   const featuredProgram = await prisma.program.findFirst({
+     where: { isFeatured: true },
+     orderBy: { updatedAt: 'desc' }
+   });
+
+   const featuredArticle = await prisma.article.findFirst({
+     where: { isFeatured: true, publishedAt: { not: null } },
+     orderBy: { updatedAt: 'desc' }
+   });
+
+   // 둘 다 있으면 최근 업데이트된 것 선택
+   // 없으면 기존 fallback 로직 사용
+   ```
+
+**결과**:
+- ✅ 관리자가 프로그램/저널 편집 시 메인 노출 여부 선택 가능
+- ✅ Featured 컨텐츠 없을 때 기존 로직으로 자동 fallback
+- ✅ 프로그램과 저널 모두 메인에 노출 가능
+- ✅ 큐레이션 가능한 유연한 홈페이지 운영
+
+**커밋**:
+```
+5384c8d feat: add featured content system for homepage
+84a75b0 chore: apply biome formatting
+```
+
+---
+
 ### 이미지 표시 문제 해결
 
 **문제**: 저널 리스트 및 상세 페이지에서 이미지가 표시되지 않음
