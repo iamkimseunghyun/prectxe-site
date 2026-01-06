@@ -134,7 +134,7 @@ export async function FeaturedHeroSection() {
         : '/';
 
   return (
-    <section className="min-h-screen">
+    <section className="relative min-h-screen">
       {featured && slug && title ? (
         <Link href={linkHref} className="block h-full">
           <div className="relative h-[60vh] w-full md:h-[70vh]">
@@ -166,29 +166,30 @@ export async function FeaturedHeroSection() {
         </div>
       )}
 
-      <div className="flex flex-col items-center justify-center gap-4 py-6 sm:py-8">
-        <div className="flex items-center justify-center gap-4 text-xs sm:gap-6 sm:text-sm md:text-base">
-          <Link
-            href="/programs"
-            className="text-neutral-500 transition-colors hover:text-neutral-900"
-          >
-            Archive
-          </Link>
-          <Link
-            href="/journal"
-            className="text-neutral-500 transition-colors hover:text-neutral-900"
-          >
-            Journal
-          </Link>
-          <Link
-            href="/about"
-            className="text-neutral-500 transition-colors hover:text-neutral-900"
-          >
-            About
-          </Link>
-        </div>
-        <p className="text-xs text-neutral-400">© 2026 PRECTXE</p>
+      <div className="flex items-center justify-center gap-4 py-6 text-xs sm:gap-6 sm:py-8 sm:text-sm md:text-base">
+        <Link
+          href="/programs"
+          className="text-neutral-500 transition-colors hover:text-neutral-900"
+        >
+          Archive
+        </Link>
+        <Link
+          href="/journal"
+          className="text-neutral-500 transition-colors hover:text-neutral-900"
+        >
+          Journal
+        </Link>
+        <Link
+          href="/about"
+          className="text-neutral-500 transition-colors hover:text-neutral-900"
+        >
+          About
+        </Link>
       </div>
+
+      <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-neutral-400">
+        © 2026 PRECTXE
+      </p>
     </section>
   );
 }
