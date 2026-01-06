@@ -189,6 +189,21 @@ export async function createProgram(input: unknown, _userId: string) {
     };
   }
   const data = parsed.data;
+
+  // If setting as featured, unfeatured all other content
+  if (data.isFeatured) {
+    await prisma.$transaction([
+      prisma.program.updateMany({
+        where: { isFeatured: true },
+        data: { isFeatured: false },
+      }),
+      prisma.article.updateMany({
+        where: { isFeatured: true },
+        data: { isFeatured: false },
+      }),
+    ]);
+  }
+
   const program = await prisma.program.create({
     data: {
       title: data.title,
@@ -219,6 +234,7 @@ export async function createProgram(input: unknown, _userId: string) {
     select: { id: true, slug: true },
   });
   revalidatePath('/programs');
+  revalidatePath('/');
   return { ok: true, data: program };
 }
 
@@ -239,6 +255,20 @@ export async function updateProgram(id: string, input: unknown) {
     include: { images: true },
   });
   if (!existing) return { ok: false, error: '프로그램을 찾을 수 없습니다.' };
+
+  // If setting as featured, unfeatured all other content
+  if (data.isFeatured && !existing.isFeatured) {
+    await prisma.$transaction([
+      prisma.program.updateMany({
+        where: { isFeatured: true, id: { not: id } },
+        data: { isFeatured: false },
+      }),
+      prisma.article.updateMany({
+        where: { isFeatured: true },
+        data: { isFeatured: false },
+      }),
+    ]);
+  }
 
   // delete previous hero if changed
   if (data.heroUrl && existing.heroUrl && data.heroUrl !== existing.heroUrl) {
@@ -284,6 +314,7 @@ export async function updateProgram(id: string, input: unknown) {
   });
   revalidatePath('/programs');
   revalidatePath(`/programs/${updated.slug}`);
+  revalidatePath('/');
   return { ok: true, data: updated };
 }
 

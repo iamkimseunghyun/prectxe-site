@@ -67,6 +67,21 @@ export async function createArticle(input: unknown, authorId?: string | null) {
     };
   }
   const a = parsed.data;
+
+  // If setting as featured, unfeatured all other content
+  if (a.isFeatured) {
+    await prisma.$transaction([
+      prisma.program.updateMany({
+        where: { isFeatured: true },
+        data: { isFeatured: false },
+      }),
+      prisma.article.updateMany({
+        where: { isFeatured: true },
+        data: { isFeatured: false },
+      }),
+    ]);
+  }
+
   const created = await prisma.article.create({
     data: {
       slug: a.slug,
@@ -83,6 +98,7 @@ export async function createArticle(input: unknown, authorId?: string | null) {
   });
   revalidatePath('/journal');
   revalidatePath(`/journal/${created.slug}`);
+  revalidatePath('/');
   return { ok: true, data: created };
 }
 
@@ -97,6 +113,24 @@ export async function updateArticle(slug: string, input: unknown) {
     };
   }
   const a = parsed.data;
+
+  const existing = await prisma.article.findUnique({ where: { slug } });
+  if (!existing) return { ok: false, error: '게시글을 찾을 수 없습니다.' };
+
+  // If setting as featured, unfeatured all other content
+  if (a.isFeatured && !existing.isFeatured) {
+    await prisma.$transaction([
+      prisma.program.updateMany({
+        where: { isFeatured: true },
+        data: { isFeatured: false },
+      }),
+      prisma.article.updateMany({
+        where: { isFeatured: true, slug: { not: slug } },
+        data: { isFeatured: false },
+      }),
+    ]);
+  }
+
   const updated = await prisma.article.update({
     where: { slug },
     data: {
@@ -113,6 +147,7 @@ export async function updateArticle(slug: string, input: unknown) {
   });
   revalidatePath('/journal');
   revalidatePath(`/journal/${updated.slug}`);
+  revalidatePath('/');
   return { ok: true, data: updated };
 }
 

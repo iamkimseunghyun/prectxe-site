@@ -3,12 +3,15 @@ import {
   FileText,
   Image as ImageIcon,
   MapPin,
+  Star,
   Users,
 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { AdminStatsCard } from '@/components/admin/admin-stats-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { prisma } from '@/lib/db/prisma';
+import { getImageUrl } from '@/lib/utils';
 
 export default async function Page() {
   // Stats (safe fallbacks when DB empty or unavailable)
@@ -95,6 +98,34 @@ export default async function Page() {
     // Silent fail for empty DB
   }
 
+  // Featured content (currently on homepage)
+  const featuredProgram = await prisma.program
+    .findFirst({
+      where: { isFeatured: true },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        heroUrl: true,
+        type: true,
+        status: true,
+      },
+    })
+    .catch(() => null);
+
+  const featuredArticle = await prisma.article
+    .findFirst({
+      where: { isFeatured: true, publishedAt: { not: null } },
+      select: {
+        slug: true,
+        title: true,
+        cover: true,
+      },
+    })
+    .catch(() => null);
+
+  const hasFeatured = featuredProgram || featuredArticle;
+
   return (
     <div className="space-y-8">
       {/* Stats Grid */}
@@ -109,6 +140,64 @@ export default async function Page() {
           </Link>
         ))}
       </div>
+
+      {/* Featured Content */}
+      {hasFeatured && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Star className="h-5 w-5 text-yellow-500" />
+              현재 메인 페이지 표시 중
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {featuredProgram && (
+              <Link
+                href={`/admin/programs/${featuredProgram.id}/edit`}
+                className="flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-accent"
+              >
+                {featuredProgram.heroUrl && (
+                  <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded">
+                    <Image
+                      src={getImageUrl(featuredProgram.heroUrl, 'public')}
+                      alt={featuredProgram.title}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{featuredProgram.title}</p>
+                  <p className="text-sm text-muted-foreground">
+                    프로그램 · {featuredProgram.type} · {featuredProgram.status}
+                  </p>
+                </div>
+              </Link>
+            )}
+            {featuredArticle && (
+              <Link
+                href={`/admin/journal/${featuredArticle.slug}/edit`}
+                className="flex items-center gap-4 rounded-lg border p-4 transition-colors hover:bg-accent"
+              >
+                {featuredArticle.cover && (
+                  <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded">
+                    <Image
+                      src={getImageUrl(featuredArticle.cover, 'public')}
+                      alt={featuredArticle.title}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{featuredArticle.title}</p>
+                  <p className="text-sm text-muted-foreground">저널</p>
+                </div>
+              </Link>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Activity */}
       <div className="grid gap-6 lg:grid-cols-2">
