@@ -134,10 +134,15 @@ export async function listProgramsPaged(
 ) {
   const { page = 1, pageSize = 12 } = params;
   const where = buildWhere(params);
+
+  // Admin list (no status): newest first by createdAt
+  // Public list: sort by event date
   const orderBy: Prisma.ProgramOrderByWithRelationInput =
-    params.status === 'completed' || params.status === 'past'
-      ? { startAt: 'desc' }
-      : { startAt: 'asc' };
+    !params.status || params.status === 'all'
+      ? { createdAt: 'desc' }
+      : params.status === 'completed' || params.status === 'past'
+        ? { startAt: 'desc' }
+        : { startAt: 'asc' };
 
   try {
     const [total, items] = await Promise.all([
@@ -159,6 +164,7 @@ export async function listProgramsPaged(
           city: true,
           heroUrl: true,
           venue: true,
+          createdAt: true,
         },
       }),
     ]);

@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import ProgramSchema from '@/components/seo/program-schema';
+import { CopyUrlButton } from '@/components/shared/copy-url-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   artistInitials,
@@ -9,7 +10,6 @@ import {
   getImageUrl,
 } from '@/lib/utils';
 import { getProgramBySlug } from '@/modules/programs/server/actions';
-import ShareButton from '@/modules/programs/ui/components/share-button';
 import ProgramGallery from '@/modules/programs/ui/section/program-gallery';
 
 export async function ProgramDetailView({ slug }: { slug: string }) {
@@ -62,11 +62,7 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
               {[program.city, program.venue].filter(Boolean).join(' · ')}
             </span>
           )}
-          <ShareButton
-            title={program.title}
-            text={program.summary || program.description || undefined}
-            className="ml-auto text-xs text-neutral-400 hover:text-neutral-600"
-          />
+          <CopyUrlButton className="ml-auto text-xs text-neutral-400 hover:text-neutral-600" />
         </div>
       </header>
 
@@ -123,6 +119,33 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
           />
         </section>
       ) : null}
+
+      <div className="mt-12 flex items-center justify-center gap-4 border-t pt-8 text-xs sm:gap-6 sm:text-sm md:text-base">
+        <Link
+          href="/"
+          className="text-neutral-500 transition-colors hover:text-neutral-900"
+        >
+          Home
+        </Link>
+        <Link
+          href="/programs"
+          className="text-neutral-500 transition-colors hover:text-neutral-900"
+        >
+          Archive
+        </Link>
+        <Link
+          href="/journal"
+          className="text-neutral-500 transition-colors hover:text-neutral-900"
+        >
+          Journal
+        </Link>
+        <Link
+          href="/about"
+          className="text-neutral-500 transition-colors hover:text-neutral-900"
+        >
+          About
+        </Link>
+      </div>
     </article>
   );
 }

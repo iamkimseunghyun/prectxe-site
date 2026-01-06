@@ -9,7 +9,11 @@ export async function listArticles(options?: { includeUnpublished?: boolean }) {
   try {
     const articles = await prisma.article.findMany({
       where: options?.includeUnpublished ? {} : { publishedAt: { not: null } },
-      orderBy: { publishedAt: 'desc' },
+      // Admin list (includeUnpublished): newest first by createdAt
+      // Public list: newest first by publishedAt
+      orderBy: options?.includeUnpublished
+        ? { createdAt: 'desc' }
+        : { publishedAt: 'desc' },
       select: {
         slug: true,
         title: true,
@@ -17,6 +21,7 @@ export async function listArticles(options?: { includeUnpublished?: boolean }) {
         cover: true,
         tags: true,
         publishedAt: true,
+        createdAt: true,
       },
     });
     return { success: true, data: articles };

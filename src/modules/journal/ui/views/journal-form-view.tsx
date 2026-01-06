@@ -1,14 +1,21 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { toast } from '@/hooks/use-toast';
-import { containsKorean, slugify, uploadImage } from '@/lib/utils';
+import { containsKorean, getImageUrl, slugify, uploadImage } from '@/lib/utils';
 
 function Label({
   children,
@@ -69,6 +76,8 @@ export function JournalFormView({
   );
   // 제목에 한글이 포함되어 있는지 확인
   const titleHasKorean = containsKorean(form.title || '');
+  // 미리보기 모달 상태
+  const [showPreview, setShowPreview] = useState(false);
 
   const handleChange = (k: keyof Initial, v: any) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -132,7 +141,14 @@ export function JournalFormView({
       return;
     }
     if (imageFile) {
-      await uploadImage(imageFile, uploadURL);
+      const uploadSuccess = await uploadImage(imageFile, uploadURL);
+      if (!uploadSuccess) {
+        toast({
+          title: '이미지 업로드 실패',
+          description: '이미지를 업로드하는 중 오류가 발생했습니다.',
+        });
+        return;
+      }
       finalizeUpload();
     }
     const payload = {
@@ -324,6 +340,13 @@ export function JournalFormView({
 
       <div className="flex justify-end gap-3">
         <Button
+          type="button"
+          variant="outline"
+          onClick={() => setShowPreview(true)}
+        >
+          미리보기
+        </Button>
+        <Button
           type="submit"
           variant="outline"
           onClick={() => setIntent('new')}
@@ -347,6 +370,61 @@ export function JournalFormView({
           저장
         </Button>
       </div>
+
+      {/* 미리보기 모달 */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>미리보기</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* 커버 이미지 */}
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg">
+              <Image
+                src={displayUrl || getImageUrl(null, 'public')}
+                alt={form.title || '미리보기'}
+                fill
+                className="object-cover"
+              />
+            </div>
+
+            {/* 제목 */}
+            <h1 className="text-3xl font-bold">{form.title || '제목 없음'}</h1>
+
+            {/* 메타 정보 */}
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              {form.publishedAt && <time>{form.publishedAt}</time>}
+              {form.tags && form.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {form.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-neutral-100 px-3 py-1 text-xs"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 요약 */}
+            {form.excerpt && (
+              <p className="text-lg text-muted-foreground">{form.excerpt}</p>
+            )}
+
+            {/* 본문 */}
+            {form.body && (
+              <div className="prose prose-neutral max-w-none">
+                {form.body.split('\n').map((line, i) => (
+                  <p key={i}>{line || '\u00A0'}</p>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

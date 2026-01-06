@@ -39,6 +39,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `bun run lint` — Biome linter (`biome lint .`).
 - `bun run format` — Biome formatter (`biome format --write .`).
 - `bun run check` — Biome check (lint + format).
+- `bun run check:fix` — Auto-fix Biome issues.
 - Prisma: `bunx prisma migrate dev -n "<msg>"`, `bunx prisma generate`, `bunx prisma studio`.
 - Redirects: set `ENABLE_PROGRAM_REDIRECTS=1` to map `/discover|/archive → /programs` and legacy routes to programs.
 
@@ -86,6 +87,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Password from env: `COOKIE_PASSWORD`
 - **Protected Routes**: `/admin/*` requires `isAdmin: true`
 - **Auth Flow**: Login/logout actions in `src/modules/auth/server/actions.ts`
+- **Middleware** (`src/middleware.ts`): Route protection logic
+  - Public routes: Static pages + public dynamic patterns
+  - Private routes: `/admin/*` + edit pages (requires login)
+  - Public-only routes: `/auth/signin`, `/auth/signup` (redirect if logged in)
 
 ## Image Upload Architecture
 
@@ -165,6 +170,8 @@ Required variables (never commit `.env*`):
 
 - **Server Actions**: Use `'use server'` directive for data mutations in `modules/*/server/actions.ts`
 - **Data Fetching**: Server components fetch directly, client components use TanStack Query
+  - Caching: `unstable_cache` from `next/cache` for server-side data
+  - Stale time: 60 seconds default in Query Client config
 - **Form Validation**: Zod schemas in `src/lib/schemas`, integrated with React Hook Form via `@hookform/resolvers`
 - **State Management**: Jotai for global client state (e.g., search modal)
 - **Styling**: Tailwind CSS with `cn()` utility (clsx + tailwind-merge)
