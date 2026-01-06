@@ -468,10 +468,9 @@ export async function deleteArtist(artistId: string) {
   }
 }
 
-export async function listArtistsPaged(params: {
-  page?: number;
-  pageSize?: number;
-} = {}) {
+export async function listArtistsPaged(
+  params: { page?: number; pageSize?: number } = {}
+) {
   const { page = 1, pageSize = 10 } = params;
 
   try {

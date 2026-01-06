@@ -37,7 +37,11 @@ export function AdminPagination({
   }
 
   // Show pages around current page
-  for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+  for (
+    let i = Math.max(2, currentPage - 1);
+    i <= Math.min(totalPages - 1, currentPage + 1);
+    i++
+  ) {
     pages.push(i);
   }
 
@@ -74,7 +78,10 @@ export function AdminPagination({
           {pages.map((page, idx) => {
             if (page === 'ellipsis') {
               return (
-                <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground">
+                <span
+                  key={`ellipsis-${idx}`}
+                  className="px-2 text-muted-foreground"
+                >
                   ...
                 </span>
               );

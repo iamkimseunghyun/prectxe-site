@@ -7,7 +7,9 @@ interface ProgramAdminListViewProps {
   page: number;
 }
 
-export async function ProgramAdminListView({ page }: ProgramAdminListViewProps) {
+export async function ProgramAdminListView({
+  page,
+}: ProgramAdminListViewProps) {
   const { items, total, pageSize } = await listProgramsPaged({
     page,
     pageSize: 10,
@@ -25,7 +27,11 @@ export async function ProgramAdminListView({ page }: ProgramAdminListViewProps) 
         actionHref="/admin/programs/new"
       />
       <ProgramTable data={items} />
-      <AdminPagination currentPage={page} totalPages={totalPages} totalItems={total} />
+      <AdminPagination
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={total}
+      />
     </div>
   );
 }

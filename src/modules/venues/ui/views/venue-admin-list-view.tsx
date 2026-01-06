@@ -19,7 +19,11 @@ export async function VenueAdminListView({ page }: VenueAdminListViewProps) {
         actionHref="/venues/new"
       />
       <VenueTable data={venues} />
-      <AdminPagination currentPage={page} totalPages={totalPages} totalItems={total} />
+      <AdminPagination
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={total}
+      />
     </div>
   );
 }

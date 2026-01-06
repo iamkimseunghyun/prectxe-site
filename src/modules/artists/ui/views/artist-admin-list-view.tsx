@@ -24,7 +24,11 @@ export async function ArtistAdminListView({ page }: ArtistAdminListViewProps) {
         actionHref="/artists/new"
       />
       <ArtistTable data={items} />
-      <AdminPagination currentPage={page} totalPages={totalPages} totalItems={total} />
+      <AdminPagination
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={total}
+      />
     </div>
   );
 }

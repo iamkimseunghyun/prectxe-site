@@ -34,11 +34,13 @@ export async function listArticles(options?: { includeUnpublished?: boolean }) {
   }
 }
 
-export async function listArticlesPaged(params: {
-  page?: number;
-  pageSize?: number;
-  includeUnpublished?: boolean;
-} = {}) {
+export async function listArticlesPaged(
+  params: {
+    page?: number;
+    pageSize?: number;
+    includeUnpublished?: boolean;
+  } = {}
+) {
   const { page = 1, pageSize = 10, includeUnpublished = false } = params;
 
   try {

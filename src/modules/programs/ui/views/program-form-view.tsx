@@ -593,7 +593,7 @@ export function ProgramFormView({
                 className="h-4 w-4 rounded border-gray-300"
               />
               <span className="text-sm">
-                {isPublished ? '공개됨' : '비공개 (초안)'}
+                {isPublished ? '비공개' : '공개'}
               </span>
             </label>
             {isPublished && (

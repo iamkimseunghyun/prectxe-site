@@ -385,10 +385,9 @@ export async function deleteArtwork(id: string) {
   }
 }
 
-export async function listArtworksPaged(params: {
-  page?: number;
-  pageSize?: number;
-} = {}) {
+export async function listArtworksPaged(
+  params: { page?: number; pageSize?: number } = {}
+) {
   const { page = 1, pageSize = 10 } = params;
 
   try {

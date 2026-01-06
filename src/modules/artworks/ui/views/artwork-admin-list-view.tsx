@@ -7,7 +7,9 @@ interface ArtworkAdminListViewProps {
   page: number;
 }
 
-export async function ArtworkAdminListView({ page }: ArtworkAdminListViewProps) {
+export async function ArtworkAdminListView({
+  page,
+}: ArtworkAdminListViewProps) {
   const { items, total, pageSize } = await listArtworksPaged({
     page,
     pageSize: 10,
@@ -24,7 +26,11 @@ export async function ArtworkAdminListView({ page }: ArtworkAdminListViewProps) 
         actionHref="/artworks/new"
       />
       <ArtworkTable data={items} />
-      <AdminPagination currentPage={page} totalPages={totalPages} totalItems={total} />
+      <AdminPagination
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={total}
+      />
     </div>
   );
 }

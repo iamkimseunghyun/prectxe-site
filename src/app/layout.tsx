@@ -13,11 +13,10 @@ import Providers from "@/modules/providers";
 export const metadata: Metadata = {
   metadataBase: new URL("https://prectxe.com"),
   title: {
-    default: "프렉티스 | 디지털 아트 플랫폼",
-    template: "%s | 프렉티스",
+    default: "Music, Art Curated by PRECTXE",
+    template: "%s | PRECTXE",
   },
-  description:
-    "작가와 관객을 위한 디지털 아트 플랫폼, 프렉티스에서 새로운 예술을 만나보세요",
+  description: "전시, 공연, 예술이 만나는 찰나의 순간을 기억합니다.",
   keywords: [
     "디지털 아트",
     "예술 플랫폼",
@@ -38,16 +37,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "ko_KR",
     url: "https://prectxe.com",
-    title: "프렉티스 | 디지털 아트 플랫폼",
-    description:
-      "전시, 공연, 디지털 아트를 한 곳에서 만나보세요. 작가와 관객이 함께 만들어가는 새로운 예술 플랫폼, 프렉티스",
+    title: "Music, Art Curated by PRECTXE",
+    description: "전시, 공연, 예술이 만나는 찰나의 순간을 기억합니다.",
     siteName: "프렉티스",
     images: [
       {
         url: "/twitter-card.jpg", // metadataBase와 결합되어 https://prectxe.com/twitter-card.jpg가 됨
         width: 1200,
         height: 630,
-        alt: "프렉티스 디지털 아트 플랫폼",
+        alt: "Music, Art Curated by PRECTXE",
       },
     ],
   },

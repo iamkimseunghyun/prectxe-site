@@ -7,7 +7,9 @@ interface JournalAdminListViewProps {
   page: number;
 }
 
-export async function JournalAdminListView({ page }: JournalAdminListViewProps) {
+export async function JournalAdminListView({
+  page,
+}: JournalAdminListViewProps) {
   const { items, total, pageSize } = await listArticlesPaged({
     page,
     pageSize: 10,
@@ -25,7 +27,11 @@ export async function JournalAdminListView({ page }: JournalAdminListViewProps) 
         actionHref="/admin/journal/new"
       />
       <ArticleTable data={items} />
-      <AdminPagination currentPage={page} totalPages={totalPages} totalItems={total} />
+      <AdminPagination
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={total}
+      />
     </div>
   );
 }
