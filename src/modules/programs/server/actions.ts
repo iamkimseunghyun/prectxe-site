@@ -24,6 +24,7 @@ export interface ListProgramsParams {
   type?: string | null;
   city?: string | null;
   search?: string | null;
+  includeDrafts?: boolean; // 관리자용: draft 프로그램 포함
 }
 
 function getDateRangeForStatus(status?: ProgramStatusFilter) {
@@ -49,9 +50,13 @@ export const listProgramsWithCache = next_cache(
     const dateRange = getDateRangeForStatus(status);
 
     const where: Prisma.ProgramWhereInput = {
-      ...(status === 'upcoming' && { status: 'upcoming' }),
-      ...(status === 'completed' && { status: 'completed' }),
-      ...(status === 'past' && { status: 'completed' }),
+      // draft 상태 제외 (공개된 프로그램만 표시)
+      status:
+        status === 'upcoming'
+          ? 'upcoming'
+          : status === 'completed' || status === 'past'
+            ? 'completed'
+            : { not: 'draft' }, // 'all' 또는 날짜 기반 필터일 때
       ...(dateRange && { startAt: dateRange as any }),
       ...(type && type !== 'all-type' && { type: type as any }),
       ...(city?.trim() && { city: { contains: city, mode: 'insensitive' } }),
@@ -111,12 +116,21 @@ export async function listPrograms(params: ListProgramsParams = {}) {
 }
 
 function buildWhere(params: ListProgramsParams): Prisma.ProgramWhereInput {
-  const { status = 'all', type, city, search } = params;
+  const { status = 'all', type, city, search, includeDrafts = false } = params;
   const dateRange = getDateRangeForStatus(status);
   return {
-    ...(status === 'upcoming' && { status: 'upcoming' }),
-    ...(status === 'completed' && { status: 'completed' }),
-    ...(status === 'past' && { status: 'completed' }),
+    // draft 상태 필터링 (includeDrafts가 false이면 draft 제외)
+    ...(!includeDrafts && {
+      status:
+        status === 'upcoming'
+          ? 'upcoming'
+          : status === 'completed' || status === 'past'
+            ? 'completed'
+            : { not: 'draft' }, // 'all' 또는 날짜 기반 필터일 때
+    }),
+    ...(includeDrafts && status === 'upcoming' && { status: 'upcoming' }),
+    ...(includeDrafts &&
+      (status === 'completed' || status === 'past') && { status: 'completed' }),
     ...(dateRange && { startAt: dateRange as any }),
     ...(type && type !== 'all-type' && { type: type as any }),
     ...(city?.trim() && { city: { contains: city, mode: 'insensitive' } }),

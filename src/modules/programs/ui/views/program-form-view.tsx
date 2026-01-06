@@ -1,12 +1,19 @@
 'use client';
 
 import { X } from 'lucide-react';
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import MultiImageBox from '@/components/image/multi-image-box';
 import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -27,6 +34,8 @@ import {
 import {
   containsKorean,
   formatArtistName,
+  formatEventDate,
+  getImageUrl,
   slugify,
   uploadImage,
 } from '@/lib/utils';
@@ -83,6 +92,9 @@ export function ProgramFormView({
     isFeatured: initial?.isFeatured ?? false,
   });
 
+  // 공개 상태 (status가 draft가 아니면 공개)
+  const [isPublished, setIsPublished] = useState(initial?.status !== 'draft');
+
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [slugChecking, setSlugChecking] = useState(false);
   const slugTimer = useRef<any>(null);
@@ -97,6 +109,8 @@ export function ProgramFormView({
   );
   // 제목에 한글이 포함되어 있는지 확인
   const titleHasKorean = containsKorean(form.title || '');
+  // 미리보기 모달 상태
+  const [showPreview, setShowPreview] = useState(false);
 
   const [credits, setCredits] = useState<Credit[]>([]);
 
@@ -126,6 +140,19 @@ export function ProgramFormView({
 
   const handleChange = (key: keyof ProgramCreateInput, value: any) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  // 공개/비공개 토글 핸들러
+  const handlePublishToggle = (checked: boolean) => {
+    setIsPublished(checked);
+    if (checked) {
+      // 공개: upcoming 또는 completed 상태로 변경 (기존 상태 유지 또는 upcoming)
+      const newStatus = form.status === 'completed' ? 'completed' : 'upcoming';
+      handleChange('status', newStatus);
+    } else {
+      // 비공개: draft 상태로 변경
+      handleChange('status', 'draft');
+    }
+  };
 
   // 제목 변경 시 자동 슬러그 생성
   const handleTitleChange = (title: string) => {
@@ -313,39 +340,6 @@ export function ProgramFormView({
             {fieldErrors.type && (
               <p className="mt-1 text-xs text-red-600">{fieldErrors.type}</p>
             )}
-          </div>
-          <div>
-            <Label>상태</Label>
-            <Select
-              value={form.status as any}
-              onValueChange={(v) => handleChange('status', v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="상태" />
-              </SelectTrigger>
-              <SelectContent>
-                {ProgramStatusEnum.options.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="featured"
-              checked={form.isFeatured as boolean}
-              onCheckedChange={(checked: boolean) =>
-                handleChange('isFeatured', Boolean(checked))
-              }
-            />
-            <label
-              htmlFor="featured"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              메인 페이지에 노출
-            </label>
           </div>
         </CardContent>
       </Card>
@@ -583,7 +577,72 @@ export function ProgramFormView({
         </CardContent>
       </Card>
 
+      {/* 발행 설정 */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">발행 설정</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>공개 설정</Label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={isPublished}
+                onChange={(e) => handlePublishToggle(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <span className="text-sm">
+                {isPublished ? '공개됨' : '비공개 (초안)'}
+              </span>
+            </label>
+            {isPublished && (
+              <div className="mt-2">
+                <Label>상태</Label>
+                <Select
+                  value={form.status as any}
+                  onValueChange={(v) => handleChange('status', v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="상태" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="upcoming">upcoming</SelectItem>
+                    <SelectItem value="completed">completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <div>
+            <Label>메인 노출 설정</Label>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="featured"
+                checked={form.isFeatured as boolean}
+                onCheckedChange={(checked: boolean) =>
+                  handleChange('isFeatured', Boolean(checked))
+                }
+              />
+              <label
+                htmlFor="featured"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                메인 페이지에 노출
+              </label>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex justify-end gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setShowPreview(true)}
+        >
+          미리보기
+        </Button>
         <Button
           type="submit"
           variant="outline"
@@ -608,6 +667,103 @@ export function ProgramFormView({
           저장
         </Button>
       </div>
+
+      {/* 미리보기 모달 */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>미리보기</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* 대표 이미지 */}
+            {(displayUrl || form.heroUrl) && (
+              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg">
+                <Image
+                  src={
+                    displayUrl || getImageUrl(form.heroUrl as string, 'public')
+                  }
+                  alt={form.title || '미리보기'}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+
+            {/* 제목 */}
+            <h1 className="text-3xl font-bold">{form.title || '제목 없음'}</h1>
+
+            {/* 메타 정보 */}
+            <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-500">
+              {form.startAt && (
+                <span>
+                  {formatEventDate(
+                    new Date(form.startAt as string),
+                    form.endAt
+                      ? new Date(form.endAt as string)
+                      : new Date(form.startAt as string)
+                  )}
+                </span>
+              )}
+              {(form.city || form.venue) && (
+                <span>
+                  {[form.city, form.venue].filter(Boolean).join(' · ')}
+                </span>
+              )}
+            </div>
+
+            {/* 요약 또는 설명 */}
+            {(form.summary || form.description) && (
+              <p className="whitespace-pre-line leading-relaxed text-neutral-700">
+                {form.summary || form.description}
+              </p>
+            )}
+
+            {/* 크레딧 */}
+            {credits.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-sm font-semibold text-neutral-500">
+                  Credits
+                </h2>
+                <ul className="space-y-2">
+                  {credits.map((c) => (
+                    <li key={c.artistId} className="flex items-center gap-3">
+                      <span className="text-sm">
+                        {formatArtistName(c.artist.nameKr, c.artist.name)}
+                      </span>
+                      <span className="text-xs text-neutral-400">{c.role}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {/* 갤러리 이미지 */}
+            {multiImagePreview.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-sm font-semibold text-neutral-500">
+                  Gallery
+                </h2>
+                <div className="grid grid-cols-2 gap-4">
+                  {multiImagePreview.map((img: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="relative aspect-video overflow-hidden rounded-lg"
+                    >
+                      <Image
+                        src={img.url || getImageUrl(img.imageUrl, 'public')}
+                        alt={img.alt || `Gallery ${idx + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

@@ -8,7 +8,7 @@ export const ProgramTypeEnum = z.enum([
   'talk',
 ]);
 
-export const ProgramStatusEnum = z.enum(['upcoming', 'completed']);
+export const ProgramStatusEnum = z.enum(['draft', 'upcoming', 'completed']);
 
 export const programBaseSchema = z.object({
   title: z.string().min(1, '제목을 입력하세요'),

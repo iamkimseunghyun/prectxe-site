@@ -2,6 +2,70 @@
 
 ## 2026-01-06
 
+### Program Form Enhancements
+
+**목적**: 프로그램 등록 폼에 저널 폼과 동일한 기능 추가 및 레이아웃 개선
+
+**구현 내용**:
+
+1. **Draft 상태 추가**:
+   - `ProgramStatus` enum에 'draft' 상태 추가
+   - `prisma/schema.prisma`: `enum ProgramStatus { draft, upcoming, completed }`
+   - `src/lib/schemas/program.ts`: validation schema 업데이트
+   - `bunx prisma db push`로 스키마 동기화
+
+2. **공개/비공개 토글 기능**:
+   - 체크박스 토글로 공개/비공개 전환
+   - 비공개: `status = 'draft'`
+   - 공개: `status = 'upcoming'` 또는 `'completed'`
+   - 공개 상태일 때만 status 드롭다운 표시
+
+3. **미리보기 모달 추가** (`program-form-view.tsx`):
+   - Dialog 컴포넌트로 전체화면 모달
+   - 표시 내용:
+     - 대표 이미지 (16:9 비율)
+     - 제목, 날짜, 장소
+     - 요약/설명
+     - 크레딧 (아티스트 + 역할)
+     - 갤러리 이미지 (2열 그리드)
+   - 저장 전 미리보기로 레이아웃 확인 가능
+
+4. **폼 레이아웃 개선**:
+   - Before: "기본 정보" 카드에 제목, 슬러그, 유형, 공개 설정, 메인 노출이 혼재
+   - After: 발행 관련 설정을 별도 섹션으로 분리
+     ```
+     - 기본 정보: 제목, 슬러그, 유형
+     - 일정 & 장소: 날짜, 도시, 장소
+     - 콘텐츠: 요약, 설명
+     - 미디어: 대표 이미지, 갤러리
+     - 크레딧: 아티스트 정보
+     - 발행 설정: 공개/비공개 토글, 상태, 메인 노출 ← 새로 추가된 섹션
+     ```
+
+5. **Server Actions 업데이트** (`programs/server/actions.ts`):
+   - `listProgramsWithCache`: draft 상태 필터링 (`{ not: 'draft' }`)
+   - `buildWhere`: `includeDrafts` 파라미터 추가
+   - `listProgramsPaged`: 관리자 뷰에서 draft 포함 옵션
+   - `program-admin-list-view.tsx`: `includeDrafts: true` 설정
+
+**결과**:
+- ✅ 프로그램 폼이 저널 폼과 동일한 기능 제공
+- ✅ 초안 저장 및 공개/비공개 전환 가능
+- ✅ 미리보기로 저장 전 레이아웃 확인
+- ✅ 발행 설정이 논리적으로 하단에 그룹화
+- ✅ 공개 상태가 아닌 프로그램은 공개 페이지에서 숨김
+
+**파일 변경**:
+- `prisma/schema.prisma`: ProgramStatus enum에 'draft' 추가
+- `src/lib/schemas/program.ts`: validation schema 업데이트
+- `src/modules/programs/ui/views/program-form-view.tsx`: 토글, 미리보기, 레이아웃 개선
+- `src/modules/programs/server/actions.ts`: draft 필터링 로직
+- `src/modules/programs/ui/views/program-admin-list-view.tsx`: includeDrafts 옵션
+
+---
+
+## 2026-01-06
+
 ### Featured Content System
 
 **목적**: 관리자가 홈페이지 메인에 노출할 컨텐츠를 직접 선택할 수 있는 시스템 구현

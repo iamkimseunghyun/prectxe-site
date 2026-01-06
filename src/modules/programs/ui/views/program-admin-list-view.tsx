@@ -3,7 +3,11 @@ import { listProgramsPaged } from '@/modules/programs/server/actions';
 import { ProgramTable } from '../components/program-table';
 
 export async function ProgramAdminListView() {
-  const { items } = await listProgramsPaged({ page: 1, pageSize: 100 });
+  const { items } = await listProgramsPaged({
+    page: 1,
+    pageSize: 100,
+    includeDrafts: true,
+  });
 
   return (
     <div>

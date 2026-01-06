@@ -7,48 +7,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// -------- Feed-first Program model (non-breaking addition) --------
-enum ProgramType {
-  exhibition
-  live
-  party
-  workshop
-  talk
-}
-
-enum ProgramStatus {
-  upcoming
-  completed
-}
-
 model Program {
-  id          String        @id @default(cuid())
-  slug        String        @unique
+  id          String          @id @default(cuid())
+  slug        String          @unique
   title       String
   summary     String?
   description String?
   type        ProgramType
-  status      ProgramStatus @default(upcoming)
+  status      ProgramStatus   @default(upcoming)
   startAt     DateTime
   endAt       DateTime?
   city        String?
   heroUrl     String?
-  isFeatured  Boolean       @default(false)
-  // Free-text fields to replace structured tables
   venue       String?
   organizer   String?
-
-  userId  String
-  venueId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // venue     Venue?         @relation(fields: [venueId], references: [id])
-
-  images  ProgramImage[]
-  credits ProgramCredit[]
+  userId      String
+  venueId     String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  isFeatured  Boolean         @default(false)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credits     ProgramCredit[]
+  images      ProgramImage[]
 }
 
 model ProgramImage {
@@ -83,11 +63,11 @@ model Article {
   cover       String?
   tags        String[]
   publishedAt DateTime?
-  isFeatured  Boolean   @default(false)
   authorId    String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  author      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  isFeatured  Boolean   @default(false)
+  author      User?     @relation(fields: [authorId], references: [id])
 }
 
 model User {
@@ -98,14 +78,14 @@ model User {
   createdAt DateTime? @default(now())
   role      Role?     @default(USER)
   updatedAt DateTime? @updatedAt
+  articles  Article[]
   artists   Artist[]
   artworks  Artwork[]
   events    Event[]
   posts     Post[]
-  articles  Article[]
+  programs  Program[]
   projects  Project[]
   venues    Venue[]
-  programs  Program[]
 }
 
 model Post {
@@ -223,8 +203,8 @@ model Artist {
   artistArtworks  ArtistArtwork[]
   images          ArtistImage[]
   eventOrganizers EventOrganizer[]
-  projectArtists  ProjectArtist[]
   programCredits  ProgramCredit[]
+  projectArtists  ProjectArtist[]
 }
 
 model ArtistImage {
@@ -278,7 +258,6 @@ model Venue {
   projectVenue ProjectVenue[]
   user         User           @relation(fields: [userId], references: [id])
   images       VenueImage[]
-  // programs     Program[]
 }
 
 model VenueImage {
@@ -334,6 +313,20 @@ model ArtistArtwork {
   artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
 
   @@id([artistId, artworkId])
+}
+
+enum ProgramType {
+  exhibition
+  live
+  party
+  workshop
+  talk
+}
+
+enum ProgramStatus {
+  draft
+  upcoming
+  completed
 }
 
 enum ProjectCategory {
