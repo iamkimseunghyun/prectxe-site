@@ -12,7 +12,7 @@ export function BackButton() {
       variant="ghost"
       size="icon"
       onClick={() => router.back()}
-      className="absolute left-4 top-4 z-10 hidden rounded-full bg-white/90 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow-md md:flex"
+      className="absolute -left-12 top-4 z-10 hidden rounded-full bg-white/90 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow-md md:flex lg:-left-16"
       aria-label="뒤로 가기"
     >
       <ArrowLeft className="h-5 w-5" />
