@@ -29,7 +29,6 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
 
   return (
     <article className="mx-auto max-w-4xl px-4 py-8">
-      <BackButton />
       <ProgramSchema
         program={{
           title: program.title,
@@ -47,6 +46,7 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
       />
       {program.heroUrl && (
         <div className="relative mb-6 aspect-[16/9] w-full overflow-hidden rounded-lg">
+          <BackButton />
           <Image
             src={getImageUrl(program.heroUrl, 'public')}
             alt={program.title}
