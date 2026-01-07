@@ -21,7 +21,8 @@ export async function JournalDetailView({ slug }: { slug: string }) {
     : undefined;
 
   return (
-    <article className="mx-auto max-w-3xl px-4 py-10">
+    <article className="relative mx-auto max-w-3xl px-4 py-10">
+      <BackButton />
       <ArticleSchema
         article={{
           slug: article.slug,
@@ -33,7 +34,6 @@ export async function JournalDetailView({ slug }: { slug: string }) {
         }}
       />
       <div className="relative mb-6 aspect-[16/9] w-full overflow-hidden rounded-lg">
-        <BackButton />
         <Image src={cover} alt={article.title} fill className="object-cover" />
       </div>
       <header className="mb-6">
