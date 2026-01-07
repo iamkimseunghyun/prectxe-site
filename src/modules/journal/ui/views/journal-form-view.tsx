@@ -412,9 +412,7 @@ export function JournalFormView({
             {/* 본문 */}
             {form.body && (
               <div className="prose prose-neutral max-w-none">
-                {form.body.split('\n').map((line, i) => (
-                  <p key={i}>{line || '\u00A0'}</p>
-                ))}
+                <p className="whitespace-pre-wrap">{form.body}</p>
               </div>
             )}
           </div>

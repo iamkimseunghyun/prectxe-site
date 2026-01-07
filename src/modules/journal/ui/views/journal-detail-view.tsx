@@ -44,7 +44,7 @@ export async function JournalDetailView({ slug }: { slug: string }) {
 
       {article.body && (
         <section className="prose prose-neutral dark:prose-invert max-w-none">
-          <p>{article.body}</p>
+          <p className="whitespace-pre-wrap">{article.body}</p>
         </section>
       )}
 

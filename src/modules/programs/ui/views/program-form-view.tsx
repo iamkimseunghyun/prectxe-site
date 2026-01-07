@@ -592,9 +592,7 @@ export function ProgramFormView({
                 onChange={(e) => handlePublishToggle(e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300"
               />
-              <span className="text-sm">
-                {isPublished ? '비공개' : '공개'}
-              </span>
+              <span className="text-sm">{isPublished ? '비공개' : '공개'}</span>
             </label>
             {isPublished && (
               <div className="mt-2">

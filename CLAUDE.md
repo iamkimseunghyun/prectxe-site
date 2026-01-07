@@ -125,12 +125,8 @@ Required variables (never commit `.env*`):
   - Floating button (top-right `fixed right-4 top-4`)
   - Visible only to logged-in admins
   - Rounded pill style with backdrop blur
-- **GlobalSearch** (`src/modules/home/ui/components/global-search.tsx`):
-  - Floating button (bottom-right `fixed bottom-6 right-6`)
-  - `⌘K` / `Ctrl+K` shortcut
-  - Search across programs, artists, venues
 - **Homepage**: Full-screen hero (`min-h-screen`) with inline navigation links
-- **Removed**: Traditional nav bar, `--header-height` CSS variable (migration to Biome)
+- **Removed**: Traditional nav bar, `--header-height` CSS variable (migration to Biome), GlobalSearch (removed 2026-01-06)
 
 ## Admin Interface
 
