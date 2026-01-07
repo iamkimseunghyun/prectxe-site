@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import ProgramSchema from '@/components/seo/program-schema';
+import { BackButton } from '@/components/shared/back-button';
 import { CopyUrlButton } from '@/components/shared/copy-url-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -28,6 +29,7 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
 
   return (
     <article className="mx-auto max-w-4xl px-4 py-8">
+      <BackButton />
       <ProgramSchema
         program={{
           title: program.title,

@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import ArticleSchema from '@/components/seo/article-schema';
+import { BackButton } from '@/components/shared/back-button';
 import { CopyUrlButton } from '@/components/shared/copy-url-button';
 import { getImageUrl } from '@/lib/utils';
 import { getArticleBySlug } from '@/modules/journal/server/actions';
@@ -21,6 +22,7 @@ export async function JournalDetailView({ slug }: { slug: string }) {
 
   return (
     <article className="mx-auto max-w-3xl px-4 py-10">
+      <BackButton />
       <ArticleSchema
         article={{
           slug: article.slug,
