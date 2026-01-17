@@ -4,15 +4,18 @@
 
 ### Current Test Admin
 - **Username**: `testadmin`
+- **Password**: `test1234`
 - **User ID**: `cmkhux5ju0000ga8jl29dclbm`
 - **Role**: `ADMIN`
-- **Password**: (Set during account creation - check with team or database)
+
+> ⚠️ **Note**: This is a test account with a simple password for development convenience.
+> Use strong passwords for production environments.
 
 ### Accessing Admin Panel
 1. Navigate to `http://localhost:3000/auth/signin` (dev) or `https://yourdomain.com/auth/signin` (production)
 2. Enter credentials:
    - Username: `testadmin`
-   - Password: [your password]
+   - Password: `test1234`
 3. Click "로그인" (Sign In)
 4. You'll be redirected to `/admin` dashboard
 
