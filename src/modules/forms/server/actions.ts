@@ -15,6 +15,7 @@ export async function createForm(userId: string, data: FormInput) {
         slug: validated.slug,
         title: validated.title,
         description: validated.description,
+        coverImage: validated.coverImage,
         status: validated.status,
         userId,
         fields: {
@@ -76,6 +77,7 @@ export async function updateForm(
         slug: validated.slug,
         title: validated.title,
         description: validated.description,
+        coverImage: validated.coverImage,
         status: validated.status,
         fields: {
           create: validated.fields.map((field, index) => ({

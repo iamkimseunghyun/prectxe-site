@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { useToast } from '@/hooks/use-toast';
 import type { FormFieldInput, FormInput } from '@/lib/schemas/form';
 import { formSchema } from '@/lib/schemas/form';
@@ -54,12 +56,26 @@ export function FormBuilderView({
       slug: '',
       title: '',
       description: '',
+      coverImage: '',
       status: 'draft',
       fields: [],
     },
   });
 
   const status = watch('status');
+  const coverImage = watch('coverImage');
+
+  // Cover image upload
+  const {
+    preview,
+    displayUrl,
+    error: imageError,
+    handleImageChange,
+    finalizeUpload,
+  } = useSingleImageUpload({
+    initialImage: initialData?.coverImage ?? '',
+    onImageUrlChange: (url) => setValue('coverImage', url),
+  });
 
   const addField = () => {
     const newField: FormFieldInput = {
@@ -100,6 +116,11 @@ export function FormBuilderView({
 
     setIsSubmitting(true);
     try {
+      // Finalize cover image upload if exists
+      if (preview) {
+        await finalizeUpload();
+      }
+
       const result = await onSubmit({ ...data, fields });
       if (result.success) {
         toast({
@@ -175,6 +196,24 @@ export function FormBuilderView({
               placeholder="이 폼에 대한 간단한 설명을 입력하세요"
               rows={3}
             />
+          </div>
+
+          <div>
+            <Label>커버 이미지 (선택)</Label>
+            <p className="mb-2 text-sm text-neutral-500">
+              권장 사이즈: 1920x600px (16:9 비율) 또는 1200x400px (3:1 비율)
+            </p>
+            <SingleImageBox
+              register={{ name: 'coverImage', onBlur: () => {}, ref: () => {} }}
+              preview={preview}
+              displayUrl={displayUrl}
+              error={imageError}
+              handleImageChange={handleImageChange}
+              aspectRatio="video"
+            />
+            {imageError && (
+              <p className="mt-2 text-sm text-red-600">{imageError}</p>
+            )}
           </div>
 
           <div>

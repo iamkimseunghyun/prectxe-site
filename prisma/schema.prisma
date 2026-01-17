@@ -364,6 +364,7 @@ model Form {
   slug        String           @unique
   title       String
   description String?
+  coverImage  String?
   status      FormStatus       @default(draft)
   userId      String
   createdAt   DateTime         @default(now())

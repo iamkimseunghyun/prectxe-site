@@ -1,10 +1,12 @@
 import { headers } from 'next/headers';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import {
   getFormBySlug,
   submitFormResponse,
 } from '@/modules/forms/server/actions';
 import { FormRenderer } from '@/modules/forms/ui/components/form-renderer';
+import { getImageUrl } from '@/lib/utils';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -37,24 +39,53 @@ export default async function FormSubmitPage({ params }: PageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-16">
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">{form.title}</h1>
-        {form.description && (
-          <p className="text-neutral-600">{form.description}</p>
-        )}
-      </div>
+    <div>
+      {/* Cover Image Banner */}
+      {form.coverImage && (
+        <div className="relative mb-12 h-[300px] w-full overflow-hidden md:h-[400px] lg:h-[500px]">
+          <Image
+            src={getImageUrl(form.coverImage, 'public')}
+            alt={form.title}
+            fill
+            priority
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-8">
+            <div className="mx-auto max-w-3xl">
+              <h1 className="mb-2 text-3xl font-bold text-white md:text-4xl">
+                {form.title}
+              </h1>
+              {form.description && (
+                <p className="text-lg text-white/90">{form.description}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
-      <FormRenderer
-        formId={form.id}
-        fields={form.fields.map((field) => ({
-          ...field,
-          placeholder: field.placeholder ?? undefined,
-          helpText: field.helpText ?? undefined,
-          validation: field.validation as Record<string, unknown> | undefined,
-        }))}
-        onSubmit={handleSubmit}
-      />
+      <div className="mx-auto max-w-3xl px-4 py-16">
+        {/* Title and description if no cover image */}
+        {!form.coverImage && (
+          <div className="mb-8">
+            <h1 className="mb-2 text-3xl font-bold">{form.title}</h1>
+            {form.description && (
+              <p className="text-neutral-600">{form.description}</p>
+            )}
+          </div>
+        )}
+
+        <FormRenderer
+          formId={form.id}
+          fields={form.fields.map((field) => ({
+            ...field,
+            placeholder: field.placeholder ?? undefined,
+            helpText: field.helpText ?? undefined,
+            validation: field.validation as Record<string, unknown> | undefined,
+          }))}
+          onSubmit={handleSubmit}
+        />
+      </div>
     </div>
   );
 }

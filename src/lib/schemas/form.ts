@@ -40,6 +40,7 @@ export const formSchema = z.object({
     ),
   title: z.string().min(1, '폼 제목을 입력해주세요'),
   description: z.string().optional(),
+  coverImage: z.string().optional(),
   status: formStatusEnum.default('draft'),
   fields: z.array(formFieldSchema).min(1, '최소 1개의 필드가 필요합니다'),
 });
