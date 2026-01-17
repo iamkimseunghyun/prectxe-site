@@ -137,7 +137,7 @@ export async function FeaturedHeroSection() {
     <section className="relative min-h-screen">
       {featured && slug && title ? (
         <Link href={linkHref} className="block h-full">
-          <div className="relative h-[60vh] w-full md:h-[70vh]">
+          <div className="relative min-h-[75vh] w-full sm:min-h-[70vh] md:min-h-[75vh] lg:min-h-[80vh]">
             <Image
               src={hero}
               alt={title}
@@ -161,7 +161,7 @@ export async function FeaturedHeroSection() {
           </div>
         </Link>
       ) : (
-        <div className="flex h-[60vh] items-center justify-center md:h-[70vh]">
+        <div className="flex min-h-[75vh] items-center justify-center sm:min-h-[70vh] md:min-h-[75vh]">
           <p className="text-neutral-400">프로그램이 없습니다</p>
         </div>
       )}

@@ -82,6 +82,7 @@ model User {
   artists   Artist[]
   artworks  Artwork[]
   events    Event[]
+  forms     Form[]
   posts     Post[]
   programs  Program[]
   projects  Project[]
@@ -356,4 +357,77 @@ enum EventType {
 enum Role {
   ADMIN
   USER
+}
+
+model Form {
+  id          String           @id @default(cuid())
+  slug        String           @unique
+  title       String
+  description String?
+  status      FormStatus       @default(draft)
+  userId      String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fields      FormField[]
+  submissions FormSubmission[]
+}
+
+model FormField {
+  id          String         @id @default(cuid())
+  formId      String
+  type        FieldType
+  label       String
+  placeholder String?
+  helpText    String?
+  required    Boolean        @default(false)
+  options     String[]
+  order       Int            @default(0)
+  validation  Json?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  form        Form           @relation(fields: [formId], references: [id], onDelete: Cascade)
+  responses   FormResponse[]
+}
+
+model FormSubmission {
+  id          String         @id @default(cuid())
+  formId      String
+  submittedAt DateTime       @default(now())
+  ipAddress   String?
+  userAgent   String?
+  form        Form           @relation(fields: [formId], references: [id], onDelete: Cascade)
+  responses   FormResponse[]
+}
+
+model FormResponse {
+  id           String         @id @default(cuid())
+  submissionId String
+  fieldId      String
+  value        String
+  createdAt    DateTime       @default(now())
+  submission   FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  field        FormField      @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, fieldId])
+}
+
+enum FormStatus {
+  draft
+  published
+  closed
+}
+
+enum FieldType {
+  text
+  textarea
+  select
+  multiselect
+  radio
+  checkbox
+  date
+  email
+  phone
+  file
+  number
 }

@@ -32,6 +32,7 @@ const publicDynamicPatterns = [
   /^\/artworks\/[^/]+$/, // /artworks/[id] 패턴 (상세 보기만 허용)
   /^\/programs\/[^/]+$/, // /programs/[slug] 패턴 (상세 보기 허용)
   /^\/journal\/[^/]+$/, // /journal/[slug] 패턴 (상세 보기 허용)
+  /^\/forms\/[^/]+$/, // /forms/[slug] 패턴 (공개 폼 제출)
 ];
 
 // 로그인이 필요한 특정 패턴 (더 구체적인 패턴이 우선 적용됨)
@@ -116,6 +117,7 @@ export const config = {
     '/venues/:path*',
     '/artworks/:path*',
     '/programs/:path*',
+    '/forms/:path*',
     '/auth/:path*',
     '/admin/:path*',
   ],

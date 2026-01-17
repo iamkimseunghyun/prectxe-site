@@ -2,6 +2,7 @@
 
 import {
   Archive,
+  ClipboardList,
   FileText,
   Image,
   LayoutDashboard,
@@ -38,6 +39,12 @@ const ADMIN_TABS: NavItem[] = [
     label: 'Journal',
     icon: FileText,
     href: '/admin/journal',
+  },
+  {
+    value: 'forms',
+    label: 'Forms',
+    icon: ClipboardList,
+    href: '/admin/forms',
   },
   { value: 'artists', label: 'Artists', icon: Users, href: '/admin/artists' },
   { value: 'venues', label: 'Venues', icon: MapPin, href: '/admin/venues' },

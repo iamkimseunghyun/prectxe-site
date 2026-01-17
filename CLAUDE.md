@@ -70,7 +70,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Schema Location**: `prisma/schema.prisma`
 - **Key Models**:
   - `Program` - Main content type (replaces legacy Event/Project models)
-    - Fields: slug (unique), title, type (exhibition/live/party/workshop/talk), status (upcoming/completed), startAt, endAt, isFeatured
+    - Fields: slug (unique), title, type (exhibition/live/party/workshop/talk), status (draft/upcoming/completed), startAt, endAt, isFeatured
     - Relations: ProgramImage[], ProgramCredit[] (many-to-many with Artist)
     - Free-text fields: venue, organizer (legacy Venue model slated for removal)
   - `Article` - Journal entries with slug, title, body, cover, tags, publishedAt, isFeatured
@@ -82,7 +82,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Setting new featured content automatically unfeatures all other content
   - Homepage displays featured content with title and artists (programs) or title only (articles)
   - Admin dashboard shows currently featured content with thumbnail and edit link
-- **Legacy Models**: Event, Project (being phased out in favor of Program)
+- **Legacy Models**: Event, Project, Venue (still in schema but being phased out in favor of Program with free-text venue field)
 - **Migrations**: After schema changes, run `bunx prisma migrate dev -n "description"` then `bunx prisma generate`
 
 ## Authentication & Authorization
@@ -126,6 +126,7 @@ Required variables (never commit `.env*`):
   - Visible only to logged-in admins
   - Rounded pill style with backdrop blur
 - **Homepage**: Full-screen hero (`min-h-screen`) with inline navigation links
+- **Back Button Pattern**: Shared component (`src/components/shared/back-button.tsx`) used across detail pages with sticky positioning for scroll persistence
 - **Removed**: Traditional nav bar, `--header-height` CSS variable (migration to Biome), GlobalSearch (removed 2026-01-06)
 
 ## Admin Interface

@@ -21,8 +21,27 @@ export default async function getSession() {
 }
 
 export async function makeLogin(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, username: true, role: true },
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
   const session = await getSession();
-  session.id = userId;
+  session.id = user.id;
+  session.name = user.username ?? undefined;
+  session.isAdmin = user.role === 'ADMIN';
+
+  console.log('makeLogin - user:', {
+    id: user.id,
+    username: user.username,
+    role: user.role,
+    isAdmin: session.isAdmin,
+  });
+
   await session.save();
 }
 
@@ -88,6 +107,7 @@ export const signIn = async (data: z.infer<typeof signInSchema>) => {
     };
   }
   try {
+    console.log('signIn - attempting login for:', result.data.username);
     const user = await prisma.user.findUnique({
       where: {
         username: result.data.username,
@@ -95,8 +115,11 @@ export const signIn = async (data: z.infer<typeof signInSchema>) => {
       select: { id: true, password: true },
     });
 
+    console.log('signIn - user found:', user ? 'yes' : 'no');
+
     // 사용자 없거나 비밀번호 없으면 실패 처리
     if (!user || !user.password) {
+      console.log('signIn - user or password missing');
       return {
         success: false,
         errors: { _form: ['사용자 이름 또는 비밀번호가 잘못되었습니다.'] },
@@ -105,6 +128,8 @@ export const signIn = async (data: z.infer<typeof signInSchema>) => {
 
     // const ok = await Bun.password.verify(result.data.password, user.password);
     const ok = await bcrypt.compare(result.data.password, user.password);
+    console.log('signIn - password check:', ok ? 'success' : 'failed');
+
     if (ok) {
       await makeLogin(user!.id);
       return { success: true, redirect: '/admin' };

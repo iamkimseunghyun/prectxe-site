@@ -1,5 +1,6 @@
 import {
   Archive,
+  ClipboardList,
   FileText,
   Image as ImageIcon,
   MapPin,
@@ -18,6 +19,7 @@ export default async function Page() {
   const counts = await Promise.allSettled([
     prisma.program.count(),
     prisma.article.count(),
+    prisma.form.count(),
     prisma.artist.count(),
     prisma.venue.count(),
     prisma.artwork.count(),
@@ -40,20 +42,26 @@ export default async function Page() {
       href: '/admin/journal',
     },
     {
-      title: 'Artists',
+      title: 'Forms',
       value: getNum(2),
+      icon: ClipboardList,
+      href: '/admin/forms',
+    },
+    {
+      title: 'Artists',
+      value: getNum(3),
       icon: Users,
       href: '/admin/artists',
     },
     {
       title: 'Venues',
-      value: getNum(3),
+      value: getNum(4),
       icon: MapPin,
       href: '/admin/venues',
     },
     {
       title: 'Artworks',
-      value: getNum(4),
+      value: getNum(5),
       icon: ImageIcon,
       href: '/admin/artworks',
     },
