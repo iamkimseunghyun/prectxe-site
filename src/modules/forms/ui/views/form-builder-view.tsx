@@ -2,11 +2,18 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -21,6 +28,7 @@ import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { useToast } from '@/hooks/use-toast';
 import type { FormFieldInput, FormInput } from '@/lib/schemas/form';
 import { formSchema } from '@/lib/schemas/form';
+import { getImageUrl, uploadImage } from '@/lib/utils';
 import { FormFieldEditor } from '../components/form-field-editor';
 
 interface FormBuilderViewProps {
@@ -40,6 +48,7 @@ export function FormBuilderView({
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [fields, setFields] = useState<FormFieldInput[]>(
     initialData?.fields || []
   );
@@ -56,6 +65,7 @@ export function FormBuilderView({
       slug: '',
       title: '',
       description: '',
+      body: '',
       coverImage: '',
       status: 'draft',
       fields: [],
@@ -63,12 +73,17 @@ export function FormBuilderView({
   });
 
   const status = watch('status');
-  const coverImage = watch('coverImage');
+  const title = watch('title');
+  const description = watch('description');
+  const body = watch('body');
+  const slug = watch('slug');
 
   // Cover image upload
   const {
     preview,
     displayUrl,
+    imageFile,
+    uploadURL,
     error: imageError,
     handleImageChange,
     finalizeUpload,
@@ -93,13 +108,15 @@ export function FormBuilderView({
 
   const updateField = (index: number, field: FormFieldInput) => {
     const updatedFields = [...fields];
-    updatedFields[index] = field;
+    updatedFields[index] = { ...field, order: index };
     setFields(updatedFields);
     setValue('fields', updatedFields);
   };
 
   const removeField = (index: number) => {
-    const updatedFields = fields.filter((_, i) => i !== index);
+    const updatedFields = fields
+      .filter((_, i) => i !== index)
+      .map((field, i) => ({ ...field, order: i }));
     setFields(updatedFields);
     setValue('fields', updatedFields);
   };
@@ -116,12 +133,31 @@ export function FormBuilderView({
 
     setIsSubmitting(true);
     try {
-      // Finalize cover image upload if exists
-      if (preview) {
-        await finalizeUpload();
+      // Upload cover image if new image selected
+      if (imageFile) {
+        const uploadSuccess = await uploadImage(imageFile, uploadURL);
+        if (!uploadSuccess) {
+          toast({
+            title: '이미지 업로드 실패',
+            description: '이미지를 업로드하는 중 오류가 발생했습니다.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        finalizeUpload();
       }
 
-      const result = await onSubmit({ ...data, fields });
+      // Ensure all fields have correct order and remove temporary ids
+      const fieldsToSubmit = fields.map((field, index) => {
+        const { id, ...fieldData } = field;
+        return {
+          ...fieldData,
+          order: index,
+        };
+      });
+
+      console.log('Submitting form data:', { ...data, fields: fieldsToSubmit });
+      const result = await onSubmit({ ...data, fields: fieldsToSubmit });
       if (result.success) {
         toast({
           title: '저장 완료',
@@ -129,6 +165,7 @@ export function FormBuilderView({
         });
         router.push('/admin/forms');
       } else {
+        console.error('Form save error:', result.error);
         toast({
           title: '저장 실패',
           description: result.error || '알 수 없는 오류가 발생했습니다',
@@ -136,9 +173,13 @@ export function FormBuilderView({
         });
       }
     } catch (error) {
+      console.error('Form submit error:', error);
       toast({
         title: '저장 실패',
-        description: '폼 저장 중 오류가 발생했습니다',
+        description:
+          error instanceof Error
+            ? error.message
+            : '폼 저장 중 오류가 발생했습니다',
         variant: 'destructive',
       });
     } finally {
@@ -194,7 +235,17 @@ export function FormBuilderView({
               id="description"
               {...register('description')}
               placeholder="이 폼에 대한 간단한 설명을 입력하세요"
-              rows={3}
+              rows={2}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="body">상세 안내 (선택)</Label>
+            <Textarea
+              id="body"
+              {...register('body')}
+              placeholder="폼에 대한 상세한 안내사항이나 주의사항을 입력하세요"
+              rows={5}
             />
           </div>
 
@@ -279,10 +330,194 @@ export function FormBuilderView({
         >
           취소
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setShowPreview(true)}
+          disabled={isSubmitting}
+        >
+          미리보기
+        </Button>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? '저장 중...' : submitLabel}
         </Button>
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>폼 미리보기</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Cover Image */}
+            {(displayUrl || initialData?.coverImage) && (
+              <div className="relative aspect-[16/5] w-full overflow-hidden rounded-lg">
+                <Image
+                  src={
+                    displayUrl ||
+                    initialData?.coverImage ||
+                    getImageUrl(null, 'public')
+                  }
+                  alt={title || '폼 커버'}
+                  fill
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                  <h1 className="mb-2 text-3xl font-bold">
+                    {title || '제목 없음'}
+                  </h1>
+                  {description && (
+                    <p className="text-lg opacity-90">{description}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* No Cover Image */}
+            {!displayUrl && !initialData?.coverImage && (
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold">{title || '제목 없음'}</h1>
+                {description && (
+                  <p className="text-lg text-muted-foreground">{description}</p>
+                )}
+              </div>
+            )}
+
+            {/* Detailed Information (below image) */}
+            {body && (
+              <div className="rounded-lg border bg-neutral-50 p-6">
+                <p className="whitespace-pre-wrap leading-relaxed text-neutral-700">
+                  {body}
+                </p>
+              </div>
+            )}
+
+            {/* Form Fields Preview */}
+            <div className="rounded-lg border bg-white p-6">
+              {fields.length === 0 ? (
+                <p className="text-center text-neutral-500">필드가 없습니다</p>
+              ) : (
+                <div className="space-y-4">
+                  {fields.map((field, index) => (
+                    <div key={field.id || index} className="space-y-2">
+                      <Label>
+                        {field.label || `필드 ${index + 1}`}
+                        {field.required && (
+                          <span className="ml-1 text-red-500">*</span>
+                        )}
+                      </Label>
+                      {field.helpText && (
+                        <p className="text-sm text-muted-foreground">
+                          {field.helpText}
+                        </p>
+                      )}
+                      {/* Render appropriate input based on field type */}
+                      {field.type === 'text' && (
+                        <Input
+                          placeholder={field.placeholder || '텍스트 입력'}
+                          disabled
+                        />
+                      )}
+                      {field.type === 'textarea' && (
+                        <Textarea
+                          placeholder={field.placeholder || '텍스트 입력'}
+                          rows={3}
+                          disabled
+                        />
+                      )}
+                      {field.type === 'number' && (
+                        <Input
+                          type="number"
+                          placeholder={field.placeholder || '숫자 입력'}
+                          disabled
+                        />
+                      )}
+                      {field.type === 'email' && (
+                        <Input
+                          type="email"
+                          placeholder={field.placeholder || '이메일 입력'}
+                          disabled
+                        />
+                      )}
+                      {field.type === 'phone' && (
+                        <Input
+                          type="tel"
+                          placeholder={field.placeholder || '전화번호 입력'}
+                          disabled
+                        />
+                      )}
+                      {field.type === 'url' && (
+                        <Input
+                          type="url"
+                          placeholder={field.placeholder || 'URL 입력'}
+                          disabled
+                        />
+                      )}
+                      {field.type === 'date' && (
+                        <Input type="date" disabled />
+                      )}
+                      {field.type === 'select' && (
+                        <Select disabled>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                field.placeholder || '선택해주세요'
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {field.options?.map((opt, i) => (
+                              <SelectItem key={i} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {field.type === 'radio' && (
+                        <div className="space-y-2">
+                          {field.options?.map((opt, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                disabled
+                                className="h-4 w-4"
+                              />
+                              <span className="text-sm">{opt}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {field.type === 'checkbox' && (
+                        <div className="space-y-2">
+                          {field.options?.map((opt, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                disabled
+                                className="h-4 w-4"
+                              />
+                              <span className="text-sm">{opt}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {field.type === 'file' && (
+                        <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
+                          <span>파일 선택</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

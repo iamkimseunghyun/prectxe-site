@@ -364,6 +364,7 @@ model Form {
   slug        String           @unique
   title       String
   description String?
+  body        String?          @db.Text
   coverImage  String?
   status      FormStatus       @default(draft)
   userId      String
@@ -429,6 +430,7 @@ enum FieldType {
   date
   email
   phone
+  url
   file
   number
 }

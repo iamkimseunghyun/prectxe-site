@@ -15,6 +15,7 @@ export async function createForm(userId: string, data: FormInput) {
         slug: validated.slug,
         title: validated.title,
         description: validated.description,
+        body: validated.body,
         coverImage: validated.coverImage,
         status: validated.status,
         userId,
@@ -77,6 +78,7 @@ export async function updateForm(
         slug: validated.slug,
         title: validated.title,
         description: validated.description,
+        body: validated.body,
         coverImage: validated.coverImage,
         status: validated.status,
         fields: {
@@ -253,6 +255,41 @@ export async function getFormSubmissions(formId: string, userId: string) {
     return {
       success: false,
       error: '제출 내역을 불러오는데 실패했습니다',
+    };
+  }
+}
+
+// Get Form (Admin)
+export async function getForm(formId: string, userId: string) {
+  try {
+    const form = await prisma.form.findUnique({
+      where: { id: formId },
+      include: {
+        fields: {
+          orderBy: { order: 'asc' },
+        },
+        _count: {
+          select: {
+            submissions: true,
+          },
+        },
+      },
+    });
+
+    if (!form) {
+      return { success: false, error: '폼을 찾을 수 없습니다' };
+    }
+
+    if (form.userId !== userId) {
+      return { success: false, error: '권한이 없습니다' };
+    }
+
+    return { success: true, data: form };
+  } catch (error) {
+    console.error('Form fetch error:', error);
+    return {
+      success: false,
+      error: '폼을 불러오는데 실패했습니다',
     };
   }
 }

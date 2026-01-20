@@ -12,6 +12,7 @@ export const fieldTypeEnum = z.enum([
   'date',
   'email',
   'phone',
+  'url',
   'file',
   'number',
 ]);
@@ -40,6 +41,7 @@ export const formSchema = z.object({
     ),
   title: z.string().min(1, '폼 제목을 입력해주세요'),
   description: z.string().optional(),
+  body: z.string().optional(),
   coverImage: z.string().optional(),
   status: formStatusEnum.default('draft'),
   fields: z.array(formFieldSchema).min(1, '최소 1개의 필드가 필요합니다'),
@@ -65,6 +67,9 @@ export const createFormResponseSchema = (
             /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/,
             '유효한 전화번호를 입력해주세요'
           );
+        break;
+      case 'url':
+        fieldSchema = z.string().url('유효한 URL을 입력해주세요');
         break;
       case 'number':
         fieldSchema = z.coerce.number();
