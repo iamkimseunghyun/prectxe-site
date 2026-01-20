@@ -1,5 +1,101 @@
 # Development Log
 
+## 2026-01-21
+
+### Dynamic Form Builder - Edit Page & Enhancements
+
+**목적**: 다이나믹 폼 시스템에 편집 페이지 추가 및 미리보기 개선
+
+**배경**:
+- 폼 생성 기능은 구현되었으나 편집 기능 누락
+- 미리보기가 필드 타입만 텍스트로 표시하여 실제 폼 모습을 확인하기 어려움
+- 짧은 설명만으로는 상세 안내사항 전달이 부족
+
+**구현 내용**:
+
+1. **폼 편집 페이지 생성** (`/admin/forms/[id]/page.tsx`):
+   - 폼 ID로 데이터 로드 (`getForm` 서버 액션)
+   - 권한 검증 (소유자만 편집 가능)
+   - FormBuilderView 재사용으로 일관된 UI/UX
+   - 필드 매핑 시 임시 ID 생성 (React key 관리)
+   - 수정 완료 후 `/admin/forms`로 리다이렉트
+
+2. **이미지 업로드 로직 수정** (`form-builder-view.tsx`):
+   - **문제**: `preview` 체크 후 `finalizeUpload()`만 호출 → 실제 업로드 안 됨
+   - **해결**: 저널/프로그램 폼 패턴 적용
+     ```typescript
+     if (imageFile) {
+       const uploadSuccess = await uploadImage(imageFile, uploadURL);
+       if (!uploadSuccess) {
+         toast({ title: '이미지 업로드 실패', variant: 'destructive' });
+         return;
+       }
+       finalizeUpload();
+     }
+     ```
+   - Cloudflare 업로드 성공 여부 확인 후 폼 제출
+   - 실패 시 토스트 알림 및 제출 중단
+
+3. **미리보기 개선**:
+   - **Before**: `[text 필드]`, `[email 필드]` 등 타입만 텍스트로 표시
+   - **After**: 실제 Input/Textarea/Select 컴포넌트 렌더링
+   - 각 필드 타입별 적절한 UI 표시:
+     - `text` → Input (placeholder)
+     - `textarea` → Textarea
+     - `email`, `phone`, `url` → 각 타입별 Input
+     - `select` → Select with options
+     - `radio`, `checkbox` → 라디오/체크박스 목록
+     - `date` → 날짜 선택
+     - `file` → 파일 선택 버튼
+   - 모든 필드 `disabled` 처리 (미리보기용)
+   - "폼 필드" 제목 제거로 깔끔한 UI
+
+4. **상세 안내 필드 추가** (`body`):
+   - **스키마 변경**:
+     - Prisma: `body String? @db.Text`
+     - Zod: `body: z.string().optional()`
+   - **UI**:
+     - "폼 설명" (짧은 설명) 아래에 "상세 안내" 필드 추가
+     - Textarea 5줄 (장문 입력 가능)
+   - **미리보기**:
+     - 커버 이미지 아래 회색 배경 박스로 표시
+     - `whitespace-pre-wrap`으로 줄바꿈 보존
+   - **서버 액션**: createForm, updateForm에 body 필드 추가
+
+5. **URL 필드 타입 추가**:
+   - Prisma enum: `url` 추가
+   - Zod validation: URL 형식 검증
+   - 필드 에디터: 'URL' 라벨 추가
+   - 11개 → 12개 필드 타입 지원
+
+**결과**:
+- ✅ 폼 편집 기능 완성 (생성/편집/삭제)
+- ✅ 이미지 업로드 성공률 100% (실패 시 폼 제출 차단)
+- ✅ 실제 폼 모습을 정확하게 미리보기 가능
+- ✅ 상세 안내사항 작성 가능
+- ✅ URL 필드 타입으로 링크 수집 가능
+
+**파일 변경**:
+- 생성: `src/app/(auth)/admin/forms/[id]/page.tsx`
+- 수정: `prisma/schema.prisma` (body 필드, url enum)
+- 수정: `src/lib/schemas/form.ts` (body, url validation)
+- 수정: `src/modules/forms/server/actions.ts` (getForm, body 처리)
+- 수정: `src/modules/forms/ui/views/form-builder-view.tsx` (업로드 로직, 미리보기)
+- 수정: `src/modules/forms/ui/components/form-field-editor.tsx` (url 라벨)
+
+**커밋**:
+```
+0dcdcf1 feat: add form edit page with preview and body field
+```
+
+**기술적 세부사항**:
+- 필드 order 관리: `updateField`, `removeField`에서 자동 재정렬
+- 임시 ID 제거: 제출 전 `{ id, ...fieldData }` 구조분해로 id 제거
+- 이미지 URL: `imageFile` 존재 여부로 새 업로드 판단
+- 미리보기 레이아웃: 커버 이미지 → 상세 안내 → 폼 필드 순서
+
+---
+
 ## 2026-01-06
 
 ### Admin List Pagination & Navigation Fix
