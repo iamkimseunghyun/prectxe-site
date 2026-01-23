@@ -2,6 +2,58 @@
 
 ## 2026-01-23
 
+### Form Builder - Select Field Validation Fix
+
+**목적**: 선택형 필드(select, multiselect, radio, checkbox)의 옵션 검증 추가
+
+**배경**:
+- 문제: 옵션 없이 선택형 필드를 저장할 수 있어 폼이 제대로 작동하지 않음
+- 영향: 사용자가 선택할 옵션이 없는 선택형 필드가 생성됨
+
+**구현 내용**:
+
+1. **스키마 검증 추가** (`src/lib/schemas/form.ts`):
+   - `formFieldSchema`에 `refine` 검증 추가
+   - select, multiselect, radio, checkbox 타입은 최소 1개 옵션 필수
+   ```typescript
+   .refine(
+     (data) => {
+       const needsOptions = ['select', 'multiselect', 'radio', 'checkbox'];
+       if (needsOptions.includes(data.type)) {
+         return data.options && data.options.length > 0;
+       }
+       return true;
+     },
+     {
+       message: '선택형 필드는 최소 1개의 선택지가 필요합니다',
+       path: ['options'],
+     }
+   )
+   ```
+
+2. **실시간 검증 피드백** (`form-field-editor.tsx`):
+   - 선택지 레이블에 필수 표시(`*`) 추가
+   - options가 비어있을 때 빨간색 에러 메시지 즉시 표시
+   - "최소 1개의 선택지를 입력해주세요" 경고
+
+**결과**:
+- ✅ 옵션 없는 선택형 필드 생성 방지
+- ✅ 폼 제출 전에 실시간 검증 피드백
+- ✅ 사용자가 즉시 문제를 파악하고 수정 가능
+- ✅ 폼 저장 시 Zod 검증으로 이중 방어
+
+**파일 변경**:
+- 수정: `src/lib/schemas/form.ts` (refine 검증)
+- 수정: `src/modules/forms/ui/components/form-field-editor.tsx` (에러 메시지)
+
+**기술적 세부사항**:
+- Zod의 `refine` 메서드로 커스텀 검증 로직 구현
+- `path: ['options']`로 에러 위치 명시
+- React 컴포넌트에서 조건부 렌더링으로 즉시 피드백
+- 폼 제출 시와 실시간 검증 모두 적용 (이중 검증)
+
+---
+
 ### Form Builder - Drag and Drop Field Reordering
 
 **목적**: 폼 필드 순서를 드래그앤드롭으로 쉽게 변경할 수 있도록 개선
