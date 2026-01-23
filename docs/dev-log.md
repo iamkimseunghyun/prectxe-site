@@ -2,6 +2,117 @@
 
 ## 2026-01-23
 
+### Form Builder - Drag and Drop Field Reordering
+
+**목적**: 폼 필드 순서를 드래그앤드롭으로 쉽게 변경할 수 있도록 개선
+
+**배경**:
+- 기존: 필드 순서 변경 불가능, 삭제 후 재추가 필요
+- 요구사항: 직관적인 드래그앤드롭 인터페이스로 필드 순서 조정
+
+**구현 내용**:
+
+1. **dnd-kit 라이브러리 추가**:
+   - `@dnd-kit/core` - 드래그앤드롭 핵심 기능
+   - `@dnd-kit/sortable` - 정렬 가능한 리스트
+   - `@dnd-kit/utilities` - CSS 변환 유틸리티
+
+2. **FormBuilderView 수정** (`form-builder-view.tsx`):
+   - **센서 설정**: PointerSensor, KeyboardSensor (접근성)
+   ```typescript
+   const sensors = useSensors(
+     useSensor(PointerSensor),
+     useSensor(KeyboardSensor, {
+       coordinateGetter: sortableKeyboardCoordinates,
+     })
+   );
+   ```
+   - **handleDragEnd 함수**:
+     - active/over ID로 이전/새 인덱스 찾기
+     - arrayMove로 배열 순서 변경
+     - order 필드 재정렬 (0-based index)
+   - **DndContext & SortableContext**:
+     - closestCenter 충돌 감지 알고리즘
+     - verticalListSortingStrategy 정렬 전략
+     - 필드 ID를 items로 전달
+
+3. **FormFieldEditor 수정** (`form-field-editor.tsx`):
+   - **useSortable 훅**:
+     - attributes, listeners를 GripVertical 아이콘에 적용
+     - setNodeRef로 DOM 참조 설정
+     - transform, transition으로 애니메이션
+   - **시각적 피드백**:
+     - isDragging 상태에서 opacity 0.5
+     - cursor-grab (정상), cursor-grabbing (드래그 중)
+   - **스타일 적용**:
+     ```typescript
+     const style = {
+       transform: CSS.Transform.toString(transform),
+       transition,
+       opacity: isDragging ? 0.5 : 1,
+     };
+     ```
+
+**결과**:
+- ✅ 필드를 GripVertical 아이콘을 드래그하여 순서 변경 가능
+- ✅ 드래그 중 시각적 피드백 (반투명, 커서 변경)
+- ✅ 부드러운 애니메이션 효과
+- ✅ 키보드 내비게이션 지원 (접근성)
+- ✅ order 필드 자동 업데이트
+
+**파일 변경**:
+- 수정: `src/modules/forms/ui/views/form-builder-view.tsx` (DndContext 추가)
+- 수정: `src/modules/forms/ui/components/form-field-editor.tsx` (useSortable 훅)
+- 추가: `package.json` (dnd-kit 의존성)
+- 추가: `bun.lockb` (lockfile 업데이트)
+
+**기술적 세부사항**:
+- dnd-kit은 React 18+ 최적화, 성능 우수
+- PointerSensor는 마우스/터치 모두 지원
+- KeyboardSensor는 스크린 리더 사용자를 위한 접근성 제공
+- arrayMove는 불변성을 유지하며 배열 순서 변경
+- field.id가 고유 식별자로 사용 (임시 ID: `field-${Date.now()}`)
+
+---
+
+### Forms Admin Page - Error Handling Improvement
+
+**목적**: 폼 목록 로딩 실패 시에도 새 폼 생성 가능하도록 개선
+
+**배경**:
+- 문제: listForms 실패 시 에러 메시지만 표시, "새 폼 만들기" 버튼 숨김
+- 영향: 사용자가 폼을 생성할 방법이 없음 (프로덕션 환경)
+
+**구현 내용**:
+
+1. **에러 처리 로직 개선** (`src/app/(auth)/admin/forms/page.tsx`):
+   - **Before**: 에러 시 별도 페이지 렌더링
+   ```typescript
+   if (!result.success) {
+     return <div><p className="text-red-600">{result.error}</p></div>;
+   }
+   ```
+   - **After**: 빈 배열로 처리하고 빈 상태 카드에서 에러 표시
+   ```typescript
+   const forms = result.success ? result.data || [] : [];
+   ```
+
+2. **빈 상태 카드 개선**:
+   - 에러 발생 시: 빨간색 에러 메시지 + "새 폼 만들기" 버튼
+   - 정상 빈 상태: "생성된 폼이 없습니다" + "첫 폼 만들기" 버튼
+   - 두 경우 모두 일관된 레이아웃 유지
+
+**결과**:
+- ✅ 에러 발생 시에도 "새 폼 만들기" 버튼 표시
+- ✅ 사용자가 폼 생성을 계속 진행할 수 있음
+- ✅ 에러 메시지도 명확하게 전달
+- ✅ 일관된 UI/UX 유지
+
+**파일 변경**:
+- 수정: `src/app/(auth)/admin/forms/page.tsx`
+
+---
+
 ### Authentication & Homepage Hero Section Fixes
 
 **목적**: 기존 사용자 로그인 문제 해결 및 메인 페이지 히어로 이미지 크기 제한
