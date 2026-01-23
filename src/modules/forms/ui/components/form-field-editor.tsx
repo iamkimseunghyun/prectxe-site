@@ -79,7 +79,11 @@ export function FormFieldEditor({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="rounded-lg border bg-white p-4">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="rounded-lg border bg-white p-4"
+    >
       <div className="mb-4 flex items-start gap-2">
         <div
           {...attributes}
@@ -147,7 +151,7 @@ export function FormFieldEditor({
           {hasOptions && (
             <div>
               <Label htmlFor={`options-${index}`}>
-                선택지 (한 줄에 하나씩)
+                선택지 (한 줄에 하나씩) <span className="text-red-500">*</span>
               </Label>
               <Textarea
                 id={`options-${index}`}
@@ -156,6 +160,11 @@ export function FormFieldEditor({
                 placeholder="옵션 1&#10;옵션 2&#10;옵션 3"
                 rows={4}
               />
+              {hasOptions && (!field.options || field.options.length === 0) && (
+                <p className="mt-1 text-sm text-red-600">
+                  최소 1개의 선택지를 입력해주세요
+                </p>
+              )}
             </div>
           )}
 

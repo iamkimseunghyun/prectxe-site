@@ -18,17 +18,32 @@ export const fieldTypeEnum = z.enum([
 ]);
 
 // Form Field Schema
-export const formFieldSchema = z.object({
-  id: z.string().optional(),
-  type: fieldTypeEnum,
-  label: z.string().min(1, '필드 레이블을 입력해주세요'),
-  placeholder: z.string().optional(),
-  helpText: z.string().optional(),
-  required: z.boolean().default(false),
-  options: z.array(z.string()).default([]),
-  order: z.number().default(0),
-  validation: z.record(z.any()).optional(),
-});
+export const formFieldSchema = z
+  .object({
+    id: z.string().optional(),
+    type: fieldTypeEnum,
+    label: z.string().min(1, '필드 레이블을 입력해주세요'),
+    placeholder: z.string().optional(),
+    helpText: z.string().optional(),
+    required: z.boolean().default(false),
+    options: z.array(z.string()).default([]),
+    order: z.number().default(0),
+    validation: z.record(z.any()).optional(),
+  })
+  .refine(
+    (data) => {
+      // select, multiselect, radio, checkbox 타입은 최소 1개의 옵션 필요
+      const needsOptions = ['select', 'multiselect', 'radio', 'checkbox'];
+      if (needsOptions.includes(data.type)) {
+        return data.options && data.options.length > 0;
+      }
+      return true;
+    },
+    {
+      message: '선택형 필드는 최소 1개의 선택지가 필요합니다',
+      path: ['options'],
+    }
+  );
 
 // Form Creation/Update Schema
 export const formSchema = z.object({
