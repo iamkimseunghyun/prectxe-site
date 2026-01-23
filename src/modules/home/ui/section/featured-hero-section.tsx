@@ -134,39 +134,40 @@ export async function FeaturedHeroSection() {
         : '/';
 
   return (
-    <section className="relative min-h-screen">
-      {featured && slug && title ? (
-        <Link href={linkHref} className="block h-full">
-          <div className="relative min-h-[75vh] w-full sm:min-h-[70vh] md:min-h-[75vh] lg:min-h-[80vh]">
-            <Image
-              src={hero}
-              alt={title}
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover"
-            />
-            <div className="absolute inset-0 flex items-center justify-center p-6 text-white md:p-12">
-              <div className="max-w-4xl space-y-2 rounded-xl bg-black/40 px-8 py-6 text-center backdrop-blur-md sm:px-12 sm:py-8">
-                <h1 className="font-serif text-xl font-light tracking-wide sm:text-2xl md:text-3xl">
-                  {title}
-                </h1>
-                {artists && (
-                  <p className="font-sans text-xs font-light tracking-wider text-white/80 sm:text-sm">
-                    {artists}
-                  </p>
-                )}
+    <section className="relative">
+      <div className="mx-auto max-w-7xl px-4">
+        {featured && slug && title ? (
+          <Link href={linkHref} className="block h-full">
+            <div className="relative h-[600px] w-full sm:h-[700px] md:h-[800px] lg:h-[900px]">
+              <Image
+                src={hero}
+                alt={title}
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 flex items-center justify-center p-6 text-white md:p-12">
+                <div className="max-w-4xl space-y-2 rounded-xl bg-black/40 px-8 py-6 text-center backdrop-blur-md sm:px-12 sm:py-8">
+                  <h1 className="font-serif text-xl font-light tracking-wide sm:text-2xl md:text-3xl">
+                    {title}
+                  </h1>
+                  {artists && (
+                    <p className="font-sans text-xs font-light tracking-wider text-white/80 sm:text-sm">
+                      {artists}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
+          </Link>
+        ) : (
+          <div className="flex h-[600px] items-center justify-center sm:h-[700px] md:h-[800px] lg:h-[900px]">
+            <p className="text-neutral-400">프로그램이 없습니다</p>
           </div>
-        </Link>
-      ) : (
-        <div className="flex min-h-[75vh] items-center justify-center sm:min-h-[70vh] md:min-h-[75vh]">
-          <p className="text-neutral-400">프로그램이 없습니다</p>
-        </div>
-      )}
+        )}
 
-      <div className="flex items-center justify-center gap-4 py-6 text-xs sm:gap-6 sm:py-8 sm:text-sm md:text-base">
+        <div className="flex items-center justify-center gap-4 py-6 text-xs sm:gap-6 sm:py-8 sm:text-sm md:text-base">
         <Link
           href="/programs"
           className="text-neutral-500 transition-colors hover:text-neutral-900"
@@ -185,6 +186,7 @@ export async function FeaturedHeroSection() {
         >
           About
         </Link>
+        </div>
       </div>
 
       <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-neutral-400">

@@ -1,5 +1,136 @@
 # Development Log
 
+## 2026-01-23
+
+### Authentication & Homepage Hero Section Fixes
+
+**목적**: 기존 사용자 로그인 문제 해결 및 메인 페이지 히어로 이미지 크기 제한
+
+**배경**:
+- 로그인 문제: Bun.password로 전환 시도했으나 Next.js server actions는 Node.js 런타임에서 실행
+- 히어로 이미지: 뷰포트에 따라 무한 확장되어 대형 화면에서 너무 큼
+- 컨테이너 패턴: 대부분 페이지는 max-width 적용되어 있으나 히어로 섹션은 미적용
+
+**구현 내용**:
+
+1. **인증 시스템 수정** (`src/modules/auth/server/actions.ts`):
+   - **문제**: Bun.password.hash/verify 시도 → "Bun is not defined" 에러
+   - **원인**: Next.js server actions는 Node.js 런타임, Bun 런타임 아님
+   - **해결**: bcryptjs로 유지 (bcrypt 12 rounds)
+   ```typescript
+   // signUp
+   const hashedPassword = await bcrypt.hash(result.data.password, 12);
+
+   // signIn
+   const ok = await bcrypt.compare(result.data.password, user.password);
+   ```
+
+2. **데이터베이스 비밀번호 업데이트** (Neon MCP):
+   - **프로덕션 DB** (main branch):
+     - kaka: 비밀번호 업데이트 → admin123
+     - ryu: 비밀번호 업데이트 → admin123
+   - **개발 DB** (program-model-v1 branch):
+     - kaka: 비밀번호 업데이트 → admin123
+   - Hash: `$2b$12$yMJ4pVLXdTvnScmM8s4SpuKB8DTMcJ.2JwqMS5RGpPZkDedWTrCj6`
+
+3. **히어로 이미지 크기 제한** (`src/modules/home/ui/section/featured-hero-section.tsx`):
+   - **Before**:
+     - 높이: `min-h-[75vh]` (뷰포트 기반, 무한 확장)
+     - 너비: `w-full` (제한 없음)
+     - 섹션: `min-h-screen` (뷰포트 기반)
+   - **After**:
+     - 높이: 고정 픽셀 `h-[600px] sm:h-[700px] md:h-[800px] lg:h-[900px]`
+     - 너비: `max-w-7xl mx-auto px-4` 컨테이너로 제한 (최대 1280px)
+     - 섹션: `min-h-screen` 제거
+   - **레이아웃**:
+     ```tsx
+     <section className="relative">
+       <div className="mx-auto max-w-7xl px-4">
+         {/* Hero image with fixed height */}
+         <div className="relative h-[600px] w-full sm:h-[700px] md:h-[800px] lg:h-[900px]">
+           <Image ... />
+         </div>
+         {/* Navigation links */}
+       </div>
+       {/* Copyright footer */}
+     </section>
+     ```
+
+**결과**:
+- ✅ 로그인 기능 정상 작동 (bcryptjs 사용)
+- ✅ 프로덕션/개발 DB 비밀번호 동기화
+- ✅ 히어로 이미지 높이 제한 (600px ~ 900px)
+- ✅ 히어로 이미지 너비 제한 (최대 1280px, 중앙 정렬)
+- ✅ 대형 화면에서 적절한 크기 유지
+- ✅ 네비게이션 링크도 같은 컨테이너 내부로 통일
+
+**파일 변경**:
+- 수정: `src/modules/auth/server/actions.ts` (bcryptjs 유지)
+- 수정: `src/modules/home/ui/section/featured-hero-section.tsx` (크기 제한)
+- 데이터베이스: 프로덕션/개발 비밀번호 업데이트
+
+**기술적 세부사항**:
+- Next.js server actions는 Node.js 런타임에서 실행되므로 Bun API 사용 불가
+- bcryptjs는 외부 의존성이지만 검증된 라이브러리로 Next.js 환경에 적합
+- 반응형 디자인: 모바일(600px) → 태블릿(700px) → 데스크톱(800px) → 대형(900px)
+- 컨테이너 패턴: `max-w-7xl mx-auto px-4` (다른 페이지와 일관성)
+
+---
+
+### CLAUDE.md Documentation Enhancements
+
+**목적**: 미래 Claude Code 인스턴스의 생산성 향상을 위한 프로젝트 문서 개선
+
+**배경**:
+- 기존 CLAUDE.md는 기본 정보는 포함하지만 복잡한 패턴 설명 부족
+- 이미지 업로드, 폼 빌더 등 멀티파일 워크플로우 이해가 어려움
+- 서버 액션, 데이터 페칭 등 핵심 패턴의 상세 가이드 필요
+
+**구현 내용**:
+
+1. **Dynamic Form Builder Architecture** (신규 섹션):
+   - 4개 핵심 모델 관계 문서화 (Form, FormField, FormSubmission, FormResponse)
+   - 필드 관리 패턴 설명 (드래그앤드롭, 임시 ID, 유효성 검사)
+   - 미리보기 시스템 동작 방식 설명
+   - 이미지 업로드 패턴 (성공 확인 → finalize → 폼 제출)
+   - 편집 플로우 전체 프로세스
+
+2. **Image Upload Architecture 개선**:
+   - 코드 예제 추가 (전체 업로드 플로우)
+   - 업로드 성공 확인 후 finalizeUpload() 호출 패턴 강조
+   - 에러 처리 및 제출 중단 로직 설명
+   - 멀티 이미지 업로드 상태 관리 패턴
+
+3. **Key Technical Patterns 확장**:
+   - **Server Actions**: 반환 타입, revalidation, 구체적 예제 추가
+   - **Data Fetching**: 서버/클라이언트 구분, 쿼리 키 컨벤션 문서화
+   - **Form Validation**: 클라이언트 + 서버 검증 전체 플로우
+   - **State Management**: 전역/폼/서버 상태별 도구 명시
+   - **Error Handling**: try-catch 패턴, 토스트 알림 처리
+
+4. **Development Workflow 강화**:
+   - Development Log 작성 가이드 (날짜, 목적, 구현 내용, 코드 스니펫)
+   - 데이터베이스 마이그레이션 전체 단계 (6단계)
+   - "Adding New Features" 워크플로우 (6단계 프로세스)
+
+**결과**:
+- ✅ 복잡한 패턴이 명확하게 문서화 (폼 빌더, 이미지 업로드)
+- ✅ 멀티파일 워크플로우 이해도 향상
+- ✅ 에러가 발생하기 쉬운 패턴 강조 (이미지 업로드 성공 확인)
+- ✅ 일반적인 개발 작업의 단계별 가이드 제공
+- ✅ 파일 구조로 알 수 없는 아키텍처 결정 사항 설명
+
+**파일 변경**:
+- 수정: `CLAUDE.md` (4개 섹션 개선/추가)
+
+**문서화 원칙**:
+- 파일 구조만으로 알 수 없는 "큰 그림" 아키텍처에 집중
+- 복잡한 패턴은 코드 예제와 함께 설명
+- 일반적인 개발 관행은 제외 (예: "유용한 에러 메시지 제공")
+- 프로젝트별 특수한 컨벤션과 워크플로우 강조
+
+---
+
 ## 2026-01-21
 
 ### Dynamic Form Builder - Edit Page & Enhancements
