@@ -2,6 +2,244 @@
 
 ## 2026-01-23
 
+### Form Submissions Page with Excel/CSV Export
+
+**목적**: 폼 응답 현황을 확인하고 데이터를 Excel/CSV로 다운로드하는 기능 구현
+
+**배경**:
+- 문제: 폼 응답을 확인할 방법이 없음, 데이터 분석을 위한 다운로드 기능 필요
+- 요구사항: 응답 현황 테이블 표시, Excel 및 CSV 다운로드 기능
+- 사용 사례: 참가자 명단 관리, 설문 결과 분석, 데이터 백업
+
+**구현 내용**:
+
+1. **응답 조회 Server Action** (`getFormSubmissions`):
+   - 권한 검증: 폼 소유자만 응답 조회 가능
+   - 폼 정보 및 필드 구조 조회
+   - 모든 응답 및 각 필드별 답변 조회
+   - 제출시간 역순 정렬
+   ```typescript
+   return {
+     success: true,
+     data: {
+       form: { title, fields },
+       submissions: [{ id, submittedAt, ipAddress, responses }]
+     }
+   };
+   ```
+
+2. **응답 현황 페이지** (`/admin/forms/[id]/submissions/page.tsx`):
+   - 서버 컴포넌트로 데이터 페칭 및 권한 검증
+   - SubmissionsView 컴포넌트에 데이터 전달
+
+3. **SubmissionsView 컴포넌트** (`submissions-view.tsx`):
+   - **테이블 표시**:
+     - 제출시간, 모든 필드 응답, IP 주소를 컬럼으로 표시
+     - shadcn/ui Table 컴포넌트 사용
+     - 빈 응답은 "-"로 표시
+     - 총 응답 개수 표시
+
+   - **Excel 다운로드** (`xlsx` 라이브러리):
+     ```typescript
+     const worksheet = XLSX.utils.json_to_sheet(tableData);
+     const workbook = XLSX.utils.book_new();
+     XLSX.utils.book_append_sheet(workbook, worksheet, '응답');
+     worksheet['!cols'] = [{ wch: 50 }]; // 컬럼 너비 설정
+     XLSX.writeFile(workbook, `${form.title}_응답_${date}.xlsx`);
+     ```
+
+   - **CSV 다운로드** (UTF-8 BOM 포함):
+     ```typescript
+     const csv = XLSX.utils.sheet_to_csv(worksheet);
+     const blob = new Blob(['\uFEFF' + csv], { // UTF-8 BOM
+       type: 'text/csv;charset=utf-8;'
+     });
+     ```
+     - UTF-8 BOM으로 한글 깨짐 방지
+     - Excel에서 바로 열 수 있도록 인코딩
+
+4. **FormCard 컴포넌트 개선**:
+   - 제출 개수를 클릭 가능한 링크로 변경
+   - `/admin/forms/[id]/submissions` 페이지로 이동
+   - 호버 시 밑줄 및 색상 변경
+
+**결과**:
+- ✅ 모든 응답을 한눈에 확인 가능한 테이블 UI
+- ✅ Excel 파일로 다운로드하여 데이터 분석 가능
+- ✅ CSV 파일로 다운로드하여 다른 시스템에 임포트 가능
+- ✅ 한글 깨짐 없는 완벽한 인코딩
+- ✅ 제출시간, IP 주소 등 메타데이터 포함
+- ✅ 폼 카드에서 원클릭으로 응답 현황 페이지 접근
+
+**파일 변경**:
+- 생성: `src/app/(auth)/admin/forms/[id]/submissions/page.tsx`
+- 생성: `src/modules/forms/ui/views/submissions-view.tsx`
+- 수정: `src/modules/forms/server/actions.ts` (getFormSubmissions 개선)
+- 수정: `src/modules/forms/ui/components/form-card.tsx` (제출 개수 링크)
+- 설치: `xlsx@0.18.5` (Excel/CSV 생성)
+
+**기술적 세부사항**:
+- `useMemo`로 테이블 데이터 변환 최적화
+- `json_to_sheet`로 JSON → Excel/CSV 변환
+- BOM (Byte Order Mark) 추가로 Excel 호환성 보장
+- `toLocaleString('ko-KR')`로 한국 시간 포맷
+
+**커밋**:
+```
+7525013 feat: add form submissions page with Excel/CSV export
+```
+
+---
+
+### Form Card Preview Modal
+
+**목적**: 폼 관리 페이지에서 편집 없이 빠르게 폼 미리보기
+
+**배경**:
+- 문제: 폼 내용 확인을 위해 매번 편집 페이지로 들어가야 함
+- 요구사항: 폼 카드에서 바로 미리보기 가능한 모달
+- 참고: 폼 빌더의 미리보기와 동일한 스타일
+
+**구현 내용**:
+
+1. **listForms 액션 개선**:
+   - 필드(fields) 정보도 함께 조회
+   - order 순서로 정렬
+   ```typescript
+   include: {
+     fields: { orderBy: { order: 'asc' } },
+     _count: { select: { submissions: true } }
+   }
+   ```
+
+2. **FormCard 컴포넌트 확장**:
+   - Eye 아이콘 미리보기 버튼 추가 (URL 복사 버튼 왼쪽)
+   - 상태 관리: `showPreview` useState
+   - Dialog 모달로 미리보기 표시
+
+3. **미리보기 모달 내용**:
+   - **커버 이미지**: 16:9 비율로 표시
+   - **제목 및 설명**: 2xl 폰트로 강조
+   - **상세 안내**: 회색 배경 박스에 줄바꿈 보존
+   - **폼 필드 렌더링**:
+     - textarea → Textarea 컴포넌트
+     - select → Select 드롭다운 (모든 옵션 표시)
+     - multiselect, checkbox → 체크박스 목록
+     - radio → 라디오 버튼 목록
+     - file → 파일 선택 버튼
+     - 기타 → Input (type별로 구분)
+   - **빈 폼 처리**: "아직 필드가 추가되지 않았습니다" 메시지
+
+**결과**:
+- ✅ 폼 편집 없이 빠른 미리보기 가능
+- ✅ 실제 사용자에게 보여질 모습과 동일하게 렌더링
+- ✅ 모든 필드 타입 완벽 지원
+- ✅ 깔끔한 Dialog UI로 사용자 경험 향상
+
+**파일 변경**:
+- 수정: `src/modules/forms/server/actions.ts` (listForms에 fields 추가)
+- 수정: `src/modules/forms/ui/components/form-card.tsx` (미리보기 모달)
+
+**커밋**:
+```
+2734e2a feat: add preview modal to form cards
+```
+
+---
+
+### Form Edit Page Redirect Error Fix
+
+**목적**: 폼 수정 후 저장 시 발생하는 NEXT_REDIRECT 에러 해결
+
+**배경**:
+- 문제: 폼 편집 페이지에서 저장 버튼 클릭 시 `Error: NEXT_REDIRECT` 발생
+- 원인: Server action에서 `redirect()` 직접 호출
+- Next.js 규칙: 클라이언트 컴포넌트에서 호출되는 server action은 redirect 불가
+
+**구현 내용**:
+
+1. **Server Action 수정** (`/admin/forms/[id]/page.tsx`):
+   - **Before**:
+     ```typescript
+     if (res.success) {
+       redirect('/admin/forms'); // ❌ 에러 발생
+     }
+     ```
+   - **After**:
+     ```typescript
+     return res.success
+       ? { success: true }
+       : { success: false, error: res.error ?? '저장에 실패했습니다.' };
+     ```
+   - 성공/실패 객체만 반환
+   - 로그인 체크도 redirect 대신 에러 객체 반환
+
+2. **클라이언트 네비게이션 활용**:
+   - `form-builder-view.tsx`가 이미 `router.push()`로 리다이렉트 처리
+   - Server action은 결과만 반환하고 클라이언트가 네비게이션 담당
+
+**결과**:
+- ✅ 폼 수정 후 저장 정상 작동
+- ✅ NEXT_REDIRECT 에러 완전 해결
+- ✅ 성공 시 토스트 알림 + 폼 리스트로 이동
+- ✅ 실패 시 에러 메시지 표시
+
+**파일 변경**:
+- 수정: `src/app/(auth)/admin/forms/[id]/page.tsx`
+
+**기술적 세부사항**:
+- Server action에서 redirect는 서버 컴포넌트에서만 가능
+- 클라이언트 컴포넌트에서 호출 시 에러 발생
+- 패턴: server action은 데이터만, 클라이언트는 UI/네비게이션
+
+**커밋**:
+```
+2bbddcf fix: remove redirect from form edit server action
+```
+
+---
+
+### Form Submission Page Body Field Display Fix
+
+**목적**: 폼 입력 페이지에서 상세 안내(body) 필드 표시
+
+**배경**:
+- 문제: 미리보기에서는 body 필드가 보이지만 실제 폼 입력 페이지에서는 누락
+- 영향: 사용자가 상세 안내를 볼 수 없어 폼 작성에 어려움
+- 일관성: 미리보기와 실제 페이지가 동일해야 함
+
+**구현 내용**:
+
+1. **Body 필드 렌더링 추가** (`/forms/[slug]/page.tsx`):
+   - 커버 이미지/제목 섹션 아래에 body 필드 표시
+   - 미리보기와 동일한 스타일 적용
+   ```typescript
+   {form.body && (
+     <div className="mb-8 rounded-lg bg-neutral-50 p-6">
+       <p className="whitespace-pre-wrap text-sm text-neutral-700">
+         {form.body}
+       </p>
+     </div>
+   )}
+   ```
+   - `whitespace-pre-wrap`으로 줄바꿈 보존
+   - 폼 필드 렌더링 바로 위에 배치
+
+**결과**:
+- ✅ 폼 입력 페이지에서 상세 안내 표시
+- ✅ 미리보기와 실제 페이지 일관성 확보
+- ✅ 사용자에게 충분한 안내 정보 제공
+
+**파일 변경**:
+- 수정: `src/app/(page)/forms/[slug]/page.tsx`
+
+**커밋**:
+```
+7abf306 fix: display body field in form submission page
+```
+
+---
+
 ### Form URL Sharing Feature
 
 **목적**: 폼 생성 후 공개 페이지 URL을 쉽게 공유할 수 있도록 개선
