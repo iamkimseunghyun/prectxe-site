@@ -22,15 +22,7 @@ export default async function FormsAdminPage() {
 
   const result = await listForms(session.id);
 
-  if (!result.success) {
-    return (
-      <div className="p-6 text-center">
-        <p className="text-red-600">{result.error}</p>
-      </div>
-    );
-  }
-
-  const forms = result.data || [];
+  const forms = result.success ? result.data || [] : [];
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
@@ -49,10 +41,21 @@ export default async function FormsAdminPage() {
       {forms.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="mb-4 text-neutral-500">생성된 폼이 없습니다</p>
-            <Link href="/admin/forms/new">
-              <Button>첫 폼 만들기</Button>
-            </Link>
+            {!result.success ? (
+              <>
+                <p className="mb-4 text-red-600">{result.error}</p>
+                <Link href="/admin/forms/new">
+                  <Button>새 폼 만들기</Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="mb-4 text-neutral-500">생성된 폼이 없습니다</p>
+                <Link href="/admin/forms/new">
+                  <Button>첫 폼 만들기</Button>
+                </Link>
+              </>
+            )}
           </CardContent>
         </Card>
       ) : (
