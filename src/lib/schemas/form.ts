@@ -17,50 +17,84 @@ export const fieldTypeEnum = z.enum([
   'number',
 ]);
 
-// Form Field Schema
-export const formFieldSchema = z
+// Form Field Schema (임시저장 시에는 완화된 검증)
+export const formFieldSchema = z.object({
+  id: z.string().optional(),
+  type: fieldTypeEnum,
+  label: z.string().min(1, '필드 레이블을 입력해주세요'),
+  placeholder: z.string().optional(),
+  helpText: z.string().optional(),
+  required: z.boolean().default(false),
+  options: z.array(z.string()).default([]),
+  order: z.number().default(0),
+  validation: z.record(z.any()).optional(),
+});
+
+// Published 상태에서 사용할 엄격한 필드 검증
+export const strictFormFieldSchema = formFieldSchema.refine(
+  (data) => {
+    // select, multiselect, radio, checkbox 타입은 최소 1개의 옵션 필요
+    const needsOptions = ['select', 'multiselect', 'radio', 'checkbox'];
+    if (needsOptions.includes(data.type)) {
+      return data.options && data.options.length > 0;
+    }
+    return true;
+  },
+  {
+    message: '선택형 필드는 최소 1개의 선택지가 필요합니다',
+    path: ['options'],
+  }
+);
+
+// Form Creation/Update Schema
+export const formSchema = z
   .object({
-    id: z.string().optional(),
-    type: fieldTypeEnum,
-    label: z.string().min(1, '필드 레이블을 입력해주세요'),
-    placeholder: z.string().optional(),
-    helpText: z.string().optional(),
-    required: z.boolean().default(false),
-    options: z.array(z.string()).default([]),
-    order: z.number().default(0),
-    validation: z.record(z.any()).optional(),
+    slug: z
+      .string()
+      .min(1, 'URL 슬러그를 입력해주세요')
+      .regex(
+        /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+        'URL 슬러그는 소문자, 숫자, 하이픈만 사용 가능합니다'
+      ),
+    title: z.string().min(1, '폼 제목을 입력해주세요'),
+    description: z.string().optional(),
+    body: z.string().optional(),
+    coverImage: z.string().optional(),
+    status: formStatusEnum.default('draft'),
+    fields: z.array(formFieldSchema).default([]),
   })
   .refine(
     (data) => {
-      // select, multiselect, radio, checkbox 타입은 최소 1개의 옵션 필요
-      const needsOptions = ['select', 'multiselect', 'radio', 'checkbox'];
-      if (needsOptions.includes(data.type)) {
-        return data.options && data.options.length > 0;
+      // 게시 상태일 때만 필드 필수
+      if (data.status === 'published') {
+        return data.fields.length > 0;
       }
       return true;
     },
     {
-      message: '선택형 필드는 최소 1개의 선택지가 필요합니다',
-      path: ['options'],
+      message: '게시하려면 최소 1개의 필드가 필요합니다',
+      path: ['fields'],
+    }
+  )
+  .refine(
+    (data) => {
+      // 게시 상태일 때 선택형 필드는 옵션 필수
+      if (data.status === 'published') {
+        const needsOptions = ['select', 'multiselect', 'radio', 'checkbox'];
+        return data.fields.every((field) => {
+          if (needsOptions.includes(field.type)) {
+            return field.options && field.options.length > 0;
+          }
+          return true;
+        });
+      }
+      return true;
+    },
+    {
+      message: '게시하려면 선택형 필드에 최소 1개의 선택지가 필요합니다',
+      path: ['fields'],
     }
   );
-
-// Form Creation/Update Schema
-export const formSchema = z.object({
-  slug: z
-    .string()
-    .min(1, 'URL 슬러그를 입력해주세요')
-    .regex(
-      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      'URL 슬러그는 소문자, 숫자, 하이픈만 사용 가능합니다'
-    ),
-  title: z.string().min(1, '폼 제목을 입력해주세요'),
-  description: z.string().optional(),
-  body: z.string().optional(),
-  coverImage: z.string().optional(),
-  status: formStatusEnum.default('draft'),
-  fields: z.array(formFieldSchema).min(1, '최소 1개의 필드가 필요합니다'),
-});
 
 // Form Submission Schema (dynamic based on form fields)
 export const createFormResponseSchema = (

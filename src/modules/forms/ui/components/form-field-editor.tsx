@@ -151,7 +151,8 @@ export function FormFieldEditor({
           {hasOptions && (
             <div>
               <Label htmlFor={`options-${index}`}>
-                선택지 (한 줄에 하나씩) <span className="text-red-500">*</span>
+                선택지 (한 줄에 하나씩){' '}
+                <span className="text-orange-500">*</span>
               </Label>
               <Textarea
                 id={`options-${index}`}
@@ -161,8 +162,8 @@ export function FormFieldEditor({
                 rows={4}
               />
               {hasOptions && (!field.options || field.options.length === 0) && (
-                <p className="mt-1 text-sm text-red-600">
-                  최소 1개의 선택지를 입력해주세요
+                <p className="mt-1 text-sm text-orange-600">
+                  게시하려면 최소 1개의 선택지가 필요합니다
                 </p>
               )}
             </div>

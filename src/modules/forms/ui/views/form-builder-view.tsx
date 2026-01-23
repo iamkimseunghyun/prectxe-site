@@ -160,10 +160,11 @@ export function FormBuilderView({
   };
 
   const handleFormSubmit = async (data: FormInput) => {
-    if (fields.length === 0) {
+    // 게시 상태일 때만 필드 필수 검증
+    if (data.status === 'published' && fields.length === 0) {
       toast({
         title: '필드 추가 필요',
-        description: '최소 1개의 필드를 추가해주세요',
+        description: '게시하려면 최소 1개의 필드를 추가해주세요',
         variant: 'destructive',
       });
       return;
