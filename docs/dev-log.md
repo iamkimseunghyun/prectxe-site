@@ -2,6 +2,94 @@
 
 ## 2026-01-23
 
+### Form URL Sharing Feature
+
+**목적**: 폼 생성 후 공개 페이지 URL을 쉽게 공유할 수 있도록 개선
+
+**배경**:
+- 문제: 폼을 게시한 후 사용자에게 URL을 공유하는 기능이 없음
+- 요구사항: 아티클 페이지처럼 폼 리스트와 편집 페이지에서 URL 복사 기능 제공
+- 참고: 기존 CopyUrlButton 컴포넌트를 재사용하여 일관된 UX 유지
+
+**구현 내용**:
+
+1. **CopyUrlButton 컴포넌트 개선** (`copy-url-button.tsx`):
+   - **Before**: 현재 페이지 URL만 복사 가능
+   - **After**: 선택적 `url` prop 추가로 특정 URL 복사 가능
+   ```typescript
+   type Props = {
+     className?: string;
+     url?: string; // Optional: if provided, copy this URL instead of current page
+   };
+
+   const url = providedUrl || (typeof window !== 'undefined' ? window.location.href : '');
+   ```
+   - 토스트 메시지 개선: 폼 URL인지 현재 페이지 URL인지 구분하여 표시
+
+2. **FormCard 컴포넌트 생성** (`form-card.tsx`):
+   - 폼 리스트 페이지용 카드 컴포넌트
+   - 게시된 폼에만 URL 복사 버튼 표시:
+   ```typescript
+   {form.status === 'published' && (
+     <CopyUrlButton
+       url={formUrl}
+       className="text-neutral-400 transition-colors hover:text-neutral-600"
+     />
+   )}
+   ```
+   - 폼 정보 표시: 제목, 설명, 상태 뱃지, 슬러그, 제출 개수
+   - 상태별 색상: 게시됨(녹색), 마감(빨간색), 임시저장(회색)
+
+3. **FormEditHeader 컴포넌트 생성** (`form-edit-header.tsx`):
+   - 폼 편집 페이지용 헤더 컴포넌트
+   - 게시된 폼의 공개 URL 표시 및 복사 기능:
+   ```typescript
+   {status === 'published' && (
+     <div className="flex items-center gap-2 rounded-md border bg-neutral-50 px-3 py-2">
+       <span className="text-sm text-neutral-600">공개 URL:</span>
+       <code className="text-sm text-neutral-900">/forms/{slug}</code>
+       <CopyUrlButton url={formUrl} />
+     </div>
+   )}
+   ```
+   - 임시저장/마감 상태에서는 URL 표시하지 않음
+
+4. **폼 리스트 페이지 개선** (`admin/forms/page.tsx`):
+   - **Before**: 인라인 Card 컴포넌트로 복잡한 구조
+   - **After**: FormCard 컴포넌트 사용으로 간결한 코드
+   - 2열 그리드 레이아웃 유지 (`md:grid-cols-2`)
+
+5. **폼 편집 페이지 개선** (`admin/forms/[id]/page.tsx`):
+   - FormEditHeader 컴포넌트 추가
+   - "폼 편집" 제목과 공개 URL을 한 줄에 표시
+   - 편집 중에도 공개 URL 확인 가능
+
+**결과**:
+- ✅ 게시된 폼의 공개 URL을 리스트 및 편집 페이지에서 즉시 복사 가능
+- ✅ 아티클 페이지와 일관된 UX 패턴
+- ✅ 임시저장/마감 상태에서는 URL 노출하지 않아 혼란 방지
+- ✅ 클라이언트 컴포넌트로 동적 URL 생성 (`window.location.origin`)
+
+**파일 변경**:
+- 수정: `src/components/shared/copy-url-button.tsx` (optional url prop)
+- 생성: `src/modules/forms/ui/components/form-card.tsx`
+- 생성: `src/modules/forms/ui/components/form-edit-header.tsx`
+- 수정: `src/app/(auth)/admin/forms/page.tsx` (FormCard 사용)
+- 수정: `src/app/(auth)/admin/forms/[id]/page.tsx` (FormEditHeader 사용)
+
+**기술적 세부사항**:
+- CopyUrlButton은 `use client` 지시문으로 클라이언트 컴포넌트
+- FormCard와 FormEditHeader도 클라이언트 컴포넌트 (window 객체 사용)
+- 서버 컴포넌트(page.tsx)에서 클라이언트 컴포넌트로 데이터 전달
+- 조건부 렌더링으로 게시 상태에서만 URL 표시
+
+**커밋**:
+```
+2019f04 feat: add URL sharing for forms in list and edit pages
+```
+
+---
+
 ### Form Builder - Draft Status Validation Fix
 
 **목적**: 임시저장 상태에서 필드 없이 폼을 저장할 수 있도록 검증 완화
