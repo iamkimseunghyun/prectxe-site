@@ -300,6 +300,9 @@ export async function listForms(userId: string) {
     const forms = await prisma.form.findMany({
       where: { userId },
       include: {
+        fields: {
+          orderBy: { order: 'asc' },
+        },
         _count: {
           select: {
             submissions: true,
