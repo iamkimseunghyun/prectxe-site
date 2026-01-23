@@ -108,9 +108,14 @@ export function FormCard({ form }: FormCardProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between text-sm text-neutral-500">
-            <span>/forms/{form.slug}</span>
-            <span>{form._count.submissions}개 제출</span>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-neutral-500">/forms/{form.slug}</span>
+            <Link
+              href={`/admin/forms/${form.id}/submissions`}
+              className="text-neutral-600 transition-colors hover:text-neutral-900 hover:underline"
+            >
+              {form._count.submissions}개 제출
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -192,11 +197,7 @@ export function FormCard({ form }: FormCardProps) {
                     <div className="space-y-2">
                       {field.options.map((option, idx) => (
                         <div key={idx} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            disabled
-                            className="h-4 w-4"
-                          />
+                          <input type="checkbox" disabled className="h-4 w-4" />
                           <span className="text-sm">{option}</span>
                         </div>
                       ))}
@@ -214,11 +215,7 @@ export function FormCard({ form }: FormCardProps) {
                     <div className="space-y-2">
                       {field.options.map((option, idx) => (
                         <div key={idx} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            disabled
-                            className="h-4 w-4"
-                          />
+                          <input type="checkbox" disabled className="h-4 w-4" />
                           <span className="text-sm">{option}</span>
                         </div>
                       ))}

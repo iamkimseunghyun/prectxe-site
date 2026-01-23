@@ -230,7 +230,13 @@ export async function getFormSubmissions(formId: string, userId: string) {
   try {
     const form = await prisma.form.findUnique({
       where: { id: formId },
-      select: { userId: true },
+      select: {
+        userId: true,
+        title: true,
+        fields: {
+          orderBy: { order: 'asc' },
+        },
+      },
     });
 
     if (!form || form.userId !== userId) {
@@ -249,7 +255,16 @@ export async function getFormSubmissions(formId: string, userId: string) {
       orderBy: { submittedAt: 'desc' },
     });
 
-    return { success: true, data: submissions };
+    return {
+      success: true,
+      data: {
+        form: {
+          title: form.title,
+          fields: form.fields,
+        },
+        submissions,
+      },
+    };
   } catch (error) {
     console.error('Submissions fetch error:', error);
     return {
