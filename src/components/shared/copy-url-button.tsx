@@ -6,20 +6,25 @@ import { toast } from '@/hooks/use-toast';
 
 type Props = {
   className?: string;
+  url?: string; // Optional: if provided, copy this URL instead of current page
 };
 
-export function CopyUrlButton({ className }: Props) {
+export function CopyUrlButton({ className, url: providedUrl }: Props) {
   const [copying, setCopying] = useState(false);
 
   const handleCopy = useCallback(async () => {
     try {
       setCopying(true);
-      const url = typeof window !== 'undefined' ? window.location.href : '';
+      const url =
+        providedUrl ||
+        (typeof window !== 'undefined' ? window.location.href : '');
 
       await navigator.clipboard.writeText(url);
       toast({
         title: '링크 복사됨',
-        description: '현재 페이지 URL을 클립보드에 복사했습니다.',
+        description: providedUrl
+          ? '폼 URL을 클립보드에 복사했습니다.'
+          : '현재 페이지 URL을 클립보드에 복사했습니다.',
       });
     } catch (_err) {
       toast({

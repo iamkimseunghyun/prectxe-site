@@ -1,15 +1,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import getSession from '@/lib/auth/session';
 import { listForms } from '@/modules/forms/server/actions';
+import { FormCard } from '@/modules/forms/ui/components/form-card';
 
 export default async function FormsAdminPage() {
   const session = await getSession();
@@ -61,43 +56,7 @@ export default async function FormsAdminPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {forms.map((form) => (
-            <Link key={form.id} href={`/admin/forms/${form.id}`}>
-              <Card className="transition-shadow hover:shadow-md">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="mb-1 text-lg">
-                        {form.title}
-                      </CardTitle>
-                      <CardDescription className="line-clamp-2">
-                        {form.description || '설명 없음'}
-                      </CardDescription>
-                    </div>
-                    <span
-                      className={`ml-2 rounded-full px-2 py-1 text-xs font-medium ${
-                        form.status === 'published'
-                          ? 'bg-green-100 text-green-800'
-                          : form.status === 'closed'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {form.status === 'published'
-                        ? '게시됨'
-                        : form.status === 'closed'
-                          ? '마감'
-                          : '임시저장'}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between text-sm text-neutral-500">
-                    <span>/{form.slug}</span>
-                    <span>{form._count.submissions}개 제출</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
+            <FormCard key={form.id} form={form} />
           ))}
         </div>
       )}

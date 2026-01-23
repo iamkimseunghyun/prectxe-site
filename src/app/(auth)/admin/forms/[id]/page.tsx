@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
 import type { FormInput } from '@/lib/schemas/form';
 import { getForm, updateForm } from '@/modules/forms/server/actions';
+import { FormEditHeader } from '@/modules/forms/ui/components/form-edit-header';
 import { FormBuilderView } from '@/modules/forms/ui/views/form-builder-view';
 
 export default async function FormEditPage({
@@ -35,7 +36,7 @@ export default async function FormEditPage({
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
-      <h1 className="mb-6 text-2xl font-semibold">폼 편집</h1>
+      <FormEditHeader slug={form.slug} status={form.status} />
       <FormBuilderView
         onSubmit={onSubmit}
         initialData={{
