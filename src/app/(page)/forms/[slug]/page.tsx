@@ -75,6 +75,15 @@ export default async function FormSubmitPage({ params }: PageProps) {
           </div>
         )}
 
+        {/* Body (상세 안내) */}
+        {form.body && (
+          <div className="mb-8 rounded-lg bg-neutral-50 p-6">
+            <p className="whitespace-pre-wrap text-sm text-neutral-700">
+              {form.body}
+            </p>
+          </div>
+        )}
+
         <FormRenderer
           formId={form.id}
           fields={form.fields.map((field) => ({
