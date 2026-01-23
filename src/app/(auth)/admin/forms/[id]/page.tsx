@@ -25,13 +25,14 @@ export default async function FormEditPage({
   async function onSubmit(data: FormInput) {
     'use server';
     const session = await getSession();
-    if (!session.id) redirect('/');
+    if (!session.id) {
+      return { success: false, error: '로그인이 필요합니다.' };
+    }
 
     const res = await updateForm(id, session.id, data);
-    if (res.success) {
-      redirect('/admin/forms');
-    }
-    return { success: false, error: res.error ?? '저장에 실패했습니다.' };
+    return res.success
+      ? { success: true }
+      : { success: false, error: res.error ?? '저장에 실패했습니다.' };
   }
 
   return (
