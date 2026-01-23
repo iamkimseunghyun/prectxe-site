@@ -2,6 +2,90 @@
 
 ## 2026-01-23
 
+### Form Builder - Draft Status Validation Fix
+
+**목적**: 임시저장 상태에서 필드 없이 폼을 저장할 수 있도록 검증 완화
+
+**배경**:
+- 문제: 임시저장 상태에서도 필드가 1개 이상 필요하다는 검증 적용
+- 영향: 사용자가 폼 작성 중에 임시저장 불가능, 드래프트 기능 무용지물
+- 원인: formSchema의 `fields.min(1)` 검증과 클라이언트 검증이 상태 무관
+
+**구현 내용**:
+
+1. **스키마 검증 조건부 적용** (`src/lib/schemas/form.ts`):
+   - **Before**: `fields: z.array(formFieldSchema).min(1, ...)`
+   - **After**: `fields: z.array(formFieldSchema).default([])`
+   - **refine 검증 추가**:
+     ```typescript
+     .refine(
+       (data) => {
+         // 게시 상태일 때만 필드 필수
+         if (data.status === 'published') {
+           return data.fields.length > 0;
+         }
+         return true;
+       },
+       { message: '게시하려면 최소 1개의 필드가 필요합니다', path: ['fields'] }
+     )
+     ```
+
+2. **선택형 필드 옵션 검증 완화**:
+   - formFieldSchema에서 options refine 제거 (기본 스키마는 완화)
+   - strictFormFieldSchema 추가 (게시 시 사용)
+   - formSchema의 refine에서 published 상태일 때만 옵션 검증:
+     ```typescript
+     .refine(
+       (data) => {
+         if (data.status === 'published') {
+           const needsOptions = ['select', 'multiselect', 'radio', 'checkbox'];
+           return data.fields.every((field) => {
+             if (needsOptions.includes(field.type)) {
+               return field.options && field.options.length > 0;
+             }
+             return true;
+           });
+         }
+         return true;
+       },
+       { message: '게시하려면 선택형 필드에 최소 1개의 선택지가 필요합니다' }
+     )
+     ```
+
+3. **클라이언트 검증 수정** (`form-builder-view.tsx`):
+   - **Before**: `if (fields.length === 0)`
+   - **After**: `if (data.status === 'published' && fields.length === 0)`
+   - 게시 상태일 때만 필드 필수 검증
+
+4. **경고 메시지 개선** (`form-field-editor.tsx`):
+   - 색상 변경: 빨간색(red-500) → 주황색(orange-500)
+   - 메시지 수정: "최소 1개의 선택지를 입력해주세요" → "게시하려면 최소 1개의 선택지가 필요합니다"
+   - 임시저장에서는 경고만 표시, 저장 차단하지 않음
+
+**검증 로직 요약**:
+- **draft/closed 상태**: 필드 0개 허용, 옵션 없는 선택형 필드 허용 (경고만)
+- **published 상태**: 필드 1개 이상 필수, 선택형 필드는 옵션 1개 이상 필수
+
+**결과**:
+- ✅ 임시저장 시 필드 없이 저장 가능 (작업 중인 폼 보존)
+- ✅ 임시저장 시 옵션 없는 선택형 필드 허용 (점진적 작성 가능)
+- ✅ 게시 시에만 엄격한 검증 적용 (품질 보장)
+- ✅ 드래프트 기능 실제로 사용 가능
+- ✅ 사용자 경험 크게 개선
+
+**파일 변경**:
+- 수정: `src/lib/schemas/form.ts` (조건부 refine 검증)
+- 수정: `src/modules/forms/ui/views/form-builder-view.tsx` (조건부 검증)
+- 수정: `src/modules/forms/ui/components/form-field-editor.tsx` (경고 메시지)
+
+**기술적 세부사항**:
+- Zod의 refine을 체이닝하여 다중 조건 검증 구현
+- status 필드를 기준으로 동적 검증 로직 적용
+- 클라이언트/서버 양쪽에서 일관된 검증 로직 유지
+- 경고(orange)와 에러(red) 구분으로 UX 개선
+
+---
+
 ### Form Builder - Select Field Validation Fix
 
 **목적**: 선택형 필드(select, multiselect, radio, checkbox)의 옵션 검증 추가
