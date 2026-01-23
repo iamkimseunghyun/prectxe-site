@@ -1,5 +1,20 @@
 'use client';
 
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus } from 'lucide-react';
 import Image from 'next/image';
@@ -78,6 +93,14 @@ export function FormBuilderView({
   const body = watch('body');
   const slug = watch('slug');
 
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   // Cover image upload
   const {
     preview,
@@ -119,6 +142,21 @@ export function FormBuilderView({
       .map((field, i) => ({ ...field, order: i }));
     setFields(updatedFields);
     setValue('fields', updatedFields);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = fields.findIndex((f) => f.id === active.id);
+      const newIndex = fields.findIndex((f) => f.id === over.id);
+
+      const updatedFields = arrayMove(fields, oldIndex, newIndex).map(
+        (field, i) => ({ ...field, order: i })
+      );
+      setFields(updatedFields);
+      setValue('fields', updatedFields);
+    }
   };
 
   const handleFormSubmit = async (data: FormInput) => {
@@ -306,17 +344,28 @@ export function FormBuilderView({
             </Button>
           </div>
         ) : (
-          <div className="space-y-4">
-            {fields.map((field, index) => (
-              <FormFieldEditor
-                key={field.id || index}
-                field={field}
-                index={index}
-                onUpdate={updateField}
-                onRemove={removeField}
-              />
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={fields.map((f) => f.id || '')}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-4">
+                {fields.map((field, index) => (
+                  <FormFieldEditor
+                    key={field.id || index}
+                    field={field}
+                    index={index}
+                    onUpdate={updateField}
+                    onRemove={removeField}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 
@@ -456,16 +505,12 @@ export function FormBuilderView({
                           disabled
                         />
                       )}
-                      {field.type === 'date' && (
-                        <Input type="date" disabled />
-                      )}
+                      {field.type === 'date' && <Input type="date" disabled />}
                       {field.type === 'select' && (
                         <Select disabled>
                           <SelectTrigger>
                             <SelectValue
-                              placeholder={
-                                field.placeholder || '선택해주세요'
-                              }
+                              placeholder={field.placeholder || '선택해주세요'}
                             />
                           </SelectTrigger>
                           <SelectContent>

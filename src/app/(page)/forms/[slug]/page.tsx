@@ -1,12 +1,12 @@
 import { headers } from 'next/headers';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import { getImageUrl } from '@/lib/utils';
 import {
   getFormBySlug,
   submitFormResponse,
 } from '@/modules/forms/server/actions';
 import { FormRenderer } from '@/modules/forms/ui/components/form-renderer';
-import { getImageUrl } from '@/lib/utils';
 
 interface PageProps {
   params: Promise<{ slug: string }>;

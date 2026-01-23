@@ -65,7 +65,6 @@ export async function signUp(data: z.infer<typeof signUpSchema>) {
   }
   try {
     const hashedPassword = await bcrypt.hash(result.data.password, 12);
-    // const hashedPassword = await Bun.password.hash(result.data.password);
 
     const user = await prisma.user.create({
       data: {
@@ -126,7 +125,6 @@ export const signIn = async (data: z.infer<typeof signInSchema>) => {
       };
     }
 
-    // const ok = await Bun.password.verify(result.data.password, user.password);
     const ok = await bcrypt.compare(result.data.password, user.password);
     console.log('signIn - password check:', ok ? 'success' : 'failed');
 

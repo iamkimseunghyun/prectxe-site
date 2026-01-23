@@ -1,5 +1,7 @@
 'use client';
 
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Plus, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -46,6 +48,21 @@ export function FormFieldEditor({
 }: FormFieldEditorProps) {
   const [options, setOptions] = useState(field.options?.join('\n') || '');
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: field.id || '' });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   const hasOptions = ['select', 'multiselect', 'radio', 'checkbox'].includes(
     field.type
   );
@@ -62,9 +79,13 @@ export function FormFieldEditor({
   };
 
   return (
-    <div className="rounded-lg border bg-white p-4">
+    <div ref={setNodeRef} style={style} className="rounded-lg border bg-white p-4">
       <div className="mb-4 flex items-start gap-2">
-        <div className="mt-2 cursor-grab">
+        <div
+          {...attributes}
+          {...listeners}
+          className="mt-2 cursor-grab active:cursor-grabbing"
+        >
           <GripVertical className="h-5 w-5 text-neutral-400" />
         </div>
         <div className="flex-1 space-y-4">

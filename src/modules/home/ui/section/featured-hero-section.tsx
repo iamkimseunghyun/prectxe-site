@@ -168,24 +168,24 @@ export async function FeaturedHeroSection() {
         )}
 
         <div className="flex items-center justify-center gap-4 py-6 text-xs sm:gap-6 sm:py-8 sm:text-sm md:text-base">
-        <Link
-          href="/programs"
-          className="text-neutral-500 transition-colors hover:text-neutral-900"
-        >
-          Archive
-        </Link>
-        <Link
-          href="/journal"
-          className="text-neutral-500 transition-colors hover:text-neutral-900"
-        >
-          Journal
-        </Link>
-        <Link
-          href="/about"
-          className="text-neutral-500 transition-colors hover:text-neutral-900"
-        >
-          About
-        </Link>
+          <Link
+            href="/programs"
+            className="text-neutral-500 transition-colors hover:text-neutral-900"
+          >
+            Archive
+          </Link>
+          <Link
+            href="/journal"
+            className="text-neutral-500 transition-colors hover:text-neutral-900"
+          >
+            Journal
+          </Link>
+          <Link
+            href="/about"
+            className="text-neutral-500 transition-colors hover:text-neutral-900"
+          >
+            About
+          </Link>
         </div>
       </div>
 
