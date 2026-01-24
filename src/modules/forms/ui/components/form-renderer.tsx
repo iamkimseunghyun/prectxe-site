@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -35,14 +35,30 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const schema = createFormResponseSchema(fields);
+
+  // Generate default values for all fields
+  const defaultValues = fields.reduce(
+    (acc, field) => {
+      if (field.type === 'checkbox' || field.type === 'multiselect') {
+        acc[field.id!] = [];
+      } else {
+        acc[field.id!] = '';
+      }
+      return acc;
+    },
+    {} as Record<string, string | string[]>
+  );
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
     watch,
+    control,
   } = useForm({
     resolver: zodResolver(schema),
+    defaultValues,
   });
 
   const handleFormSubmit = async (data: Record<string, string | string[]>) => {
@@ -62,7 +78,7 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: '제출 실패',
         description: '제출 중 오류가 발생했습니다',
@@ -156,40 +172,58 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
 
             {/* Select */}
             {field.type === 'select' && (
-              <Select onValueChange={(value) => setValue(field.id!, value)}>
-                <SelectTrigger id={field.id}>
-                  <SelectValue
-                    placeholder={field.placeholder || '선택해주세요'}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {field.options.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name={field.id!}
+                control={control}
+                render={({ field: formField }) => (
+                  <Select
+                    value={formField.value as string}
+                    onValueChange={formField.onChange}
+                  >
+                    <SelectTrigger id={field.id}>
+                      <SelectValue
+                        placeholder={field.placeholder || '선택해주세요'}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {field.options.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             )}
 
             {/* Radio */}
             {field.type === 'radio' && (
-              <RadioGroup onValueChange={(value) => setValue(field.id!, value)}>
-                {field.options.map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <RadioGroupItem
-                      value={option}
-                      id={`${field.id}-${option}`}
-                    />
-                    <Label
-                      htmlFor={`${field.id}-${option}`}
-                      className="font-normal"
-                    >
-                      {option}
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
+              <Controller
+                name={field.id!}
+                control={control}
+                render={({ field: formField }) => (
+                  <RadioGroup
+                    value={formField.value as string}
+                    onValueChange={formField.onChange}
+                  >
+                    {field.options.map((option) => (
+                      <div key={option} className="flex items-center space-x-2">
+                        <RadioGroupItem
+                          value={option}
+                          id={`${field.id}-${option}`}
+                        />
+                        <Label
+                          htmlFor={`${field.id}-${option}`}
+                          className="font-normal"
+                        >
+                          {option}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                )}
+              />
             )}
 
             {/* Checkbox / Multiselect */}
