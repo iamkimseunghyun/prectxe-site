@@ -52,7 +52,8 @@ export async function createForm(userId: string, data: FormInput) {
 export async function updateForm(
   formId: string,
   userId: string,
-  data: FormInput
+  data: FormInput,
+  isAdmin = false
 ) {
   try {
     const validated = formSchema.parse(data);
@@ -63,7 +64,11 @@ export async function updateForm(
       select: { userId: true },
     });
 
-    if (!existing || existing.userId !== userId) {
+    if (!existing) {
+      return { success: false, error: '폼을 찾을 수 없습니다' };
+    }
+
+    if (!isAdmin && existing.userId !== userId) {
       return { success: false, error: '권한이 없습니다' };
     }
 
@@ -112,14 +117,18 @@ export async function updateForm(
 }
 
 // Delete Form
-export async function deleteForm(formId: string, userId: string) {
+export async function deleteForm(formId: string, userId: string, isAdmin = false) {
   try {
     const existing = await prisma.form.findUnique({
       where: { id: formId },
       select: { userId: true },
     });
 
-    if (!existing || existing.userId !== userId) {
+    if (!existing) {
+      return { success: false, error: '폼을 찾을 수 없습니다' };
+    }
+
+    if (!isAdmin && existing.userId !== userId) {
       return { success: false, error: '권한이 없습니다' };
     }
 
@@ -226,7 +235,7 @@ export async function submitFormResponse(
 }
 
 // Get Form Submissions (Admin only)
-export async function getFormSubmissions(formId: string, userId: string) {
+export async function getFormSubmissions(formId: string, userId: string, isAdmin = false) {
   try {
     const form = await prisma.form.findUnique({
       where: { id: formId },
@@ -239,7 +248,11 @@ export async function getFormSubmissions(formId: string, userId: string) {
       },
     });
 
-    if (!form || form.userId !== userId) {
+    if (!form) {
+      return { success: false, error: '폼을 찾을 수 없습니다' };
+    }
+
+    if (!isAdmin && form.userId !== userId) {
       return { success: false, error: '권한이 없습니다' };
     }
 
@@ -275,7 +288,7 @@ export async function getFormSubmissions(formId: string, userId: string) {
 }
 
 // Get Form (Admin)
-export async function getForm(formId: string, userId: string) {
+export async function getForm(formId: string, userId: string, isAdmin = false) {
   try {
     const form = await prisma.form.findUnique({
       where: { id: formId },
@@ -295,7 +308,7 @@ export async function getForm(formId: string, userId: string) {
       return { success: false, error: '폼을 찾을 수 없습니다' };
     }
 
-    if (form.userId !== userId) {
+    if (!isAdmin && form.userId !== userId) {
       return { success: false, error: '권한이 없습니다' };
     }
 
@@ -310,10 +323,10 @@ export async function getForm(formId: string, userId: string) {
 }
 
 // List Forms (Admin)
-export async function listForms(userId: string) {
+export async function listForms(userId: string, isAdmin = false) {
   try {
     const forms = await prisma.form.findMany({
-      where: { userId },
+      where: isAdmin ? {} : { userId },
       include: {
         fields: {
           orderBy: { order: 'asc' },

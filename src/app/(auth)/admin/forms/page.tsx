@@ -15,7 +15,7 @@ export default async function FormsAdminPage() {
   });
   if (!session.id || !session.isAdmin) redirect('/auth/signin');
 
-  const result = await listForms(session.id);
+  const result = await listForms(session.id, session.isAdmin);
 
   const forms = result.success ? result.data || [] : [];
 

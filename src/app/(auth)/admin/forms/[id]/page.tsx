@@ -14,7 +14,7 @@ export default async function FormEditPage({
   if (!session.id || !session.isAdmin) redirect('/auth/signin');
 
   const { id } = await params;
-  const result = await getForm(id, session.id);
+  const result = await getForm(id, session.id, session.isAdmin);
 
   if (!result.success || !result.data) {
     redirect('/admin/forms');
@@ -29,7 +29,7 @@ export default async function FormEditPage({
       return { success: false, error: '로그인이 필요합니다.' };
     }
 
-    const res = await updateForm(id, session.id, data);
+    const res = await updateForm(id, session.id, data, session.isAdmin);
     return res.success
       ? { success: true }
       : { success: false, error: res.error ?? '저장에 실패했습니다.' };

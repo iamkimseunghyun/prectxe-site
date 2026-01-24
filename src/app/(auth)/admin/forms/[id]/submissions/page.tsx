@@ -12,7 +12,7 @@ export default async function FormSubmissionsPage({ params }: PageProps) {
   if (!session.id || !session.isAdmin) redirect('/auth/signin');
 
   const { id } = await params;
-  const result = await getFormSubmissions(id, session.id);
+  const result = await getFormSubmissions(id, session.id, session.isAdmin);
 
   if (!result.success || !result.data) {
     redirect('/admin/forms');
