@@ -185,7 +185,7 @@ export async function submitFormResponse(
   try {
     // Get form with fields
     const form = await prisma.form.findUnique({
-      where: { id: formId, status: 'published' },
+      where: { id: formId },
       include: {
         fields: true,
       },
@@ -193,6 +193,17 @@ export async function submitFormResponse(
 
     if (!form) {
       return { success: false, error: '폼을 찾을 수 없습니다' };
+    }
+
+    // Check if form is accepting responses
+    if (form.status !== 'published') {
+      return {
+        success: false,
+        error:
+          form.status === 'closed'
+            ? '해당 양식은 응답을 받지 않습니다'
+            : '게시되지 않은 양식입니다',
+      };
     }
 
     // Validate responses

@@ -38,6 +38,22 @@ export default async function FormSubmitPage({ params }: PageProps) {
     });
   }
 
+  // Show closed message if form is closed
+  if (form.status === 'closed') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+        <div className="mx-4 max-w-md rounded-lg bg-white p-8 text-center shadow-xl">
+          <h1 className="mb-4 text-2xl font-bold text-neutral-900">
+            응답이 마감되었습니다
+          </h1>
+          <p className="text-neutral-600">
+            해당 양식은 더 이상 응답을 받지 않습니다.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Cover Image Banner */}

@@ -1,5 +1,298 @@
 # Development Log
 
+## 2026-01-24
+
+### Admin Permissions for Forms Management
+
+**목적**: 관리자 계정이 모든 폼을 조회, 수정, 삭제할 수 있도록 권한 체계 구현
+
+**배경**:
+- 문제: 폼 소유자만 본인이 생성한 폼을 관리할 수 있음
+- 요구사항: 관리자(role: ADMIN)는 모든 폼에 대한 전체 권한 필요
+- 영향: 여러 관리자가 협업하여 폼을 관리할 수 있어야 함
+
+**구현 내용**:
+
+1. **Server Actions 권한 파라미터 추가** (`forms/server/actions.ts`):
+   - 5개 함수에 `isAdmin` 파라미터 추가 (기본값: false)
+   ```typescript
+   export async function listForms(userId: string, isAdmin = false) {
+     const forms = await prisma.form.findMany({
+       where: isAdmin ? {} : { userId }, // 관리자는 모든 폼, 일반 유저는 본인 폼만
+     });
+   }
+
+   export async function getForm(formId: string, userId: string, isAdmin = false) {
+     if (!isAdmin && form.userId !== userId) {
+       return { success: false, error: '권한이 없습니다' };
+     }
+   }
+
+   export async function updateForm(formId: string, userId: string, data: FormInput, isAdmin = false) {
+     if (!isAdmin && existing.userId !== userId) {
+       return { success: false, error: '권한이 없습니다' };
+     }
+   }
+
+   export async function deleteForm(formId: string, userId: string, isAdmin = false) {
+     if (!isAdmin && existing.userId !== userId) {
+       return { success: false, error: '권한이 없습니다' };
+     }
+   }
+
+   export async function getFormSubmissions(formId: string, userId: string, isAdmin = false) {
+     if (!isAdmin && form.userId !== userId) {
+       return { success: false, error: '권한이 없습니다' };
+     }
+   }
+   ```
+
+2. **Page 컴포넌트 수정** - `session.isAdmin` 전달:
+   - `/admin/forms/page.tsx`
+   - `/admin/forms/[id]/page.tsx`
+   - `/admin/forms/[id]/submissions/page.tsx`
+   ```typescript
+   const result = await listForms(session.id, session.isAdmin);
+   ```
+
+**결과**:
+- ✅ 관리자는 모든 폼 조회 가능
+- ✅ 관리자는 모든 폼 편집 가능
+- ✅ 관리자는 모든 폼 삭제 가능
+- ✅ 관리자는 모든 폼의 제출 내역 조회 가능
+- ✅ 일반 사용자는 본인 폼만 관리 (기존 동작 유지)
+- ✅ 역할 기반 접근 제어(RBAC) 구현
+
+**파일 변경**:
+- 수정: `src/modules/forms/server/actions.ts` (5개 함수)
+- 수정: `src/app/(auth)/admin/forms/page.tsx`
+- 수정: `src/app/(auth)/admin/forms/[id]/page.tsx`
+- 수정: `src/app/(auth)/admin/forms/[id]/submissions/page.tsx`
+
+**커밋**:
+```
+feat: add admin permission to manage all forms
+chore: apply biome formatting
+```
+
+---
+
+### Form Delete Functionality with Toast Confirmation
+
+**목적**: 폼 리스트 페이지에서 폼을 삭제할 수 있는 기능 추가
+
+**배경**:
+- 문제: 폼을 삭제하려면 편집 페이지로 들어가야 했음
+- 요구사항: 리스트에서 바로 삭제 가능, 경고 확인 후 삭제
+- 사용 사례: 테스트 폼 빠른 정리, 잘못 생성된 폼 즉시 삭제
+
+**구현 내용**:
+
+1. **FormCard 컴포넌트 확장** (`form-card.tsx`):
+   - **Props 추가**: `userId`, `isAdmin`
+   - **상태 관리**:
+     ```typescript
+     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+     const [isDeleting, setIsDeleting] = useState(false);
+     ```
+   - **삭제 핸들러**:
+     ```typescript
+     const handleDelete = async () => {
+       setIsDeleting(true);
+       const result = await deleteForm(form.id, userId, isAdmin);
+       if (!result.success) {
+         toast({ title: '삭제 실패', description: result.error, variant: 'destructive' });
+       } else {
+         toast({ title: '삭제 완료', description: '폼이 성공적으로 삭제되었습니다.' });
+         router.refresh();
+       }
+       setIsDeleting(false);
+     };
+     ```
+
+2. **UI 추가**:
+   - **삭제 버튼**: Trash2 아이콘, Eye 버튼과 URL 복사 버튼 사이 배치
+   - **AlertDialog 확인창**:
+     ```tsx
+     <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+       <AlertDialogContent>
+         <AlertDialogTitle>폼 삭제 확인</AlertDialogTitle>
+         <AlertDialogDescription>
+           정말 이 폼을 삭제하시겠어요? 모든 제출 내역도 함께 삭제되며,
+           이 작업은 되돌릴 수 없습니다.
+         </AlertDialogDescription>
+         <AlertDialogFooter>
+           <AlertDialogCancel>취소</AlertDialogCancel>
+           <AlertDialogAction onClick={handleDelete}>삭제</AlertDialogAction>
+         </AlertDialogFooter>
+       </AlertDialogContent>
+     </AlertDialog>
+     ```
+
+3. **폼 리스트 페이지 업데이트** (`/admin/forms/page.tsx`):
+   - FormCard에 `userId`와 `isAdmin` props 전달
+   ```typescript
+   <FormCard
+     key={form.id}
+     form={form}
+     userId={session.id!}
+     isAdmin={session.isAdmin!}
+   />
+   ```
+
+**결과**:
+- ✅ 폼 리스트에서 즉시 삭제 가능
+- ✅ AlertDialog로 안전한 확인 절차
+- ✅ 제출 내역 포함 경고 메시지
+- ✅ 성공/실패 토스트 알림
+- ✅ 삭제 후 자동 새로고침
+
+**파일 변경**:
+- 수정: `src/modules/forms/ui/components/form-card.tsx`
+- 수정: `src/app/(auth)/admin/forms/page.tsx`
+
+**커밋**:
+```
+feat: add delete functionality to forms list with toast confirmation
+```
+
+---
+
+### Critical Bug Fix: Empty Form Submission Prevention
+
+**목적**: 필수 필드를 입력하지 않아도 제출되는 치명적 버그 수정
+
+**배경**:
+- 문제: 사용자가 Select/Radio 필드를 선택하지 않으면 빈 응답으로 제출됨
+- 영향: FormSubmission은 생성되지만 FormResponse가 없어 데이터 손실
+- 원인: Select/Radio가 React Hook Form에 제대로 등록되지 않음
+
+**근본 원인 분석**:
+
+1. **Select/Radio 필드의 초기값 문제**:
+   ```typescript
+   // ❌ 문제 코드
+   <Select onValueChange={(value) => setValue(field.id!, value)}>
+   ```
+   - 사용자가 한 번도 클릭하지 않으면 `onValueChange` 호출되지 않음
+   - `setValue`가 실행되지 않아 해당 필드가 `undefined`로 제출
+   - React Hook Form에 필드가 등록되지 않음
+
+2. **Validation 우회**:
+   - 필드가 `undefined`면 Zod validation을 부분적으로 우회 가능
+   - FormSubmission은 생성되지만 FormResponse는 생성되지 않음
+   - 결과: 빈 응답 데이터
+
+**해결 방법**:
+
+1. **Controller 패턴 적용** (`form-renderer.tsx`):
+   ```typescript
+   // ✅ 수정 코드
+   <Controller
+     name={field.id!}
+     control={control}
+     render={({ field: formField }) => (
+       <Select value={formField.value} onValueChange={formField.onChange}>
+         {/* ... */}
+       </Select>
+     )}
+   />
+   ```
+   - React Hook Form의 Controller로 필드를 명시적으로 등록
+   - `value`와 `onChange`를 직접 연결하여 상태 동기화
+
+2. **defaultValues 설정**:
+   ```typescript
+   const defaultValues = fields.reduce((acc, field) => {
+     if (field.type === 'checkbox' || field.type === 'multiselect') {
+       acc[field.id!] = [];
+     } else {
+       acc[field.id!] = '';
+     }
+     return acc;
+   }, {} as Record<string, string | string[]>);
+   ```
+   - 모든 필드에 초기값 설정
+   - 필드가 form에 확실히 등록되도록 보장
+
+3. **Select와 Radio 모두 적용**:
+   - Select 필드: Controller로 감싸기
+   - Radio 필드: Controller로 감싸기
+   - Checkbox/Multiselect: 기존 로직 유지 (이미 정상 작동)
+
+**결과**:
+- ✅ Select/Radio 필드가 제대로 form에 등록됨
+- ✅ 필수 필드를 선택하지 않으면 validation error 발생
+- ✅ 빈 응답 제출 완전 차단
+- ✅ FormSubmission과 FormResponse가 항상 일관성 유지
+
+**파일 변경**:
+- 수정: `src/modules/forms/ui/components/form-renderer.tsx`
+
+**기술적 세부사항**:
+- React Hook Form의 `Controller` 컴포넌트 사용
+- `control` prop으로 form context 연결
+- `render` prop으로 커스텀 입력 컴포넌트 통합
+- `defaultValues`로 모든 필드 초기화 보장
+
+**커밋**:
+```
+fix: prevent empty form submissions by using Controller for Select/Radio fields
+```
+
+---
+
+### Form Validation Error Toast Notification
+
+**목적**: Validation 실패 시 사용자에게 즉각적인 피드백 제공
+
+**배경**:
+- 문제: Validation error 발생 시 필드 아래 에러 메시지만 표시
+- 요구사항: 토스트 알림으로 즉각적인 경고 제공
+- 사용자 경험: 에러를 놓치지 않도록 명확한 알림 필요
+
+**구현 내용**:
+
+1. **Validation Error Handler 추가** (`form-renderer.tsx`):
+   ```typescript
+   const handleValidationError = () => {
+     toast({
+       title: '입력 오류',
+       description: '필수 항목을 모두 입력해주세요',
+       variant: 'destructive',
+     });
+   };
+   ```
+
+2. **handleSubmit에 Error Handler 연결**:
+   ```typescript
+   <form onSubmit={handleSubmit(handleFormSubmit, handleValidationError)}>
+   ```
+   - React Hook Form의 `handleSubmit` 두 번째 인자로 에러 핸들러 전달
+   - Validation 실패 시 자동으로 `handleValidationError` 호출
+
+**동작 흐름**:
+1. 사용자가 필수 필드를 비우고 제출 버튼 클릭
+2. React Hook Form이 Zod schema로 validation 수행
+3. Validation 실패 → 즉시 빨간색 토스트 팝업 표시
+4. 각 필드 아래에도 구체적인 에러 메시지 표시
+
+**결과**:
+- ✅ Validation error 발생 시 토스트 알림 표시
+- ✅ 인라인 에러 메시지와 함께 이중 피드백
+- ✅ 사용자가 에러를 즉시 인지 가능
+- ✅ 개선된 폼 작성 경험
+
+**파일 변경**:
+- 수정: `src/modules/forms/ui/components/form-renderer.tsx`
+
+**커밋**:
+```
+feat: add toast notification for form validation errors
+```
+
+---
+
 ## 2026-01-23
 
 ### Form Submissions Page with Excel/CSV Export
