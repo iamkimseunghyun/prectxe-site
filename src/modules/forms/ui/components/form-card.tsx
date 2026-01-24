@@ -1,10 +1,21 @@
 'use client';
 
-import { Eye } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { CopyUrlButton } from '@/components/shared/copy-url-button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -29,7 +40,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 import { getImageUrl } from '@/lib/utils';
+import { deleteForm } from '@/modules/forms/server/actions';
 
 interface FormCardProps {
   form: {
@@ -54,14 +67,50 @@ interface FormCardProps {
       submissions: number;
     };
   };
+  userId: string;
+  isAdmin: boolean;
 }
 
-export function FormCard({ form }: FormCardProps) {
+export function FormCard({ form, userId, isAdmin }: FormCardProps) {
+  const router = useRouter();
+  const { toast } = useToast();
   const [showPreview, setShowPreview] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const formUrl =
     typeof window !== 'undefined'
       ? `${window.location.origin}/forms/${form.slug}`
       : '';
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    setShowDeleteConfirm(false);
+
+    try {
+      const result = await deleteForm(form.id, userId, isAdmin);
+
+      if (!result.success) {
+        throw new Error(result.error || '삭제 실패');
+      }
+
+      toast({
+        title: '삭제 완료',
+        description: '폼이 성공적으로 삭제되었습니다.',
+      });
+
+      router.refresh();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다.';
+      toast({
+        title: '삭제 실패',
+        description: message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <>
@@ -82,6 +131,15 @@ export function FormCard({ form }: FormCardProps) {
                 className="h-8 w-8 text-neutral-400 transition-colors hover:text-neutral-600"
               >
                 <Eye className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isDeleting}
+                className="h-8 w-8 text-neutral-400 transition-colors hover:text-red-600"
+              >
+                <Trash2 className="h-4 w-4" />
               </Button>
               {form.status === 'published' && (
                 <CopyUrlButton
@@ -241,6 +299,23 @@ export function FormCard({ form }: FormCardProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>폼 삭제 확인</AlertDialogTitle>
+            <AlertDialogDescription>
+              정말 이 폼을 삭제하시겠어요? 모든 제출 내역도 함께 삭제되며, 이
+              작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>삭제</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

@@ -56,7 +56,12 @@ export default async function FormsAdminPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {forms.map((form) => (
-            <FormCard key={form.id} form={form} />
+            <FormCard
+              key={form.id}
+              form={form}
+              userId={session.id!}
+              isAdmin={session.isAdmin!}
+            />
           ))}
         </div>
       )}
