@@ -293,6 +293,96 @@ feat: add toast notification for form validation errors
 
 ---
 
+### Form Response Closing Functionality
+
+**목적**: 폼 응답을 종료하고 사용자에게 마감 메시지를 표시하는 기능 구현
+
+**배경**:
+- 요구사항: 관리자가 응답 마감 시 토글로 상태 변경 가능
+- 사용자 경험: 마감된 폼 접근 시 명확한 안내 메시지 필요
+- 보안: 서버 측에서도 마감 상태 검증하여 제출 차단
+
+**구현 내용**:
+
+1. **공개 폼 페이지 종료 화면** (`/forms/[slug]/page.tsx`):
+   ```typescript
+   if (form.status === 'closed') {
+     return (
+       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+         <div className="mx-4 max-w-md rounded-lg bg-white p-8 text-center shadow-xl">
+           <h1 className="mb-4 text-2xl font-bold text-neutral-900">
+             응답이 마감되었습니다
+           </h1>
+           <p className="text-neutral-600">
+             해당 양식은 더 이상 응답을 받지 않습니다.
+           </p>
+         </div>
+       </div>
+     );
+   }
+   ```
+   - 전체 화면 어둡게 처리 (`fixed inset-0 bg-black/80`)
+   - 중앙에 흰색 카드로 마감 메시지 표시
+   - z-index 50으로 모든 콘텐츠 위에 표시
+
+2. **서버 측 검증 강화** (`forms/server/actions.ts`):
+   ```typescript
+   export async function submitFormResponse(formId: string, ...) {
+     const form = await prisma.form.findUnique({ where: { id: formId } });
+
+     if (form.status !== 'published') {
+       return {
+         success: false,
+         error: form.status === 'closed'
+           ? '해당 양식은 응답을 받지 않습니다'
+           : '게시되지 않은 양식입니다',
+       };
+     }
+     // ... 나머지 제출 로직
+   }
+   ```
+   - `status === 'closed'` 시 응답 제출 차단
+   - `status === 'draft'` 시에도 제출 차단
+   - 상태별 맞춤 에러 메시지 반환
+
+3. **기존 UI 활용**:
+   - 폼 빌더 UI에 이미 `status` 선택 드롭다운 구현됨
+   - `FormStatus` enum에 `draft`, `published`, `closed` 이미 정의됨
+   - 추가 스키마 변경 없이 기존 필드 활용
+
+**동작 흐름**:
+1. 관리자가 폼 편집 페이지에서 상태를 "마감"으로 변경
+2. 사용자가 공개 폼 URL 접속 시:
+   - 전체 화면 오버레이 표시
+   - "응답이 마감되었습니다" 메시지 표시
+   - 폼 필드 렌더링 안 함
+3. API 직접 호출 시도 시:
+   - 서버에서 `status` 검증
+   - 에러 응답 반환 및 제출 차단
+
+**결과**:
+- ✅ 관리자가 폼 상태를 "마감"으로 쉽게 변경 가능
+- ✅ 마감된 폼 접근 시 전체 화면 오버레이로 명확한 안내
+- ✅ 서버 측 검증으로 직접 API 호출도 차단
+- ✅ 상태별 맞춤 에러 메시지 제공
+- ✅ 기존 스키마 활용하여 추가 마이그레이션 불필요
+
+**파일 변경**:
+- 수정: `src/app/(page)/forms/[slug]/page.tsx`
+- 수정: `src/modules/forms/server/actions.ts`
+
+**UI/UX 개선**:
+- 어두운 배경 (`bg-black/80`)으로 폼 접근 불가 명확히 표현
+- 흰색 카드로 메시지 강조
+- 모바일 대응 (`mx-4`, `max-w-md`)
+
+**커밋**:
+```
+feat: add form response closing functionality
+```
+
+---
+
 ## 2026-01-23
 
 ### Form Submissions Page with Excel/CSV Export
