@@ -405,13 +405,13 @@ model FormSubmission {
 model FormResponse {
   id           String         @id @default(cuid())
   submissionId String
-  fieldId      String
+  fieldId      String?
+  fieldLabel   String?
+  fieldType    FieldType?
   value        String
   createdAt    DateTime       @default(now())
   submission   FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  field        FormField      @relation(fields: [fieldId], references: [id], onDelete: Cascade)
-
-  @@unique([submissionId, fieldId])
+  field        FormField?     @relation(fields: [fieldId], references: [id], onDelete: SetNull)
 }
 
 enum FormStatus {

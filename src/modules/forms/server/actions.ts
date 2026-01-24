@@ -217,6 +217,9 @@ export async function submitFormResponse(
     );
     const validated = schema.parse(responses);
 
+    // Create field lookup map for snapshot
+    const fieldMap = new Map(form.fields.map((f) => [f.id, f]));
+
     // Create submission with responses
     const submission = await prisma.formSubmission.create({
       data: {
@@ -224,10 +227,15 @@ export async function submitFormResponse(
         ipAddress: metadata?.ipAddress,
         userAgent: metadata?.userAgent,
         responses: {
-          create: Object.entries(validated).map(([fieldId, value]) => ({
-            fieldId,
-            value: typeof value === 'string' ? value : JSON.stringify(value),
-          })),
+          create: Object.entries(validated).map(([fieldId, value]) => {
+            const field = fieldMap.get(fieldId);
+            return {
+              fieldId,
+              fieldLabel: field?.label ?? 'Unknown Field',
+              fieldType: field?.type ?? 'text',
+              value: typeof value === 'string' ? value : JSON.stringify(value),
+            };
+          }),
         },
       },
       include: {

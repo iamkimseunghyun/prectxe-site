@@ -33,13 +33,15 @@ interface SubmissionsViewProps {
       userAgent: string | null;
       responses: Array<{
         id: string;
-        fieldId: string;
+        fieldId: string | null;
+        fieldLabel: string | null;
+        fieldType: string | null;
         value: string;
         field: {
           id: string;
           label: string;
           type: string;
-        };
+        } | null;
       }>;
     }>;
   };
@@ -48,6 +50,42 @@ interface SubmissionsViewProps {
 export function SubmissionsView({ formId, data }: SubmissionsViewProps) {
   const { form, submissions } = data;
 
+  // Build complete field list (current + deleted)
+  const allFields = useMemo(() => {
+    const fieldMap = new Map<
+      string,
+      { id: string | null; label: string; isDeleted: boolean }
+    >();
+
+    // Add current fields
+    form.fields.forEach((field) => {
+      fieldMap.set(field.id, {
+        id: field.id,
+        label: field.label,
+        isDeleted: false,
+      });
+    });
+
+    // Add deleted fields from responses
+    submissions.forEach((submission) => {
+      submission.responses.forEach((response) => {
+        if (!response.fieldId && response.fieldLabel) {
+          // Deleted field
+          const key = `deleted_${response.fieldLabel}`;
+          if (!fieldMap.has(key)) {
+            fieldMap.set(key, {
+              id: null,
+              label: response.fieldLabel,
+              isDeleted: true,
+            });
+          }
+        }
+      });
+    });
+
+    return Array.from(fieldMap.values());
+  }, [form.fields, submissions]);
+
   // Transform data for table display
   const tableData = useMemo(() => {
     return submissions.map((submission) => {
@@ -55,19 +93,26 @@ export function SubmissionsView({ formId, data }: SubmissionsViewProps) {
         제출시간: new Date(submission.submittedAt).toLocaleString('ko-KR'),
       };
 
-      // Add field responses
-      form.fields.forEach((field) => {
-        const response = submission.responses.find(
-          (r) => r.fieldId === field.id
-        );
-        row[field.label] = response?.value || '-';
+      // Add field responses (current and deleted)
+      allFields.forEach((field) => {
+        const response = submission.responses.find((r) => {
+          if (field.id) {
+            return r.fieldId === field.id;
+          }
+          return r.fieldLabel === field.label && !r.fieldId;
+        });
+
+        const columnName = field.isDeleted
+          ? `${field.label} (삭제됨)`
+          : field.label;
+        row[columnName] = response?.value || '-';
       });
 
       row.IP = submission.ipAddress || '-';
 
       return row;
     });
-  }, [submissions, form.fields]);
+  }, [submissions, allFields]);
 
   // Export to Excel
   const handleExportExcel = () => {
@@ -141,8 +186,13 @@ export function SubmissionsView({ formId, data }: SubmissionsViewProps) {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-40">제출시간</TableHead>
-                {form.fields.map((field) => (
-                  <TableHead key={field.id}>{field.label}</TableHead>
+                {allFields.map((field, index) => (
+                  <TableHead key={field.id || `deleted_${index}`}>
+                    {field.label}
+                    {field.isDeleted && (
+                      <span className="ml-1 text-red-500">(삭제됨)</span>
+                    )}
+                  </TableHead>
                 ))}
                 <TableHead className="w-32">IP</TableHead>
               </TableRow>
@@ -153,12 +203,18 @@ export function SubmissionsView({ formId, data }: SubmissionsViewProps) {
                   <TableCell className="text-sm">
                     {new Date(submission.submittedAt).toLocaleString('ko-KR')}
                   </TableCell>
-                  {form.fields.map((field) => {
-                    const response = submission.responses.find(
-                      (r) => r.fieldId === field.id
-                    );
+                  {allFields.map((field, index) => {
+                    const response = submission.responses.find((r) => {
+                      if (field.id) {
+                        return r.fieldId === field.id;
+                      }
+                      return r.fieldLabel === field.label && !r.fieldId;
+                    });
                     return (
-                      <TableCell key={field.id} className="max-w-md text-sm">
+                      <TableCell
+                        key={field.id || `deleted_${index}`}
+                        className="max-w-md text-sm"
+                      >
                         {response?.value || (
                           <span className="text-neutral-400">-</span>
                         )}
