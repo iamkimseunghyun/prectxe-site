@@ -77,9 +77,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - `Article` - Journal entries with slug, title, body, cover, tags, publishedAt, isFeatured
   - `Artist` - Artist profiles with name (en/kr), biography, images
   - `User` - Authentication with role (ADMIN/USER), manages programs/articles
-  - `Form` - Dynamic form builder with slug, title, description, coverImage, status (draft/published)
-    - Relations: FormField[] (11 field types: text, email, textarea, select, multiselect, radio, checkbox, date, phone, file, number)
+  - `Form` - Dynamic form builder with slug, title, description, coverImage, status (draft/published/closed)
+    - Relations: FormField[] (12 field types: text, email, textarea, select, multiselect, radio, checkbox, date, phone, url, file, number)
     - Tracks submissions via FormSubmission[] and FormResponse[]
+    - Response preservation: FormResponse stores field snapshots (fieldLabel, fieldType) to handle field modifications/deletions
 - **Featured Content System**:
   - Both `Program` and `Article` have `isFeatured` boolean flag for homepage display
   - Only one content item can be featured at a time (enforced via Prisma transactions)
@@ -101,6 +102,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Public routes: Static pages + public dynamic patterns
   - Private routes: `/admin/*` + edit pages (requires login)
   - Public-only routes: `/auth/signin`, `/auth/signup` (redirect if logged in)
+- **Role-Based Access Control (RBAC)**:
+  - Server actions accept `isAdmin` parameter (default: false)
+  - Admins can manage all resources; regular users limited to own resources
+  - Pattern: `if (!isAdmin && resource.userId !== userId) return { success: false, error: '...' }`
+  - Apply to: list, get, update, delete operations in server actions
 
 ## Image Upload Architecture
 
@@ -169,27 +175,32 @@ Required variables (never commit `.env*`):
   - Publish/unpublish control
 - **Forms Management**: `/admin/forms`
   - Dynamic form builder with drag-and-drop field ordering
-  - 11 field types with validation rules
+  - 12 field types with validation rules (text, email, textarea, select, multiselect, radio, checkbox, date, phone, url, file, number)
   - Cover image upload for forms
   - Public form rendering at `/forms/[slug]`
   - Submission tracking and management
+  - Form status: draft, published, closed
 - **Other Admin Pages**: `/admin/artists`, `/admin/venues`, `/admin/artworks`
 - **Form Design**: Card-based sections (basic info, content, images, metadata) with required field indicators (`*`)
 
 ## Dynamic Form Builder Architecture
 
 - **Form Models**: `Form` (metadata), `FormField` (field definitions), `FormSubmission` (user submissions), `FormResponse` (field values)
-- **Field Types**: 11 types - text, email, textarea, select, multiselect, radio, checkbox, date, phone, file, number
+- **Field Types**: 12 types - text, email, textarea, select, multiselect, radio, checkbox, date, phone, url, file, number
 - **Field Management**:
   - Drag-and-drop reordering with automatic `order` updates
   - Temporary IDs for React key management during editing
   - Validation rules (required, min/max length, patterns)
+- **Response Preservation**:
+  - FormResponse stores snapshots: `fieldLabel`, `fieldType` (nullable references to FormField)
+  - Preserves data even when fields are modified or deleted
+  - Allows form evolution without losing historical submission data
 - **Preview System**: Renders actual form components (disabled) for accurate preview
 - **Image Upload Pattern**:
   - Check `imageFile` existence before calling `uploadImage()`
   - Verify upload success before calling `finalizeUpload()`
   - Abort submission on upload failure with toast notification
-- **Edit Flow**: Load form by ID → verify ownership → reuse FormBuilderView → redirect on completion
+- **Edit Flow**: Load form by ID → verify ownership/admin → reuse FormBuilderView → redirect on completion
 
 ## Legacy Routes & Redirects
 
@@ -235,7 +246,8 @@ Required variables (never commit `.env*`):
   - Export async functions that handle form submissions, data mutations, and business logic
   - Always return `{ success: boolean, error?: string }` or `{ success: boolean, data?: T }`
   - Use `revalidatePath()` or `redirect()` after mutations to update UI
-  - Example: `createProgram()`, `updateArticle()`, `deleteForm()`
+  - RBAC pattern: Accept `isAdmin` parameter (default: false) for admin-only operations
+  - Example: `createProgram()`, `updateArticle()`, `deleteForm(formId, userId, isAdmin)`
 - **Data Fetching**: Server components fetch directly, client components use TanStack Query
   - Server Components: Direct Prisma queries or call server functions
   - Caching: `unstable_cache` from `next/cache` for server-side data

@@ -99,7 +99,22 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
 
   if (isSubmitted) {
     return (
-      <div className="rounded-lg border bg-white p-12 text-center">
+      <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+          <svg
+            className="h-8 w-8 text-green-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
         <h2 className="mb-2 text-2xl font-semibold">제출 완료</h2>
         <p className="text-neutral-600">응답이 성공적으로 제출되었습니다</p>
       </div>
@@ -109,16 +124,19 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
   return (
     <form
       onSubmit={handleSubmit(handleFormSubmit, handleValidationError)}
-      className="space-y-6 rounded-lg border bg-white p-6"
+      className="space-y-4"
     >
       {fields.map((field) => {
         const error = errors[field.id!];
 
         return (
-          <div key={field.id} className="space-y-2">
-            <Label htmlFor={field.id}>
+          <div
+            key={field.id}
+            className="space-y-3 rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+          >
+            <Label htmlFor={field.id} className="text-base font-medium">
               {field.label}
-              {field.required && <span className="text-red-500">*</span>}
+              {field.required && <span className="ml-1 text-red-500">*</span>}
             </Label>
             {field.helpText && (
               <p className="text-sm text-neutral-500">{field.helpText}</p>
@@ -214,16 +232,20 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
                   <RadioGroup
                     value={formField.value as string}
                     onValueChange={formField.onChange}
+                    className="grid grid-cols-1 gap-3 sm:grid-cols-2"
                   >
                     {field.options.map((option) => (
-                      <div key={option} className="flex items-center space-x-2">
+                      <div
+                        key={option}
+                        className="flex items-center space-x-2 rounded-md border p-3 transition-colors hover:bg-neutral-50"
+                      >
                         <RadioGroupItem
                           value={option}
                           id={`${field.id}-${option}`}
                         />
                         <Label
                           htmlFor={`${field.id}-${option}`}
-                          className="font-normal"
+                          className="flex-1 cursor-pointer font-normal"
                         >
                           {option}
                         </Label>
@@ -236,13 +258,16 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
 
             {/* Checkbox / Multiselect */}
             {(field.type === 'checkbox' || field.type === 'multiselect') && (
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {field.options.map((option) => {
                   const currentValue = watch(field.id!) || [];
                   const isChecked = currentValue.includes(option);
 
                   return (
-                    <div key={option} className="flex items-center space-x-2">
+                    <div
+                      key={option}
+                      className="flex items-center space-x-2 rounded-md border p-3 transition-colors hover:bg-neutral-50"
+                    >
                       <Checkbox
                         id={`${field.id}-${option}`}
                         checked={isChecked}
@@ -256,7 +281,7 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
                       />
                       <Label
                         htmlFor={`${field.id}-${option}`}
-                        className="font-normal"
+                        className="flex-1 cursor-pointer font-normal"
                       >
                         {option}
                       </Label>
@@ -273,8 +298,13 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
         );
       })}
 
-      <div className="pt-4">
-        <Button type="submit" disabled={isSubmitting} className="w-full">
+      <div className="rounded-lg border bg-white p-6 shadow-sm">
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full"
+          size="lg"
+        >
           {isSubmitting ? '제출 중...' : '제출하기'}
         </Button>
       </div>

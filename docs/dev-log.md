@@ -1,5 +1,101 @@
 # Development Log
 
+## 2026-01-25
+
+### Form UI Modernization - Card-based Layout
+
+**목적**: 폼 입력 화면을 Google Forms 스타일의 현대적인 카드 기반 레이아웃으로 개선
+
+**배경**:
+- 문제: 모든 필드가 하나의 큰 컨테이너 안에 표시되어 시각적 구분이 약함
+- 요구사항: 2024-2026년 트렌드에 맞는 카드 형식 레이아웃
+- 추가 요구사항: 체크박스/라디오 옵션이 많을 때를 대비한 반응형 그리드
+
+**구현 내용**:
+
+1. **개별 카드 레이아웃** (`form-renderer.tsx`):
+   ```tsx
+   // Before: 단일 컨테이너
+   <form className="space-y-6 rounded-lg border bg-white p-6">
+
+   // After: 각 필드가 독립 카드
+   <form className="space-y-4">
+     {fields.map((field) => (
+       <div className="space-y-3 rounded-lg border bg-white p-6
+                       shadow-sm transition-shadow hover:shadow-md">
+   ```
+
+2. **반응형 그리드 레이아웃** (체크박스/라디오):
+   - 모바일: 1열 (세로 스택)
+   - 태블릿+: 2열 (그리드)
+   ```tsx
+   className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+   ```
+
+3. **옵션 카드 스타일**:
+   ```tsx
+   <div className="flex items-center space-x-2 rounded-md border p-3
+                   transition-colors hover:bg-neutral-50">
+     {/* 각 라디오/체크박스 옵션 */}
+   </div>
+   ```
+
+4. **UX 개선사항**:
+   - 카드 호버 효과 (`hover:shadow-md`)
+   - 옵션 호버 시 배경색 변화 (`hover:bg-neutral-50`)
+   - 전체 라벨 영역 클릭 가능 (`cursor-pointer flex-1`)
+   - 제출 버튼도 별도 카드로 일관성 유지
+   - 제출 완료 메시지에 체크 아이콘 추가
+
+**결과**:
+- ✅ Google Forms 스타일의 현대적인 디자인
+- ✅ 모바일 우선 반응형 레이아웃
+- ✅ 각 질문에 대한 시각적 집중도 향상
+- ✅ 터치 영역 확대로 모바일 UX 개선
+- ✅ 선택지가 많아도 깔끔한 그리드 정리
+
+**파일 변경**:
+- 수정: `src/modules/forms/ui/components/form-renderer.tsx`
+
+**커밋**:
+```
+feat: modernize form UI with card-based layout
+docs: update CLAUDE.md with RBAC and form improvements
+```
+
+---
+
+### CLAUDE.md Documentation Updates
+
+**목적**: CLAUDE.md를 최신 구현 내용으로 업데이트
+
+**업데이트 내용**:
+
+1. **Form Field Types 정정**:
+   - 11개 → 12개 필드 타입으로 수정
+   - `url` 필드 타입 추가 (Prisma schema와 일치)
+
+2. **Form Status 추가**:
+   - `draft`, `published`, `closed` 상태 문서화
+
+3. **Response Preservation Pattern 추가**:
+   - FormResponse가 fieldLabel, fieldType 스냅샷 저장
+   - 필드 수정/삭제 시에도 응답 데이터 보존
+   - 데이터 무결성 패턴 문서화
+
+4. **RBAC (Role-Based Access Control) 패턴 추가**:
+   - Server actions의 `isAdmin` 파라미터 패턴
+   - 관리자 vs 일반 사용자 권한 구분
+   - 구현 예시 코드 추가
+
+5. **Edit Flow 권한 명시**:
+   - "verify ownership" → "verify ownership/admin"으로 수정
+
+**파일 변경**:
+- 수정: `CLAUDE.md` (5개 섹션)
+
+---
+
 ## 2026-01-24
 
 ### Admin Permissions for Forms Management
