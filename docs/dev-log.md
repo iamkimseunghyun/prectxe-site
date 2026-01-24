@@ -383,6 +383,176 @@ feat: add form response closing functionality
 
 ---
 
+### Google Forms-like Field Flexibility with Data Preservation
+
+**목적**: 구글 폼처럼 필드를 자유롭게 수정/삭제해도 기존 응답 데이터가 보존되도록 구현
+
+**배경**:
+- 문제: 기존 구조에서 필드 수정/삭제 시 응답 데이터가 함께 삭제됨
+- Prisma schema: `onDelete: Cascade`로 인해 필드 삭제 시 모든 응답 손실
+- `updateForm` 로직: `deleteMany`로 필드 전체 삭제 후 재생성
+- 요구사항: 구글 폼처럼 자유로운 필드 수정과 응답 데이터 보존 모두 필요
+
+**구현 내용**:
+
+1. **Prisma 스키마 수정** (필드 스냅샷 추가):
+   ```prisma
+   model FormResponse {
+     id           String         @id @default(cuid())
+     submissionId String
+     fieldId      String?        // nullable로 변경
+     fieldLabel   String?        // 스냅샷: 필드 라벨
+     fieldType    FieldType?     // 스냅샷: 필드 타입
+     value        String
+     createdAt    DateTime       @default(now())
+     submission   FormSubmission @relation(...)
+     field        FormField?     @relation(..., onDelete: SetNull)  // Cascade → SetNull
+   }
+   ```
+   - `fieldId`: nullable로 변경 (필드 삭제 시 null)
+   - `fieldLabel`, `fieldType`: 응답 시점의 필드 정보 스냅샷 저장
+   - `onDelete: SetNull`: 필드 삭제 시 응답은 유지, fieldId만 null
+
+2. **프로덕션 DB 마이그레이션** (Neon MCP 사용):
+   ```sql
+   -- Step 1: 새 컬럼 추가 (nullable)
+   ALTER TABLE "FormResponse"
+   ADD COLUMN "fieldLabel" TEXT,
+   ADD COLUMN "fieldType" TEXT;
+
+   -- Step 2: fieldId nullable로 변경
+   ALTER TABLE "FormResponse"
+   ALTER COLUMN "fieldId" DROP NOT NULL;
+
+   -- Step 3: 기존 데이터 마이그레이션
+   UPDATE "FormResponse" fr
+   SET
+     "fieldLabel" = ff.label,
+     "fieldType" = ff.type
+   FROM "FormField" ff
+   WHERE fr."fieldId" = ff.id
+     AND fr."fieldLabel" IS NULL;
+   ```
+   - 기존 6개 응답 데이터에 필드 스냅샷 추가 완료
+   - 데이터 손실 없이 안전하게 마이그레이션
+
+3. **응답 저장 로직 수정** (`submitFormResponse`):
+   ```typescript
+   const fieldMap = new Map(form.fields.map((f) => [f.id, f]));
+
+   responses: {
+     create: Object.entries(validated).map(([fieldId, value]) => {
+       const field = fieldMap.get(fieldId);
+       return {
+         fieldId,
+         fieldLabel: field?.label ?? 'Unknown Field',
+         fieldType: field?.type ?? 'text',
+         value: typeof value === 'string' ? value : JSON.stringify(value),
+       };
+     }),
+   }
+   ```
+   - 새로운 응답 저장 시 필드 정보 스냅샷 자동 저장
+   - 향후 필드 변경 시에도 응답 시점의 필드 정보 보존
+
+4. **제출 내역 페이지 개선** (`submissions-view.tsx`):
+   ```typescript
+   // 현재 필드 + 삭제된 필드 모두 표시
+   const allFields = useMemo(() => {
+     const fieldMap = new Map();
+
+     // 현재 필드 추가
+     form.fields.forEach((field) => {
+       fieldMap.set(field.id, { id: field.id, label: field.label, isDeleted: false });
+     });
+
+     // 삭제된 필드 추가 (fieldId가 null이지만 fieldLabel이 있는 경우)
+     submissions.forEach((submission) => {
+       submission.responses.forEach((response) => {
+         if (!response.fieldId && response.fieldLabel) {
+           const key = `deleted_${response.fieldLabel}`;
+           if (!fieldMap.has(key)) {
+             fieldMap.set(key, { id: null, label: response.fieldLabel, isDeleted: true });
+           }
+         }
+       });
+     });
+
+     return Array.from(fieldMap.values());
+   }, [form.fields, submissions]);
+   ```
+   - 삭제된 필드는 빨간색 "(삭제됨)" 표시
+   - Excel/CSV 다운로드에도 삭제된 필드 포함
+   - 하위 호환성: `fieldLabel`이 null인 기존 응답도 `field.label`로 표시
+
+**작동 시나리오**:
+
+**시나리오 1: 필드 삭제**
+```
+Before: [이름] [이메일] [전화번호]
+삭제: [전화번호] 필드 제거
+
+After (제출 내역):
+[이름] [이메일] [전화번호 (삭제됨)]
+기존 응답 데이터 모두 보존 ✅
+```
+
+**시나리오 2: 필드 라벨 수정**
+```
+Before: 라벨 "이메일"
+수정: 라벨 "연락 이메일"로 변경
+
+After (제출 내역):
+- 기존 응답: "이메일" (스냅샷)로 표시
+- 새 응답: "연락 이메일"로 표시
+```
+
+**시나리오 3: 선택 옵션 변경**
+```
+Before: select ["A", "B", "C"]
+응답: "A" (10명)
+
+수정: select ["D", "E", "F"]
+
+After:
+- 기존 10명 응답: "A" 값 그대로 보존 ✅
+- 새 응답: ["D", "E", "F"] 중 선택
+```
+
+**결과**:
+- ✅ 필드 삭제 시 응답 데이터 보존 (fieldId null, 스냅샷 유지)
+- ✅ 필드 수정 시 이력 추적 가능 (스냅샷으로 변경 전 상태 확인)
+- ✅ 구글 폼과 동일한 유연성 제공
+- ✅ 기존 응답 6개 안전하게 마이그레이션 완료
+- ✅ 제출 내역 페이지에서 삭제된 필드 명확히 표시
+- ✅ Excel/CSV 다운로드에 모든 데이터 포함
+- ✅ 하위 호환성 보장 (마이그레이션 전 응답도 정상 표시)
+
+**파일 변경**:
+- 수정: `prisma/schema.prisma` (FormResponse 모델)
+- 수정: `src/modules/forms/server/actions.ts` (submitFormResponse)
+- 수정: `src/modules/forms/ui/views/submissions-view.tsx` (제출 내역 표시)
+- 추가: `scripts/migrate-form-responses.ts` (마이그레이션 스크립트)
+
+**데이터베이스 작업**:
+- Neon MCP를 통한 프로덕션 DB 직접 마이그레이션
+- `prisma db push`로 스키마 동기화
+- 총 6개 응답 데이터 마이그레이션 성공
+
+**기술적 세부사항**:
+- Prisma relation의 `onDelete` 동작 변경 (Cascade → SetNull)
+- 응답 저장 시 필드 스냅샷 자동 생성 로직
+- Map 자료구조를 활용한 필드 통합 관리
+- useMemo를 활용한 렌더링 최적화
+
+**커밋**:
+```
+feat: preserve form responses when fields are modified or deleted
+fix: handle legacy responses without fieldLabel/fieldType snapshots
+```
+
+---
+
 ## 2026-01-23
 
 ### Form Submissions Page with Excel/CSV Export
