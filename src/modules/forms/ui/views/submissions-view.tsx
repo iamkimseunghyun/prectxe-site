@@ -69,8 +69,8 @@ export function SubmissionsView({ formId, data }: SubmissionsViewProps) {
     // Add deleted fields from responses
     submissions.forEach((submission) => {
       submission.responses.forEach((response) => {
+        // Check if field is deleted (no fieldId but has snapshot)
         if (!response.fieldId && response.fieldLabel) {
-          // Deleted field
           const key = `deleted_${response.fieldLabel}`;
           if (!fieldMap.has(key)) {
             fieldMap.set(key, {
@@ -79,6 +79,14 @@ export function SubmissionsView({ formId, data }: SubmissionsViewProps) {
               isDeleted: true,
             });
           }
+        }
+        // Legacy: If fieldLabel is null, use field.label
+        else if (response.field && !fieldMap.has(response.field.id)) {
+          fieldMap.set(response.field.id, {
+            id: response.field.id,
+            label: response.field.label,
+            isDeleted: false,
+          });
         }
       });
     });
@@ -97,8 +105,10 @@ export function SubmissionsView({ formId, data }: SubmissionsViewProps) {
       allFields.forEach((field) => {
         const response = submission.responses.find((r) => {
           if (field.id) {
+            // Match by fieldId for current fields
             return r.fieldId === field.id;
           }
+          // Match by fieldLabel for deleted fields
           return r.fieldLabel === field.label && !r.fieldId;
         });
 

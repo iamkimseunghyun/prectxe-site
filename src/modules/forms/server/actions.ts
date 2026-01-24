@@ -290,6 +290,7 @@ export async function getFormSubmissions(
           include: {
             field: true,
           },
+          orderBy: { createdAt: 'asc' },
         },
       },
       orderBy: { submittedAt: 'desc' },
