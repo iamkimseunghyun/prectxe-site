@@ -89,6 +89,14 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
     }
   };
 
+  const handleValidationError = () => {
+    toast({
+      title: '입력 오류',
+      description: '필수 항목을 모두 입력해주세요',
+      variant: 'destructive',
+    });
+  };
+
   if (isSubmitted) {
     return (
       <div className="rounded-lg border bg-white p-12 text-center">
@@ -100,7 +108,7 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
 
   return (
     <form
-      onSubmit={handleSubmit(handleFormSubmit)}
+      onSubmit={handleSubmit(handleFormSubmit, handleValidationError)}
       className="space-y-6 rounded-lg border bg-white p-6"
     >
       {fields.map((field) => {
