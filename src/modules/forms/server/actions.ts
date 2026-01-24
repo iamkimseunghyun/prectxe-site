@@ -117,7 +117,11 @@ export async function updateForm(
 }
 
 // Delete Form
-export async function deleteForm(formId: string, userId: string, isAdmin = false) {
+export async function deleteForm(
+  formId: string,
+  userId: string,
+  isAdmin = false
+) {
   try {
     const existing = await prisma.form.findUnique({
       where: { id: formId },
@@ -235,7 +239,11 @@ export async function submitFormResponse(
 }
 
 // Get Form Submissions (Admin only)
-export async function getFormSubmissions(formId: string, userId: string, isAdmin = false) {
+export async function getFormSubmissions(
+  formId: string,
+  userId: string,
+  isAdmin = false
+) {
   try {
     const form = await prisma.form.findUnique({
       where: { id: formId },
