@@ -113,8 +113,8 @@ export const createFormResponseSchema = (
         fieldSchema = z
           .string()
           .regex(
-            /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/,
-            '유효한 전화번호를 입력해주세요'
+            /^01[0-9]{8,9}$/,
+            '유효한 전화번호를 입력해주세요 (숫자만 10~11자리)'
           );
         break;
       case 'url':

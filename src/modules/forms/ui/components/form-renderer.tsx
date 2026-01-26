@@ -29,6 +29,28 @@ interface FormRendererProps {
   ) => Promise<{ success: boolean; error?: string }>;
 }
 
+// 전화번호 자동 포맷팅 함수 (숫자만 저장, 하이픈 표시)
+function formatPhoneNumber(value: string): string {
+  if (!value) return '';
+
+  // 숫자만 추출
+  const numbers = value.replace(/[^0-9]/g, '');
+
+  // 길이에 따라 포맷팅
+  if (numbers.length <= 3) {
+    return numbers;
+  } else if (numbers.length <= 7) {
+    // 010-123
+    return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+  } else if (numbers.length <= 10) {
+    // 010-123-4567
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6)}`;
+  } else {
+    // 010-1234-5678
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+  }
+}
+
 export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -173,11 +195,25 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
 
             {/* Phone */}
             {field.type === 'phone' && (
-              <Input
-                id={field.id}
-                type="tel"
-                {...register(field.id!)}
-                placeholder={field.placeholder || '010-1234-5678'}
+              <Controller
+                name={field.id!}
+                control={control}
+                render={({ field: formField }) => (
+                  <Input
+                    id={field.id}
+                    type="tel"
+                    inputMode="numeric"
+                    value={formatPhoneNumber(formField.value as string)}
+                    onChange={(e) => {
+                      // 숫자만 추출
+                      const numbersOnly = e.target.value.replace(/[^0-9]/g, '');
+                      // 최대 11자리까지만 허용
+                      const limited = numbersOnly.slice(0, 11);
+                      formField.onChange(limited);
+                    }}
+                    placeholder={field.placeholder || '01012345678'}
+                  />
+                )}
               />
             )}
 
