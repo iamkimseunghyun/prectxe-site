@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, Trash2 } from 'lucide-react';
+import { Copy, Eye, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -42,7 +42,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { getImageUrl } from '@/lib/utils';
-import { deleteForm } from '@/modules/forms/server/actions';
+import { copyForm, deleteForm } from '@/modules/forms/server/actions';
 
 interface FormCardProps {
   form: {
@@ -77,10 +77,41 @@ export function FormCard({ form, userId, isAdmin }: FormCardProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
   const formUrl =
     typeof window !== 'undefined'
       ? `${window.location.origin}/forms/${form.slug}`
       : '';
+
+  const handleCopy = async () => {
+    setIsCopying(true);
+
+    try {
+      const result = await copyForm(form.id, userId, isAdmin);
+
+      if (!result.success) {
+        throw new Error(result.error || '복사 실패');
+      }
+
+      toast({
+        title: '복사 완료',
+        description:
+          '폼이 성공적으로 복사되었습니다. 편집 페이지로 이동합니다.',
+      });
+
+      // Redirect to edit page of copied form
+      router.push(`/admin/forms/${result.data?.id}`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '복사 중 오류가 발생했습니다.';
+      toast({
+        title: '복사 실패',
+        description: message,
+        variant: 'destructive',
+      });
+      setIsCopying(false);
+    }
+  };
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -131,6 +162,15 @@ export function FormCard({ form, userId, isAdmin }: FormCardProps) {
                 className="h-8 w-8 text-neutral-400 transition-colors hover:text-neutral-600"
               >
                 <Eye className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleCopy}
+                disabled={isCopying}
+                className="h-8 w-8 text-neutral-400 transition-colors hover:text-blue-600"
+              >
+                <Copy className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"

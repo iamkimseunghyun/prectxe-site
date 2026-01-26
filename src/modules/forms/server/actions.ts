@@ -377,3 +377,85 @@ export async function listForms(userId: string, isAdmin = false) {
     };
   }
 }
+
+// Copy Form (Admin)
+export async function copyForm(
+  formId: string,
+  userId: string,
+  isAdmin = false
+) {
+  try {
+    // Get original form
+    const original = await prisma.form.findUnique({
+      where: { id: formId },
+      include: {
+        fields: {
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+
+    if (!original) {
+      return { success: false, error: '폼을 찾을 수 없습니다' };
+    }
+
+    if (!isAdmin && original.userId !== userId) {
+      return { success: false, error: '권한이 없습니다' };
+    }
+
+    // Generate new slug (avoid duplicates)
+    const timestamp = Date.now();
+    const baseSlug = `${original.slug}-copy-${timestamp}`;
+    let newSlug = baseSlug;
+    let counter = 1;
+
+    // Check for slug uniqueness
+    while (true) {
+      const existing = await prisma.form.findUnique({
+        where: { slug: newSlug },
+      });
+      if (!existing) break;
+      newSlug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
+    // Create new form with copied data (excluding submissions/responses)
+    const copiedForm = await prisma.form.create({
+      data: {
+        slug: newSlug,
+        title: `Copy of ${original.title}`,
+        description: original.description,
+        body: original.body,
+        coverImage: original.coverImage,
+        status: 'draft', // Always draft for copied forms
+        userId, // Current user becomes owner
+        fields: {
+          create: original.fields.map((field) => ({
+            type: field.type,
+            label: field.label,
+            placeholder: field.placeholder,
+            helpText: field.helpText,
+            required: field.required,
+            options: field.options,
+            order: field.order,
+            validation: field.validation ?? {},
+          })),
+        },
+      },
+      include: {
+        fields: {
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+
+    revalidatePath('/admin/forms');
+    return { success: true, data: copiedForm };
+  } catch (error) {
+    console.error('Form copy error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '폼 복사에 실패했습니다',
+    };
+  }
+}
