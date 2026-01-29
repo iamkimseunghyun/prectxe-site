@@ -71,22 +71,23 @@ model Article {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  username  String?   @unique
-  email     String?   @unique
-  password  String?
-  createdAt DateTime? @default(now())
-  role      Role?     @default(USER)
-  updatedAt DateTime? @updatedAt
-  articles  Article[]
-  artists   Artist[]
-  artworks  Artwork[]
-  events    Event[]
-  forms     Form[]
-  posts     Post[]
-  programs  Program[]
-  projects  Project[]
-  venues    Venue[]
+  id           String        @id @default(cuid())
+  username     String?       @unique
+  email        String?       @unique
+  password     String?
+  createdAt    DateTime?     @default(now())
+  role         Role?         @default(USER)
+  updatedAt    DateTime?     @updatedAt
+  articles     Article[]
+  artists      Artist[]
+  artworks     Artwork[]
+  events       Event[]
+  forms        Form[]
+  posts        Post[]
+  programs     Program[]
+  projects     Project[]
+  venues       Venue[]
+  smsCampaigns SMSCampaign[]
 }
 
 model Post {
@@ -360,19 +361,20 @@ enum Role {
 }
 
 model Form {
-  id          String           @id @default(cuid())
-  slug        String           @unique
-  title       String
-  description String?
-  body        String?          @db.Text
-  coverImage  String?
-  status      FormStatus       @default(draft)
-  userId      String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fields      FormField[]
-  submissions FormSubmission[]
+  id           String           @id @default(cuid())
+  slug         String           @unique
+  title        String
+  description  String?
+  body         String?          @db.Text
+  coverImage   String?
+  status       FormStatus       @default(draft)
+  userId       String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fields       FormField[]
+  submissions  FormSubmission[]
+  smsCampaigns SMSCampaign[]
 }
 
 model FormField {
@@ -433,4 +435,40 @@ enum FieldType {
   url
   file
   number
+}
+
+model SMSCampaign {
+  id          String         @id @default(cuid())
+  title       String
+  message     String         @db.Text
+  formId      String?
+  userId      String
+  sentCount   Int            @default(0)
+  failedCount Int            @default(0)
+  status      SMSStatus      @default(draft)
+  sentAt      DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  form        Form?          @relation(fields: [formId], references: [id], onDelete: SetNull)
+  recipients  SMSRecipient[]
+}
+
+model SMSRecipient {
+  id         String      @id @default(cuid())
+  campaignId String
+  phone      String
+  success    Boolean     @default(false)
+  messageId  String?
+  error      String?
+  sentAt     DateTime?
+  createdAt  DateTime    @default(now())
+  campaign   SMSCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+enum SMSStatus {
+  draft
+  sending
+  sent
+  failed
 }

@@ -72,11 +72,11 @@ export async function updateForm(
       return { success: false, error: '권한이 없습니다' };
     }
 
-    // Delete existing fields and create new ones
-    await prisma.formField.deleteMany({
-      where: { formId },
-    });
+    // 🚨 버그 수정: FormField를 삭제하지 않고 upsert로 업데이트
+    // FormField 삭제 시 FormResponse의 fieldId가 NULL이 되어 데이터 유실 위험
+    // 대신 기존 필드는 업데이트하고, 새 필드만 생성
 
+    // 먼저 Form의 메타데이터만 업데이트 (fields 제외)
     const form = await prisma.form.update({
       where: { id: formId },
       data: {
@@ -86,27 +86,100 @@ export async function updateForm(
         body: validated.body,
         coverImage: validated.coverImage,
         status: validated.status,
-        fields: {
-          create: validated.fields.map((field, index) => ({
-            type: field.type,
-            label: field.label,
-            placeholder: field.placeholder,
-            helpText: field.helpText,
-            required: field.required,
-            options: field.options,
-            order: index,
-            validation: field.validation ?? {},
-          })),
-        },
       },
       include: {
         fields: true,
       },
     });
 
+    // 필드 변경사항이 있는 경우에만 처리
+    const currentFieldIds = form.fields.map((f) => f.id);
+    const newFieldIds = validated.fields
+      .map((f) => f.id)
+      .filter((id): id is string => !!id);
+
+    // 삭제할 필드 (기존 필드 중 새 데이터에 없는 것)
+    const fieldsToDelete = currentFieldIds.filter(
+      (id) => !newFieldIds.includes(id)
+    );
+
+    // 🔒 안전장치: 필드 삭제 시 데이터 보존 (구글 폼 방식)
+    // 필드를 삭제해도 기존 응답은 스냅샷(fieldLabel, fieldType)으로 보존됩니다.
+    if (fieldsToDelete.length > 0) {
+      // 1. 삭제될 필드를 참조하는 응답의 fieldId를 NULL로 설정
+      await prisma.formResponse.updateMany({
+        where: {
+          fieldId: { in: fieldsToDelete },
+        },
+        data: {
+          fieldId: null,
+        },
+      });
+
+      // 2. 필드 삭제
+      await prisma.formField.deleteMany({
+        where: {
+          id: { in: fieldsToDelete },
+        },
+      });
+
+      console.log(
+        `✅ 필드 ${fieldsToDelete.length}개 삭제됨. 기존 응답은 스냅샷으로 보존됨.`
+      );
+    }
+
+    // 🔒 안전장치: 필드 업데이트/생성을 트랜잭션으로 보호
+    await prisma.$transaction(async (tx) => {
+      for (let index = 0; index < validated.fields.length; index++) {
+        const field = validated.fields[index];
+
+        if (field.id && currentFieldIds.includes(field.id)) {
+          // 기존 필드 업데이트
+          await tx.formField.update({
+            where: { id: field.id },
+            data: {
+              type: field.type,
+              label: field.label,
+              placeholder: field.placeholder,
+              helpText: field.helpText,
+              required: field.required,
+              options: field.options,
+              order: index,
+              validation: field.validation ?? {},
+            },
+          });
+        } else {
+          // 새 필드 생성
+          await tx.formField.create({
+            data: {
+              formId,
+              type: field.type,
+              label: field.label,
+              placeholder: field.placeholder,
+              helpText: field.helpText,
+              required: field.required,
+              options: field.options,
+              order: index,
+              validation: field.validation ?? {},
+            },
+          });
+        }
+      }
+    });
+
+    // 최종 Form 데이터 조회
+    const updatedForm = await prisma.form.findUnique({
+      where: { id: formId },
+      include: { fields: true },
+    });
+
+    if (!updatedForm) {
+      return { success: false, error: '폼 업데이트 후 조회 실패' };
+    }
+
     revalidatePath('/admin/forms');
     revalidatePath(`/admin/forms/${formId}`);
-    return { success: true, data: form };
+    return { success: true, data: updatedForm };
   } catch (error) {
     console.error('Form update error:', error);
     return {
@@ -217,34 +290,55 @@ export async function submitFormResponse(
     );
     const validated = schema.parse(responses);
 
+    // 🔒 안전장치 1: 빈 응답 제출 방지
+    const responseEntries = Object.entries(validated);
+    if (responseEntries.length === 0) {
+      return {
+        success: false,
+        error: '응답 데이터가 없습니다. 최소 하나 이상의 필드를 입력해주세요.',
+      };
+    }
+
     // Create field lookup map for snapshot
     const fieldMap = new Map(form.fields.map((f) => [f.id, f]));
 
-    // Create submission with responses
-    const submission = await prisma.formSubmission.create({
-      data: {
-        formId,
-        ipAddress: metadata?.ipAddress,
-        userAgent: metadata?.userAgent,
-        responses: {
-          create: Object.entries(validated).map(([fieldId, value]) => {
-            const field = fieldMap.get(fieldId);
-            return {
-              fieldId,
-              fieldLabel: field?.label ?? 'Unknown Field',
-              fieldType: field?.type ?? 'text',
-              value: typeof value === 'string' ? value : JSON.stringify(value),
-            };
-          }),
-        },
-      },
-      include: {
-        responses: {
-          include: {
-            field: true,
+    // 🔒 안전장치 2: 트랜잭션으로 제출과 응답을 원자적으로 생성
+    const submission = await prisma.$transaction(async (tx) => {
+      // Create submission with responses
+      const newSubmission = await tx.formSubmission.create({
+        data: {
+          formId,
+          ipAddress: metadata?.ipAddress,
+          userAgent: metadata?.userAgent,
+          responses: {
+            create: responseEntries.map(([fieldId, value]) => {
+              const field = fieldMap.get(fieldId);
+              return {
+                fieldId,
+                fieldLabel: field?.label ?? 'Unknown Field',
+                fieldType: field?.type ?? 'text',
+                value: typeof value === 'string' ? value : JSON.stringify(value),
+              };
+            }),
           },
         },
-      },
+        include: {
+          responses: {
+            include: {
+              field: true,
+            },
+          },
+        },
+      });
+
+      // 🔒 안전장치 3: 응답 개수 검증
+      if (newSubmission.responses.length !== responseEntries.length) {
+        throw new Error(
+          `응답 저장 실패: ${responseEntries.length}개 중 ${newSubmission.responses.length}개만 저장됨`
+        );
+      }
+
+      return newSubmission;
     });
 
     return { success: true, data: submission };
