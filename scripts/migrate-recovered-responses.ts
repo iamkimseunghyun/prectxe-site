@@ -93,7 +93,9 @@ async function migrateRecoveredResponses() {
         migratedCount++;
 
         if (migratedCount % 10 === 0) {
-          console.log(`   ✅ ${migratedCount}/${recoveredResponses.length} 마이그레이션 완료`);
+          console.log(
+            `   ✅ ${migratedCount}/${recoveredResponses.length} 마이그레이션 완료`
+          );
         }
       } else {
         // 매칭되는 필드 없음 - fieldId는 NULL로 유지
@@ -111,9 +113,7 @@ async function migrateRecoveredResponses() {
       unmatchedLabels.forEach((label) => {
         console.log(`   - "${label}"`);
       });
-      console.log(
-        '\n이 필드들은 폼에서 삭제되었거나 라벨이 변경되었습니다.'
-      );
+      console.log('\n이 필드들은 폼에서 삭제되었거나 라벨이 변경되었습니다.');
       console.log('fieldId는 NULL로 유지되며, CSV에서는 보이지 않습니다.\n');
     }
 

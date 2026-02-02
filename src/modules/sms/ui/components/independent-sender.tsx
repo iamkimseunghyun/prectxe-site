@@ -44,10 +44,7 @@ interface IndependentSenderProps {
   isAdmin: boolean;
 }
 
-export function IndependentSender({
-  userId,
-  isAdmin,
-}: IndependentSenderProps) {
+export function IndependentSender({ userId, isAdmin }: IndependentSenderProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [phoneCount, setPhoneCount] = useState(0);
@@ -136,8 +133,7 @@ export function IndependentSender({
     } catch (error) {
       toast({
         title: '발송 실패',
-        description:
-          error instanceof Error ? error.message : '알 수 없는 오류',
+        description: error instanceof Error ? error.message : '알 수 없는 오류',
         variant: 'destructive',
       });
     } finally {

@@ -46,9 +46,7 @@ async function checkThreeInRecovery() {
       if (submission.responses.length > 0) {
         console.log('   - 응답 데이터:');
         submission.responses.forEach((r) => {
-          console.log(
-            `     * ${r.fieldLabel}: ${r.value.substring(0, 30)}...`
-          );
+          console.log(`     * ${r.fieldLabel}: ${r.value.substring(0, 30)}...`);
         });
       }
       console.log();

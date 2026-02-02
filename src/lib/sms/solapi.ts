@@ -34,9 +34,7 @@ export interface SendSMSResult {
 /**
  * 단일 또는 다수의 수신자에게 SMS 발송
  */
-export async function sendSMS(
-  params: SendSMSParams
-): Promise<SendSMSResult> {
+export async function sendSMS(params: SendSMSParams): Promise<SendSMSResult> {
   try {
     const client = createSolapiClient();
     const from = params.from || process.env.SOLAPI_SENDER_PHONE;

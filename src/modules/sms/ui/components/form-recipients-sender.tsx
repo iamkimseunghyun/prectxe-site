@@ -146,8 +146,7 @@ export function FormRecipientsSender({
     } catch (error) {
       toast({
         title: '발송 실패',
-        description:
-          error instanceof Error ? error.message : '알 수 없는 오류',
+        description: error instanceof Error ? error.message : '알 수 없는 오류',
         variant: 'destructive',
       });
     } finally {

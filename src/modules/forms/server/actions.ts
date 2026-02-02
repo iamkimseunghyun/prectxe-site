@@ -317,7 +317,8 @@ export async function submitFormResponse(
                 fieldId,
                 fieldLabel: field?.label ?? 'Unknown Field',
                 fieldType: field?.type ?? 'text',
-                value: typeof value === 'string' ? value : JSON.stringify(value),
+                value:
+                  typeof value === 'string' ? value : JSON.stringify(value),
               };
             }),
           },

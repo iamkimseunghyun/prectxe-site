@@ -47,10 +47,7 @@ type Campaign = {
   }>;
 };
 
-export function SMSCampaignList({
-  userId,
-  isAdmin,
-}: SMSCampaignListProps) {
+export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
