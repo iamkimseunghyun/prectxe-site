@@ -1,5 +1,176 @@
 # Development Log
 
+## 2026-01-29
+
+### Critical: Form Data Loss Prevention & Recovery
+
+**목적**: 폼 수정 시 제출 데이터 유실 방지 및 데이터 복구
+
+**배경**:
+- 문제: 폼 설명만 수정했는데 모든 제출 데이터(78개 응답)가 삭제됨
+- 원인: `updateForm()` 함수의 `FormField.deleteMany()` 버그
+- 긴급: 오늘 행사(Max Cooper Insight Session)에 필요한 참가자 데이터 복구 필요
+
+**구현 내용**:
+
+1. **데이터 복구 (Neon Point-in-Time Recovery)**:
+   ```typescript
+   // 복구 브랜치 생성: 1월 28일 오전 11:30 시점
+   // scripts/recover-responses.ts
+   - 복구 브랜치에서 삭제된 응답 데이터 추출
+   - 메인 DB로 병합 (중복 제거)
+   - fieldId를 NULL로 설정 (스냅샷 보존)
+
+   // scripts/migrate-recovered-responses.ts
+   - 복구된 응답의 fieldId를 현재 필드와 매칭
+   - fieldLabel 기준으로 자동 매핑
+   ```
+   **결과**: 78개 응답 성공적으로 복구 (실패 0개)
+
+2. **폼 수정 시 데이터 보존 (구글 폼 방식)** (`src/modules/forms/server/actions.ts`):
+   ```typescript
+   // Before: 필드 삭제 → cascade로 응답도 삭제됨
+   await prisma.formField.deleteMany({ where: { id: { in: fieldsToDelete } } });
+
+   // After: 응답 보존 + 필드 삭제
+   // 1. 응답의 fieldId를 NULL로 설정 (스냅샷 보존)
+   await prisma.formResponse.updateMany({
+     where: { fieldId: { in: fieldsToDelete } },
+     data: { fieldId: null }
+   });
+
+   // 2. 필드 안전하게 삭제
+   await prisma.formField.deleteMany({
+     where: { id: { in: fieldsToDelete } }
+   });
+   ```
+
+3. **빈 응답 제출 방지** (3중 안전장치):
+   ```typescript
+   // 안전장치 1: 빈 응답 데이터 차단
+   if (responseEntries.length === 0) {
+     return { success: false, error: '응답 데이터가 없습니다...' };
+   }
+
+   // 안전장치 2: 트랜잭션으로 원자적 생성
+   const submission = await prisma.$transaction(async (tx) => {
+     const newSubmission = await tx.formSubmission.create({ ... });
+
+     // 안전장치 3: 응답 개수 검증
+     if (newSubmission.responses.length !== responseEntries.length) {
+       throw new Error('응답 저장 실패...');
+     }
+   });
+   ```
+
+4. **CSV 다운로드 개선** (`src/modules/forms/ui/views/submissions-view.tsx`):
+   - 삭제된 필드도 "(삭제됨)" 표시와 함께 표시
+   - fieldLabel/fieldType 스냅샷으로 과거 응답 보존
+   - 구글 폼과 동일한 유연성 제공
+
+**Prisma 스키마 안전장치**:
+```prisma
+model FormResponse {
+  fieldId      String?        // nullable
+  fieldLabel   String?        // 스냅샷
+  fieldType    FieldType?     // 스냅샷
+  field        FormField?     @relation(onDelete: SetNull) // 자동 NULL 처리
+}
+```
+
+**복구 통계**:
+- 복구된 응답: 78개
+- 실패: 0개
+- 최종 유효 참가자 데이터: 16개 제출
+
+**결과**:
+- ✅ 폼을 자유롭게 수정해도 기존 응답 데이터 절대 삭제 안 됨
+- ✅ 필드 추가/삭제/수정 모두 안전
+- ✅ 빈 응답 제출 원천 차단
+- ✅ 행사 진행에 필요한 데이터 복구 완료
+
+### SMS Bulk Sending Feature
+
+**목적**: 폼 응답자 대상 단체 문자 발송 기능 추가
+
+**배경**:
+- 요구사항: 폼 제출자들에게 행사 안내 문자 발송
+- SMS 서비스 선정: Solapi (솔라피) - 한국 SMS 전문, 13원/건, 최소 충전 1만원
+
+**구현 내용**:
+
+1. **Solapi SDK 통합** (`src/lib/sms/solapi.ts`):
+   ```typescript
+   import { SolapiMessageService } from 'solapi';
+
+   export async function sendSMS(params: SendSMSParams) {
+     const client = createSolapiClient();
+     const result = await client.send({
+       messages: params.recipients.map(phone => ({
+         to: normalizePhoneNumber(phone),
+         from: process.env.SOLAPI_SENDER_PHONE,
+         text: params.message
+       }))
+     });
+     return { groupId: result.groupInfo.groupId, ... };
+   }
+   ```
+
+2. **SMS 캠페인 관리** (`prisma/schema.prisma`):
+   ```prisma
+   model SMSCampaign {
+     id          String         @id @default(cuid())
+     title       String
+     message     String         @db.Text
+     formId      String?        // 연결된 폼
+     sentCount   Int            @default(0)
+     failedCount Int            @default(0)
+     status      SMSStatus      @default(draft)
+     recipients  SMSRecipient[]
+   }
+
+   model SMSRecipient {
+     id         String      @id @default(cuid())
+     phone      String
+     success    Boolean     @default(false)
+     messageId  String?     // Solapi 메시지 ID
+     error      String?
+   }
+   ```
+
+3. **Admin UI** (`src/app/(auth)/admin/sms/page.tsx`):
+   - 폼 응답자 대상 발송: 폼 선택 → 자동으로 phone 필드 추출
+   - 독립 발송: CSV 업로드 또는 수동 입력
+   - 실시간 비용 계산 (13원 × 수신자 수)
+   - 캠페인 이력 조회
+
+4. **전화번호 처리**:
+   ```typescript
+   export function normalizePhoneNumber(phone: string): string {
+     return phone.replace(/[^0-9]/g, ''); // 하이픈 제거
+   }
+
+   export function validatePhoneNumber(phone: string): boolean {
+     return /^01[0-9]{8,9}$/.test(phone);
+   }
+   ```
+
+**환경변수 설정 필요**:
+```env
+SOLAPI_API_KEY=your_api_key
+SOLAPI_API_SECRET=your_api_secret
+SOLAPI_SENDER_PHONE=01012345678
+```
+
+**결과**:
+- ✅ 폼 응답자 자동 추출 및 발송
+- ✅ CSV/수동 입력 지원
+- ✅ 캠페인 이력 및 결과 추적
+- ✅ 비용 실시간 계산
+- ⚠️ 실제 발송 테스트는 환경변수 설정 후 가능
+
+**참고 문서**: `RECOVERY-GUIDE.md` - Neon PITR 복구 가이드
+
 ## 2026-01-25
 
 ### Form UI Modernization - Card-based Layout
