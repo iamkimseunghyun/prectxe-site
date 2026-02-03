@@ -44,36 +44,34 @@ const SignUpFormSection = () => {
         router.push(data.redirect);
         toast({ title: '회원가입 성공', description: '로그인해주세요.' });
       } else if (data.errors) {
-        // Handle _form errors - can be flattenedErrors object or { message: string }
-        if (data.errors._form) {
-          const formError = data.errors._form;
+        // Handle _form errors (array of strings)
+        if (data.errors._form && Array.isArray(data.errors._form)) {
           const errorMessage =
-            'message' in formError
-              ? formError.message
-              : formError.formErrors?.join(', ') || '오류가 발생했습니다.';
+            data.errors._form.join(', ') || '오류가 발생했습니다.';
           form.setError('root.serverError', {
             message: errorMessage,
           });
+
+          toast({
+            title: '회원가입 실패',
+            description: errorMessage,
+            variant: 'destructive',
+          });
         }
+
         // Handle field-level errors
         Object.entries(data.errors).forEach(([key, value]) => {
           if (key !== '_form' && Array.isArray(value) && value.length > 0) {
             form.setError(key as keyof SignUpFormValues, {
               message: value.join(', '),
             });
+
+            toast({
+              title: '입력 오류',
+              description: value.join(', '),
+              variant: 'destructive',
+            });
           }
-        });
-        // Get error message for toast
-        const formError = data.errors._form;
-        const toastMessage = formError
-          ? 'message' in formError
-            ? formError.message
-            : formError.formErrors?.join(', ')
-          : '입력 정보를 확인해주세요.';
-        toast({
-          title: '회원가입 실패',
-          description: toastMessage,
-          variant: 'destructive',
         });
       }
     },
@@ -84,7 +82,7 @@ const SignUpFormSection = () => {
       });
       toast({
         title: '회원가입 오류',
-        description: '서버 오류가 발생했습니다.',
+        description: '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
         variant: 'destructive',
       });
     },

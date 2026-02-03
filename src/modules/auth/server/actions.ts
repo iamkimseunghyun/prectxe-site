@@ -64,6 +64,52 @@ export async function signUp(data: z.infer<typeof signUpSchema>) {
     };
   }
   try {
+    console.log('signUp - attempting to create user:', result.data.username);
+
+    // Check if username already exists
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [{ username: result.data.username }, { email: result.data.email }],
+      },
+      select: { username: true, email: true },
+    });
+
+    if (existingUser) {
+      const isDuplicateUsername =
+        existingUser.username === result.data.username;
+      const isDuplicateEmail = existingUser.email === result.data.email;
+
+      console.log('signUp - duplicate found:', {
+        username: isDuplicateUsername,
+        email: isDuplicateEmail,
+      });
+
+      if (isDuplicateUsername && isDuplicateEmail) {
+        return {
+          success: false,
+          errors: {
+            _form: ['이미 사용 중인 아이디와 이메일입니다.'],
+          },
+        };
+      }
+      if (isDuplicateUsername) {
+        return {
+          success: false,
+          errors: {
+            username: ['이미 사용 중인 아이디입니다.'],
+          },
+        };
+      }
+      if (isDuplicateEmail) {
+        return {
+          success: false,
+          errors: {
+            email: ['이미 사용 중인 이메일입니다.'],
+          },
+        };
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(result.data.password, 12);
 
     const user = await prisma.user.create({
@@ -77,16 +123,41 @@ export async function signUp(data: z.infer<typeof signUpSchema>) {
       },
     });
 
+    console.log('signUp - user created successfully:', user.id);
+
     await makeLogin(user.id);
     return { success: true, redirect: '/auth/signin' };
   } catch (error) {
-    console.error('Failed to create user:', error);
+    console.error('signUp - Failed to create user:', error);
+
+    // Handle Prisma unique constraint errors
+    if (error instanceof Error) {
+      if (error.message.includes('Unique constraint')) {
+        return {
+          success: false,
+          errors: {
+            _form: [
+              '이미 사용 중인 아이디 또는 이메일입니다. 다른 정보로 시도해주세요.',
+            ],
+          },
+        };
+      }
+
+      // Development mode: show actual error
+      if (process.env.NODE_ENV === 'development') {
+        return {
+          success: false,
+          errors: {
+            _form: [`회원가입 실패: ${error.message}`],
+          },
+        };
+      }
+    }
+
     return {
       success: false,
       errors: {
-        _form: {
-          message: '회원가입 중 오류가 발생했습니다.',
-        },
+        _form: ['회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'],
       },
     };
   }
@@ -107,45 +178,89 @@ export const signIn = async (data: z.infer<typeof signInSchema>) => {
   }
   try {
     console.log('signIn - attempting login for:', result.data.username);
+
     const user = await prisma.user.findUnique({
       where: {
         username: result.data.username,
       },
-      select: { id: true, password: true },
+      select: {
+        id: true,
+        username: true,
+        password: true,
+        role: true,
+      },
     });
 
-    console.log('signIn - user found:', user ? 'yes' : 'no');
+    // Development: More specific error messages
+    const isDev = process.env.NODE_ENV === 'development';
 
-    // 사용자 없거나 비밀번호 없으면 실패 처리
-    if (!user || !user.password) {
-      console.log('signIn - user or password missing');
-      return {
-        success: false,
-        errors: { _form: ['사용자 이름 또는 비밀번호가 잘못되었습니다.'] },
-      };
-    }
-
-    const ok = await bcrypt.compare(result.data.password, user.password);
-    console.log('signIn - password check:', ok ? 'success' : 'failed');
-
-    if (ok) {
-      await makeLogin(user!.id);
-      return { success: true, redirect: '/admin' };
-    } else {
+    if (!user) {
+      console.log('signIn - user not found');
       return {
         success: false,
         errors: {
-          _form: ['사용자 이름 또는 비밀번호가 잘못되었습니다.'],
-          // 필요하다면 필드 지정 가능하나 보안상 권장하지 않음
-          // password: ['비밀번호가 틀렸습니다.'],
+          _form: isDev
+            ? [`아이디 '${result.data.username}'를 찾을 수 없습니다.`]
+            : ['아이디 또는 비밀번호가 잘못되었습니다.'],
         },
       };
     }
-  } catch (error) {
-    console.error('Sign in error:', error);
+
+    if (!user.password) {
+      console.log('signIn - user has no password');
+      return {
+        success: false,
+        errors: {
+          _form: isDev
+            ? ['사용자 계정에 비밀번호가 설정되지 않았습니다.']
+            : ['로그인 정보가 올바르지 않습니다.'],
+        },
+      };
+    }
+
+    console.log('signIn - user found:', {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      hasPassword: !!user.password,
+    });
+
+    const ok = await bcrypt.compare(result.data.password, user.password);
+    console.log('signIn - password verification:', ok ? 'PASS' : 'FAIL');
+
+    if (ok) {
+      await makeLogin(user.id);
+      console.log('signIn - login successful, redirecting to /admin');
+      return { success: true, redirect: '/admin' };
+    }
+
+    // Password mismatch
+    console.log('signIn - incorrect password');
     return {
       success: false,
-      errors: { _form: ['로그인 처리 중 오류가 발생했습니다.'] },
+      errors: {
+        _form: isDev
+          ? ['비밀번호가 일치하지 않습니다.']
+          : ['아이디 또는 비밀번호가 잘못되었습니다.'],
+      },
+    };
+  } catch (error) {
+    console.error('signIn - error:', error);
+
+    if (error instanceof Error && process.env.NODE_ENV === 'development') {
+      return {
+        success: false,
+        errors: { _form: [`로그인 실패: ${error.message}`] },
+      };
+    }
+
+    return {
+      success: false,
+      errors: {
+        _form: [
+          '로그인 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        ],
+      },
     };
   }
 };
