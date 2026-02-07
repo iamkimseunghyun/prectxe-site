@@ -5,8 +5,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import getSession from '@/lib/auth/session';
 import { listForms } from '@/modules/forms/server/actions';
 import { FormCard } from '@/modules/forms/ui/components/form-card';
+import { FormStatusFilter } from '@/modules/forms/ui/components/form-status-filter';
 
-export default async function FormsAdminPage() {
+interface PageProps {
+  searchParams: Promise<{ status?: string }>;
+}
+
+export default async function FormsAdminPage({ searchParams }: PageProps) {
   const session = await getSession();
   console.log('FormsAdminPage - session:', {
     id: session.id,
@@ -15,7 +20,12 @@ export default async function FormsAdminPage() {
   });
   if (!session.id || !session.isAdmin) redirect('/auth/signin');
 
-  const result = await listForms(session.id, session.isAdmin);
+  const params = await searchParams;
+  const status = params.status as 'draft' | 'published' | 'closed' | undefined;
+
+  const result = await listForms(session.id, session.isAdmin, {
+    status,
+  });
 
   const forms = result.success ? result.data || [] : [];
 
@@ -33,6 +43,10 @@ export default async function FormsAdminPage() {
         </Link>
       </div>
 
+      <div className="mb-6">
+        <FormStatusFilter />
+      </div>
+
       {forms.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
@@ -45,7 +59,11 @@ export default async function FormsAdminPage() {
               </>
             ) : (
               <>
-                <p className="mb-4 text-neutral-500">생성된 폼이 없습니다</p>
+                <p className="mb-4 text-neutral-500">
+                  {status
+                    ? '해당 상태의 폼이 없습니다'
+                    : '생성된 폼이 없습니다'}
+                </p>
                 <Link href="/admin/forms/new">
                   <Button>첫 폼 만들기</Button>
                 </Link>

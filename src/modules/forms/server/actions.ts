@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/prisma';
-import type { FormFieldInput, FormInput } from '@/lib/schemas/form';
+import type { FormInput } from '@/lib/schemas/form';
 import { createFormResponseSchema, formSchema } from '@/lib/schemas/form';
 
 // Create Form
@@ -446,10 +446,19 @@ export async function getForm(formId: string, userId: string, isAdmin = false) {
 }
 
 // List Forms (Admin)
-export async function listForms(userId: string, isAdmin = false) {
+export async function listForms(
+  userId: string,
+  isAdmin = false,
+  filters?: {
+    status?: 'draft' | 'published' | 'closed';
+  }
+) {
   try {
     const forms = await prisma.form.findMany({
-      where: isAdmin ? {} : { userId },
+      where: {
+        ...(isAdmin ? {} : { userId }),
+        ...(filters?.status ? { status: filters.status } : {}),
+      },
       include: {
         fields: {
           orderBy: { order: 'asc' },

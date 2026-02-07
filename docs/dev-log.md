@@ -1,5 +1,56 @@
 # Development Log
 
+## 2026-02-07
+
+### Forms 상태 필터 기능 추가
+
+**목적**: 폼 관리 화면에서 상태별 필터링 기능 제공
+
+**배경**:
+- 요구사항: 폼 리스트에서 마감/비마감 구분 필터 필요
+- Programs 페이지의 상태 필터 패턴 참고
+
+**구현 내용**:
+
+1. **서버 액션 수정** (`src/modules/forms/server/actions.ts`):
+   ```typescript
+   // listForms 함수에 status 필터 파라미터 추가
+   export async function listForms(
+     userId: string,
+     isAdmin = false,
+     filters?: {
+       status?: 'draft' | 'published' | 'closed';
+     }
+   )
+   ```
+
+2. **필터 컴포넌트 생성** (`src/modules/forms/ui/components/form-status-filter.tsx`):
+   - 클라이언트 컴포넌트로 구현
+   - 4개 상태 칩: 전체, 임시저장(draft), 게시됨(published), 마감(closed)
+   - URL 쿼리 파라미터로 상태 관리 (`?status=published`)
+   - Programs의 StatusChips 패턴 참고
+
+3. **페이지 수정** (`src/app/(auth)/admin/forms/page.tsx`):
+   ```typescript
+   interface PageProps {
+     searchParams: Promise<{ status?: string }>;
+   }
+
+   // searchParams로 status 받아서 listForms에 전달
+   const result = await listForms(session.id, session.isAdmin, { status });
+   ```
+
+**주요 파일**:
+- `src/modules/forms/server/actions.ts:449` - listForms 함수
+- `src/modules/forms/ui/components/form-status-filter.tsx` - 필터 컴포넌트
+- `src/app/(auth)/admin/forms/page.tsx` - 폼 관리 페이지
+
+**사용법**:
+- `/admin/forms` - 전체 폼 표시
+- `/admin/forms?status=draft` - 임시저장 폼만
+- `/admin/forms?status=published` - 게시된 폼만
+- `/admin/forms?status=closed` - 마감된 폼만
+
 ## 2026-01-29
 
 ### Critical: Form Data Loss Prevention & Recovery
