@@ -18,5 +18,5 @@ export default async function FormSubmissionsPage({ params }: PageProps) {
     redirect('/admin/forms');
   }
 
-  return <SubmissionsView formId={id} data={result.data} />;
+  return <SubmissionsView data={result.data} />;
 }
