@@ -2,6 +2,70 @@
 
 ## 2026-02-07
 
+### Form Submissions View Enhancement
+
+**목적**: 폼 응답 화면의 UX/UI 개선 - 트렌디하고 사용성 높은 테이블
+
+**배경**:
+- 기존: 기본적인 테이블, 제한적인 기능
+- 요구사항: 검색, 정렬, 페이지네이션, 상세보기 등 모던한 테이블 경험
+
+**구현 내용**:
+
+1. **검색 기능**:
+   ```typescript
+   // 실시간 검색 with useMemo
+   const filteredData = useMemo(() => {
+     if (!searchQuery.trim()) return tableData;
+     return tableData.filter((row) =>
+       Object.values(row).some((value) =>
+         value.toLowerCase().includes(searchQuery.toLowerCase())
+       )
+     );
+   }, [tableData, searchQuery]);
+   ```
+   - 전체 응답 내용 실시간 검색
+   - 검색 결과 개수 Badge 표시
+   - 검색어 초기화 버튼 (X)
+
+2. **정렬 기능**:
+   - 모든 컬럼 클릭으로 오름차순/내림차순 토글
+   - ArrowUpDown 아이콘으로 시각적 피드백
+   - 정렬 상태 유지 및 독립적 관리
+
+3. **페이지네이션**:
+   - 페이지당 행 수 선택 (10/25/50/100)
+   - 이전/다음 페이지 버튼 (ChevronLeft/Right)
+   - 현재 페이지 / 전체 페이지 표시
+   - 검색 시 첫 페이지로 자동 리셋
+
+4. **개별 응답 상세 모달**:
+   - Row 호버 시 Eye 아이콘 버튼 표시
+   - Dialog로 응답 전체 내용 확대
+   - 제출 시간, IP 주소 메타 정보
+   - 삭제된 필드도 Badge와 함께 표시
+
+5. **UI/UX 개선**:
+   - Sticky 헤더 (sticky top-0 z-10 backdrop-blur)
+   - Row 호버 효과 (group hover:bg-muted/50)
+   - 삭제된 필드 Badge (variant="destructive")
+   - 번호 컬럼 추가 (#)
+   - 더 나은 spacing, typography, color
+
+6. **성능 최적화**:
+   ```typescript
+   const tableData = useMemo(() => {...}, [submissions, allFields]);
+   const filteredData = useMemo(() => {...}, [tableData, searchQuery]);
+   const sortedData = useMemo(() => {...}, [filteredData, sortConfig]);
+   const paginatedData = useMemo(() => {...}, [sortedData, currentPage, pageSize]);
+   ```
+
+**주요 파일**:
+- `src/modules/forms/ui/views/submissions-view.tsx` - 전체 재작성 (248→565줄)
+- `src/app/(auth)/admin/forms/[id]/submissions/page.tsx` - formId prop 제거
+
+**변경 통계**: +399 insertions, -89 deletions
+
 ### Forms 상태 필터 기능 추가
 
 **목적**: 폼 관리 화면에서 상태별 필터링 기능 제공
