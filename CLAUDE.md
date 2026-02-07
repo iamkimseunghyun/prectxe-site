@@ -148,6 +148,8 @@ Required variables (never commit `.env*`):
 - `CLOUDFLARE_IMAGE_STREAM_API_TOKEN` - Cloudflare API token
 - `COOKIE_PASSWORD` - Iron Session encryption key (min 32 chars)
 - `ENABLE_PROGRAM_REDIRECTS` - Set to `1` to enable legacy route redirects
+- `SOLAPI_API_KEY` - Solapi SMS API key (optional, for SMS features)
+- `SOLAPI_API_SECRET` - Solapi SMS API secret (optional, for SMS features)
 
 ## UI Layout & Navigation
 
@@ -181,6 +183,11 @@ Required variables (never commit `.env*`):
   - Submission tracking and management
   - Form status: draft, published, closed
 - **Other Admin Pages**: `/admin/artists`, `/admin/venues`, `/admin/artworks`
+- **SMS Management**: `/admin/sms`
+  - Bulk SMS sending to form submission respondents
+  - Phone number auto-formatting with hyphen insertion
+  - Solapi integration for Korean SMS delivery
+  - Message preview and recipient management
 - **Form Design**: Card-based sections (basic info, content, images, metadata) with required field indicators (`*`)
 
 ## Dynamic Form Builder Architecture
@@ -191,10 +198,27 @@ Required variables (never commit `.env*`):
   - Drag-and-drop reordering with automatic `order` updates
   - Temporary IDs for React key management during editing
   - Validation rules (required, min/max length, patterns)
-- **Response Preservation**:
+- **Response Preservation** (Google Forms Pattern):
+  - **CRITICAL**: Never cascade-delete responses when modifying fields
   - FormResponse stores snapshots: `fieldLabel`, `fieldType` (nullable references to FormField)
+  - When deleting fields: First set `fieldId` to NULL in responses, then delete field
   - Preserves data even when fields are modified or deleted
   - Allows form evolution without losing historical submission data
+  - Implementation in `updateForm()`:
+    ```typescript
+    // 1. Preserve responses by nullifying fieldId
+    await prisma.formResponse.updateMany({
+      where: { fieldId: { in: fieldsToDelete } },
+      data: { fieldId: null }
+    });
+    // 2. Safe to delete field
+    await prisma.formField.deleteMany({ where: { id: { in: fieldsToDelete } } });
+    ```
+- **Empty Submission Prevention**: 3-layer safety
+  - Layer 1: Reject empty response data before DB operations
+  - Layer 2: Use transactions for atomic submission creation
+  - Layer 3: Verify response count matches expected after creation
+- **Phone Number Formatting**: Auto-insert hyphens for Korean phone numbers (010-1234-5678)
 - **Preview System**: Renders actual form components (disabled) for accurate preview
 - **Image Upload Pattern**:
   - Check `imageFile` existence before calling `uploadImage()`
@@ -272,3 +296,25 @@ Required variables (never commit `.env*`):
   - Server actions return `{ success: boolean, error?: string }` pattern
   - Client components show toast notifications on errors
   - Use `try-catch` in server actions with proper error messages
+- **SMS Integration** (`src/lib/sms/solapi.ts`):
+  - Solapi SDK for Korean SMS delivery (13원/건)
+  - Send bulk messages to form submission respondents
+  - Phone validation and auto-formatting before sending
+  - Admin interface at `/admin/sms` for message composition
+  - Environment: `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`
+
+## Data Recovery & Safety
+
+- **Database Backups**: Neon provides Point-in-Time Recovery (PITR)
+  - Create recovery branches from specific timestamps
+  - Use `scripts/recover-responses.ts` pattern for data recovery
+  - Merge recovered data back to main branch
+- **Form Data Safety**:
+  - **NEVER** use cascade deletes on FormField → FormResponse
+  - Always preserve responses by setting `fieldId` to NULL before field deletion
+  - Responses are immutable once submitted - fields can change, responses cannot
+  - CSV exports show deleted fields with "(삭제됨)" marker using snapshot data
+- **Transaction Patterns**: Use Prisma transactions for operations requiring atomicity
+  - Form submission creation (submission + responses)
+  - Featured content toggling (unfeature all + feature one)
+  - Field deletion with response preservation
