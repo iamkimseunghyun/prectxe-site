@@ -7,6 +7,7 @@ import {
   Image,
   LayoutDashboard,
   type LucideIcon,
+  Mail,
   MapPin,
   MessageSquare,
   Users,
@@ -48,6 +49,7 @@ const ADMIN_TABS: NavItem[] = [
     href: '/admin/forms',
   },
   { value: 'sms', label: 'SMS', icon: MessageSquare, href: '/admin/sms' },
+  { value: 'email', label: 'Email', icon: Mail, href: '/admin/email' },
   { value: 'artists', label: 'Artists', icon: Users, href: '/admin/artists' },
   { value: 'venues', label: 'Venues', icon: MapPin, href: '/admin/venues' },
   {

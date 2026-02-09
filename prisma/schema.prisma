@@ -84,10 +84,11 @@ model User {
   events       Event[]
   forms        Form[]
   posts        Post[]
-  programs     Program[]
-  projects     Project[]
-  venues       Venue[]
-  smsCampaigns SMSCampaign[]
+  programs       Program[]
+  projects       Project[]
+  venues         Venue[]
+  smsCampaigns   SMSCampaign[]
+  emailCampaigns EmailCampaign[]
 }
 
 model Post {
@@ -371,10 +372,11 @@ model Form {
   userId       String
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fields       FormField[]
-  submissions  FormSubmission[]
-  smsCampaigns SMSCampaign[]
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fields         FormField[]
+  submissions    FormSubmission[]
+  smsCampaigns   SMSCampaign[]
+  emailCampaigns EmailCampaign[]
 }
 
 model FormField {
@@ -467,6 +469,44 @@ model SMSRecipient {
 }
 
 enum SMSStatus {
+  draft
+  sending
+  sent
+  failed
+}
+
+model EmailCampaign {
+  id          String           @id @default(cuid())
+  title       String
+  subject     String
+  body        String           @db.Text
+  template    String?
+  formId      String?
+  userId      String
+  sentCount   Int              @default(0)
+  failedCount Int              @default(0)
+  status      EmailStatus      @default(draft)
+  sentAt      DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  form        Form?            @relation(fields: [formId], references: [id], onDelete: SetNull)
+  recipients  EmailRecipient[]
+}
+
+model EmailRecipient {
+  id         String        @id @default(cuid())
+  campaignId String
+  email      String
+  success    Boolean       @default(false)
+  messageId  String?
+  error      String?
+  sentAt     DateTime?
+  createdAt  DateTime      @default(now())
+  campaign   EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+enum EmailStatus {
   draft
   sending
   sent
