@@ -142,6 +142,15 @@ export async function createAndSendSMSCampaign(params: {
 
     revalidatePath('/admin/sms');
 
+    // 모든 발송이 실패한 경우 에러 반환
+    if (result.sentCount === 0) {
+      const firstError = result.results.find((r) => r.error);
+      return {
+        success: false,
+        error: firstError?.error || 'SMS 발송에 실패했습니다',
+      };
+    }
+
     return {
       success: true,
       data: {

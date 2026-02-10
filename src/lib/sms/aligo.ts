@@ -5,15 +5,24 @@ import aligoapi from 'aligoapi';
 function getAligoAuth() {
   const apiKey = process.env.ALIGO_API_KEY;
   const userId = process.env.ALIGO_USER_ID;
+  const testMode = process.env.ALIGO_TEST_MODE === 'Y';
 
   if (!apiKey || !userId) {
     throw new Error('ALIGO_API_KEY and ALIGO_USER_ID must be set');
   }
 
-  return {
+  const authData: Record<string, string> = {
     key: apiKey,
     user_id: userId,
   };
+
+  // 테스트 모드 활성화 (실제 발송 안됨, IP 제한 없음)
+  if (testMode) {
+    authData.testmode_yn = 'Y';
+    console.log('[Aligo] 테스트 모드 활성화');
+  }
+
+  return authData;
 }
 
 // SMS 발송 인터페이스
@@ -55,7 +64,7 @@ export async function sendSMS(params: SendSMSParams): Promise<SendSMSResult> {
     // 각 수신자에게 개별 발송
     for (const phone of recipients) {
       try {
-        // Aligo API 요청 데이터 구성
+        // Aligo API 요청 데이터 구성 (Express req 객체 형식)
         const requestData = {
           body: {
             sender: from,
@@ -63,12 +72,20 @@ export async function sendSMS(params: SendSMSParams): Promise<SendSMSResult> {
             msg: params.text,
             msg_type: params.text.length > 90 ? 'LMS' : 'SMS', // 90자 이상 LMS
           },
+          headers: {
+            'content-type': 'application/json',
+          },
         };
+
+        console.log('[Aligo] 요청 데이터:', JSON.stringify(requestData, null, 2));
 
         const response = await aligoapi.send(requestData, authData);
 
+        console.log('[Aligo] API 응답:', JSON.stringify(response, null, 2));
+
         // Aligo 응답 처리
         if (response.result_code === '1') {
+          console.log(`[Aligo] 발송 성공: ${phone}`);
           results.push({
             to: phone,
             success: true,
@@ -76,6 +93,9 @@ export async function sendSMS(params: SendSMSParams): Promise<SendSMSResult> {
           });
           sentCount++;
         } else {
+          console.error(
+            `[Aligo] 발송 실패: ${phone}, 코드: ${response.result_code}, 메시지: ${response.message}`
+          );
           results.push({
             to: phone,
             success: false,
@@ -84,6 +104,7 @@ export async function sendSMS(params: SendSMSParams): Promise<SendSMSResult> {
           failedCount++;
         }
       } catch (error) {
+        console.error(`[Aligo] 예외 발생: ${phone}`, error);
         results.push({
           to: phone,
           success: false,
