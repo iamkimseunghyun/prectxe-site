@@ -10,11 +10,11 @@ import { getImageUrl } from '@/lib/utils';
 
 interface VenueListProps {
   initialData: {
-    venues: (Venue & {
+    items: (Venue & {
       images: ImageData[];
     })[];
     total: number;
-    totalPages: number;
+    pageSize: number;
   };
 }
 
@@ -22,7 +22,7 @@ const VenueList = ({ initialData }: VenueListProps) => {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {initialData.venues.map((venue) => (
+        {initialData.items.map((venue) => (
           <Link href={`/venues/${venue.id}`} key={venue.id}>
             <Card className="transition-shadow hover:shadow-lg">
               <CardContent className="p-0">

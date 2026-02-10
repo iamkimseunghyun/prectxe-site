@@ -3,6 +3,7 @@
 import type { Prisma } from '@prisma/client';
 import { unstable_cache as next_cache, revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
 import { CACHE_TIMES } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 import {
@@ -194,11 +195,11 @@ export async function listProgramsPaged(
 
 export async function createProgram(input: unknown, _userId: string) {
   const auth = await requireAdmin();
-  if (!auth.ok) return { ok: false, error: auth.error } as const;
+  if (!auth.success) return { success: false, error: auth.error } as const;
   const parsed = programCreateSchema.safeParse(input);
   if (!parsed.success) {
     return {
-      ok: false,
+      success: false,
       error: parsed.error.errors[0]?.message ?? '유효성 오류',
     };
   }
@@ -249,16 +250,16 @@ export async function createProgram(input: unknown, _userId: string) {
   });
   revalidatePath('/programs');
   revalidatePath('/');
-  return { ok: true, data: program };
+  return { success: true, data: program };
 }
 
 export async function updateProgram(id: string, input: unknown) {
   const auth = await requireAdmin();
-  if (!auth.ok) return { ok: false, error: auth.error } as const;
+  if (!auth.success) return { success: false, error: auth.error } as const;
   const parsed = programUpdateSchema.safeParse(input);
   if (!parsed.success) {
     return {
-      ok: false,
+      success: false,
       error: parsed.error.errors[0]?.message ?? '유효성 오류',
     };
   }
@@ -268,7 +269,7 @@ export async function updateProgram(id: string, input: unknown) {
     where: { id },
     include: { images: true },
   });
-  if (!existing) return { ok: false, error: '프로그램을 찾을 수 없습니다.' };
+  if (!existing) return { success: false, error: '프로그램을 찾을 수 없습니다.' };
 
   // If setting as featured, unfeatured all other content
   if (data.isFeatured && !existing.isFeatured) {
@@ -288,9 +289,8 @@ export async function updateProgram(id: string, input: unknown) {
   if (data.heroUrl && existing.heroUrl && data.heroUrl !== existing.heroUrl) {
     const idToDelete = extractCloudflareImageId(existing.heroUrl);
     if (idToDelete) {
-      // best-effort, ignore failures
       try {
-        // noop here; deleteCloudflareImage available but not imported here intentionally to avoid coupling
+        await deleteCloudflareImage(idToDelete);
       } catch {}
     }
   }
@@ -329,15 +329,15 @@ export async function updateProgram(id: string, input: unknown) {
   revalidatePath('/programs');
   revalidatePath(`/programs/${updated.slug}`);
   revalidatePath('/');
-  return { ok: true, data: updated };
+  return { success: true, data: updated };
 }
 
 export async function deleteProgram(id: string) {
   const auth = await requireAdmin();
-  if (!auth.ok) return { ok: false } as const;
+  if (!auth.success) return { success: false } as const;
   await prisma.program.delete({ where: { id } });
   revalidatePath('/programs');
-  return { ok: true };
+  return { success: true };
 }
 
 export const getProgramBySlugWithCache = next_cache(

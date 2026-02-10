@@ -121,7 +121,7 @@ const ArtistFormView = ({
             : await createArtist(data, userId!);
 
         // 에러 처리 수정
-        if (!result.ok) return new Error(result.error);
+        if (!result.success) return new Error(result.error);
         router.push(`/artists/${result.data?.id}`);
       } catch (error) {
         console.error('Error: ', error);

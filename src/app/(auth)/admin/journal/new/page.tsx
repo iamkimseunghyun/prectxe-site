@@ -10,13 +10,13 @@ export default async function Page() {
     if (!session.id) redirect('/');
     const { intent, ...data } = formData || {};
     const res = await createArticle(data, session.id);
-    if (res?.ok) {
+    if (res?.success) {
       if (intent === 'continue')
         redirect(`/admin/journal/${res.data?.slug}/edit`);
       if (intent === 'new') redirect(`/admin/journal/new`);
       redirect(`/admin/journal`);
     }
-    return { ok: false, error: (res as any)?.error ?? '저장에 실패했습니다.' };
+    return { success: false, error: (res as any)?.error ?? '저장에 실패했습니다.' };
   }
 
   return (

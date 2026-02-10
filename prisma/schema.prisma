@@ -71,143 +71,41 @@ model Article {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  username     String?       @unique
-  email        String?       @unique
-  password     String?
-  createdAt    DateTime?     @default(now())
-  role         Role?         @default(USER)
-  updatedAt    DateTime?     @updatedAt
-  articles     Article[]
-  artists      Artist[]
-  artworks     Artwork[]
-  events       Event[]
-  forms        Form[]
-  posts        Post[]
+  id             String          @id @default(cuid())
+  username       String?         @unique
+  email          String?         @unique
+  password       String?
+  createdAt      DateTime?       @default(now())
+  role           Role?           @default(USER)
+  updatedAt      DateTime?       @updatedAt
+  articles       Article[]
+  artists        Artist[]
+  artworks       Artwork[]
+  forms          Form[]
   programs       Program[]
-  projects       Project[]
   venues         Venue[]
   smsCampaigns   SMSCampaign[]
   emailCampaigns EmailCampaign[]
 }
 
-model Post {
-  id        String    @id @default(cuid())
-  title     String?
-  content   String?
-  published Boolean?  @default(false)
-  authorId  String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
-  author    User?     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-}
-
-model Project {
-  id              String           @id @default(cuid())
-  title           String
-  about           String
-  description     String
-  year            Int
-  startDate       DateTime
-  endDate         DateTime
-  category        ProjectCategory
-  mainImageUrl    String
-  userId          String
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projectArtists  ProjectArtist[]
-  projectArtworks ProjectArtwork[]
-  images          ProjectImage[]
-  venues          ProjectVenue[]
-}
-
-model ProjectImage {
-  id        String   @id @default(cuid())
-  imageUrl  String
-  alt       String
-  order     Int      @default(0)
-  projectId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
-model Event {
-  id           String           @id @default(cuid())
-  title        String
-  subtitle     String?
-  description  String
-  status       EventStatus      @default(upcoming)
-  type         EventType
-  startDate    DateTime
-  endDate      DateTime
-  userId       String
-  mainImageUrl String
-  venueId      String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  venue        Venue?           @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  images       EventImage[]
-  organizers   EventOrganizer[]
-  tickets      EventTicket[]
-}
-
-model EventImage {
-  id        String   @id @default(cuid())
-  imageUrl  String
-  alt       String
-  order     Int      @default(0)
-  eventId   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-}
-
-model EventOrganizer {
-  eventId   String
-  artistId  String
-  role      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
-  @@id([eventId, artistId])
-}
-
-model EventTicket {
-  id        String   @id @default(cuid())
-  eventId   String
-  name      String
-  price     Int
-  quantity  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-}
-
 model Artist {
-  id              String           @id @default(cuid())
-  mainImageUrl    String?
-  city            String?
-  country         String?
-  email           String?
-  homepage        String?
-  biography       String?
-  cv              String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  userId          String
-  name            String           @map("name_en")
-  nameKr          String           @map("name_kr")
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  artistArtworks  ArtistArtwork[]
-  images          ArtistImage[]
-  eventOrganizers EventOrganizer[]
-  programCredits  ProgramCredit[]
-  projectArtists  ProjectArtist[]
+  id             String          @id @default(cuid())
+  mainImageUrl   String?
+  city           String?
+  country        String?
+  email          String?
+  homepage       String?
+  biography      String?
+  cv             String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  userId         String
+  name           String          @map("name_en")
+  nameKr         String          @map("name_kr")
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artistArtworks ArtistArtwork[]
+  images         ArtistImage[]
+  programCredits ProgramCredit[]
 }
 
 model ArtistImage {
@@ -222,20 +120,19 @@ model ArtistImage {
 }
 
 model Artwork {
-  id              String           @id @default(cuid())
-  title           String
-  size            String?
-  media           String?
-  year            Int?
-  description     String?
-  style           String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  userId          String
-  artists         ArtistArtwork[]
-  user            User             @relation(fields: [userId], references: [id])
-  images          ArtworkImage[]
-  projectArtWorks ProjectArtwork[]
+  id          String          @id @default(cuid())
+  title       String
+  size        String?
+  media       String?
+  year        Int?
+  description String?
+  style       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  userId      String
+  artists     ArtistArtwork[]
+  user        User            @relation(fields: [userId], references: [id])
+  images      ArtworkImage[]
 }
 
 model ArtworkImage {
@@ -250,17 +147,15 @@ model ArtworkImage {
 }
 
 model Venue {
-  id           String         @id @default(cuid())
-  address      String
-  name         String
-  description  String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  userId       String
-  Event        Event[]
-  projectVenue ProjectVenue[]
-  user         User           @relation(fields: [userId], references: [id])
-  images       VenueImage[]
+  id          String       @id @default(cuid())
+  address     String
+  name        String
+  description String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  images      VenueImage[]
 }
 
 model VenueImage {
@@ -272,39 +167,6 @@ model VenueImage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
-}
-
-model ProjectArtist {
-  projectId String
-  artistId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@id([projectId, artistId])
-}
-
-model ProjectArtwork {
-  projectId String
-  artworkId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@id([artworkId, projectId])
-}
-
-model ProjectVenue {
-  venueId   String
-  projectId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  Project   Project  @relation(fields: [projectId], references: [id])
-  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
-
-  @@id([projectId, venueId])
 }
 
 model ArtistArtwork {
@@ -332,46 +194,22 @@ enum ProgramStatus {
   completed
 }
 
-enum ProjectCategory {
-  exhibition
-  performance
-  festival
-  workshop
-}
-
-enum EventStatus {
-  upcoming
-  ongoing
-  completed
-  cancelled
-}
-
-enum EventType {
-  exhibition
-  performance
-  festival
-  workshop
-  talk
-  screening
-  other
-}
-
 enum Role {
   ADMIN
   USER
 }
 
 model Form {
-  id           String           @id @default(cuid())
-  slug         String           @unique
-  title        String
-  description  String?
-  body         String?          @db.Text
-  coverImage   String?
-  status       FormStatus       @default(draft)
-  userId       String
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id             String           @id @default(cuid())
+  slug           String           @unique
+  title          String
+  description    String?
+  body           String?          @db.Text
+  coverImage     String?
+  status         FormStatus       @default(draft)
+  userId         String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   fields         FormField[]
   submissions    FormSubmission[]
@@ -460,8 +298,8 @@ model SMSRecipient {
   id         String      @id @default(cuid())
   campaignId String
   phone      String
-  name       String?     // 수신자 이름 (선택)
-  value      String?     // 개별 내용 (쿠폰 코드 등, 선택)
+  name       String?
+  value      String?
   success    Boolean     @default(false)
   messageId  String?
   error      String?

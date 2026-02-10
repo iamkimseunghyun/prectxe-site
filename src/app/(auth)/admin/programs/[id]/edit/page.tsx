@@ -24,12 +24,12 @@ export default async function Page({
     if (!session.id) redirect('/');
     const { intent, ...data } = formData || {};
     const res = await updateProgram(id, data);
-    if (res?.ok) {
+    if (res?.success) {
       if (intent === 'continue') redirect(`/admin/programs/${id}/edit`);
       if (intent === 'new') redirect(`/admin/programs/new`);
       redirect(`/admin/programs`);
     }
-    return { ok: false, error: (res as any)?.error ?? '저장에 실패했습니다.' };
+    return { success: false, error: (res as any)?.error ?? '저장에 실패했습니다.' };
   }
 
   return (

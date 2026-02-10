@@ -5,8 +5,6 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { deleteArtist } from '@/modules/artists/server/actions';
 import { deleteArtwork } from '@/modules/artworks/server/actions';
-import { deleteEvent } from '@/modules/events/server/actions';
-import { deleteProject } from '@/modules/projects/server/actions';
 import { deleteVenue } from '@/modules/venues/server/actions';
 
 const AdminButton = ({
@@ -14,7 +12,7 @@ const AdminButton = ({
   entityType,
 }: {
   id: string;
-  entityType: 'artwork' | 'artist' | 'project' | 'venue' | 'event';
+  entityType: 'artwork' | 'artist' | 'venue';
 }) => {
   const router = useRouter();
   const { toast } = useToast();
@@ -22,9 +20,7 @@ const AdminButton = ({
   const deleteActions = {
     artwork: deleteArtwork,
     artist: deleteArtist,
-    project: deleteProject,
     venue: deleteVenue,
-    event: deleteEvent,
   };
 
   const handleEdit = () => {

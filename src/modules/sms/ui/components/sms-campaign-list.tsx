@@ -66,14 +66,22 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
   useEffect(() => {
     async function loadCampaigns() {
       setIsLoading(true);
-      console.log('[SMSCampaignList] Loading campaigns for userId:', userId, 'isAdmin:', isAdmin);
+      console.log(
+        '[SMSCampaignList] Loading campaigns for userId:',
+        userId,
+        'isAdmin:',
+        isAdmin
+      );
       const result = await listSMSCampaigns(userId, isAdmin);
       console.log('[SMSCampaignList] Result:', result);
       if (result.success && result.data) {
         console.log('[SMSCampaignList] Campaigns count:', result.data.length);
         setCampaigns(result.data as Campaign[]);
       } else {
-        console.error('[SMSCampaignList] Failed to load campaigns:', result.error);
+        console.error(
+          '[SMSCampaignList] Failed to load campaigns:',
+          result.error
+        );
       }
       setIsLoading(false);
     }
@@ -334,12 +342,16 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
                           </TableCell>
                           <TableCell>
                             {recipient.name || (
-                              <span className="text-muted-foreground text-xs">-</span>
+                              <span className="text-muted-foreground text-xs">
+                                -
+                              </span>
                             )}
                           </TableCell>
                           <TableCell className="font-mono text-sm">
                             {recipient.value || (
-                              <span className="text-muted-foreground text-xs">-</span>
+                              <span className="text-muted-foreground text-xs">
+                                -
+                              </span>
                             )}
                           </TableCell>
                           <TableCell>

@@ -1,5 +1,87 @@
 # Development Log
 
+## 2026-02-11
+
+### Phase 1 코드 정리 완료
+
+**삭제된 파일:**
+- `src/components/seo/project-schema.tsx` — 미사용 SEO 컴포넌트
+- `src/components/ui/calendar.tsx` — 미사용 UI 컴포넌트
+- `src/components/admin/admin-data-table.tsx` — 미사용 Admin 컴포넌트
+- `src/hooks/use-debounce.tsx` — 미사용 훅
+- `src/lib/design/wireframe.jsx` — 디자인 프로토타입 (깨진 코드)
+- `scripts/migrate-legacy-projects-to-programs.ts` — 1회성 마이그레이션 스크립트
+
+**제거된 npm 패키지:** `jotai`, `framer-motion`, `sharp`
+
+**삭제된 환경 파일:** `.env.development` — `.env.local`과 중복
+
+---
+
+### Phase 2 레거시 모듈 정리 완료
+
+**데이터 확인 결과:**
+- Project 5건 → Program으로 마이그레이션 완료 확인
+- Event 7건 중 5건은 Program과 중복, 나머지 2건(Light Matter, 아티스트 토크)은 불필요 데이터로 확인
+- Post 0건
+
+**삭제된 모듈:**
+- `src/modules/events/` — server actions, UI 컴포넌트, views 전체
+- `src/modules/projects/` — server actions, UI 컴포넌트, views 전체
+
+**삭제된 라우트 (8개 페이지):**
+- `src/app/(page)/events/` — index, detail, edit, new
+- `src/app/(page)/projects/` — index, detail, edit, new
+
+**삭제된 관련 파일:**
+- `src/components/layout/legacy-redirect-notice.tsx`
+- `src/lib/schemas/event.ts`, `src/lib/schemas/project.ts`
+- `src/lib/schemas/types.ts` — 레거시 enum export 제거
+- `src/lib/schemas/index.ts` — event, project re-export 제거
+- `prisma/schema.prisma.backup`
+
+**Prisma 스키마에서 삭제된 모델 (13개):**
+- Post, Event, EventImage, EventOrganizer, EventTicket
+- Project, ProjectImage, ProjectArtist, ProjectArtwork, ProjectVenue
+- Artist/Artwork/Venue/User 모델에서 레거시 relation 제거
+
+**삭제된 enum (3개):** EventStatus, EventType, ProjectCategory
+
+**DB 테이블 삭제 (program-model-v1 브랜치):**
+- Event (7행), EventOrganizer (34행), EventTicket (7행)
+- Project (5행), ProjectArtist (30행), ProjectImage (89행)
+- Post, EventImage, ProjectArtwork, ProjectVenue
+
+**수정된 기존 코드:**
+- `src/components/layout/admin-button.tsx` — event/project 삭제 기능 제거
+- `src/app/(page)/artists/[id]/page.tsx` — 이벤트 목록 섹션 제거
+- `src/app/sitemap.ts` — 레거시 주석 제거
+
+**안전장치:** Neon 백업 브랜치 `backup-before-legacy-cleanup-20260211` 생성 후 진행
+
+**참고:** `prisma db push --accept-data-loss` 사용. 마이그레이션 히스토리에 drift가 있어 `migrate dev` 대신 직접 스키마 적용.
+
+---
+
+### Phase 3 코드 정리 완료
+
+**1. Admin List View / Table 분석 결과: 추출 불필요**
+- 5개 Admin List View (~30줄)와 5개 Table 컴포넌트(~75줄)를 분석
+- 각 파일이 엔티티별 고유한 컬럼, fetch 파라미터, 데이터 구조를 가짐
+- 제네릭 추상화 시 복잡도만 증가하고 실질적 이득 없음 → KISS 원칙에 따라 현재 구조 유지
+
+**2. 미사용 모듈 파일 삭제 (6개)**
+- `src/modules/about/` — 전체 모듈 삭제 (about 페이지에서 미사용)
+- `src/modules/home/server/actions.ts` — 빈 파일 (GlobalSearch 제거 잔여)
+- `src/modules/home/ui/section/hero-section.tsx` — `featured-hero-section.tsx`로 대체됨
+- `src/modules/home/ui/section/next-up-section.tsx` — 미사용
+- `src/modules/home/ui/section/journal-highlights-section.tsx` — 미사용
+- `src/modules/home/ui/section/follow-us-section.tsx` — 미사용
+
+**검증:** `bun run type-check` 통과, Biome lint 에러 없음 (기존 경고만 존재)
+
+---
+
 ## 2026-02-10
 
 ### Email Editor with Tiptap & Aligo SMS Integration

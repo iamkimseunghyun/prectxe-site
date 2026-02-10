@@ -160,7 +160,7 @@ export function JournalFormView({
       intent,
     };
     const res = await onSubmit(payload);
-    if (res && (res as any).ok === false) {
+    if (res && (res as any).success === false) {
       toast({
         title: '오류',
         description: (res as any).error || '저장 중 오류가 발생했습니다.',

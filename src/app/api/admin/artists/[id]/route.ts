@@ -8,9 +8,9 @@ export async function DELETE(
 ) {
   try {
     const auth = await requireAdmin();
-    if (!auth.ok) {
+    if (!auth.success) {
       return NextResponse.json(
-        { ok: false, error: auth.error },
+        { success: false, error: auth.error },
         { status: 401 }
       );
     }
@@ -20,16 +20,16 @@ export async function DELETE(
 
     if (!result.success) {
       return NextResponse.json(
-        { ok: false, error: result.error },
+        { success: false, error: result.error },
         { status: 400 }
       );
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (e) {
     console.error('Artist deletion failed:', e);
     return NextResponse.json(
-      { ok: false, error: '삭제에 실패했습니다.' },
+      { success: false, error: '삭제에 실패했습니다.' },
       { status: 500 }
     );
   }

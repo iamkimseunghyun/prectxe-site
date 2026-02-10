@@ -15,8 +15,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     select: { id: true, updatedAt: true },
   });
 
-  // Legacy routes (events/projects) are deprecated; omit from sitemap
-
   const programs = await prisma.program.findMany({
     select: { slug: true, updatedAt: true },
   });

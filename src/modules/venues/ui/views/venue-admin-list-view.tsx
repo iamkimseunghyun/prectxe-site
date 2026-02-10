@@ -8,7 +8,7 @@ interface VenueAdminListViewProps {
 }
 
 export async function VenueAdminListView({ page }: VenueAdminListViewProps) {
-  const { venues, total, totalPages } = await getAllVenues(page, 10);
+  const { items, total, pageSize } = await getAllVenues(page, 10);
 
   return (
     <div>
@@ -18,10 +18,10 @@ export async function VenueAdminListView({ page }: VenueAdminListViewProps) {
         actionLabel="새 장소"
         actionHref="/venues/new"
       />
-      <VenueTable data={venues} />
+      <VenueTable data={items} />
       <AdminPagination
         currentPage={page}
-        totalPages={totalPages}
+        totalPages={Math.ceil(total / pageSize)}
         totalItems={total}
       />
     </div>

@@ -4,11 +4,10 @@ import { Prisma } from '@prisma/client';
 import { unstable_cache as next_cache, revalidatePath } from 'next/cache';
 import { notFound } from 'next/navigation';
 import type { z } from 'zod';
-import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
+import { deleteAllImages, deleteRemovedImages } from '@/lib/cdn/cloudflare';
 import { CACHE_TIMES, PAGINATION } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 import { createArtworkSchema, updateArtworkSchema } from '@/lib/schemas';
-import { extractCloudflareImageId } from '@/lib/utils';
 
 export const getArtworksByArtistIdWithCache = next_cache(
   async (artistId: string) => {
@@ -128,8 +127,8 @@ export const getArtworksPage = next_cache(
         take: pageSize,
       });
     } catch (error) {
-      console.error('아티스트 목록 조회 오류:', error);
-      throw new Error('아티스트 목록을 불러오는데 실패했습니다.');
+      console.error('작품 목록 조회 오류:', error);
+      throw new Error('작품 목록을 불러오는데 실패했습니다.');
     }
   },
   ['artworks-list'],
@@ -151,7 +150,7 @@ export async function createArtwork(
       const errorMessage = result.error.issues
         .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
         .join(', ');
-      return { ok: false, error: errorMessage };
+      return { success: false, error: errorMessage };
     }
 
     const validatedData = result.data;
@@ -200,11 +199,11 @@ export async function createArtwork(
       'Created/Updated artwork with relationships:',
       JSON.stringify(artwork, null, 2)
     );
-    return { ok: true, data: artwork };
+    return { success: true, data: artwork };
   } catch (error) {
     console.error('아트워크 등록 중 서버 에러 발생.', error);
     return {
-      ok: false,
+      success: false,
       error:
         error instanceof Error
           ? error.message
@@ -225,7 +224,7 @@ export async function updateArtwork(
     });
 
     if (!existingArtwork) {
-      return { ok: false, error: '아트워크를 찾을 수 없습니다.' };
+      return { success: false, error: '아트워크를 찾을 수 없습니다.' };
     }
 
     // 2. 폼 데이터에서 필요한 정보 추출
@@ -235,31 +234,17 @@ export async function updateArtwork(
 
     if (!result.success) {
       return {
-        ok: false,
+        success: false,
         error: `입력 값이 올바르지 않습니다.`,
       };
     }
 
     const validatedData = result.data;
 
-    // 6. Cloudflare 이미지 삭제 처리
-    // 6.1 갤러리 이미지 처리
+    // Cloudflare 이미지 삭제 처리
     if (validatedData.images && existingArtwork.images.length > 0) {
-      // 새 이미지 URL 목록
       const newImageUrls = validatedData.images.map((img) => img.imageUrl);
-
-      // 삭제해야 할 이미지 찾기
-      for (const existingArtworkImage of existingArtwork.images) {
-        if (!newImageUrls.includes(existingArtworkImage.imageUrl)) {
-          const imageId = extractCloudflareImageId(
-            existingArtworkImage.imageUrl
-          );
-          if (imageId) {
-            await deleteCloudflareImage(imageId);
-            console.log(`갤러리 이미지 삭제됨: ${imageId}`);
-          }
-        }
-      }
+      await deleteRemovedImages(existingArtwork.images, newImageUrls);
     }
 
     // 7. Prisma 업데이트 데이터 준비
@@ -320,20 +305,20 @@ export async function updateArtwork(
     artwork.artists.forEach((artist) => {
       revalidatePath(`/artists/${artist.artistId}`);
     });
-    return { ok: true, data: artwork };
+    return { success: true, data: artwork };
   } catch (error) {
     console.error('작품 페이지 수정 실패:', error);
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       return {
-        ok: false,
+        success: false,
         error: '데이터베이스 작업 중 오류가 발생했습니다.',
         details: error.message,
       };
     }
 
     return {
-      ok: false,
+      success: false,
       error:
         error instanceof Error
           ? error.message
@@ -354,16 +339,8 @@ export async function deleteArtwork(id: string) {
       return { success: false, error: '아트워크를 찾을 수 없습니다.' };
     }
 
-    // 2. Cloudflare에서 갤러리 이미지 삭제
-    if (artwork.images && artwork.images.length > 0) {
-      for (const image of artwork.images) {
-        const imageId = extractCloudflareImageId(image.imageUrl);
-        if (imageId) {
-          await deleteCloudflareImage(imageId);
-          console.log(`갤러리 이미지 삭제됨: ${imageId}`);
-        }
-      }
-    }
+    // Cloudflare에서 갤러리 이미지 삭제
+    await deleteAllImages(artwork.images);
 
     // 3. 데이터베이스에서 아트워크 삭제 (관계 데이터는 cascade 삭제됨)
     await prisma.artwork.delete({

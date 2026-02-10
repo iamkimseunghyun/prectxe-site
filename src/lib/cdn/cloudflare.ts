@@ -45,6 +45,41 @@ export async function getCloudflareImageUrl() {
   };
 }
 
+/**
+ * 기존 이미지 중 새 목록에 없는 이미지를 Cloudflare에서 삭제 (update용)
+ */
+export async function deleteRemovedImages(
+  existingImages: { imageUrl: string }[],
+  newImageUrls: string[]
+) {
+  for (const img of existingImages) {
+    if (!newImageUrls.includes(img.imageUrl)) {
+      const imageId = extractImageId(img.imageUrl);
+      if (imageId) {
+        await deleteCloudflareImage(imageId);
+      }
+    }
+  }
+}
+
+/**
+ * 이미지 배열의 모든 이미지를 Cloudflare에서 삭제 (delete용)
+ */
+export async function deleteAllImages(images: { imageUrl: string }[]) {
+  for (const img of images) {
+    const imageId = extractImageId(img.imageUrl);
+    if (imageId) {
+      await deleteCloudflareImage(imageId);
+    }
+  }
+}
+
+function extractImageId(url: string) {
+  const regex = /imagedelivery\.net\/[^/]+\/([^/]+)/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+}
+
 export async function deleteCloudflareImage(imageId: string) {
   try {
     const response = await fetch(

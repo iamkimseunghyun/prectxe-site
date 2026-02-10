@@ -110,44 +110,6 @@ export const extractCloudflareImageId = (url: string) => {
   return match ? match[1] : null;
 };
 
-/**
- * 이벤트 예매 가능 여부를 확인하는 함수
- * @param startDate 이벤트 시작 날짜
- * @returns boolean
- */
-export const isEventBookingClosed = (startDate: Date | string): boolean => {
-  const now = new Date();
-  const eventStart = new Date(startDate);
-  const oneDayBefore = new Date(eventStart.getTime() - 24 * 60 * 60 * 1000);
-
-  return now >= oneDayBefore;
-};
-
-/**
- * 이벤트 예매 마감까지 남은 시간을 반환하는 함수 (필요시 사용)
- * @param startDate 이벤트 시작 날짜
- * @returns string
- */
-export const getTimeUntilBookingClose = (startDate: Date | string): string => {
-  const now = new Date();
-  const eventStart = new Date(startDate);
-  const oneDayBefore = new Date(eventStart.getTime() - 24 * 60 * 60 * 1000);
-
-  if (now >= oneDayBefore) {
-    return '예매 마감';
-  }
-
-  const diffTime = oneDayBefore.getTime() - now.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  const diffHours = Math.floor(
-    (diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-  );
-
-  if (diffDays > 0) {
-    return `예매 마감까지 ${diffDays}일 ${diffHours}시간`;
-  }
-  return `예매 마감까지 ${diffHours}시간`;
-};
 
 export const isSameDay = (date1: Date, date2: Date): boolean => {
   return (

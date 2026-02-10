@@ -103,7 +103,7 @@ const ArtworkFormView = ({
             ? await updateArtwork(data, artworkId!)
             : await createArtwork(data, userId!);
 
-        if (!result.ok) return new Error(result.error);
+        if (!result.success) return new Error(result.error);
         router.push(`/artworks/${result.data?.id}`);
       } catch (error) {
         console.error(error);

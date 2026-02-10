@@ -101,11 +101,11 @@ export async function getArticleBySlug(slug: string) {
 
 export async function createArticle(input: unknown, authorId?: string | null) {
   const auth = await requireAdmin();
-  if (!auth.ok) return { ok: false, error: auth.error } as const;
+  if (!auth.success) return { success: false, error: auth.error } as const;
   const parsed = articleCreateSchema.safeParse(input);
   if (!parsed.success) {
     return {
-      ok: false,
+      success: false,
       error: parsed.error.errors[0]?.message ?? '유효성 오류',
     };
   }
@@ -142,23 +142,23 @@ export async function createArticle(input: unknown, authorId?: string | null) {
   revalidatePath('/journal');
   revalidatePath(`/journal/${created.slug}`);
   revalidatePath('/');
-  return { ok: true, data: created };
+  return { success: true, data: created };
 }
 
 export async function updateArticle(slug: string, input: unknown) {
   const auth = await requireAdmin();
-  if (!auth.ok) return { ok: false, error: auth.error } as const;
+  if (!auth.success) return { success: false, error: auth.error } as const;
   const parsed = articleUpdateSchema.safeParse(input);
   if (!parsed.success) {
     return {
-      ok: false,
+      success: false,
       error: parsed.error.errors[0]?.message ?? '유효성 오류',
     };
   }
   const a = parsed.data;
 
   const existing = await prisma.article.findUnique({ where: { slug } });
-  if (!existing) return { ok: false, error: '게시글을 찾을 수 없습니다.' };
+  if (!existing) return { success: false, error: '게시글을 찾을 수 없습니다.' };
 
   // If setting as featured, unfeatured all other content
   if (a.isFeatured && !existing.isFeatured) {
@@ -191,13 +191,13 @@ export async function updateArticle(slug: string, input: unknown) {
   revalidatePath('/journal');
   revalidatePath(`/journal/${updated.slug}`);
   revalidatePath('/');
-  return { ok: true, data: updated };
+  return { success: true, data: updated };
 }
 
 export async function deleteArticle(slug: string) {
   const auth = await requireAdmin();
-  if (!auth.ok) return { ok: false } as const;
+  if (!auth.success) return { success: false } as const;
   await prisma.article.delete({ where: { slug } });
   revalidatePath('/journal');
-  return { ok: true };
+  return { success: true };
 }

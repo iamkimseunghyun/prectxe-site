@@ -8,7 +8,11 @@ import {
   unstable_cacheTag,
 } from 'next/cache';
 import type { z } from 'zod';
-import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
+import {
+  deleteAllImages,
+  deleteCloudflareImage,
+  deleteRemovedImages,
+} from '@/lib/cdn/cloudflare';
 import {
   CACHE_TIMES,
   PAGINATION,
@@ -160,7 +164,7 @@ export async function createSimpleArtist(data: SimpleArtist, userId: string) {
       const errorMessage = validatedData.error.issues
         .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
         .join(', ');
-      return { ok: false, error: errorMessage };
+      return { success: false, error: errorMessage };
     }
 
     const artist = await prisma.artist.create({
@@ -181,18 +185,17 @@ export async function createSimpleArtist(data: SimpleArtist, userId: string) {
 
     // 캐시 무효화 개선
     revalidatePath('/artists');
-    revalidatePath('/events/new', 'page');
-    revalidatePath('/events/[id]/edit', 'page');
+    revalidatePath('/artists');
 
     // 명시적인 캐시 키 무효화 추가
     unstable_cacheTag('artists-list');
     unstable_cacheTag('simple-artists-list');
 
-    return { ok: true, data: artist };
+    return { success: true, data: artist };
   } catch (error) {
     console.error('Simple artist creation error:', error);
     return {
-      ok: false,
+      success: false,
       error:
         error instanceof Error
           ? error.message
@@ -213,7 +216,7 @@ export async function createArtist(
       const errorMessage = validatedData.error.issues
         .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
         .join(', ');
-      return { ok: false, error: errorMessage };
+      return { success: false, error: errorMessage };
     }
 
     const artist = await prisma.artist.create({
@@ -247,14 +250,14 @@ export async function createArtist(
     // 캐시 무효화 개선
     revalidatePath('/artists');
     revalidatePath(`/artists/${artist.id}`);
-    return { ok: true, data: artist };
+    return { success: true, data: artist };
   } catch (error) {
     console.error(
       '아티스트 등록 중 서버 에러 발생:',
       error instanceof Error ? error.message : String(error)
     );
     return {
-      ok: false,
+      success: false,
       error:
         error instanceof Error
           ? error.message
@@ -275,7 +278,7 @@ export async function updateArtist(
     });
 
     if (!existingArtist) {
-      return { ok: false, error: '아티스트를 찾을 수 없습니다.' };
+      return { success: false, error: '아티스트를 찾을 수 없습니다.' };
     }
 
     // 2. 폼 데이터에서 필요한 정보 추출
@@ -285,7 +288,7 @@ export async function updateArtist(
     const result = updateArtistSchema.safeParse(data);
 
     if (!result.success) {
-      return { ok: false, error: '입력 값이 올바르지 않습니다.' };
+      return { success: false, error: '입력 값이 올바르지 않습니다.' };
     }
 
     const validatedData = result.data;
@@ -304,19 +307,8 @@ export async function updateArtist(
 
     // 6.2. 갤러리 이미지 처리
     if (validatedData.images && existingArtist.images.length > 0) {
-      // 새 이미지 URL 목록
       const newImageUrls = validatedData.images.map((img) => img.imageUrl);
-
-      // 삭제해야 할 이미지 찾기
-      for (const existingImage of existingArtist.images) {
-        if (!newImageUrls.includes(existingImage.imageUrl)) {
-          const imageId = extractCloudflareImageId(existingImage.imageUrl);
-          if (imageId) {
-            await deleteCloudflareImage(imageId);
-            console.log(`갤러리 이미지 삭제됨: ${imageId}`);
-          }
-        }
-      }
+      await deleteRemovedImages(existingArtist.images, newImageUrls);
     }
 
     // 7. Prisma 업데이트 데이터 준비
@@ -368,23 +360,20 @@ export async function updateArtist(
       revalidatePath(`/artworks/${artworkId}`);
     });
 
-    // 이벤트 페이지의 캐시도 무효화
-    revalidatePath('/events');
-
-    return { ok: true, data: artist };
+    return { success: true, data: artist };
   } catch (error) {
     console.error('아티스트 페이지 수정 실패:', error);
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       return {
-        ok: false,
+        success: false,
         error: '데이터베이스 작업 중 오류가 발생했습니다.',
         details: error.message,
       };
     }
 
     return {
-      ok: false,
+      success: false,
       error:
         error instanceof Error
           ? error.message
@@ -418,15 +407,7 @@ export async function deleteArtist(artistId: string) {
     }
 
     // 2.2. 갤러리 이미지들 삭제
-    if (artist.images && artist.images.length > 0) {
-      for (const image of artist.images) {
-        const imageId = extractCloudflareImageId(image.imageUrl);
-        if (imageId) {
-          await deleteCloudflareImage(imageId);
-          console.log(`갤러리 이미지 삭제됨: ${imageId}`);
-        }
-      }
-    }
+    await deleteAllImages(artist.images);
 
     // 3. 데이터베이스에서 아티스트 삭제 (관계 데이터는 cascade 삭제됨)
 
@@ -449,9 +430,6 @@ export async function deleteArtist(artistId: string) {
     artistArtworks.forEach(({ artworkId }) => {
       revalidatePath(`/artworks/${artworkId}`);
     });
-
-    // 이벤트 페이지의 캐시도 무효화
-    revalidatePath('/events');
 
     return {
       success: true,

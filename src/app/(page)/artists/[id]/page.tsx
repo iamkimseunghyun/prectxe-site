@@ -14,7 +14,6 @@ import { prisma } from '@/lib/db/prisma';
 import { formatArtistName } from '@/lib/utils';
 import { getArtistById } from '@/modules/artists/server/actions';
 import ArtworkListSection from '@/modules/artworks/ui/section/artwork-list-section';
-import EventListView from '@/modules/events/ui/views/event-list-view';
 
 export async function generateMetadata({
   params,
@@ -191,17 +190,6 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
             </CardContent>
           </Card>
         )}
-        {/* 이벤트 목록 */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>이벤트</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <EventListView artistId={id} />
-          </CardContent>
-        </Card>
       </div>
       {canEdit && (
         <div className="mt-6 flex justify-end gap-x-2">

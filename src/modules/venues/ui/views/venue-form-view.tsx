@@ -96,7 +96,7 @@ const VenueFormView = ({
             : await createVenue(data, userId!);
 
         // throw 대신 return 사용
-        if (!result.ok) return new Error(result.error);
+        if (!result.success) return new Error(result.error);
         router.push(`/venues/${result.data?.id}`);
       } catch (error) {
         console.error('Error: ', error);
