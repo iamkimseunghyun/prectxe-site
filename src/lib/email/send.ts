@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { createResendClient, getSenderEmail } from './resend';
 import FormNotification from './templates/form-notification';
 import Newsletter from './templates/newsletter';

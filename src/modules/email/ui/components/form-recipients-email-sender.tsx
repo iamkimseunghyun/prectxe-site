@@ -1,10 +1,11 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Mail, Send, Users } from 'lucide-react';
+import { Loader2, Send, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { EmailEditor, getEmailHTML } from '@/components/email-editor';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -30,7 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
   createAndSendEmailCampaign,
@@ -129,11 +129,14 @@ export function FormRecipientsEmailSender({
       const selectedForm = forms.find((f) => f.id === data.formId);
       const title = `${selectedForm?.title || 'Form'} 응답자 발송`;
 
+      // Convert HTML to email-compatible format
+      const emailHTML = getEmailHTML(data.body);
+
       // 이메일 발송
       const result = await createAndSendEmailCampaign({
         title,
         subject: data.subject,
-        body: data.body,
+        body: emailHTML,
         template: data.template,
         emails: emailResult.data.emails,
         formId: data.formId,
@@ -283,14 +286,14 @@ export function FormRecipientsEmailSender({
                 <FormItem>
                   <FormLabel>이메일 내용 *</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="발송할 메시지를 입력하세요"
-                      className="min-h-[200px]"
-                      {...field}
+                    <EmailEditor
+                      content={field.value}
+                      onChange={(html) => field.onChange(html)}
+                      placeholder="이메일 내용을 작성하세요. 이미지, YouTube 동영상 등을 추가할 수 있습니다."
                     />
                   </FormControl>
                   <FormDescription>
-                    현재: {field.value.length}자 / 10,000자
+                    이미지, YouTube 동영상, 텍스트 서식 등을 지원합니다
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

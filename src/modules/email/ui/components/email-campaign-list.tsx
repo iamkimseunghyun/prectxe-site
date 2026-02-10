@@ -106,7 +106,9 @@ export function EmailCampaignList({ userId, isAdmin }: EmailCampaignListProps) {
       <Card>
         <CardHeader>
           <CardTitle>발송 이력</CardTitle>
-          <CardDescription>이메일 발송 내역을 확인할 수 있습니다</CardDescription>
+          <CardDescription>
+            이메일 발송 내역을 확인할 수 있습니다
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12 text-muted-foreground">
@@ -148,9 +150,7 @@ export function EmailCampaignList({ userId, isAdmin }: EmailCampaignListProps) {
                   <TableCell>{campaign.subject}</TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {campaign.template === 'newsletter'
-                        ? '뉴스레터'
-                        : '알림'}
+                      {campaign.template === 'newsletter' ? '뉴스레터' : '알림'}
                     </Badge>
                   </TableCell>
                   <TableCell>

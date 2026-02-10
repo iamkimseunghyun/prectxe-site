@@ -34,7 +34,7 @@ export default function Newsletter({
           <Section style={box}>
             <Heading style={heading}>PRECTXE</Heading>
             <Heading style={subheading}>{title}</Heading>
-            <Text style={messageText}>{message}</Text>
+            <div dangerouslySetInnerHTML={{ __html: message }} />
             {ctaText && ctaUrl && (
               <Button style={button} href={ctaUrl}>
                 {ctaText}
@@ -42,8 +42,7 @@ export default function Newsletter({
             )}
             <Text style={footer}>
               이 메일은 PRECTXE에서 발송되었습니다.
-              <br />
-              더 이상 메일을 받지 않으려면 회신으로 알려주세요.
+              <br />더 이상 메일을 받지 않으려면 회신으로 알려주세요.
             </Text>
           </Section>
         </Container>

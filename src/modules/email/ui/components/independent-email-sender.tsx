@@ -5,6 +5,7 @@ import { Loader2, Send, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { EmailEditor, getEmailHTML } from '@/components/email-editor';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -125,11 +126,14 @@ export function IndependentEmailSender({
         throw new Error('유효한 이메일이 없습니다');
       }
 
+      // Convert HTML to email-compatible format
+      const emailHTML = getEmailHTML(data.body);
+
       // 이메일 발송
       const result = await createAndSendEmailCampaign({
         title: data.title,
         subject: data.subject,
-        body: data.body,
+        body: emailHTML,
         template: data.template,
         emails,
         userId,
@@ -229,14 +233,14 @@ export function IndependentEmailSender({
                 <FormItem>
                   <FormLabel>이메일 내용 *</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="발송할 메시지를 입력하세요"
-                      className="min-h-[200px]"
-                      {...field}
+                    <EmailEditor
+                      content={field.value}
+                      onChange={(html) => field.onChange(html)}
+                      placeholder="이메일 내용을 작성하세요. 이미지, YouTube 동영상 등을 추가할 수 있습니다."
                     />
                   </FormControl>
                   <FormDescription>
-                    현재: {field.value.length}자 / 10,000자
+                    이미지, YouTube 동영상, 텍스트 서식 등을 지원합니다
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

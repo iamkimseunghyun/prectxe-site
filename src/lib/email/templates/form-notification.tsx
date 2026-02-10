@@ -34,10 +34,8 @@ export default function FormNotification({
               <Text style={paragraph}>안녕하세요 {recipientName}님,</Text>
             )}
             <Text style={paragraph}>{formTitle} 관련하여 알려드립니다.</Text>
-            <Text style={messageText}>{message}</Text>
-            <Text style={footer}>
-              이 메일은 PRECTXE에서 발송되었습니다.
-            </Text>
+            <div dangerouslySetInnerHTML={{ __html: message }} />
+            <Text style={footer}>이 메일은 PRECTXE에서 발송되었습니다.</Text>
           </Section>
         </Container>
       </Body>

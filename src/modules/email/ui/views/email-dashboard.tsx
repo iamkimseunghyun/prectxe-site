@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EmailCampaignList } from '../components/email-campaign-list';
 import { FormRecipientsEmailSender } from '../components/form-recipients-email-sender';
 import { IndependentEmailSender } from '../components/independent-email-sender';
-import { EmailCampaignList } from '../components/email-campaign-list';
 
 interface EmailDashboardProps {
   userId: string;
