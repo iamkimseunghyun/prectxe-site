@@ -2456,3 +2456,152 @@ const handleCopy = async () => {
 - `src/modules/home/ui/components/global-search.tsx` - 플로팅 버튼
 - `src/modules/home/ui/section/featured-hero-section.tsx` - min-h-screen
 - `src/modules/journal/ui/views/journal-form-view.tsx` - Card 섹션 구조
+
+---
+
+## 2026-02-10
+
+### Personalized SMS Sending with Individual Coupons
+
+**목적**:
+- 150명의 쿠폰 수령자에게 각자 다른 쿠폰 코드를 SMS로 발송
+- 스프레드시트 데이터를 쉽게 붙여넣고 개별 메시지 발송
+
+**배경**:
+- 놀티켓(Nolticket)에서 받은 150개의 난수 쿠폰 코드를 form 응답자에게 발송 필요
+- 기존 SMS 발송 기능은 동일한 메시지만 전송 가능
+- 각 수신자에게 고유한 쿠폰 코드를 포함한 개별 메시지 필요
+- 스프레드시트에서 전화번호 복사 시 앞자리 0 누락 문제 (1036613582)
+
+**구현 내용**:
+
+1. **개별 쿠폰 발송 컴포넌트** (`src/modules/sms/ui/components/personalized-sms-sender.tsx`):
+   ```typescript
+   // 3-column 입력 구조
+   <div className="grid grid-cols-3 gap-4">
+     <Textarea placeholder="010-1234-5678" /> {/* 전화번호 (필수) */}
+     <Textarea placeholder="홍길동" />         {/* 이름 (선택) */}
+     <Textarea placeholder="ICD71991" />       {/* 개별 내용 (선택) */}
+   </div>
+   ```
+   - **줄바꿈 매칭**: 각 줄의 인덱스로 전화번호-이름-쿠폰 매칭
+   - **실시간 미리보기**: 처음 5개 메시지 미리보기 테이블
+   - **변수 치환**: `{name}`, `{value}` 자동 치환
+   - **자동 제거**: 데이터 없으면 변수 패턴 자동 제거
+     ```typescript
+     // 이름이 없으면 "{name}님" 패턴 제거
+     message = message.replace(/{name}님,?\s*/g, '');
+     // 개별 내용 없으면 "{value}" 제거
+     message = message.replace(/{value}\s*/g, '');
+     ```
+
+2. **전화번호 자동 보정** (`src/lib/sms/utils.ts`):
+   ```typescript
+   export function normalizePhoneNumber(phone: string): string {
+     let normalized = phone.replace(/[^0-9]/g, '');
+     
+     // 1로 시작하고 10자리면 앞에 0 추가 (자동 보정)
+     if (normalized.startsWith('1') && normalized.length === 10) {
+       normalized = '0' + normalized;
+     }
+     
+     return normalized;
+   }
+   ```
+   - 스프레드시트에서 엑셀 포맷으로 인해 앞자리 0 누락 자동 수정
+   - `1036613582` → `01036613582`
+
+3. **클라이언트 안전 유틸리티 분리**:
+   - **문제**: Client 컴포넌트에서 `provider.ts` import 시 fs 모듈 에러
+   - **해결**: 전화번호 유틸리티를 `utils.ts`로 분리
+   ```typescript
+   // src/lib/sms/utils.ts - 클라이언트 안전
+   export function validatePhoneNumber(phone: string): boolean;
+   export function normalizePhoneNumber(phone: string): string;
+   export function filterValidPhoneNumbers(phones: string[]): string[];
+   
+   // src/lib/sms/provider.ts - 서버 전용 (aligoapi, solapi)
+   export { validatePhoneNumber, ... } from './utils'; // re-export
+   ```
+
+4. **메시지 미리보기 모달**:
+   ```typescript
+   <Dialog open={!!selectedRecipient}>
+     <DialogContent>
+       {/* 전화번호, 이름, 개별 내용 */}
+       {/* 발송 메시지 전문 */}
+       {/* 글자 수 및 SMS/LMS 구분 */}
+     </DialogContent>
+   </Dialog>
+   ```
+   - 테이블 행 클릭 시 모달로 전체 메시지 확인
+   - 글자 수 계산 (90자 이하: SMS, 이상: LMS)
+
+5. **발송 이력 모달** (`src/modules/sms/ui/components/sms-campaign-list.tsx`):
+   - 리스트 항목 클릭 → 모달로 발송 내용 전문 표시
+   - 캠페인 정보: 제목, 상태, 발송 통계, Form 링크, 발송 일시
+   - 메시지 전문: 줄바꿈 유지, 글자 수 표시
+   - 수신자 목록: 전화번호, 성공/실패 상태
+   - 불필요한 액션 버튼 제거 (모달로 충분)
+
+6. **개별 메시지 발송 액션** (`src/modules/sms/server/actions.ts`):
+   ```typescript
+   export async function sendPersonalizedSMS(params: {
+     recipients: Array<{
+       phone: string;
+       name?: string;
+       value?: string;  // 쿠폰 코드 등 개별 내용
+     }>;
+     template: string;
+     title: string;
+     userId: string;
+   })
+   ```
+   - 각 수신자마다 템플릿 변수 치환 후 개별 발송
+   - 발송 결과 개별 추적 및 DB 저장
+
+7. **Solapi 메시지 타입 명시** (`src/lib/sms/solapi.ts`):
+   ```typescript
+   const messageType = params.text.length <= 90 ? 'SMS' : 'LMS';
+   const response = await client.send({
+     to: phone,
+     from,
+     text: params.text,
+     type: messageType,
+   });
+   ```
+
+**테스트 결과**:
+- ✅ 변수 치환: `{name}` → "카카님!", `{value}` → "ICD71991"
+- ✅ 자동 보정: `1036613582` → `01036613582`
+- ✅ 실시간 미리보기: 처음 5개 메시지 확인 가능
+- ✅ 모달 상세보기: 개별 메시지 전체 내용 확인
+- ⚠️ `[Web발신]` 표시: Aligo 제한사항 (발신번호 인증 필요)
+
+**알려진 이슈**:
+- **[Web발신] 표시**: Aligo API의 제한사항
+  - 해결 방법 1: Aligo 웹 콘솔에서 직접 발송
+  - 해결 방법 2: Solapi로 전환 (발신번호 등록 필요)
+  - 현재: 메시지 내용 자체는 깔끔하므로 수용 가능
+
+**커밋**:
+```
+bddf947 feat(sms): add personalized SMS sending with individual coupons
+9 files changed, 899 insertions(+), 107 deletions(-)
+```
+
+**신규 파일**:
+- `src/lib/sms/utils.ts` - 클라이언트 안전 전화번호 유틸리티
+- `src/modules/sms/ui/components/personalized-sms-sender.tsx` - 개별 쿠폰 발송 UI
+
+**주요 수정 파일**:
+- `src/modules/sms/server/actions.ts` - sendPersonalizedSMS 액션
+- `src/modules/sms/ui/views/sms-dashboard.tsx` - 4번째 탭 추가
+- `src/modules/sms/ui/components/sms-campaign-list.tsx` - 발송 이력 모달
+- `src/lib/sms/provider.ts` - utils.ts에서 re-export
+- `src/lib/sms/solapi.ts` - 메시지 타입 명시
+- `next.config.ts` - serverExternalPackages 설정 유지
+
+**다음 단계**:
+- Solapi 발신번호 등록 (방문 인증 필요)
+- Aligo에서 Solapi로 전면 전환

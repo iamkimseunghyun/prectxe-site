@@ -65,7 +65,9 @@ interface Recipient {
 export function PersonalizedSMSSender({ userId }: { userId: string }) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedRecipient, setSelectedRecipient] = useState<Recipient | null>(null);
+  const [selectedRecipient, setSelectedRecipient] = useState<Recipient | null>(
+    null
+  );
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -112,9 +114,7 @@ export function PersonalizedSMSSender({ userId }: { userId: string }) {
       if (name) {
         message = message.replace(/{name}/g, name);
       } else {
-        message = message
-          .replace(/{name}님,?\s*/g, '')
-          .replace(/{name}/g, '');
+        message = message.replace(/{name}님,?\s*/g, '').replace(/{name}/g, '');
       }
       if (value) {
         message = message.replace(/{value}/g, value);
@@ -137,7 +137,12 @@ export function PersonalizedSMSSender({ userId }: { userId: string }) {
       recipients,
       hasMoreRecipients: phoneCount > 5,
     };
-  }, [form.watch('phoneList'), form.watch('nameList'), form.watch('valueList'), form.watch('template')]);
+  }, [
+    form.watch('phoneList'),
+    form.watch('nameList'),
+    form.watch('valueList'),
+    form.watch('template'),
+  ]);
 
   async function onSubmit(data: FormValues) {
     if (!parsedData.isValid) {
@@ -197,7 +202,8 @@ export function PersonalizedSMSSender({ userId }: { userId: string }) {
     } catch (error) {
       toast({
         title: '오류 발생',
-        description: error instanceof Error ? error.message : '발송에 실패했습니다',
+        description:
+          error instanceof Error ? error.message : '발송에 실패했습니다',
         variant: 'destructive',
       });
     } finally {
@@ -290,9 +296,7 @@ export function PersonalizedSMSSender({ userId }: { userId: string }) {
                     {...field}
                   />
                 </FormControl>
-                <FormDescription>
-                  쿠폰, 예약번호 등 개별 내용
-                </FormDescription>
+                <FormDescription>쿠폰, 예약번호 등 개별 내용</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -403,13 +407,14 @@ export function PersonalizedSMSSender({ userId }: { userId: string }) {
       </form>
 
       {/* 미리보기 상세 모달 */}
-      <Dialog open={!!selectedRecipient} onOpenChange={(open) => !open && setSelectedRecipient(null)}>
+      <Dialog
+        open={!!selectedRecipient}
+        onOpenChange={(open) => !open && setSelectedRecipient(null)}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>메시지 미리보기</DialogTitle>
-            <DialogDescription>
-              발송될 메시지 전체 내용입니다
-            </DialogDescription>
+            <DialogDescription>발송될 메시지 전체 내용입니다</DialogDescription>
           </DialogHeader>
 
           {selectedRecipient && (
@@ -417,21 +422,31 @@ export function PersonalizedSMSSender({ userId }: { userId: string }) {
               {/* 수신자 정보 */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-muted-foreground">전화번호:</span>
-                  <span className="font-mono text-sm">{selectedRecipient.phone}</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    전화번호:
+                  </span>
+                  <span className="font-mono text-sm">
+                    {selectedRecipient.phone}
+                  </span>
                 </div>
 
                 {selectedRecipient.name && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-muted-foreground">이름:</span>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      이름:
+                    </span>
                     <span className="text-sm">{selectedRecipient.name}</span>
                   </div>
                 )}
 
                 {selectedRecipient.value && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-muted-foreground">개별 내용:</span>
-                    <span className="font-mono text-sm">{selectedRecipient.value}</span>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      개별 내용:
+                    </span>
+                    <span className="font-mono text-sm">
+                      {selectedRecipient.value}
+                    </span>
                   </div>
                 )}
               </div>
@@ -448,7 +463,8 @@ export function PersonalizedSMSSender({ userId }: { userId: string }) {
 
               {/* 글자 수 */}
               <div className="text-xs text-muted-foreground text-right">
-                {selectedRecipient.message.length}자 ({selectedRecipient.message.length > 90 ? 'LMS' : 'SMS'})
+                {selectedRecipient.message.length}자 (
+                {selectedRecipient.message.length > 90 ? 'LMS' : 'SMS'})
               </div>
             </div>
           )}

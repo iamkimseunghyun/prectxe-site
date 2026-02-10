@@ -50,6 +50,8 @@ type Campaign = {
   recipients: Array<{
     id: string;
     phone: string;
+    name: string | null;
+    value: string | null;
     success: boolean;
   }>;
 };
@@ -57,14 +59,21 @@ type Campaign = {
 export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
+    null
+  );
 
   useEffect(() => {
     async function loadCampaigns() {
       setIsLoading(true);
+      console.log('[SMSCampaignList] Loading campaigns for userId:', userId, 'isAdmin:', isAdmin);
       const result = await listSMSCampaigns(userId, isAdmin);
+      console.log('[SMSCampaignList] Result:', result);
       if (result.success && result.data) {
+        console.log('[SMSCampaignList] Campaigns count:', result.data.length);
         setCampaigns(result.data as Campaign[]);
+      } else {
+        console.error('[SMSCampaignList] Failed to load campaigns:', result.error);
       }
       setIsLoading(false);
     }
@@ -205,9 +214,7 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>발송 내용 상세</DialogTitle>
-            <DialogDescription>
-              SMS 캠페인의 전체 내용입니다
-            </DialogDescription>
+            <DialogDescription>SMS 캠페인의 전체 내용입니다</DialogDescription>
           </DialogHeader>
 
           {selectedCampaign && (
@@ -309,11 +316,13 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
                 <span className="text-sm font-medium text-muted-foreground mb-2 block">
                   수신자 목록 ({selectedCampaign.recipients.length}명)
                 </span>
-                <div className="rounded-lg border max-h-40 overflow-y-auto">
+                <div className="rounded-lg border max-h-60 overflow-y-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>전화번호</TableHead>
+                        <TableHead>이름</TableHead>
+                        <TableHead>개별 내용</TableHead>
                         <TableHead>상태</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -322,6 +331,16 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
                         <TableRow key={recipient.id}>
                           <TableCell className="font-mono text-sm">
                             {recipient.phone}
+                          </TableCell>
+                          <TableCell>
+                            {recipient.name || (
+                              <span className="text-muted-foreground text-xs">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {recipient.value || (
+                              <span className="text-muted-foreground text-xs">-</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             {recipient.success ? (

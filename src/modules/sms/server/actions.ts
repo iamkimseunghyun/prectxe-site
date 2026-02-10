@@ -173,6 +173,7 @@ export async function createAndSendSMSCampaign(params: {
  */
 export async function listSMSCampaigns(userId: string, isAdmin = false) {
   try {
+    console.log('[listSMSCampaigns] Querying for userId:', userId, 'isAdmin:', isAdmin);
     const campaigns = await prisma.sMSCampaign.findMany({
       where: isAdmin ? {} : { userId },
       include: {
@@ -186,6 +187,8 @@ export async function listSMSCampaigns(userId: string, isAdmin = false) {
           select: {
             id: true,
             phone: true,
+            name: true,
+            value: true,
             success: true,
           },
         },
@@ -195,6 +198,7 @@ export async function listSMSCampaigns(userId: string, isAdmin = false) {
       },
     });
 
+    console.log('[listSMSCampaigns] Found campaigns:', campaigns.length);
     return { success: true, data: campaigns };
   } catch (error) {
     console.error('캠페인 목록 조회 오류:', error);
@@ -331,6 +335,8 @@ export async function sendPersonalizedSMS(params: {
       },
     });
 
+    console.log('[sendPersonalizedSMS] Campaign created:', campaign.id, 'for userId:', userId);
+
     // 각 수신자에게 개별 메시지 생성 및 발송
     const results: Array<{
       phone: string;
@@ -397,20 +403,23 @@ export async function sendPersonalizedSMS(params: {
       }
     }
 
-    // 각 수신자 결과 저장
+    // 각 수신자 결과 저장 (name, value 포함)
     await Promise.all(
-      results.map((r) =>
-        prisma.sMSRecipient.create({
+      results.map((r, index) => {
+        const recipient = recipients[index];
+        return prisma.sMSRecipient.create({
           data: {
             campaignId: campaign.id,
             phone: r.phone,
+            name: recipient?.name,
+            value: recipient?.value,
             success: r.success,
             messageId: r.messageId,
             error: r.error,
             sentAt: r.success ? new Date() : null,
           },
-        })
-      )
+        });
+      })
     );
 
     // 캠페인 상태 업데이트
@@ -423,6 +432,8 @@ export async function sendPersonalizedSMS(params: {
         sentAt: new Date(),
       },
     });
+
+    console.log('[sendPersonalizedSMS] Campaign updated:', campaign.id, 'sentCount:', sentCount, 'failedCount:', failedCount);
 
     revalidatePath('/admin/sms');
 
