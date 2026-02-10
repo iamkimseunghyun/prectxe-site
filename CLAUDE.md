@@ -148,8 +148,13 @@ Required variables (never commit `.env*`):
 - `CLOUDFLARE_IMAGE_STREAM_API_TOKEN` - Cloudflare API token
 - `COOKIE_PASSWORD` - Iron Session encryption key (min 32 chars)
 - `ENABLE_PROGRAM_REDIRECTS` - Set to `1` to enable legacy route redirects
-- `SOLAPI_API_KEY` - Solapi SMS API key (optional, for SMS features)
-- `SOLAPI_API_SECRET` - Solapi SMS API secret (optional, for SMS features)
+- `SMS_PROVIDER` - SMS provider selection: 'aligo' or 'solapi' (default: 'aligo')
+- `ALIGO_API_KEY` - Aligo API key (optional, for SMS features with Aligo)
+- `ALIGO_USER_ID` - Aligo user ID (optional, for SMS features with Aligo)
+- `ALIGO_SENDER_PHONE` - Aligo sender phone number (optional)
+- `SOLAPI_API_KEY` - Solapi SMS API key (optional, for SMS features with Solapi)
+- `SOLAPI_API_SECRET` - Solapi SMS API secret (optional, for SMS features with Solapi)
+- `SOLAPI_SENDER_PHONE` - Solapi sender phone number (optional)
 
 ## UI Layout & Navigation
 
@@ -186,7 +191,8 @@ Required variables (never commit `.env*`):
 - **SMS Management**: `/admin/sms`
   - Bulk SMS sending to form submission respondents
   - Phone number auto-formatting with hyphen insertion
-  - Solapi integration for Korean SMS delivery
+  - Multi-provider support (Aligo/Solapi) for Korean SMS delivery
+  - Provider selection via `SMS_PROVIDER` environment variable
   - Message preview and recipient management
 - **Form Design**: Card-based sections (basic info, content, images, metadata) with required field indicators (`*`)
 
@@ -296,12 +302,16 @@ Required variables (never commit `.env*`):
   - Server actions return `{ success: boolean, error?: string }` pattern
   - Client components show toast notifications on errors
   - Use `try-catch` in server actions with proper error messages
-- **SMS Integration** (`src/lib/sms/solapi.ts`):
-  - Solapi SDK for Korean SMS delivery (13원/건)
+- **SMS Integration** (`src/lib/sms/`):
+  - **Provider System**: Switch between Aligo and Solapi via `SMS_PROVIDER` env variable
+  - **Aligo** (`src/lib/sms/aligo.ts`): Korean SMS delivery with registered company number
+  - **Solapi** (`src/lib/sms/solapi.ts`): Alternative Korean SMS provider (13원/건)
   - Send bulk messages to form submission respondents
   - Phone validation and auto-formatting before sending
   - Admin interface at `/admin/sms` for message composition
-  - Environment: `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`
+  - Environment:
+    - Aligo: `ALIGO_API_KEY`, `ALIGO_USER_ID`, `ALIGO_SENDER_PHONE`
+    - Solapi: `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_SENDER_PHONE`
 
 ## Data Recovery & Safety
 

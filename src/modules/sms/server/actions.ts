@@ -6,7 +6,7 @@ import {
   filterValidPhoneNumbers,
   normalizePhoneNumber,
   sendSMS,
-} from '@/lib/sms/solapi';
+} from '@/lib/sms/provider';
 
 /**
  * Form 응답자의 전화번호 추출
