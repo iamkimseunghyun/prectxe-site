@@ -82,6 +82,48 @@
 
 ---
 
+### Phase 4 미사용 패키지 및 유틸리티 정리
+
+**제거된 npm 패키지:**
+- `react-day-picker` — calendar.tsx 삭제로 미사용
+- `@tiptap/extension-bubble-menu` — 에디터에서 미사용
+
+**제거된 유틸리티 함수 (`src/lib/utils.ts`):**
+- `isEventBookingClosed()` — 레거시 Event 모듈용
+- `getTimeUntilBookingClose()` — 레거시 Event 모듈용
+
+---
+
+### 서버 액션 리팩토링
+
+**1. 반환 타입 통일 (`ok` → `success`)**
+- `require-admin.ts`: `ok` → `success` 변경
+- 서버 액션 5개 (venues, artworks, artists, programs, journal)
+- API 라우트 5개 (admin CRUD endpoints)
+- Form views 5개 (artist, artwork, venue, program, journal)
+- Admin 페이지 4개 (programs/journal new/edit)
+
+**2. Quick Fixes**
+- artists: `revalidatePath('/events')` 3곳 제거 (레거시 잔여)
+- programs: hero 이미지 삭제 noop → 실제 `deleteCloudflareImage` 호출로 수정
+- venues: 잘못된 에러 메시지 수정 ("프로젝트를 찾을 수 없습니다" → "베뉴를 찾을 수 없습니다")
+- artworks: 잘못된 에러 메시지 수정 ("아티스트 목록 조회 오류" → "작품 목록 조회 오류")
+- venues: 디버그 주석 코드 제거
+
+**3. 이미지 삭제 로직 공통화**
+- `src/lib/cdn/cloudflare.ts`에 공유 유틸리티 추가:
+  - `deleteRemovedImages(existingImages, newImageUrls)` — update 시 제거된 이미지 삭제
+  - `deleteAllImages(images)` — delete 시 전체 이미지 삭제
+- artworks, artists, venues 서버 액션에서 인라인 루프를 공유 유틸리티로 교체
+
+**4. 페이지네이션 반환 타입 통일**
+- venues `getAllVenues`: `{ venues, total, totalPages }` → `{ items, total, page, pageSize }` 패턴으로 통일
+- 모든 paged 함수가 동일한 형태 사용: `{ page, pageSize, total, items }`
+
+**검증:** `bun run type-check` 통과
+
+---
+
 ## 2026-02-10
 
 ### Email Editor with Tiptap & Aligo SMS Integration

@@ -13,16 +13,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Module Architecture**: Features organized in `src/modules/<domain>/{server|ui}/...`
   - `server/` - Server actions and data fetching (`actions.ts`)
   - `ui/` - Client components organized as `{views,components,section}`
-  - Available modules: programs, journal, artists, venues, artworks, events, projects, auth, home, about, forms
+  - Available modules: programs, journal, artists, venues, artworks, auth, home, forms, sms
 - **Shared Resources**:
   - `src/components` - Shared UI components and layout
-  - `src/components/admin/` - Admin-specific components (AdminNav, AdminDataTable, AdminHeader)
+  - `src/components/admin/` - Admin-specific components (AdminNav, AdminHeader, AdminPagination)
   - `src/hooks` - Custom React hooks
   - `src/lib` - Utilities, schemas, database client
     - `src/lib/schemas` - Zod validation schemas
     - `src/lib/db/prisma.ts` - Prisma client instance
     - `src/lib/auth/session.ts` - Iron Session configuration
-    - `src/lib/cdn/cloudflare.ts` - Cloudflare image upload utilities
+    - `src/lib/cdn/cloudflare.ts` - Cloudflare image upload/delete utilities
 - **Import Paths**: Use `@/*` alias (e.g., `@/lib/utils`, `@/components/ui/button`)
 - **Key Routes**:
   - Programs: `/programs` (index), `/programs/[slug]` (detail)
@@ -61,7 +61,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commit & Pull Request Guidelines
 
 - Commits: concise, present tense. Optional scope: `[module] 메시지`.
-- Example: `events: fix date parsing`.
+- Example: `programs: fix date parsing`.
 - Before pushing: `bun run type-check && bun run check`.
 - PRs: clear description, linked issues, UI screenshots, and notes on DB migrations (`prisma/migrations`) and env changes.
 
@@ -70,10 +70,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Database**: PostgreSQL via Prisma ORM
 - **Schema Location**: `prisma/schema.prisma`
 - **Key Models**:
-  - `Program` - Main content type (replaces legacy Event/Project models)
+  - `Program` - Main content type
     - Fields: slug (unique), title, type (exhibition/live/party/workshop/talk), status (draft/upcoming/completed), startAt, endAt, isFeatured
     - Relations: ProgramImage[], ProgramCredit[] (many-to-many with Artist)
-    - Free-text fields: venue, organizer (legacy Venue model slated for removal)
+    - Free-text fields: venue, organizer
   - `Article` - Journal entries with slug, title, body, cover, tags, publishedAt, isFeatured
   - `Artist` - Artist profiles with name (en/kr), biography, images
   - `User` - Authentication with role (ADMIN/USER), manages programs/articles
@@ -87,7 +87,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Setting new featured content automatically unfeatures all other content
   - Homepage displays featured content with title and artists (programs) or title only (articles)
   - Admin dashboard shows currently featured content with thumbnail and edit link
-- **Legacy Models**: Event, Project, Venue (still in schema but being phased out in favor of Program with free-text venue field)
+- **Active Models**: Venue (standalone venue management with images)
 - **Migrations**: After schema changes, run `bunx prisma migrate dev -n "description"` then `bunx prisma generate`
 
 ## Authentication & Authorization
@@ -139,6 +139,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   const result = await createResource({ ...data, image: imageId });
   ```
 - **Multi-Image Uploads**: Track per-image state (uploading/success/error) with individual retry buttons
+- **Image Deletion Utilities** (`src/lib/cdn/cloudflare.ts`):
+  - `deleteRemovedImages(existingImages, newImageUrls)` - Delete images removed during update
+  - `deleteAllImages(images)` - Delete all images during entity deletion
+  - Used by artworks, artists, venues server actions
 
 ## Environment Variables
 
@@ -148,7 +152,6 @@ Required variables (never commit `.env*`):
 - `CLOUDFLARE_IMAGE_STREAM_API_TOKEN` - Cloudflare API token
 - `COOKIE_PASSWORD` - Iron Session encryption key (min 32 chars)
 - `ENABLE_PROGRAM_REDIRECTS` - Set to `1` to enable legacy route redirects
-- `SMS_PROVIDER` - SMS provider selection: 'aligo' or 'solapi' (default: 'aligo')
 - `SMS_PROVIDER` - SMS provider selection: `aligo` or `solapi` (optional, defaults to aligo)
 - `ALIGO_API_KEY` - Aligo API key (optional, for SMS features with Aligo)
 - `ALIGO_USER_ID` - Aligo user ID/login ID (optional, for SMS features with Aligo)
@@ -240,10 +243,7 @@ Required variables (never commit `.env*`):
 - **Redirects** (when enabled):
   - `/discover` → `/programs?status=upcoming`
   - `/archive` → `/programs?status=completed`
-  - `/projects/:slug` → `/programs/:slug`
-  - `/events/:slug` → `/programs/:slug`
-- **Sitemap**: Excludes legacy `/events/*` and `/projects/*` routes
-- **Canonical Model**: `Program` is the unified content type replacing Event and Project
+- **Note**: Legacy Event/Project modules and routes have been removed. Only redirect config remains for SEO.
 
 ## Development Workflow
 
@@ -290,7 +290,6 @@ Required variables (never commit `.env*`):
   - Use `zodResolver(schema)` in `useForm()` hook
   - Server-side validation: Re-validate with same schema in server actions
 - **State Management**:
-  - Global Client State: Jotai atoms (minimal usage, e.g., modal open state)
   - Form State: React Hook Form
   - Server State: TanStack Query (caching, refetching, optimistic updates)
 - **Styling**: Tailwind CSS with `cn()` utility (clsx + tailwind-merge)
@@ -300,6 +299,7 @@ Required variables (never commit `.env*`):
   - Located in `src/components/ui/`
   - Unstyled primitives styled with Tailwind
   - Composed into higher-level components in `src/components/shared/`
+- **Pagination**: All paged server actions return unified shape `{ page, pageSize, total, items }`
 - **Error Handling**:
   - Server actions return `{ success: boolean, error?: string }` pattern
   - Client components show toast notifications on errors
