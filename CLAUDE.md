@@ -149,9 +149,11 @@ Required variables (never commit `.env*`):
 - `COOKIE_PASSWORD` - Iron Session encryption key (min 32 chars)
 - `ENABLE_PROGRAM_REDIRECTS` - Set to `1` to enable legacy route redirects
 - `SMS_PROVIDER` - SMS provider selection: 'aligo' or 'solapi' (default: 'aligo')
+- `SMS_PROVIDER` - SMS provider selection: `aligo` or `solapi` (optional, defaults to aligo)
 - `ALIGO_API_KEY` - Aligo API key (optional, for SMS features with Aligo)
-- `ALIGO_USER_ID` - Aligo user ID (optional, for SMS features with Aligo)
+- `ALIGO_USER_ID` - Aligo user ID/login ID (optional, for SMS features with Aligo)
 - `ALIGO_SENDER_PHONE` - Aligo sender phone number (optional)
+- `ALIGO_TEST_MODE` - Set to `Y` for test mode (no IP restriction, no actual sending)
 - `SOLAPI_API_KEY` - Solapi SMS API key (optional, for SMS features with Solapi)
 - `SOLAPI_API_SECRET` - Solapi SMS API secret (optional, for SMS features with Solapi)
 - `SOLAPI_SENDER_PHONE` - Solapi sender phone number (optional)
@@ -305,12 +307,19 @@ Required variables (never commit `.env*`):
 - **SMS Integration** (`src/lib/sms/`):
   - **Provider System**: Switch between Aligo and Solapi via `SMS_PROVIDER` env variable
   - **Aligo** (`src/lib/sms/aligo.ts`): Korean SMS delivery with registered company number
+    - **IP Restriction**: Requires fixed IP addresses (incompatible with Vercel serverless)
+    - **Test Mode**: Set `ALIGO_TEST_MODE=Y` for development (no IP restriction, no actual sending)
+    - **Production Use**: Use Aligo web interface for SMS sending in production
+    - Express req object format required (includes `body` and `headers` properties)
   - **Solapi** (`src/lib/sms/solapi.ts`): Alternative Korean SMS provider (13원/건)
+    - No IP restrictions (suitable for Vercel deployment)
+    - Requires sender phone registration with in-person verification
   - Send bulk messages to form submission respondents
   - Phone validation and auto-formatting before sending
   - Admin interface at `/admin/sms` for message composition
   - Environment:
-    - Aligo: `ALIGO_API_KEY`, `ALIGO_USER_ID`, `ALIGO_SENDER_PHONE`
+    - Provider: `SMS_PROVIDER` (aligo or solapi, defaults to aligo)
+    - Aligo: `ALIGO_API_KEY`, `ALIGO_USER_ID`, `ALIGO_SENDER_PHONE`, `ALIGO_TEST_MODE` (optional)
     - Solapi: `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_SENDER_PHONE`
 
 ## Data Recovery & Safety

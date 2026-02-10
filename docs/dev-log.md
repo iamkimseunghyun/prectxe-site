@@ -1,5 +1,114 @@
 # Development Log
 
+## 2026-02-10
+
+### Email Editor with Tiptap & Aligo SMS Integration
+
+**목적**:
+- 이메일 캠페인용 리치 텍스트 에디터 구현
+- SMS 멀티 프로바이더 시스템 구축 (Aligo/Solapi)
+
+**배경**:
+- 기존: 단순 textarea로 이메일 작성
+- 요구사항: 이미지, YouTube 동영상, 텍스트 서식 등 리치 컨텐츠 지원
+- SMS: Solapi 발신번호 등록 문제로 Aligo API 추가 필요
+
+**구현 내용**:
+
+1. **Tiptap 리치 텍스트 에디터** (`src/components/email-editor/`):
+   ```typescript
+   // SSR 호환성
+   const editor = useEditor({
+     extensions: getEmailEditorExtensions(),
+     immediatelyRender: false, // SSR 에러 방지
+     editorProps: {
+       attributes: {
+         class: 'prose prose-sm sm:prose max-w-none focus:outline-none min-h-[400px]',
+       },
+     },
+   });
+   ```
+   - **이미지 업로드**: Cloudflare Images 통합, 크기/정렬 컨트롤
+   - **YouTube 임베드**: iframe → 이메일용 썸네일 링크 변환
+   - **텍스트 서식**: 제목, Bold/Italic/Underline, 텍스트 색상, 정렬
+   - **이메일 호환성**: HTML → inline styles 변환 (`convertToEmailHTML`)
+
+2. **이미지 컨트롤** (`src/components/email-editor/image-controls.tsx`):
+   - 이미지 선택시 툴바에 크기/정렬 버튼 표시
+   - 크기: 33%, 50%, 75%, 100%
+   - 정렬: 왼쪽, 가운데, 오른쪽
+
+3. **이메일 템플릿 HTML 렌더링 수정**:
+   ```typescript
+   // Before: <Text>{message}</Text> - HTML이 텍스트로 표시됨
+   // After: <div dangerouslySetInnerHTML={{ __html: message }} />
+   ```
+   - `newsletter.tsx`, `form-notification.tsx` 수정
+   - Tiptap HTML이 이메일에서 정상 렌더링
+
+4. **Aligo SMS API 통합** (`src/lib/sms/aligo.ts`):
+   ```typescript
+   // aligoapi 패키지는 Express req 객체 형식 요구
+   const requestData = {
+     body: {
+       sender: from,
+       receiver: phone,
+       msg: params.text,
+       msg_type: params.text.length > 90 ? 'LMS' : 'SMS',
+     },
+     headers: {
+       'content-type': 'application/json', // 필수!
+     },
+   };
+   const response = await aligoapi.send(requestData, authData);
+   ```
+   - **인증**: API key + user ID (login ID)
+   - **자동 타입 감지**: 90자 기준 SMS/LMS 전환
+   - **테스트 모드**: `ALIGO_TEST_MODE=Y` (IP 제한 없음)
+
+5. **멀티 프로바이더 SMS 시스템** (`src/lib/sms/provider.ts`):
+   ```typescript
+   export function getSMSProvider(): SMSProvider {
+     const provider = process.env.SMS_PROVIDER?.toLowerCase() as SMSProvider;
+     if (provider !== 'aligo' && provider !== 'solapi') {
+       return 'aligo'; // 기본값
+     }
+     return provider;
+   }
+   ```
+   - 환경 변수로 프로바이더 전환 (`SMS_PROVIDER=aligo|solapi`)
+   - 기존 Solapi 코드 유지
+   - 통합 인터페이스로 추상화
+
+6. **에러 핸들링 개선**:
+   - 상세 로깅: API 요청/응답 전체 출력
+   - 모든 발송 실패시 첫 번째 에러 메시지 토스트 표시
+   - IP 인증 오류 디버깅 지원
+
+**발견된 이슈**:
+
+1. **Aligo IP 제한**:
+   - Aligo API는 고정 IP 주소만 허용
+   - Vercel 서버리스 환경은 동적 IP (사용 불가)
+   - **해결**: 로컬은 Aligo, 프로덕션은 Aligo 웹 인터페이스 사용
+
+2. **Solapi 발신번호 미등록**:
+   - 발신번호 등록에 방문 인증 필요
+   - 현재 회사 번호 미등록 상태
+
+**최종 정리**:
+- **이메일**: Prectxe 사이트에서 발송 (Tiptap 에디터 사용)
+- **SMS**: Aligo 웹 인터페이스에서 발송 (IP 제한 문제)
+- 코드는 유지하되 프로덕션 SMS는 외부 툴 활용
+
+**파일 변경**:
+- `src/components/email-editor/` - Tiptap 에디터 구현
+- `src/lib/email/templates/` - HTML 렌더링 수정
+- `src/lib/sms/aligo.ts` - Aligo API 통합
+- `src/lib/sms/provider.ts` - 멀티 프로바이더 시스템
+- `src/modules/sms/server/actions.ts` - 에러 핸들링 개선
+- `CLAUDE.md` - SMS 프로바이더 문서화
+
 ## 2026-02-07
 
 ### Form Submissions View Enhancement
