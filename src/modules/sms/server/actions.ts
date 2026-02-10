@@ -300,3 +300,155 @@ export async function getFormsWithPhoneFields(userId: string, isAdmin = false) {
     };
   }
 }
+
+/**
+ * 개별 메시지 발송 (각자 다른 내용)
+ */
+export async function sendPersonalizedSMS(params: {
+  recipients: Array<{
+    phone: string;
+    name?: string;
+    value?: string;
+  }>;
+  template: string;
+  title: string;
+  userId: string;
+}) {
+  try {
+    const { recipients, template, title, userId } = params;
+
+    if (recipients.length === 0) {
+      return { success: false, error: '수신자가 없습니다' };
+    }
+
+    // SMS 캠페인 생성
+    const campaign = await prisma.sMSCampaign.create({
+      data: {
+        title,
+        message: template, // 템플릿 저장
+        userId,
+        status: 'sending',
+      },
+    });
+
+    // 각 수신자에게 개별 메시지 생성 및 발송
+    const results: Array<{
+      phone: string;
+      success: boolean;
+      messageId?: string;
+      error?: string;
+    }> = [];
+    let sentCount = 0;
+    let failedCount = 0;
+
+    for (const recipient of recipients) {
+      try {
+        // 메시지 변수 치환
+        let message = template;
+
+        // 이름 치환 (있으면 사용, 없으면 제거)
+        if (recipient.name) {
+          message = message.replace(/{name}/g, recipient.name);
+        } else {
+          // 이름이 없으면 "{name}님" 같은 패턴 제거
+          message = message
+            .replace(/{name}님,?\s*/g, '')
+            .replace(/{name}/g, '');
+        }
+
+        // 개별 내용 치환 (있으면 사용, 없으면 제거)
+        if (recipient.value) {
+          message = message.replace(/{value}/g, recipient.value);
+        } else {
+          // 개별 내용이 없으면 {value} 제거
+          message = message.replace(/{value}\s*/g, '').replace(/{value}/g, '');
+        }
+
+        // SMS 발송
+        const result = await sendSMS({
+          to: recipient.phone,
+          text: message,
+        });
+
+        // 결과 처리
+        const recipientResult = result.results[0];
+        if (recipientResult?.success) {
+          results.push({
+            phone: recipient.phone,
+            success: true,
+            messageId: recipientResult.messageId,
+          });
+          sentCount++;
+        } else {
+          results.push({
+            phone: recipient.phone,
+            success: false,
+            error: recipientResult?.error || 'Unknown error',
+          });
+          failedCount++;
+        }
+      } catch (error) {
+        results.push({
+          phone: recipient.phone,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        failedCount++;
+      }
+    }
+
+    // 각 수신자 결과 저장
+    await Promise.all(
+      results.map((r) =>
+        prisma.sMSRecipient.create({
+          data: {
+            campaignId: campaign.id,
+            phone: r.phone,
+            success: r.success,
+            messageId: r.messageId,
+            error: r.error,
+            sentAt: r.success ? new Date() : null,
+          },
+        })
+      )
+    );
+
+    // 캠페인 상태 업데이트
+    await prisma.sMSCampaign.update({
+      where: { id: campaign.id },
+      data: {
+        sentCount,
+        failedCount,
+        status: sentCount > 0 ? 'sent' : 'failed',
+        sentAt: new Date(),
+      },
+    });
+
+    revalidatePath('/admin/sms');
+
+    // 모든 발송이 실패한 경우 에러 반환
+    if (sentCount === 0) {
+      const firstError = results.find((r) => r.error);
+      return {
+        success: false,
+        error: firstError?.error || 'SMS 발송에 실패했습니다',
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        campaignId: campaign.id,
+        sentCount,
+        failedCount,
+        totalCount: recipients.length,
+      },
+    };
+  } catch (error) {
+    console.error('개별 SMS 발송 오류:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'SMS 발송에 실패했습니다',
+    };
+  }
+}

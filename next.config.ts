@@ -3,6 +3,9 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   /* config options here */
 
+  // Server-only packages (Node.js modules)
+  serverExternalPackages: ['aligoapi', 'solapi'],
+
   images: {
     unoptimized: true,
     minimumCacheTTL: 2678400,

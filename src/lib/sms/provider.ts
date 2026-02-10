@@ -1,6 +1,13 @@
 import * as Aligo from './aligo';
 import * as Solapi from './solapi';
 
+// 전화번호 유틸 함수 re-export (호환성)
+export {
+  validatePhoneNumber,
+  normalizePhoneNumber,
+  filterValidPhoneNumbers,
+} from './utils';
+
 // SMS Provider 타입
 export type SMSProvider = 'aligo' | 'solapi';
 
@@ -57,32 +64,3 @@ export async function sendSMS(params: SendSMSParams): Promise<SendSMSResult> {
   }
 }
 
-/**
- * 전화번호 형식 검증
- */
-export function validatePhoneNumber(phone: string): boolean {
-  const provider = getSMSProvider();
-  return provider === 'aligo'
-    ? Aligo.validatePhoneNumber(phone)
-    : Solapi.validatePhoneNumber(phone);
-}
-
-/**
- * 전화번호 포맷팅
- */
-export function normalizePhoneNumber(phone: string): string {
-  const provider = getSMSProvider();
-  return provider === 'aligo'
-    ? Aligo.normalizePhoneNumber(phone)
-    : Solapi.normalizePhoneNumber(phone);
-}
-
-/**
- * 유효한 전화번호만 필터링
- */
-export function filterValidPhoneNumbers(phones: string[]): string[] {
-  const provider = getSMSProvider();
-  return provider === 'aligo'
-    ? Aligo.filterValidPhoneNumbers(phones)
-    : Solapi.filterValidPhoneNumbers(phones);
-}

@@ -51,10 +51,14 @@ export async function sendSMS(params: SendSMSParams): Promise<SendSMSResult> {
     // 각 수신자에게 개별 발송
     for (const phone of recipients) {
       try {
+        // 메시지 길이에 따라 타입 자동 결정 (SMS: 90자 이하, LMS: 2000자 이하)
+        const messageType = params.text.length <= 90 ? 'SMS' : 'LMS';
+
         const response = await client.send({
           to: phone,
           from,
           text: params.text,
+          type: messageType,
         });
 
         results.push({

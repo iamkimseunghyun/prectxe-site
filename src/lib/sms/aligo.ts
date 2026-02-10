@@ -77,7 +77,10 @@ export async function sendSMS(params: SendSMSParams): Promise<SendSMSResult> {
           },
         };
 
-        console.log('[Aligo] 요청 데이터:', JSON.stringify(requestData, null, 2));
+        console.log(
+          '[Aligo] 요청 데이터:',
+          JSON.stringify(requestData, null, 2)
+        );
 
         const response = await aligoapi.send(requestData, authData);
 
