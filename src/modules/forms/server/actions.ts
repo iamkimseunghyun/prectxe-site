@@ -88,7 +88,9 @@ export async function updateForm(
         status: validated.status,
       },
       include: {
-        fields: true,
+        fields: {
+          where: { archived: false },
+        },
       },
     });
 
@@ -103,28 +105,20 @@ export async function updateForm(
       (id) => !newFieldIds.includes(id)
     );
 
-    // 🔒 안전장치: 필드 삭제 시 데이터 보존 (구글 폼 방식)
-    // 필드를 삭제해도 기존 응답은 스냅샷(fieldLabel, fieldType)으로 보존됩니다.
+    // 🔒 안전장치: 필드 soft delete (archived)로 데이터 무결성 보존
+    // fieldId 관계를 유지하여 동일 라벨 필드가 여러 개일 때도 정확한 응답 매칭 가능
     if (fieldsToDelete.length > 0) {
-      // 1. 삭제될 필드를 참조하는 응답의 fieldId를 NULL로 설정
-      await prisma.formResponse.updateMany({
-        where: {
-          fieldId: { in: fieldsToDelete },
-        },
-        data: {
-          fieldId: null,
-        },
-      });
-
-      // 2. 필드 삭제
-      await prisma.formField.deleteMany({
+      await prisma.formField.updateMany({
         where: {
           id: { in: fieldsToDelete },
+        },
+        data: {
+          archived: true,
         },
       });
 
       console.log(
-        `✅ 필드 ${fieldsToDelete.length}개 삭제됨. 기존 응답은 스냅샷으로 보존됨.`
+        `✅ 필드 ${fieldsToDelete.length}개 아카이브됨. fieldId 관계 유지.`
       );
     }
 
@@ -170,7 +164,12 @@ export async function updateForm(
     // 최종 Form 데이터 조회
     const updatedForm = await prisma.form.findUnique({
       where: { id: formId },
-      include: { fields: true },
+      include: {
+        fields: {
+          where: { archived: false },
+          orderBy: { order: 'asc' },
+        },
+      },
     });
 
     if (!updatedForm) {
@@ -231,6 +230,7 @@ export async function getFormBySlug(slug: string) {
       where: { slug, status: 'published' },
       include: {
         fields: {
+          where: { archived: false },
           orderBy: { order: 'asc' },
         },
       },
@@ -260,7 +260,9 @@ export async function submitFormResponse(
     const form = await prisma.form.findUnique({
       where: { id: formId },
       include: {
-        fields: true,
+        fields: {
+          where: { archived: false },
+        },
       },
     });
 
@@ -417,6 +419,7 @@ export async function getForm(formId: string, userId: string, isAdmin = false) {
       where: { id: formId },
       include: {
         fields: {
+          where: { archived: false },
           orderBy: { order: 'asc' },
         },
         _count: {
@@ -461,6 +464,7 @@ export async function listForms(
       },
       include: {
         fields: {
+          where: { archived: false },
           orderBy: { order: 'asc' },
         },
         _count: {
@@ -494,6 +498,7 @@ export async function copyForm(
       where: { id: formId },
       include: {
         fields: {
+          where: { archived: false },
           orderBy: { order: 'asc' },
         },
       },

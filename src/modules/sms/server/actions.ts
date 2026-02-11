@@ -16,7 +16,9 @@ export async function getFormRespondentsPhones(formId: string) {
     const form = await prisma.form.findUnique({
       where: { id: formId },
       include: {
-        fields: true,
+        fields: {
+          where: { archived: false },
+        },
         submissions: {
           include: {
             responses: true,
@@ -274,6 +276,7 @@ export async function getFormsWithPhoneFields(userId: string, isAdmin = false) {
         fields: {
           where: {
             type: 'phone',
+            archived: false,
           },
         },
         submissions: {

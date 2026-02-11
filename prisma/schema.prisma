@@ -228,6 +228,7 @@ model FormField {
   options     String[]
   order       Int            @default(0)
   validation  Json?
+  archived    Boolean        @default(false)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   form        Form           @relation(fields: [formId], references: [id], onDelete: Cascade)

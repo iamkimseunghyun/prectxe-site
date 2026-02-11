@@ -47,6 +47,7 @@ interface SubmissionsViewProps {
         label: string;
         type: string;
         order: number;
+        archived: boolean;
       }>;
     };
     submissions: Array<{
@@ -64,6 +65,7 @@ interface SubmissionsViewProps {
           id: string;
           label: string;
           type: string;
+          archived: boolean;
         } | null;
       }>;
     }>;
@@ -91,28 +93,44 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
   const allFields = useMemo(() => {
     const fieldMap = new Map<
       string,
-      { id: string | null; label: string; isDeleted: boolean }
+      { id: string | null; label: string; isDeleted: boolean; index: number }
     >();
 
-    // Add current fields
+    // Add current (non-archived) fields
     form.fields.forEach((field) => {
       fieldMap.set(field.id, {
         id: field.id,
         label: field.label,
-        isDeleted: false,
+        isDeleted: field.archived,
+        index: 0,
       });
     });
 
-    // Add deleted fields from responses
+    // Add deleted/archived fields from responses
+    // Track per-submission field order to detect duplicate labels
     submissions.forEach((submission) => {
+      const deletedLabelCounts = new Map<string, number>();
       submission.responses.forEach((response) => {
-        if (!response.fieldId && response.fieldLabel) {
-          const key = `deleted_${response.fieldLabel}`;
+        // Archived fields: fieldId still exists, field.archived === true
+        if (response.field?.archived && !fieldMap.has(response.field.id)) {
+          fieldMap.set(response.field.id, {
+            id: response.field.id,
+            label: response.field.label,
+            isDeleted: true,
+            index: 0,
+          });
+        }
+        // Legacy deleted fields: fieldId is null (과거 데이터 호환)
+        else if (!response.fieldId && response.fieldLabel) {
+          const count = deletedLabelCounts.get(response.fieldLabel) || 0;
+          deletedLabelCounts.set(response.fieldLabel, count + 1);
+          const key = `deleted_${response.fieldLabel}_${count}`;
           if (!fieldMap.has(key)) {
             fieldMap.set(key, {
               id: null,
               label: response.fieldLabel,
               isDeleted: true,
+              index: count,
             });
           }
         } else if (response.field && !fieldMap.has(response.field.id)) {
@@ -120,6 +138,7 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
             id: response.field.id,
             label: response.field.label,
             isDeleted: false,
+            index: 0,
           });
         }
       });
@@ -127,6 +146,38 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
 
     return Array.from(fieldMap.values());
   }, [form.fields, submissions]);
+
+  // Build unique column names for each field
+  const fieldColumnNames = useMemo(() => {
+    const names = new Map<(typeof allFields)[number], string>();
+    const labelCounts = new Map<string, number>();
+
+    // Count how many times each label appears
+    for (const field of allFields) {
+      const baseLabel = field.isDeleted
+        ? `${field.label} (삭제됨)`
+        : field.label;
+      labelCounts.set(baseLabel, (labelCounts.get(baseLabel) || 0) + 1);
+    }
+
+    // Assign unique column names with suffix for duplicates
+    const labelIndexes = new Map<string, number>();
+    for (const field of allFields) {
+      const baseLabel = field.isDeleted
+        ? `${field.label} (삭제됨)`
+        : field.label;
+      const count = labelCounts.get(baseLabel) || 1;
+      if (count > 1) {
+        const idx = (labelIndexes.get(baseLabel) || 0) + 1;
+        labelIndexes.set(baseLabel, idx);
+        names.set(field, idx === 1 ? baseLabel : `${baseLabel} (${idx})`);
+      } else {
+        names.set(field, baseLabel);
+      }
+    }
+
+    return names;
+  }, [allFields]);
 
   // Transform data for table display
   const tableData = useMemo(() => {
@@ -143,16 +194,21 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
       };
 
       allFields.forEach((field) => {
-        const response = submission.responses.find((r) => {
-          if (field.id) {
-            return r.fieldId === field.id;
-          }
-          return r.fieldLabel === field.label && !r.fieldId;
-        });
+        let response:
+          | SubmissionsViewProps['data']['submissions'][0]['responses'][0]
+          | undefined;
+        if (field.id) {
+          response = submission.responses.find((r) => r.fieldId === field.id);
+        } else {
+          // For deleted fields with duplicate labels, match by
+          // occurrence index within the submission's responses
+          const deletedResponses = submission.responses.filter(
+            (r) => !r.fieldId && r.fieldLabel === field.label
+          );
+          response = deletedResponses[field.index];
+        }
 
-        const columnName = field.isDeleted
-          ? `${field.label} (삭제됨)`
-          : field.label;
+        const columnName = fieldColumnNames.get(field) || field.label;
         row[columnName] = response?.value || '-';
       });
 
@@ -160,7 +216,7 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
 
       return row;
     });
-  }, [submissions, allFields]);
+  }, [submissions, allFields, fieldColumnNames]);
 
   // Filter data
   const filteredData = useMemo(() => {
@@ -336,32 +392,30 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
                         <ArrowUpDown className="h-3.5 w-3.5" />
                       </div>
                     </TableHead>
-                    {allFields.map((field, index) => (
-                      <TableHead
-                        key={field.id || `deleted_${index}`}
-                        className="cursor-pointer select-none hover:bg-muted/80"
-                        onClick={() =>
-                          handleSort(
-                            field.isDeleted
-                              ? `${field.label} (삭제됨)`
-                              : field.label
-                          )
-                        }
-                      >
-                        <div className="flex items-center gap-1">
-                          {field.label}
-                          {field.isDeleted && (
-                            <Badge
-                              variant="destructive"
-                              className="h-5 text-[10px]"
-                            >
-                              삭제됨
-                            </Badge>
-                          )}
-                          <ArrowUpDown className="h-3.5 w-3.5" />
-                        </div>
-                      </TableHead>
-                    ))}
+                    {allFields.map((field, index) => {
+                      const columnName =
+                        fieldColumnNames.get(field) || field.label;
+                      return (
+                        <TableHead
+                          key={field.id || `deleted_${index}`}
+                          className="cursor-pointer select-none hover:bg-muted/80"
+                          onClick={() => handleSort(columnName)}
+                        >
+                          <div className="flex items-center gap-1">
+                            {columnName.replace(' (삭제됨)', '')}
+                            {field.isDeleted && (
+                              <Badge
+                                variant="destructive"
+                                className="h-5 text-[10px]"
+                              >
+                                삭제됨
+                              </Badge>
+                            )}
+                            <ArrowUpDown className="h-3.5 w-3.5" />
+                          </div>
+                        </TableHead>
+                      );
+                    })}
                     <TableHead
                       className="w-32 cursor-pointer select-none hover:bg-muted/80"
                       onClick={() => handleSort('IP')}
@@ -392,9 +446,8 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
                           {row.제출시간}
                         </TableCell>
                         {allFields.map((field, index) => {
-                          const columnName = field.isDeleted
-                            ? `${field.label} (삭제됨)`
-                            : field.label;
+                          const columnName =
+                            fieldColumnNames.get(field) || field.label;
                           const value = row[columnName];
                           return (
                             <TableCell
@@ -526,7 +579,9 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
                     response.fieldLabel ||
                     response.field?.label ||
                     '알 수 없는 필드';
-                  const isDeleted = !response.fieldId && response.fieldLabel;
+                  const isDeleted =
+                    response.field?.archived ||
+                    (!response.fieldId && response.fieldLabel);
 
                   return (
                     <div

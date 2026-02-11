@@ -12,7 +12,9 @@ export async function getFormRespondentsEmails(formId: string) {
     const form = await prisma.form.findUnique({
       where: { id: formId },
       include: {
-        fields: true,
+        fields: {
+          where: { archived: false },
+        },
         submissions: {
           include: {
             responses: true,
@@ -271,6 +273,7 @@ export async function getFormsWithEmailFields(userId: string, isAdmin = false) {
         fields: {
           where: {
             type: 'email',
+            archived: false,
           },
         },
         submissions: {
