@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2, RotateCcw, Send } from 'lucide-react';
+import { Copy, Loader2, RotateCcw, Send } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -423,9 +423,22 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
 
               {/* 메시지 내용 */}
               <div>
-                <span className="text-sm font-medium text-muted-foreground mb-2 block">
-                  메시지 내용
-                </span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    메시지 내용
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedCampaign.message);
+                      toast({ title: '메시지가 복사되었습니다' });
+                    }}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
                 <div className="rounded-lg border bg-muted/50 p-4">
                   <div className="whitespace-pre-wrap text-sm">
                     {selectedCampaign.message}
