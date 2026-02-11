@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
+import { Loader2, RotateCcw, Send } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -27,7 +28,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { listSMSCampaigns } from '../../server/actions';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import {
+  createAndSendSMSCampaign,
+  listSMSCampaigns,
+  sendPersonalizedSMS,
+} from '../../server/actions';
 
 interface SMSCampaignListProps {
   userId: string;
@@ -62,6 +69,10 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
     null
   );
+  const [resendCampaign, setResendCampaign] = useState<Campaign | null>(null);
+  const [resendMessage, setResendMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     async function loadCampaigns() {
@@ -87,6 +98,95 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
     }
     loadCampaigns();
   }, [userId, isAdmin]);
+
+  const hasPersonalizedRecipients = (campaign: Campaign) => {
+    return campaign.recipients.some((r) => r.name || r.value);
+  };
+
+  const handleOpenResend = (campaign: Campaign) => {
+    setResendCampaign(campaign);
+    setResendMessage(campaign.message);
+    setSelectedCampaign(null);
+  };
+
+  const handleResend = async () => {
+    if (!resendCampaign) return;
+
+    const successPhones = resendCampaign.recipients
+      .filter((r) => r.success)
+      .map((r) => r.phone);
+
+    if (successPhones.length === 0) {
+      toast({
+        title: '발송 가능한 수신자가 없습니다',
+        description: '이전 캠페인에서 성공한 수신자가 없습니다',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSending(true);
+
+    try {
+      const isPersonalized = hasPersonalizedRecipients(resendCampaign);
+
+      let result: {
+        success: boolean;
+        data?: { sentCount: number; failedCount: number };
+        error?: string;
+      };
+      if (isPersonalized) {
+        const recipients = resendCampaign.recipients
+          .filter((r) => r.success)
+          .map((r) => ({
+            phone: r.phone,
+            name: r.name || undefined,
+            value: r.value || undefined,
+          }));
+        result = await sendPersonalizedSMS({
+          recipients,
+          template: resendMessage,
+          title: `[재발송] ${resendCampaign.title}`,
+          userId,
+        });
+      } else {
+        result = await createAndSendSMSCampaign({
+          title: `[재발송] ${resendCampaign.title}`,
+          message: resendMessage,
+          phones: successPhones,
+          formId: undefined,
+          userId,
+        });
+      }
+
+      if (result.success) {
+        toast({
+          title: 'SMS 재발송 완료',
+          description: `${result.data?.sentCount}건 발송 성공${result.data?.failedCount ? `, ${result.data.failedCount}건 실패` : ''}`,
+        });
+        setResendCampaign(null);
+        // 목록 새로고침
+        const refreshed = await listSMSCampaigns(userId, isAdmin);
+        if (refreshed.success && refreshed.data) {
+          setCampaigns(refreshed.data as Campaign[]);
+        }
+      } else {
+        toast({
+          title: '재발송 실패',
+          description: result.error,
+          variant: 'destructive',
+        });
+      }
+    } catch (_error) {
+      toast({
+        title: '재발송 실패',
+        description: '알 수 없는 오류가 발생했습니다',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -221,8 +321,26 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
       >
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>발송 내용 상세</DialogTitle>
-            <DialogDescription>SMS 캠페인의 전체 내용입니다</DialogDescription>
+            <div className="flex items-center justify-between pr-6">
+              <div>
+                <DialogTitle>발송 내용 상세</DialogTitle>
+                <DialogDescription>
+                  SMS 캠페인의 전체 내용입니다
+                </DialogDescription>
+              </div>
+              {selectedCampaign &&
+                selectedCampaign.status === 'sent' &&
+                selectedCampaign.recipients.some((r) => r.success) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenResend(selectedCampaign)}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    재발송
+                  </Button>
+                )}
+            </div>
           </DialogHeader>
 
           {selectedCampaign && (
@@ -366,6 +484,91 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
                     </TableBody>
                   </Table>
                 </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 재발송 모달 */}
+      <Dialog
+        open={!!resendCampaign}
+        onOpenChange={(open) => !open && setResendCampaign(null)}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>SMS 재발송</DialogTitle>
+            <DialogDescription>
+              이전 발송 성공 수신자에게 메시지를 다시 보냅니다
+            </DialogDescription>
+          </DialogHeader>
+
+          {resendCampaign && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">
+                  원본 캠페인
+                </Label>
+                <p className="text-sm mt-1">{resendCampaign.title}</p>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">
+                  수신자
+                </Label>
+                <p className="text-sm mt-1">
+                  {resendCampaign.recipients.filter((r) => r.success).length}명
+                  (이전 발송 성공자)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="resend-message">메시지 내용</Label>
+                <Textarea
+                  id="resend-message"
+                  value={resendMessage}
+                  onChange={(e) => setResendMessage(e.target.value)}
+                  rows={6}
+                  maxLength={2000}
+                  placeholder="발송할 메시지를 입력하세요"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>
+                    {resendMessage.length > 90 ? 'LMS (29원)' : 'SMS (13원)'}
+                  </span>
+                  <span>{resendMessage.length}/2000자</span>
+                </div>
+                {hasPersonalizedRecipients(resendCampaign) && (
+                  <p className="text-xs text-muted-foreground">
+                    사용 가능한 변수: {'{name}'} (이름), {'{value}'} (개별 내용)
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setResendCampaign(null)}
+                  disabled={isSending}
+                >
+                  취소
+                </Button>
+                <Button
+                  onClick={handleResend}
+                  disabled={isSending || resendMessage.trim().length === 0}
+                >
+                  {isSending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      발송 중...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-1" />
+                      재발송
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           )}
