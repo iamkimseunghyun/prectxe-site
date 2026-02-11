@@ -27,7 +27,10 @@ export default async function Page({
       if (intent === 'new') redirect(`/admin/journal/new`);
       redirect(`/admin/journal`);
     }
-    return { success: false, error: (res as any)?.error ?? '저장에 실패했습니다.' };
+    return {
+      success: false,
+      error: (res as any)?.error ?? '저장에 실패했습니다.',
+    };
   }
 
   return (

@@ -8,6 +8,7 @@ export async function requireAdmin() {
     where: { id: session.id },
     select: { role: true },
   });
-  if (user?.role !== 'ADMIN') return { success: false as const, error: 'FORBIDDEN' };
+  if (user?.role !== 'ADMIN')
+    return { success: false as const, error: 'FORBIDDEN' };
   return { success: true as const, userId: session.id };
 }

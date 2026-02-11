@@ -269,7 +269,8 @@ export async function updateProgram(id: string, input: unknown) {
     where: { id },
     include: { images: true },
   });
-  if (!existing) return { success: false, error: '프로그램을 찾을 수 없습니다.' };
+  if (!existing)
+    return { success: false, error: '프로그램을 찾을 수 없습니다.' };
 
   // If setting as featured, unfeatured all other content
   if (data.isFeatured && !existing.isFeatured) {

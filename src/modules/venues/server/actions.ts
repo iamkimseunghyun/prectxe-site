@@ -54,7 +54,10 @@ export async function createVenue(
     const validatedResult = createVenueSchema.safeParse(data);
     if (!validatedResult.success) {
       console.error('Validation errors:', validatedResult.error.errors);
-      return { success: false, error: '장소 정보 입력 값이 올바르지 않습니다.' };
+      return {
+        success: false,
+        error: '장소 정보 입력 값이 올바르지 않습니다.',
+      };
     }
 
     const validatedData = validatedResult.data;
@@ -150,7 +153,6 @@ export async function updateVenue(
       },
       include: {
         images: true,
-
       },
     });
 
