@@ -116,7 +116,7 @@ Each module follows the pattern:
   - `Artist` — Bilingual names (name_en, name_kr), biography, ArtistImage[]
   - `Venue` — Standalone venue management with VenueImage[]
   - `Artwork` — Multi-artist relation via ArtistArtwork junction, ArtworkImage[]
-  - `Form/FormField/FormSubmission/FormResponse` — Dynamic form builder (12 field types)
+  - `Form/FormField/FormSubmission/FormResponse` — Dynamic form builder (12 field types), FormField has `archived` flag for soft delete
   - `SMSCampaign/SMSRecipient` — Bulk SMS tracking with personalized name/value per recipient
   - `EmailCampaign/EmailRecipient` — Email campaign tracking
   - `User` — Role-based (ADMIN/USER)
@@ -124,9 +124,11 @@ Each module follows the pattern:
 - **Migrations**: Edit schema → `bunx prisma migrate dev -n "description"` → commit both schema and migration files
 
 ### Form Data Safety (Critical)
-- **NEVER** cascade-delete responses when modifying fields
-- FormResponse stores field snapshots (`fieldLabel`, `fieldType`) so data survives field modifications/deletions
-- When deleting fields: First `updateMany` to set `fieldId: null` on responses, then delete the field
+- **NEVER** physically delete FormField records — use soft delete (`archived: true`) to preserve `fieldId` relationships
+- FormField has `archived Boolean @default(false)` — all field queries must filter `where: { archived: false }` except `getFormSubmissions()` (needs all fields for history)
+- FormResponse stores field snapshots (`fieldLabel`, `fieldType`) as backup, but primary data integrity relies on `fieldId` foreign key
+- When "deleting" fields in `updateForm()`: Set `archived: true` via `updateMany`, never `deleteMany`
+- Legacy data: Some old responses may have `fieldId: null` from before soft delete — submissions view handles both patterns
 - Empty submission prevention: 3-layer (reject empty data, use transactions, verify response count)
 
 ## Authentication & Authorization

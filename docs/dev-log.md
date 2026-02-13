@@ -1,5 +1,59 @@
 # Development Log
 
+## 2026-02-12
+
+### FormField Soft Delete 마이그레이션
+
+**문제:**
+- 폼 필드를 물리적 삭제 시 `FormResponse.fieldId`가 NULL로 설정됨
+- 동일 라벨의 필드가 여러 개 존재할 때, 삭제된 필드의 응답을 `fieldLabel`만으로는 구분 불가
+- 결과: submissions 뷰에서 데이터 누락/혼동 발생
+
+**해결: Soft Delete (archived 플래그)**
+
+1. **Prisma Schema**: `FormField`에 `archived Boolean @default(false)` 추가
+2. **forms/server/actions.ts** `updateForm()`:
+   - Before: `formResponse.updateMany({ fieldId: null })` → `formField.deleteMany()`
+   - After: `formField.updateMany({ archived: true })`
+   - `fieldId` 관계 영구 보존
+3. **모든 필드 조회에 `where: { archived: false }` 추가:**
+   - `getFormBySlug()`, `submitFormResponse()`, `getForm()`, `listForms()`, `copyForm()`
+   - `getFormRespondentsPhones()`, `getFormsWithPhoneFields()` (SMS)
+   - `getFormRespondentsEmails()`, `getFormsWithEmailFields()` (Email)
+   - 예외: `getFormSubmissions()` — archived 포함 (이력 표시용)
+4. **submissions-view.tsx**:
+   - `field.archived` 속성으로 삭제된 필드 감지
+   - 레거시 `fieldId: null` 데이터 호환 유지
+   - 동일 라벨 중복 필드 처리 개선 (인덱스 기반 매칭)
+
+**DB 적용:**
+- Dev 브랜치: `prisma db push`
+- Prod 브랜치: `ALTER TABLE "FormField" ADD COLUMN "archived" BOOLEAN NOT NULL DEFAULT false`
+
+**참고:** 마이그레이션 히스토리 drift로 `prisma migrate dev` 대신 `db push` / 직접 ALTER TABLE 사용
+
+---
+
+### SMS 데이터 마이그레이션 (Dev → Prod)
+
+**배경:**
+- Aligo API가 고정 IP에서만 동작하여 개발 서버에서 수백건의 SMS 발송
+- 프로덕션에는 폼 응답 데이터만 존재, SMS 캠페인 데이터는 dev에만 존재
+- Neon 동일 프로젝트 (`calm-recipe-90482731`)의 서로 다른 브랜치
+
+**마이그레이션 내용:**
+- Dev → Prod: 18개 캠페인, 216명 수신자 전량 이관
+- 프로덕션 최종: 26개 캠페인 (기존 8 + 18), 224명 수신자 (기존 8 + 216)
+- CUID 기반 ID로 충돌 없음, `formId`는 NULL (dev에서 폼 연결 없이 발송)
+
+**프로덕션 스키마 보정:**
+- `SMSRecipient.name` (TEXT), `SMSRecipient.value` (TEXT) 컬럼 추가 (dev에서만 추가되어 있었음)
+- `FormField.archived` (BOOLEAN DEFAULT false) 컬럼 추가
+
+**방법:** Neon MCP `run_sql`로 dev에서 INSERT 구문 생성 → `run_sql_transaction`으로 prod에 배치 삽입
+
+---
+
 ## 2026-02-11
 
 ### Phase 1 코드 정리 완료
