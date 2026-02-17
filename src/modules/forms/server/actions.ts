@@ -227,7 +227,7 @@ export async function deleteForm(
 export async function getFormBySlug(slug: string) {
   try {
     const form = await prisma.form.findUnique({
-      where: { slug, status: 'published' },
+      where: { slug, status: { not: 'draft' } },
       include: {
         fields: {
           where: { archived: false },

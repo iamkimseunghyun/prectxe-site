@@ -25,8 +25,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **TanStack Query** for client-side server state, **React Hook Form** + **Zod** for form validation
 - **TipTap** for rich text editing (journal articles, email content)
 - **Iron Session** for cookie-based auth
-- **Cloudflare Images** for image hosting
+- **Cloudflare Images** for image hosting (Next.js `images.unoptimized: true` — Cloudflare handles optimization)
 - **Aligo/Solapi** for Korean SMS delivery, **Resend** for email
+- SMS packages (`aligoapi`, `solapi`) are `serverExternalPackages` in `next.config.ts` (Node.js-only)
 
 ## Project Structure
 
@@ -65,9 +66,10 @@ src/
 
 ### Modules
 
-Available: `programs`, `journal`, `artists`, `venues`, `artworks`, `auth`, `home`, `forms`, `sms`, `email`
+Full modules (with server actions + UI): `programs`, `journal`, `artists`, `venues`, `artworks`, `auth`, `forms`, `sms`, `email`
+UI-only: `home` (section components only, no server actions)
 
-Each module follows the pattern:
+Each full module follows the pattern:
 - `server/actions.ts` — Server actions with `'use server'` directive
 - `ui/views/` — Page-level view components
 - `ui/components/` — Reusable module-specific components
@@ -75,7 +77,8 @@ Each module follows the pattern:
 
 ## Coding Style
 
-- TypeScript strict mode. 2-space indent, single quotes, print width 80, trailing commas (es5)
+- TypeScript strict mode. 2-space indent, single quotes, semicolons always, print width 80, trailing commas (es5)
+- Biome auto-organizes imports on check/format — don't manually sort imports
 - Filenames: kebab-case (e.g., `program-card.tsx`). Components/hooks in PascalCase
 - Use `cn()` from `@/lib/utils` to merge Tailwind classes (clsx + tailwind-merge)
 - Korean-language UI strings and error messages throughout the codebase
@@ -113,7 +116,7 @@ Each module follows the pattern:
 - **Key Models**:
   - `Program` — slug (unique), type (exhibition/live/party/workshop/talk), status (draft/upcoming/completed), isFeatured, venue/organizer (free-text), ProgramImage[], ProgramCredit[] (many-to-many with Artist)
   - `Article` — Journal entries with slug, body, cover, tags, publishedAt, isFeatured
-  - `Artist` — Bilingual names (name_en, name_kr), biography, ArtistImage[]
+  - `Artist` — Bilingual names: `name` (mapped to `name_en` column) and `nameKr` (mapped to `name_kr` column), biography, ArtistImage[]
   - `Venue` — Standalone venue management with VenueImage[]
   - `Artwork` — Multi-artist relation via ArtistArtwork junction, ArtworkImage[]
   - `Form/FormField/FormSubmission/FormResponse` — Dynamic form builder (12 field types), FormField has `archived` flag for soft delete
@@ -122,6 +125,7 @@ Each module follows the pattern:
   - `User` — Role-based (ADMIN/USER)
 - **Featured Content**: Only one Program or Article can be `isFeatured` at a time (enforced via Prisma transaction that unfeatures all before featuring one)
 - **Migrations**: Edit schema → `bunx prisma migrate dev -n "description"` → commit both schema and migration files
+- **Migration caveat**: If migration history drifts between dev/prod branches, `prisma db push` or direct `ALTER TABLE` may be needed instead of `migrate dev`
 
 ### Form Data Safety (Critical)
 - **NEVER** physically delete FormField records — use soft delete (`archived: true`) to preserve `fieldId` relationships
@@ -161,6 +165,7 @@ Optional:
 - SMS (Aligo): `ALIGO_API_KEY`, `ALIGO_USER_ID`, `ALIGO_SENDER_PHONE`, `ALIGO_TEST_MODE` (set `Y` for dev — no IP restriction, no actual sending)
 - SMS (Solapi): `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_SENDER_PHONE`
 - `SMS_PROVIDER` — `aligo` (default, requires fixed IP) or `solapi` (no IP restriction, works on Vercel)
+- Email: `RESEND_API_KEY` — for email campaigns via Resend
 
 ## Development Workflow
 
