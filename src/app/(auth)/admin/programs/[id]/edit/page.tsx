@@ -15,7 +15,13 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const program = await prisma.program.findUnique({ where: { id } });
+  const program = await prisma.program.findUnique({
+    where: { id },
+    include: {
+      images: { orderBy: { order: 'asc' } },
+      credits: { include: { artist: true } },
+    },
+  });
   if (!program) redirect('/admin/programs');
 
   async function onSubmit(formData: any) {
@@ -54,6 +60,16 @@ export default async function Page({
           heroUrl: program.heroUrl ?? undefined,
           venue: program.venue ?? undefined,
           organizer: program.organizer ?? undefined,
+          images: program.images.map((i) => ({
+            imageUrl: i.imageUrl,
+            alt: i.alt,
+            order: i.order,
+          })),
+          credits: program.credits.map((c) => ({
+            artistId: c.artistId,
+            role: c.role,
+            artist: c.artist,
+          })),
         }}
       />
     </div>

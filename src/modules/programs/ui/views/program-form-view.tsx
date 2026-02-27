@@ -112,7 +112,9 @@ export function ProgramFormView({
   // 미리보기 모달 상태
   const [showPreview, setShowPreview] = useState(false);
 
-  const [credits, setCredits] = useState<Credit[]>([]);
+  const [credits, setCredits] = useState<Credit[]>(
+    (initial as any)?.credits ?? []
+  );
 
   const {
     multiImagePreview,
@@ -122,7 +124,9 @@ export function ProgramFormView({
     markAllAsUploaded,
     uploadPendingWithProgress,
     retryAtWithProgress,
-  } = useMultiImageUpload();
+  } = useMultiImageUpload({
+    initialImages: (initial as any)?.images,
+  });
 
   const {
     preview,

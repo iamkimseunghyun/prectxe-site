@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `bun run build` — Run `prisma generate` then `next build`
 - `bun run type-check` — TypeScript type checking (`tsc --noEmit`)
 - `bun run lint` — Biome linter (`biome lint .`)
+- `bun run lint:fix` — Auto-fix lint issues (`biome lint --write .`)
 - `bun run check` — Biome check (lint + format combined)
 - `bun run check:fix` — Auto-fix Biome issues
 - `bun run format` — Biome formatter (`biome format --write .`)
@@ -21,13 +22,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Bun** as package manager and runtime
 - **PostgreSQL** via **Prisma** ORM (hosted on Neon)
 - **Biome** for linting/formatting (replaced ESLint + Prettier)
-- **Tailwind CSS** + **shadcn/ui** (Radix UI primitives) + **CVA** for component variants
+- **Tailwind CSS v3** + **shadcn/ui** (Radix UI primitives) + **CVA** for component variants
 - **TanStack Query** for client-side server state, **React Hook Form** + **Zod** for form validation
 - **TipTap** for rich text editing (journal articles, email content)
+- **@dnd-kit** for drag-and-drop (form field ordering), **embla-carousel-react** for carousels, **xlsx** for spreadsheet export
 - **Iron Session** for cookie-based auth
 - **Cloudflare Images** for image hosting (Next.js `images.unoptimized: true` — Cloudflare handles optimization)
 - **Aligo/Solapi** for Korean SMS delivery, **Resend** for email
 - SMS packages (`aligoapi`, `solapi`) are `serverExternalPackages` in `next.config.ts` (Node.js-only)
+- Deployed on **Vercel** with `@vercel/analytics` and `@vercel/speed-insights`
 
 ## Project Structure
 
