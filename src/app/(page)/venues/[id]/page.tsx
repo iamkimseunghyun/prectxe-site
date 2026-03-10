@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import CarouselGallery from '@/components/image/carousel-gallery';
 import AdminButton from '@/components/layout/admin-button';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
+import VenueSchema from '@/components/seo/venue-schema';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import canManage from '@/lib/auth/make-login';
@@ -24,16 +25,27 @@ export async function generateMetadata({
     };
   }
 
+  const description = `${venue.description.substring(0, 155)}...`;
+
   return {
     title: venue.name,
-    description: `${venue.description.substring(0, 155)}...`,
+    description,
+    alternates: {
+      canonical: `https://prectxe.com/venues/${id}`,
+    },
     openGraph: {
       title: `${venue.name} - PRECTXE 전시 공간`,
-      description: `${venue.description.substring(0, 155)}...`,
+      description,
       images: venue.images.map((img) => ({
         url: img.imageUrl,
         alt: img.alt,
       })),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: venue.name,
+      description,
+      images: venue.images[0] ? [venue.images[0].imageUrl] : undefined,
     },
   };
 }
@@ -50,6 +62,14 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
+      <VenueSchema
+        venue={{
+          id: venue.id,
+          name: venue.name,
+          address: venue.address,
+          images: venue.images,
+        }}
+      />
       <BreadcrumbNav entityType={'venue'} title={venue.name} />
 
       {/* Gallery Section */}

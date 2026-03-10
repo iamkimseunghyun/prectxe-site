@@ -1,8 +1,10 @@
 'use client';
 
+import { X } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import SingleImageBox from '@/components/image/single-image-box';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,6 +19,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { toast } from '@/hooks/use-toast';
 import { containsKorean, getImageUrl, slugify, uploadImage } from '@/lib/utils';
+
+const STANDARD_TAGS = [
+  { value: 'tech-note', label: 'Tech Note' },
+  { value: 'scene-report', label: 'Scene Report' },
+  { value: 'archive', label: 'Archive' },
+] as const;
 
 function Label({
   children,
@@ -42,16 +50,24 @@ type Initial = {
   tags?: string[];
   publishedAt?: string | null;
   isFeatured?: boolean;
+  programId?: string | null;
+};
+
+type ProgramOption = {
+  id: string;
+  title: string;
 };
 
 export function JournalFormView({
   initial,
   onSubmit,
+  programs,
 }: {
   initial?: Initial;
   onSubmit: (
     data: any
   ) => Promise<{ ok?: boolean; error?: string } | undefined>;
+  programs?: ProgramOption[];
 }) {
   const [form, setForm] = useState<Initial>({
     title: initial?.title ?? '',
@@ -62,6 +78,7 @@ export function JournalFormView({
     tags: initial?.tags ?? [],
     publishedAt: initial?.publishedAt ?? '',
     isFeatured: initial?.isFeatured ?? false,
+    programId: initial?.programId ?? null,
   });
 
   // 공개 상태 (publishedAt이 있으면 공개)
@@ -266,6 +283,100 @@ export function JournalFormView({
           </div>
         </CardContent>
       </Card>
+
+      {/* 태그 */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">태그</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>카테고리</Label>
+            <div className="flex flex-wrap gap-3">
+              {STANDARD_TAGS.map((tag) => (
+                <label key={tag.value} className="flex items-center gap-2">
+                  <Checkbox
+                    checked={(form.tags ?? []).includes(tag.value)}
+                    onCheckedChange={(checked: boolean) => {
+                      const current = form.tags ?? [];
+                      handleChange(
+                        'tags',
+                        checked
+                          ? [...current, tag.value]
+                          : current.filter((t) => t !== tag.value)
+                      );
+                    }}
+                  />
+                  <span className="text-sm">{tag.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <Label>자유 태그</Label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {(form.tags ?? [])
+                .filter((t) => !STANDARD_TAGS.some((st) => st.value === t))
+                .map((tag) => (
+                  <Badge key={tag} variant="secondary" className="gap-1">
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleChange(
+                          'tags',
+                          (form.tags ?? []).filter((t) => t !== tag)
+                        )
+                      }
+                      className="ml-1 hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+            </div>
+            <Input
+              placeholder="태그 입력 후 Enter"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const val = e.currentTarget.value.trim().toLowerCase();
+                  if (val && !(form.tags ?? []).includes(val)) {
+                    handleChange('tags', [...(form.tags ?? []), val]);
+                  }
+                  e.currentTarget.value = '';
+                }
+              }}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 프로그램 연결 */}
+      {programs && programs.length > 0 && (
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base">프로그램 연결</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Label>관련 프로그램</Label>
+            <select
+              value={form.programId ?? ''}
+              onChange={(e) =>
+                handleChange('programId', e.target.value || null)
+              }
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="">선택 안 함</option>
+              {programs.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title}
+                </option>
+              ))}
+            </select>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 미디어 & 메타 */}
       <Card>

@@ -13,6 +13,7 @@ export const articleBaseSchema = z.object({
   tags: z.array(z.string()).optional().default([]),
   publishedAt: z.string().optional().nullable(), // YYYY-MM-DD
   isFeatured: z.boolean().optional().default(false),
+  programId: z.string().optional().nullable(),
 });
 
 export const articleCreateSchema = articleBaseSchema;

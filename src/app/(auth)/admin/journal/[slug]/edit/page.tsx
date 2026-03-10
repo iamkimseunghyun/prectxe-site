@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
+import { prisma } from '@/lib/db/prisma';
 import {
   getArticleBySlug,
   updateArticle,
@@ -12,7 +13,14 @@ export default async function Page({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = await getArticleBySlug(slug);
+  const [article, programs] = await Promise.all([
+    getArticleBySlug(slug),
+    prisma.program.findMany({
+      where: { status: { not: 'draft' } },
+      orderBy: { startAt: 'desc' },
+      select: { id: true, title: true },
+    }),
+  ]);
   if (!article) redirect('/admin/journal');
 
   async function onSubmit(formData: any) {
@@ -38,6 +46,7 @@ export default async function Page({
       <h1 className="mb-6 text-2xl font-semibold">글 편집</h1>
       <JournalFormView
         onSubmit={onSubmit}
+        programs={programs}
         initial={{
           slug: article.slug,
           title: article.title,
@@ -48,6 +57,7 @@ export default async function Page({
           publishedAt: article.publishedAt
             ? new Date(article.publishedAt).toISOString().split('T')[0]
             : '',
+          programId: article.programId ?? null,
         }}
       />
     </div>

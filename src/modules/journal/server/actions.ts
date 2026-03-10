@@ -5,10 +5,19 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
 import { articleCreateSchema, articleUpdateSchema } from '@/lib/schemas';
 
-export async function listArticles(options?: { includeUnpublished?: boolean }) {
+export async function listArticles(options?: {
+  includeUnpublished?: boolean;
+  tag?: string;
+}) {
   try {
+    const where: any = options?.includeUnpublished
+      ? {}
+      : { publishedAt: { not: null } };
+    if (options?.tag) {
+      where.tags = { has: options.tag };
+    }
     const articles = await prisma.article.findMany({
-      where: options?.includeUnpublished ? {} : { publishedAt: { not: null } },
+      where,
       // Admin list (includeUnpublished): newest first by createdAt
       // Public list: newest first by publishedAt
       orderBy: options?.includeUnpublished
@@ -89,6 +98,8 @@ export async function getArticleBySlug(slug: string) {
         cover: true,
         tags: true,
         publishedAt: true,
+        programId: true,
+        program: { select: { slug: true, title: true } },
         author: { select: { username: true } },
       },
     });
@@ -96,6 +107,25 @@ export async function getArticleBySlug(slug: string) {
   } catch (e) {
     console.error('Failed to get article', e);
     return null;
+  }
+}
+
+export async function listArticlesByProgram(programId: string) {
+  try {
+    const articles = await prisma.article.findMany({
+      where: { programId, publishedAt: { not: null } },
+      orderBy: { publishedAt: 'desc' },
+      select: {
+        slug: true,
+        title: true,
+        cover: true,
+        tags: true,
+        publishedAt: true,
+      },
+    });
+    return articles;
+  } catch {
+    return [];
   }
 }
 
@@ -135,6 +165,7 @@ export async function createArticle(input: unknown, authorId?: string | null) {
       tags: a.tags ?? [],
       publishedAt: a.publishedAt ? new Date(a.publishedAt) : null,
       isFeatured: a.isFeatured ?? false,
+      programId: a.programId ?? null,
       authorId: auth.userId ?? authorId ?? null,
     },
     select: { slug: true },
@@ -185,6 +216,7 @@ export async function updateArticle(slug: string, input: unknown) {
       tags: a.tags ?? [],
       publishedAt: a.publishedAt ? new Date(a.publishedAt) : null,
       isFeatured: a.isFeatured ?? false,
+      programId: a.programId ?? null,
     },
     select: { slug: true },
   });

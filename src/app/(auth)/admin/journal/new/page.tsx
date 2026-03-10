@@ -1,9 +1,16 @@
 import { redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
+import { prisma } from '@/lib/db/prisma';
 import { createArticle } from '@/modules/journal/server/actions';
 import { JournalFormView } from '@/modules/journal/ui/views/journal-form-view';
 
 export default async function Page() {
+  const programs = await prisma.program.findMany({
+    where: { status: { not: 'draft' } },
+    orderBy: { startAt: 'desc' },
+    select: { id: true, title: true },
+  });
+
   async function onSubmit(formData: any) {
     'use server';
     const session = await getSession();
@@ -25,7 +32,7 @@ export default async function Page() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="mb-6 text-2xl font-semibold">새 글</h1>
-      <JournalFormView onSubmit={onSubmit as any} />
+      <JournalFormView onSubmit={onSubmit as any} programs={programs} />
     </div>
   );
 }

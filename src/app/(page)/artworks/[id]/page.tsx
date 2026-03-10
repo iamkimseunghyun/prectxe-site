@@ -47,16 +47,30 @@ export async function generateMetadata({
     .filter(Boolean)
     .join(' | ');
 
+  const title = `${artwork.title} by ${artists}`;
+  const desc = artwork.description || `${artwork.title} - ${details}`;
+
   return {
-    title: `${artwork.title} by ${artists}`,
-    description: artwork.description || `${artwork.title} - ${details}`,
+    title,
+    description: desc,
+    alternates: {
+      canonical: `https://prectxe.com/artworks/${id}`,
+    },
     openGraph: {
       title: artwork.title,
-      description: artwork.description || details,
+      description: desc,
       images: artwork.images[0]?.imageUrl
         ? [{ url: artwork.images[0].imageUrl }]
         : undefined,
       type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: desc,
+      images: artwork.images[0]?.imageUrl
+        ? [artwork.images[0].imageUrl]
+        : undefined,
     },
   };
 }

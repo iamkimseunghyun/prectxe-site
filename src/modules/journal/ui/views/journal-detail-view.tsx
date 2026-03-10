@@ -50,6 +50,18 @@ export async function JournalDetailView({ slug }: { slug: string }) {
         </section>
       )}
 
+      {article.program && (
+        <div className="mt-8 rounded-lg border border-neutral-200 p-4">
+          <span className="text-sm text-neutral-500">관련 프로그램</span>
+          <Link
+            href={`/programs/${article.program.slug}`}
+            className="mt-1 block font-medium text-neutral-900 underline-offset-4 hover:underline"
+          >
+            {article.program.title}
+          </Link>
+        </div>
+      )}
+
       <div className="mt-12 flex items-center justify-center gap-4 border-t pt-8 text-xs sm:gap-6 sm:text-sm md:text-base">
         <Link
           href="/"

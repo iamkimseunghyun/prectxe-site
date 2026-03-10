@@ -10,6 +10,7 @@ import {
   formatEventDate,
   getImageUrl,
 } from '@/lib/utils';
+import { listArticlesByProgram } from '@/modules/journal/server/actions';
 import { getProgramBySlug } from '@/modules/programs/server/actions';
 import ProgramGallery from '@/modules/programs/ui/section/program-gallery';
 
@@ -122,6 +123,8 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
         </section>
       ) : null}
 
+      <RelatedArticles programId={program.id} />
+
       <div className="mt-12 flex items-center justify-center gap-4 border-t pt-8 text-xs sm:gap-6 sm:text-sm md:text-base">
         <Link
           href="/"
@@ -149,5 +152,33 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
         </Link>
       </div>
     </article>
+  );
+}
+
+async function RelatedArticles({ programId }: { programId: string }) {
+  const articles = await listArticlesByProgram(programId);
+  if (!articles.length) return null;
+
+  return (
+    <section className="mb-12">
+      <h2 className="mb-4 text-lg font-semibold">관련 글</h2>
+      <ul className="space-y-2">
+        {articles.map((a) => (
+          <li key={a.slug}>
+            <Link
+              href={`/journal/${a.slug}`}
+              className="text-neutral-600 underline-offset-4 transition-colors hover:text-neutral-900 hover:underline"
+            >
+              {a.title}
+            </Link>
+            {a.publishedAt && (
+              <span className="ml-2 text-sm text-neutral-400">
+                {new Date(a.publishedAt).toLocaleDateString('ko-KR')}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

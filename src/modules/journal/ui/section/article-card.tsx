@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 import { getImageUrl } from '@/lib/utils';
 
 export function ArticleCard({
@@ -9,6 +10,7 @@ export function ArticleCard({
     slug: string;
     title: string;
     cover?: string | null;
+    tags?: string[];
     publishedAt: Date | string | null;
   };
 }) {
@@ -28,6 +30,19 @@ export function ArticleCard({
         />
       </div>
       <div className="mt-3">
+        {article.tags && article.tags.length > 0 && (
+          <div className="mb-1.5 flex flex-wrap gap-1">
+            {article.tags.map((tag) => (
+              <Badge
+                key={tag}
+                variant="secondary"
+                className="text-[10px] px-1.5 py-0"
+              >
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
         <h3 className="font-medium text-neutral-900">{article.title}</h3>
         {date && <p className="mt-1 text-sm text-neutral-500">{date}</p>}
       </div>

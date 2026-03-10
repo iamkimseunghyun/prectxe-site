@@ -23,6 +23,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     select: { id: true, updatedAt: true },
   });
 
+  const articles = await prisma.article.findMany({
+    where: { publishedAt: { not: null } },
+    select: { slug: true, updatedAt: true },
+  });
+
   // 정적 라우트
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -90,11 +95,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
+  // 동적 라우트 - 저널
+  const articleRoutes: MetadataRoute.Sitemap = articles.map((a) => ({
+    url: `${baseUrl}/journal/${a.slug}`,
+    lastModified: a.updatedAt,
+    priority: 0.7,
+  }));
+
   return [
     ...staticRoutes,
     ...artistRoutes,
     ...artworkRoutes,
     ...programRoutes,
     ...venueRoutes,
+    ...articleRoutes,
   ];
 }

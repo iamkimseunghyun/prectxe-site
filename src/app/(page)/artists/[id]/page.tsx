@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AdminButton from '@/components/layout/admin-button';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
+import ArtistSchema from '@/components/seo/artist-schema';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -30,6 +31,7 @@ export async function generateMetadata({
       mainImageUrl: true,
       city: true,
       country: true,
+      homepage: true,
     },
   });
 
@@ -43,13 +45,26 @@ export async function generateMetadata({
     artist.biography ||
     `${artist.nameKr} (${artist.name}) - ${artist.city ? `${artist.city}, ` : ''}${artist.country || ''}`;
 
+  const title = artist.nameKr
+    ? `${artist.nameKr} (${artist.name})`
+    : artist.name;
+
   return {
-    title: `${artist.nameKr} (${artist.name})`,
+    title,
     description: description.slice(0, 160),
+    alternates: {
+      canonical: `https://prectxe.com/artists/${id}`,
+    },
     openGraph: {
-      title: `${artist.nameKr} (${artist.name})`,
+      title,
       description: description.slice(0, 160),
       images: artist.mainImageUrl ? [{ url: artist.mainImageUrl }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: description.slice(0, 160),
+      images: artist.mainImageUrl ? [artist.mainImageUrl] : undefined,
     },
   };
 }
@@ -67,6 +82,15 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
+      <ArtistSchema
+        artist={{
+          id,
+          name: artist.name,
+          nameKr: artist.nameKr,
+          mainImageUrl: artist.mainImageUrl,
+          homepage: artist.homepage,
+        }}
+      />
       <BreadcrumbNav
         entityType="artist"
         title={formatArtistName(artist.nameKr as any, artist.name as any)}

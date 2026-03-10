@@ -1,7 +1,12 @@
 import { JournalListView } from '@/modules/journal/ui/views/journal-list-view';
 
-const Page = async () => {
-  return <JournalListView />;
+const Page = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ tag?: string }>;
+}) => {
+  const { tag } = await searchParams;
+  return <JournalListView tag={tag} />;
 };
 
 export default Page;

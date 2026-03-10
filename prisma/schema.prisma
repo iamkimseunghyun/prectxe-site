@@ -29,6 +29,7 @@ model Program {
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   credits     ProgramCredit[]
   images      ProgramImage[]
+  articles    Article[]
 }
 
 model ProgramImage {
@@ -64,10 +65,12 @@ model Article {
   tags        String[]
   publishedAt DateTime?
   authorId    String?
+  programId   String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   isFeatured  Boolean   @default(false)
   author      User?     @relation(fields: [authorId], references: [id])
+  program     Program?  @relation(fields: [programId], references: [id], onDelete: SetNull)
 }
 
 model User {
