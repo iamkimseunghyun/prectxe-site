@@ -35,8 +35,7 @@ const Page = () => {
           사운드와 비주얼이 만나는
           <br />
           전시, 라이브, 파티를 만들고
-          <br />
-          그 경험을 기록합니다.
+          <br />그 경험을 기록합니다.
         </h1>
         <p className="mt-8 max-w-xl text-base leading-relaxed text-neutral-500 md:text-lg">
           PRECTXE는 서울을 기반으로 활동하는 테크-아트 플랫폼입니다. 미디어
@@ -61,9 +60,9 @@ const Page = () => {
               큐레이션 & 크리에이션
             </h3>
             <p className="mt-4 text-sm leading-relaxed text-neutral-500">
-              독자적인 AV/테크 세계관 안에서 오직 PRECTXE만의 경험을
-              설계합니다. 전시, 라이브 퍼포먼스, 파티, 워크숍, 토크를 기획하고
-              조명과 미디어아트의 협업을 통해 감각의 경계를 확장합니다.
+              독자적인 AV/테크 세계관 안에서 오직 PRECTXE만의 경험을 설계합니다.
+              전시, 라이브 퍼포먼스, 파티, 워크숍, 토크를 기획하고 조명과
+              미디어아트의 협업을 통해 감각의 경계를 확장합니다.
             </p>
           </div>
           <div>

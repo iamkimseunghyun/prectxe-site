@@ -5,10 +5,10 @@ import { type ChangeEvent, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { getCloudflareImageUrl } from '@/lib/cdn/cloudflare';
-import validateImageFile, { uploadImage, getImageUrl } from '@/lib/utils';
+import validateImageFile, { getImageUrl, uploadImage } from '@/lib/utils';
 import { convertToEmailHTML, getEmailEditorExtensions } from './extensions';
-import { Toolbar } from './toolbar';
 import { ImageControls } from './image-controls';
+import { Toolbar } from './toolbar';
 
 interface EmailEditorProps {
   content?: string;

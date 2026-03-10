@@ -1,4 +1,4 @@
-// @ts-ignore - aligoapi does not have TypeScript definitions
+// @ts-expect-error - aligoapi does not have TypeScript definitions
 import aligoapi from 'aligoapi';
 
 // Aligo 인증 데이터

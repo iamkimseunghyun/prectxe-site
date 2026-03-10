@@ -3,9 +3,9 @@ import * as Solapi from './solapi';
 
 // 전화번호 유틸 함수 re-export (호환성)
 export {
-  validatePhoneNumber,
-  normalizePhoneNumber,
   filterValidPhoneNumbers,
+  normalizePhoneNumber,
+  validatePhoneNumber,
 } from './utils';
 
 // SMS Provider 타입
