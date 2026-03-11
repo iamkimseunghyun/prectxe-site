@@ -2,6 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import {
+  cleanupRemovedHtmlImages,
+  deleteAllHtmlImages,
+} from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
 import { articleCreateSchema, articleUpdateSchema } from '@/lib/schemas';
 
@@ -188,8 +192,14 @@ export async function updateArticle(slug: string, input: unknown) {
   }
   const a = parsed.data;
 
-  const existing = await prisma.article.findUnique({ where: { slug } });
+  const existing = await prisma.article.findUnique({
+    where: { slug },
+    select: { body: true, isFeatured: true },
+  });
   if (!existing) return { success: false, error: '게시글을 찾을 수 없습니다.' };
+
+  // 본문에서 제거된 Cloudflare 이미지 정리
+  await cleanupRemovedHtmlImages(existing.body, a.body ?? null);
 
   // If setting as featured, unfeatured all other content
   if (a.isFeatured && !existing.isFeatured) {
@@ -229,6 +239,16 @@ export async function updateArticle(slug: string, input: unknown) {
 export async function deleteArticle(slug: string) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false } as const;
+
+  // 본문 내 Cloudflare 이미지 정리
+  const article = await prisma.article.findUnique({
+    where: { slug },
+    select: { body: true },
+  });
+  if (article?.body) {
+    await deleteAllHtmlImages(article.body);
+  }
+
   await prisma.article.delete({ where: { slug } });
   revalidatePath('/journal');
   return { success: true };

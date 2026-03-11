@@ -15,13 +15,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Prisma: `bunx prisma migrate dev -n "<msg>"`, `bunx prisma generate`, `bunx prisma studio`
 - Before pushing: `bun run type-check && bun run check`
 - Pre-commit hook (Husky): runs `biome check --write --no-errors-on-unmatched` via lint-staged on all changed files
+- `postinstall` runs `prisma generate` locally but skips in CI (`$CI` check)
 
 ## Tech Stack
 
 - **Next.js 16** (App Router) with **React 19**, **TypeScript** (strict)
 - **Bun** as package manager and runtime
 - **PostgreSQL** via **Prisma** ORM (hosted on Neon)
-- **Biome** for linting/formatting (replaced ESLint + Prettier)
+- **Biome v2** for linting/formatting (replaced ESLint + Prettier) — key rules: `noUnusedImports: warn`, `noExplicitAny: warn`, `noNonNullAssertion: off`, auto-organizes imports
 - **Tailwind CSS v3** + **shadcn/ui** (Radix UI primitives) + **CVA** for component variants
 - **TanStack Query** for client-side server state, **React Hook Form** + **Zod** for form validation
 - **TipTap** for rich text editing (journal articles, email content)
@@ -42,10 +43,11 @@ src/
 │   ├── (page)/                   # Static pages + public entity views (artists, venues, artworks, forms)
 │   ├── (auth)/                   # Auth pages + admin routes (/admin/*)
 │   ├── (marketing)/              # Marketing pages
-│   └── api/                      # API routes
+│   └── api/                      # API routes (slug validation, admin deletion)
 ├── modules/<domain>/             # Feature modules (see below)
 │   ├── server/actions.ts         # Server actions ('use server')
 │   └── ui/{views,components,section}/
+├── modules/providers.tsx         # TanStack Query provider (QueryClient singleton)
 ├── components/
 │   ├── ui/                       # shadcn/ui primitives
 │   ├── admin/                    # Admin-specific (AdminNav, AdminHeader, AdminPagination)
@@ -97,9 +99,15 @@ Each full module follows the pattern:
 - Admin guard: `requireAdmin()` from `@/lib/auth/require-admin.ts` validates session and role, returns `{ success, userId }` or `{ success: false, error }`
 - Pagination: All paged actions return `{ page, pageSize, total, items }`
 
+### API Routes
+- Slug validation: `GET /api/programs/check-slug?slug=x` and `/api/journal/check-slug?slug=x` — used by forms for real-time uniqueness checks
+- Admin deletion: `DELETE /api/admin/{entity}/[id]` — separate from server actions because delete confirmations use client-side fetch
+- Program listing: `GET /api/programs/list` — public API for program data
+- Session: `GET /api/auth/session` — returns current session for client components
+
 ### Data Fetching
 - Server Components: Direct Prisma queries or server functions
-- Client Components: TanStack Query with 60s stale time default
+- Client Components: TanStack Query with 60s stale time default (configured in `src/modules/providers.tsx`)
 - Query keys: Consistent patterns like `['programs', status]` or `['article', slug]`
 
 ### Form Validation
@@ -112,6 +120,10 @@ Each full module follows the pattern:
 - Image URL variants: `thumbnail`, `public`, `smaller`, `hires` via `getImageUrl(url, variant)`
 - Hooks: `use-single-image-upload` and `use-multi-image-upload` for UI state management
 - Deletion utilities: `deleteRemovedImages()` and `deleteAllImages()` in `src/lib/cdn/cloudflare.ts`
+
+### Dynamic OG Images
+- Programs and journal articles have `opengraph-image.tsx` route handlers that generate OG images at build/request time
+- Located at `src/app/(content)/programs/[slug]/opengraph-image.tsx` and `src/app/(content)/journal/[slug]/opengraph-image.tsx`
 
 ## Database & Data Model
 

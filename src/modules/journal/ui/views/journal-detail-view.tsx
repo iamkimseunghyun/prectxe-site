@@ -45,9 +45,10 @@ export async function JournalDetailView({ slug }: { slug: string }) {
       </header>
 
       {article.body && (
-        <section className="prose prose-neutral dark:prose-invert max-w-none">
-          <p className="whitespace-pre-wrap">{article.body}</p>
-        </section>
+        <section
+          className="prose prose-neutral dark:prose-invert max-w-none"
+          dangerouslySetInnerHTML={{ __html: article.body }}
+        />
       )}
 
       {article.program && (

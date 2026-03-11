@@ -104,12 +104,6 @@ export const uploadGalleryImages = async (previews: ImagePreview[]) => {
   );
 };
 
-export const extractCloudflareImageId = (url: string) => {
-  const regex = /imagedelivery\.net\/[^/]+\/([^/]+)/;
-  const match = url.match(regex);
-  return match ? match[1] : null;
-};
-
 export const isSameDay = (date1: Date, date2: Date): boolean => {
   return (
     date1.getFullYear() === date2.getFullYear() &&

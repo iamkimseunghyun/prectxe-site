@@ -3,14 +3,18 @@
 import type { Prisma } from '@prisma/client';
 import { unstable_cache as next_cache, revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
-import { deleteCloudflareImage } from '@/lib/cdn/cloudflare';
+import {
+  deleteAllImages,
+  deleteCloudflareImage,
+  deleteRemovedImages,
+  extractImageId,
+} from '@/lib/cdn/cloudflare';
 import { CACHE_TIMES } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 import {
   programCreateSchema,
   programUpdateSchema,
 } from '@/lib/schemas/program';
-import { extractCloudflareImageId } from '@/lib/utils';
 
 export type ProgramStatusFilter =
   | 'all'
@@ -288,12 +292,18 @@ export async function updateProgram(id: string, input: unknown) {
 
   // delete previous hero if changed
   if (data.heroUrl && existing.heroUrl && data.heroUrl !== existing.heroUrl) {
-    const idToDelete = extractCloudflareImageId(existing.heroUrl);
+    const idToDelete = extractImageId(existing.heroUrl);
     if (idToDelete) {
       try {
         await deleteCloudflareImage(idToDelete);
       } catch {}
     }
+  }
+
+  // 갤러리 이미지: 제거된 이미지를 Cloudflare에서 삭제
+  if (data.images) {
+    const newImageUrls = data.images.map((img) => img.imageUrl);
+    await deleteRemovedImages(existing.images, newImageUrls);
   }
 
   const updated = await prisma.program.update({
@@ -336,6 +346,22 @@ export async function updateProgram(id: string, input: unknown) {
 export async function deleteProgram(id: string) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false } as const;
+
+  // Cloudflare 이미지 정리 (hero + 갤러리)
+  const program = await prisma.program.findUnique({
+    where: { id },
+    select: { heroUrl: true, images: { select: { imageUrl: true } } },
+  });
+  if (program) {
+    if (program.heroUrl) {
+      const heroId = extractImageId(program.heroUrl);
+      if (heroId) await deleteCloudflareImage(heroId).catch(() => {});
+    }
+    if (program.images.length > 0) {
+      await deleteAllImages(program.images);
+    }
+  }
+
   await prisma.program.delete({ where: { id } });
   revalidatePath('/programs');
   return { success: true };

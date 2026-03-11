@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import SingleImageBox from '@/components/image/single-image-box';
+import { RichEditor } from '@/components/rich-editor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -274,11 +275,10 @@ export function JournalFormView({
           </div>
           <div>
             <Label required>본문</Label>
-            <Textarea
-              rows={10}
-              value={form.body ?? ''}
-              onChange={(e) => handleChange('body', e.target.value)}
-              required
+            <RichEditor
+              content={form.body ?? ''}
+              onChange={(html) => handleChange('body', html)}
+              placeholder="본문을 입력하세요..."
             />
           </div>
         </CardContent>
@@ -522,9 +522,10 @@ export function JournalFormView({
 
             {/* 본문 */}
             {form.body && (
-              <div className="prose prose-neutral max-w-none">
-                <p className="whitespace-pre-wrap">{form.body}</p>
-              </div>
+              <div
+                className="prose prose-neutral dark:prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: form.body }}
+              />
             )}
           </div>
         </DialogContent>

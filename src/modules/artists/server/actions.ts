@@ -12,6 +12,7 @@ import {
   deleteAllImages,
   deleteCloudflareImage,
   deleteRemovedImages,
+  extractImageId,
 } from '@/lib/cdn/cloudflare';
 import {
   CACHE_TIMES,
@@ -25,7 +26,6 @@ import {
   simpleArtistSchema,
   updateArtistSchema,
 } from '@/lib/schemas';
-import { extractCloudflareImageId } from '@/lib/utils';
 
 export const getArtistByIdWithCache =
   // next_cache(
@@ -298,7 +298,7 @@ export async function updateArtist(
       validatedData.mainImageUrl &&
       existingArtist.mainImageUrl !== validatedData.mainImageUrl
     ) {
-      const imageId = extractCloudflareImageId(existingArtist.mainImageUrl!);
+      const imageId = extractImageId(existingArtist.mainImageUrl!);
       if (imageId) {
         await deleteCloudflareImage(imageId);
         console.log(`메인 이미지 삭제됨: ${imageId}`);
@@ -399,7 +399,7 @@ export async function deleteArtist(artistId: string) {
     // 2. Cloudflare에서 이미지 삭제
     // 2.1. 메인 이미지 삭제
     if (artist.mainImageUrl) {
-      const mainImageId = extractCloudflareImageId(artist.mainImageUrl);
+      const mainImageId = extractImageId(artist.mainImageUrl);
       if (mainImageId) {
         await deleteCloudflareImage(mainImageId);
         console.log(`메인 이미지 삭제됨: ${mainImageId}`);

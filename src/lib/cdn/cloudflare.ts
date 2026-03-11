@@ -74,10 +74,52 @@ export async function deleteAllImages(images: { imageUrl: string }[]) {
   }
 }
 
-function extractImageId(url: string) {
+export function extractImageId(url: string) {
   const regex = /imagedelivery\.net\/[^/]+\/([^/]+)/;
   const match = url.match(regex);
   return match ? match[1] : null;
+}
+
+/**
+ * HTML 본문에서 Cloudflare 이미지 URL을 모두 추출
+ */
+export function extractImageIdsFromHtml(html: string): string[] {
+  const regex = /imagedelivery\.net\/[^/]+\/([^/"'\s]+)/g;
+  const ids: string[] = [];
+  for (const match of html.matchAll(regex)) {
+    if (match[1] && !ids.includes(match[1])) {
+      ids.push(match[1]);
+    }
+  }
+  return ids;
+}
+
+/**
+ * 이전/이후 HTML을 비교하여 제거된 이미지를 Cloudflare에서 삭제
+ */
+export async function cleanupRemovedHtmlImages(
+  oldHtml: string | null,
+  newHtml: string | null
+) {
+  if (!oldHtml) return;
+  const oldIds = extractImageIdsFromHtml(oldHtml);
+  const newIds = newHtml ? extractImageIdsFromHtml(newHtml) : [];
+  for (const id of oldIds) {
+    if (!newIds.includes(id)) {
+      await deleteCloudflareImage(id);
+    }
+  }
+}
+
+/**
+ * HTML 본문 내 모든 Cloudflare 이미지를 삭제
+ */
+export async function deleteAllHtmlImages(html: string | null) {
+  if (!html) return;
+  const ids = extractImageIdsFromHtml(html);
+  for (const id of ids) {
+    await deleteCloudflareImage(id);
+  }
 }
 
 export async function deleteCloudflareImage(imageId: string) {

@@ -1,6 +1,11 @@
 import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import {
+  deleteAllImages,
+  deleteCloudflareImage,
+  extractImageId,
+} from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
 
 export async function DELETE(
@@ -15,6 +20,22 @@ export async function DELETE(
         { status: 401 }
       );
     const { id } = await params;
+
+    // Cloudflare 이미지 정리 (hero + 갤러리)
+    const program = await prisma.program.findUnique({
+      where: { id },
+      select: { heroUrl: true, images: { select: { imageUrl: true } } },
+    });
+    if (program) {
+      if (program.heroUrl) {
+        const heroId = extractImageId(program.heroUrl);
+        if (heroId) await deleteCloudflareImage(heroId).catch(() => {});
+      }
+      if (program.images.length > 0) {
+        await deleteAllImages(program.images);
+      }
+    }
+
     await prisma.program.delete({ where: { id } });
     revalidatePath('/admin/programs');
     revalidatePath('/programs');
