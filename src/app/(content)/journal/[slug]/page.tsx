@@ -1,12 +1,10 @@
 import type { Metadata } from 'next';
-import { prisma } from '@/lib/db/prisma';
 import { getImageUrl } from '@/lib/utils';
 import { getArticleBySlug } from '@/modules/journal/server/actions';
 import { JournalDetailView } from '@/modules/journal/ui/views/journal-detail-view';
 
 export async function generateStaticParams() {
-  const articles = await prisma.article.findMany({ select: { slug: true } });
-  return articles.map((a) => ({ slug: a.slug }));
+  return [];
 }
 
 export async function generateMetadata({

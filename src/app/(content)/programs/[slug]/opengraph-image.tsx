@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
-import { getProgramBySlug } from '@/modules/programs/server/actions';
 import { getImageUrl } from '@/lib/utils';
+import { getProgramBySlug } from '@/modules/programs/server/actions';
 
 export const alt = 'PRECTXE Program';
 export const size = { width: 1200, height: 630 };

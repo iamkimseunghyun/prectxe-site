@@ -8,13 +8,13 @@ import {
   deleteCloudflareImage,
   deleteRemovedImages,
 } from '@/lib/cdn/cloudflare';
-import { extractImageId } from '@/lib/utils';
 import { CACHE_TIMES } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 import {
   programCreateSchema,
   programUpdateSchema,
 } from '@/lib/schemas/program';
+import { extractImageId } from '@/lib/utils';
 
 export type ProgramStatusFilter =
   | 'all'

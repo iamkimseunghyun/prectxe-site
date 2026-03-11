@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Next.js 16** (App Router) with **React 19**, **TypeScript** (strict)
 - **Bun** as package manager and runtime
 - **PostgreSQL** via **Prisma** ORM (hosted on Neon)
-- **Biome v2** for linting/formatting (replaced ESLint + Prettier) — key rules: `noUnusedImports: warn`, `noExplicitAny: warn`, `noNonNullAssertion: off`, auto-organizes imports
+- **Biome v2** for linting/formatting (replaced ESLint + Prettier) — key rules: `noUnusedImports: warn`, `noExplicitAny: warn`, `noNonNullAssertion: off`, `useImportType: warn`, `useExhaustiveDependencies: warn`, auto-organizes imports
 - **Tailwind CSS v3** + **shadcn/ui** (Radix UI primitives) + **CVA** for component variants
 - **TanStack Query** for client-side server state, **React Hook Form** + **Zod** for form validation
 - **TipTap** for rich text editing (journal articles, email content)

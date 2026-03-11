@@ -1,12 +1,9 @@
 import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/require-admin';
-import {
-  deleteAllImages,
-  deleteCloudflareImage,
-} from '@/lib/cdn/cloudflare';
-import { extractImageId } from '@/lib/utils';
+import { deleteAllImages, deleteCloudflareImage } from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
+import { extractImageId } from '@/lib/utils';
 
 export async function DELETE(
   _req: Request,

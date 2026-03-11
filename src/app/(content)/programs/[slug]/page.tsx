@@ -1,12 +1,10 @@
 import type { Metadata } from 'next';
-import { prisma } from '@/lib/db/prisma';
 import { getImageUrl } from '@/lib/utils';
 import { getProgramBySlug } from '@/modules/programs/server/actions';
 import { ProgramDetailView } from '@/modules/programs/ui/views/program-detail-view';
 
 export async function generateStaticParams() {
-  const programs = await prisma.program.findMany({ select: { slug: true } });
-  return programs.map((p) => ({ slug: p.slug }));
+  return [];
 }
 
 export async function generateMetadata({

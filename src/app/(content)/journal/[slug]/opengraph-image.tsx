@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
-import { getArticleBySlug } from '@/modules/journal/server/actions';
 import { getImageUrl } from '@/lib/utils';
+import { getArticleBySlug } from '@/modules/journal/server/actions';
 
 export const alt = 'PRECTXE Journal';
 export const size = { width: 1200, height: 630 };
