@@ -46,41 +46,38 @@
 
 ## Phase 6 — Design System & A11y
 
-- [ ] Extract tokens to Tailwind theme + CSS vars (bg, panel, text, border).
-- [ ] A11y pass: focus rings, aria for icon buttons/badges, AA contrast, reduced motion.
+- [x] Extract tokens to Tailwind theme + CSS vars (bg, panel, text, border) — globals.css에 HSL 기반 컬러 토큰 + dark mode 구현 완료.
+- [ ] A11y pass: focus-visible 스타일, aria for icon buttons/badges, AA contrast, reduced motion.
 
 ## Phase 7 — Data Model & CMS
 
 - [x] Enums: ProgramType, ProgramStatus.
 - [x] Models/relations: Program, ProgramImage, ProgramCredit, Article.
 - [x] Migration A (dev): applied via `prisma db push` + generate.
-- [x] Migration B (partial): Project→Program (images/credits/venue) copied; Event→Program pending.
-- [ ] Migration C: switch remaining legacy queries fully to Program (if any left).
-- [ ] Migration D: drop old tables after verification and backup.
-- [ ] Seed scripts and admin ingestion (optional).
+- [x] Migration B: Project→Program, Event→Program 데이터 마이그레이션 완료.
+- [x] Migration C: 레거시 Project/Event 모델·쿼리 전부 제거됨.
+- [x] Migration D: 옛 테이블 드랍 완료 (schema에 Project/Event 모델 없음).
 
 ## Phase 8 — SEO & Redirects
 
-- [ ] Canonical per `programs/[slug]`; JSON‑LD `Event` for upcoming only.
-- [ ] Verify redirects with `ENABLE_PROGRAM_REDIRECTS=1`:
-  - `/discover` → `/programs?status=upcoming`, `/archive` → `/programs?status=completed`
-  - `/projects/:slug` → `/programs/:slug`, `/events/:slug` → `/programs/:slug`
+- [x] Canonical URL: programs, journal, artists, venues, artworks 상세 페이지 설정 완료.
+- [x] JSON‑LD 구조화 데이터: program (Event), article, artist, artwork, venue 스키마 구현 (`src/components/seo/`).
+- [x] OG 이미지 자동 생성: programs/journal `opengraph-image.tsx` (Next.js ImageResponse).
+- [x] Redirects (`ENABLE_PROGRAM_REDIRECTS=1`): next.config.ts에 4개 permanent redirect 설정 완료.
 
 ## Phase 9 — Performance & Analytics
 
-- [ ] `next/image` presets audit for LCP; refine priority/sizes.
-- [ ] RUM/analytics: pageview + Program create/update, Journal publish.
+- [x] Vercel Analytics (`@vercel/analytics`) + Speed Insights (`@vercel/speed-insights`) 루트 레이아웃 적용.
+- [x] Cloudflare Images CDN 최적화 (unoptimized: true, 변환은 CDN에서 처리).
+- [ ] `next/image` presets 감사 (LCP hero 이미지 priority/sizes 검증) — 선택 사항.
 
 ## Phase 10 — Release
 
-- [ ] `bun run type-check && bun run lint && bun run format && bun run build`.
-- [ ] Staging QA → Production deploy; announce.
+- [ ] `bun run type-check && bun run check && bun run build` 최종 확인.
+- [ ] Staging QA → Production deploy.
 
-## Next Tasks
+## Remaining (Optional)
 
-1. Event→Program data copy script (images/organizers→credits) and run on dev.
-2. Verify and enable redirects in staging (`ENABLE_PROGRAM_REDIRECTS=1`).
-3. A11y sweep: focus styles, aria-labels on icon buttons, color contrast.
-4. Performance: validate hero/card `next/image` sizes and priorities with field data.
-5. Optional: Program page variant to show both Upcoming and Completed sections on one screen.
-6. Prepare legacy table drop migration after verification + DB backup.
+- [ ] A11y: focus-visible 스타일, aria-labels, reduced motion 지원.
+- [ ] next/image LCP 최적화 검증 (field data 기반).
+- [ ] Programs 페이지에 Upcoming + Completed 동시 표시 변형.
