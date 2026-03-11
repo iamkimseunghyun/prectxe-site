@@ -12,8 +12,8 @@ import {
   deleteAllImages,
   deleteCloudflareImage,
   deleteRemovedImages,
-  extractImageId,
 } from '@/lib/cdn/cloudflare';
+import { extractImageId } from '@/lib/utils';
 import {
   CACHE_TIMES,
   PAGINATION,

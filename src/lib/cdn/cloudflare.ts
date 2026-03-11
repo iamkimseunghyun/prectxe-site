@@ -74,7 +74,7 @@ export async function deleteAllImages(images: { imageUrl: string }[]) {
   }
 }
 
-export function extractImageId(url: string) {
+function extractImageId(url: string) {
   const regex = /imagedelivery\.net\/[^/]+\/([^/]+)/;
   const match = url.match(regex);
   return match ? match[1] : null;
@@ -83,7 +83,7 @@ export function extractImageId(url: string) {
 /**
  * HTML 본문에서 Cloudflare 이미지 URL을 모두 추출
  */
-export function extractImageIdsFromHtml(html: string): string[] {
+function extractImageIdsFromHtml(html: string): string[] {
   const regex = /imagedelivery\.net\/[^/]+\/([^/"'\s]+)/g;
   const ids: string[] = [];
   for (const match of html.matchAll(regex)) {

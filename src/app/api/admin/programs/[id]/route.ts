@@ -4,8 +4,8 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 import {
   deleteAllImages,
   deleteCloudflareImage,
-  extractImageId,
 } from '@/lib/cdn/cloudflare';
+import { extractImageId } from '@/lib/utils';
 import { prisma } from '@/lib/db/prisma';
 
 export async function DELETE(
