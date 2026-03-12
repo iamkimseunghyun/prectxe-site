@@ -10,6 +10,7 @@ import {
   Mail,
   MapPin,
   MessageSquare,
+  Ticket,
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -47,6 +48,12 @@ const ADMIN_TABS: NavItem[] = [
     label: 'Forms',
     icon: ClipboardList,
     href: '/admin/forms',
+  },
+  {
+    value: 'tickets',
+    label: 'Tickets',
+    icon: Ticket,
+    href: '/admin/tickets',
   },
   { value: 'sms', label: 'SMS', icon: MessageSquare, href: '/admin/sms' },
   { value: 'email', label: 'Email', icon: Mail, href: '/admin/email' },

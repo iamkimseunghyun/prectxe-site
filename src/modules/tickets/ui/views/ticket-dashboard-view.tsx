@@ -1,26 +1,13 @@
 'use client';
 
-import { ArrowLeft, Banknote, BarChart3, Ticket, Users } from 'lucide-react';
+import { Banknote, BarChart3, Ticket, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
-import {
-  getTicketDashboard,
-  toggleTicketing,
-} from '@/modules/tickets/server/actions';
+import { getTicketDashboard } from '@/modules/tickets/server/actions';
 import { TicketTierList } from '../components/ticket-tier-list';
-
-interface TicketDashboardViewProps {
-  programId: string;
-  programTitle: string;
-  ticketingEnabled: boolean;
-}
 
 type DashboardData = {
   tiers: {
@@ -70,67 +57,29 @@ const ORDER_STATUS_LABELS: Record<
   refunded: { label: '환불', variant: 'outline' },
 };
 
-export function TicketDashboardView({
-  programId,
-  programTitle,
-  ticketingEnabled: initialEnabled,
-}: TicketDashboardViewProps) {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [enabled, setEnabled] = useState(initialEnabled);
+export function TicketDashboardView() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const result = await getTicketDashboard(programId);
+    const result = await getTicketDashboard();
     if (result.success) {
       setData(result.data as DashboardData);
     }
     setLoading(false);
-  }, [programId]);
+  }, []);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  async function handleToggle(checked: boolean) {
-    const result = await toggleTicketing(programId, checked);
-    if (result.success) {
-      setEnabled(checked);
-      toast({
-        title: checked
-          ? '티켓 판매가 활성화되었습니다.'
-          : '티켓 판매가 비활성화되었습니다.',
-      });
-    }
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href={`/admin/programs/${programId}/edit`}>
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-xl font-semibold">{programTitle}</h1>
-            <p className="text-sm text-muted-foreground">티켓 관리</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="ticketing-toggle" className="text-sm">
-            티켓 판매
-          </Label>
-          <Switch
-            id="ticketing-toggle"
-            checked={enabled}
-            onCheckedChange={handleToggle}
-          />
-        </div>
+      <div className="flex items-center gap-2">
+        <Ticket className="h-5 w-5" />
+        <h1 className="text-xl font-semibold">티켓 관리</h1>
       </div>
 
       {loading ? (
@@ -199,7 +148,6 @@ export function TicketDashboardView({
           <Card>
             <CardContent className="p-6">
               <TicketTierList
-                programId={programId}
                 tiers={data.tiers}
                 onRefresh={loadData}
               />
@@ -212,9 +160,7 @@ export function TicketDashboardView({
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">최근 주문</CardTitle>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/admin/programs/${programId}/tickets/orders`}>
-                    전체 보기
-                  </Link>
+                  <Link href="/admin/tickets/orders">전체 보기</Link>
                 </Button>
               </div>
             </CardHeader>
@@ -246,7 +192,9 @@ export function TicketDashboardView({
                           <p className="text-xs text-muted-foreground">
                             {order.orderNo} ·{' '}
                             {order.items
-                              .map((i) => `${i.ticketTier.name} ×${i.quantity}`)
+                              .map(
+                                (i) => `${i.ticketTier.name} ×${i.quantity}`
+                              )
                               .join(', ')}
                           </p>
                         </div>

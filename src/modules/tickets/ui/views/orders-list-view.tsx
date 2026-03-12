@@ -15,14 +15,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { cancelOrder, getOrders } from '@/modules/tickets/server/actions';
-
-interface OrdersListViewProps {
-  programId: string;
-  programTitle: string;
-}
 
 const STATUS_LABELS: Record<
   string,
@@ -60,10 +55,7 @@ type Order = {
   } | null;
 };
 
-export function OrdersListView({
-  programId,
-  programTitle,
-}: OrdersListViewProps) {
+export function OrdersListView() {
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [page, setPage] = useState(1);
@@ -74,13 +66,13 @@ export function OrdersListView({
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
-    const result = await getOrders(programId, page, pageSize);
+    const result = await getOrders(page, pageSize);
     if (result.success) {
       setOrders(result.data.items as Order[]);
       setTotal(result.data.total);
     }
     setLoading(false);
-  }, [programId, page]);
+  }, [page]);
 
   useEffect(() => {
     loadOrders();
@@ -104,15 +96,13 @@ export function OrdersListView({
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
-          <Link href={`/admin/programs/${programId}/tickets`}>
+          <Link href="/admin/tickets">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <div>
-          <h1 className="text-xl font-semibold">{programTitle}</h1>
-          <p className="text-sm text-muted-foreground">
-            주문 목록 · 총 {total}건
-          </p>
+          <h1 className="text-xl font-semibold">주문 목록</h1>
+          <p className="text-sm text-muted-foreground">총 {total}건</p>
         </div>
       </div>
 

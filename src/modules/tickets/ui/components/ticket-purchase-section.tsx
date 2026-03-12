@@ -27,8 +27,7 @@ type AvailableTier = {
 };
 
 interface TicketPurchaseSectionProps {
-  programId: string;
-  programTitle: string;
+  title: string;
   tiers: AvailableTier[];
 }
 
@@ -39,8 +38,7 @@ function randomPaymentId() {
 }
 
 export function TicketPurchaseSection({
-  programId,
-  programTitle,
+  title,
   tiers,
 }: TicketPurchaseSectionProps) {
   const { toast } = useToast();
@@ -86,7 +84,7 @@ export function TicketPurchaseSection({
     setIsProcessing(true);
 
     try {
-      const orderResult = await createOrder(programId, {
+      const orderResult = await createOrder({
         buyerName,
         buyerEmail,
         buyerPhone,
@@ -121,7 +119,7 @@ export function TicketPurchaseSection({
         storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID!,
         channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY!,
         paymentId,
-        orderName: `${programTitle} 티켓`,
+        orderName: `${title} 티켓`,
         totalAmount,
         currency: 'CURRENCY_KRW',
         payMethod: 'CARD',

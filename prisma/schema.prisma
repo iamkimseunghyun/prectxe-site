@@ -26,13 +26,10 @@ model Program {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   isFeatured       Boolean         @default(false)
-  ticketingEnabled Boolean         @default(false)
   user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   credits          ProgramCredit[]
   images           ProgramImage[]
   articles         Article[]
-  ticketTiers      TicketTier[]
-  orders           Order[]
 }
 
 model ProgramImage {
@@ -364,7 +361,6 @@ enum EmailStatus {
 
 model TicketTier {
   id          String           @id @default(cuid())
-  programId   String
   name        String
   description String?
   price       Int              // 원 단위
@@ -377,14 +373,12 @@ model TicketTier {
   order       Int              @default(0)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
-  program     Program          @relation(fields: [programId], references: [id], onDelete: Cascade)
   orderItems  OrderItem[]
 }
 
 model Order {
   id          String      @id @default(cuid())
   orderNo     String      @unique
-  programId   String
   buyerName   String
   buyerEmail  String
   buyerPhone  String
@@ -392,7 +386,6 @@ model Order {
   status      OrderStatus @default(pending)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  program     Program     @relation(fields: [programId], references: [id], onDelete: Cascade)
   items       OrderItem[]
   payment     Payment?
 }

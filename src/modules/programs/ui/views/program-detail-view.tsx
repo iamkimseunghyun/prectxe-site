@@ -11,12 +11,9 @@ import {
   formatEventDate,
   getImageUrl,
 } from '@/lib/utils';
-import getSession from '@/lib/auth/session';
 import { listArticlesByProgram } from '@/modules/journal/server/actions';
 import { getProgramBySlug } from '@/modules/programs/server/actions';
 import ProgramGallery from '@/modules/programs/ui/section/program-gallery';
-import { getAvailableTicketTiers } from '@/modules/tickets/server/actions';
-import { TicketPurchaseSection } from '@/modules/tickets/ui/components/ticket-purchase-section';
 
 const TYPE_LABELS: Record<string, string> = {
   exhibition: 'EXHIBITION',
@@ -184,15 +181,6 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
           </section>
         ) : null}
 
-        {/* Tickets */}
-        {program.ticketingEnabled && (
-          <TicketSection
-            programId={program.id}
-            programTitle={program.title}
-            programStatus={program.status}
-          />
-        )}
-
         {/* Related Articles */}
         <RelatedArticles programId={program.id} />
 
@@ -284,65 +272,6 @@ function HeroContent({
         )}
       </div>
     </div>
-  );
-}
-
-async function TicketSection({
-  programId,
-  programTitle,
-  programStatus,
-}: {
-  programId: string;
-  programTitle: string;
-  programStatus: string;
-}) {
-  const isFinished = programStatus === 'completed';
-  const session = await getSession();
-  const isAdmin = session.isAdmin === true;
-
-  // 종료된 이벤트: 일반 사용자에게는 "Closed" 표시, 관리자에게만 티켓 내용 노출
-  if (isFinished) {
-    if (!isAdmin) {
-      return (
-        <section className="border-t py-12">
-          <div className="flex items-end justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
-              Tickets
-            </h2>
-          </div>
-          <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 px-6 py-8 text-center">
-            <p className="text-sm font-medium text-neutral-400">Closed</p>
-          </div>
-        </section>
-      );
-    }
-    // 관리자: 모든 티어를 보여줌 (on_sale 필터 없이)
-    const allTiers = await getAvailableTicketTiers(programId);
-    return (
-      <section className="border-t py-12">
-        <div className="mb-4 rounded-lg bg-amber-50 px-4 py-2 text-xs text-amber-700">
-          관리자 전용: 종료된 이벤트의 티켓 정보입니다.
-        </div>
-        <TicketPurchaseSection
-          programId={programId}
-          programTitle={programTitle}
-          tiers={allTiers}
-        />
-      </section>
-    );
-  }
-
-  const tiers = await getAvailableTicketTiers(programId);
-  if (tiers.length === 0) return null;
-
-  return (
-    <section className="border-t py-12">
-      <TicketPurchaseSection
-        programId={programId}
-        programTitle={programTitle}
-        tiers={tiers}
-      />
-    </section>
   );
 }
 
