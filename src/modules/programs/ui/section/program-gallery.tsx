@@ -61,6 +61,18 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
     modalApi.scrollTo(index, true);
   }, [open, modalApi, index]);
 
+  // Track current slide index from modal carousel
+  const [currentSlide, setCurrentSlide] = useState(0);
+  useEffect(() => {
+    if (!modalApi) return;
+    const onSelect = () => setCurrentSlide(modalApi.selectedScrollSnap());
+    modalApi.on('select', onSelect);
+    onSelect();
+    return () => {
+      modalApi.off('select', onSelect);
+    };
+  }, [modalApi]);
+
   const handleImageClick = useCallback((i: number) => {
     if (dragState.current.hasDragged) return; // Prevent click after drag
     setIndex(i);
@@ -174,13 +186,6 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
                         className="object-contain"
                         priority={false}
                       />
-                      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-white">
-                        <div className="mx-auto flex max-w-5xl items-end justify-between gap-3 text-xs sm:text-sm">
-                          <span className="shrink-0 rounded bg-white/10 px-2 py-0.5">
-                            {i + 1} / {images.length}
-                          </span>
-                        </div>
-                      </div>
                     </div>
                   </CarouselItem>
                 ))}
@@ -188,6 +193,13 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
               <CarouselPrevious className="left-3 top-1/2 -translate-y-1/2 border-white/20 bg-black/40 text-white hover:bg-black/60" />
               <CarouselNext className="right-3 top-1/2 -translate-y-1/2 border-white/20 bg-black/40 text-white hover:bg-black/60" />
             </Carousel>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-white">
+              <div className="mx-auto flex max-w-5xl items-end justify-between gap-3 text-xs sm:text-sm">
+                <span className="shrink-0 rounded bg-white/10 px-2 py-0.5">
+                  {currentSlide + 1} / {images.length}
+                </span>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

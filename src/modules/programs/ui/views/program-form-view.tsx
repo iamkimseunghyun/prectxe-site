@@ -596,8 +596,13 @@ export function ProgramFormView({
                 onChange={(e) => handlePublishToggle(e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300"
               />
-              <span className="text-sm">{isPublished ? '비공개' : '공개'}</span>
+              <span className="text-sm">공개하기</span>
             </label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {isPublished
+                ? '현재 공개 상태입니다.'
+                : '체크하면 사이트에 공개됩니다.'}
+            </p>
             {isPublished && (
               <div className="mt-2">
                 <Label>상태</Label>
