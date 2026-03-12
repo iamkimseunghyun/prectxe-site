@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/carousel';
 import canManage from '@/lib/auth/make-login';
 import getSession from '@/lib/auth/session';
-import { prisma } from '@/lib/db/prisma';
 import type { ImageData } from '@/lib/schemas';
 import { formatArtistName, getImageUrl } from '@/lib/utils';
 import { getArtworkById } from '@/modules/artworks/server/actions';
@@ -73,16 +72,6 @@ export async function generateMetadata({
         : undefined,
     },
   };
-}
-
-export async function generateStaticParams() {
-  const artworks = await prisma.artwork.findMany({
-    select: { id: true },
-  });
-
-  return artworks.map((artwork) => ({
-    id: artwork.id,
-  }));
 }
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {

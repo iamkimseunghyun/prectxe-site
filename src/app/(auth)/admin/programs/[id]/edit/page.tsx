@@ -6,10 +6,6 @@ import { prisma } from '@/lib/db/prisma';
 import { updateProgram } from '@/modules/programs/server/actions';
 import { ProgramFormView } from '@/modules/programs/ui/views/program-form-view';
 
-export async function generateStaticParams() {
-  return [];
-}
-
 export default async function Page({
   params,
 }: {

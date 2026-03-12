@@ -7,9 +7,6 @@ import { PAGINATION } from '@/lib/constants/constants';
 import { getArtistsPage } from '@/modules/artists/server/actions';
 import { ArtistListView } from '@/modules/artists/ui/views/artist-list-view';
 
-export const dynamic = 'force-static';
-export const revalidate = 86400;
-
 export const metadata: Metadata = {
   title: '아티스트',
   description:

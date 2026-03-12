@@ -3,10 +3,6 @@ import { getImageUrl } from '@/lib/utils';
 import { getArticleBySlug } from '@/modules/journal/server/actions';
 import { JournalDetailView } from '@/modules/journal/ui/views/journal-detail-view';
 
-export async function generateStaticParams() {
-  return [];
-}
-
 export async function generateMetadata({
   params,
 }: {

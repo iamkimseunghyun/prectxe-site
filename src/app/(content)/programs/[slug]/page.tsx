@@ -3,10 +3,6 @@ import { getImageUrl } from '@/lib/utils';
 import { getProgramBySlug } from '@/modules/programs/server/actions';
 import { ProgramDetailView } from '@/modules/programs/ui/views/program-detail-view';
 
-export async function generateStaticParams() {
-  return [];
-}
-
 export async function generateMetadata({
   params,
 }: {

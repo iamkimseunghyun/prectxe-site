@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 
-import { prisma } from '@/lib/db/prisma';
 import { getVenueById } from '@/modules/venues/server/actions';
 import VenueFormView from '@/modules/venues/ui/views/venue-form-view';
 
@@ -11,16 +10,6 @@ export const metadata: Metadata = {
     follow: false,
   },
 };
-
-export async function generateStaticParams() {
-  const venues = await prisma.venue.findMany({
-    select: { id: true },
-  });
-
-  return venues.map((venue) => ({
-    id: venue.id,
-  }));
-}
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
