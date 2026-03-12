@@ -117,12 +117,14 @@ export async function toggleTicketing(programId: string, enabled: boolean) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error };
 
-  await prisma.program.update({
+  const program = await prisma.program.update({
     where: { id: programId },
     data: { ticketingEnabled: enabled },
+    select: { slug: true },
   });
 
   revalidatePath(`/admin/programs/${programId}`);
+  revalidatePath(`/programs/${program.slug}`);
   return { success: true };
 }
 
