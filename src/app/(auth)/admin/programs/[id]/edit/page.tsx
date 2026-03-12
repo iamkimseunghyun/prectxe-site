@@ -1,3 +1,5 @@
+import { Ticket } from 'lucide-react';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
 import { prisma } from '@/lib/db/prisma';
@@ -5,8 +7,7 @@ import { updateProgram } from '@/modules/programs/server/actions';
 import { ProgramFormView } from '@/modules/programs/ui/views/program-form-view';
 
 export async function generateStaticParams() {
-  const programs = await prisma.program.findMany({ select: { id: true } });
-  return programs.map((p) => ({ id: p.id }));
+  return [];
 }
 
 export default async function Page({
@@ -43,7 +44,16 @@ export default async function Page({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="mb-6 text-2xl font-semibold">프로그램 편집</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">프로그램 편집</h1>
+        <Link
+          href={`/admin/programs/${id}/tickets`}
+          className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
+        >
+          <Ticket className="h-4 w-4" />
+          티켓 관리
+        </Link>
+      </div>
       <ProgramFormView
         onSubmit={onSubmit}
         initial={{

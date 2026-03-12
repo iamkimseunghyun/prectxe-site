@@ -25,11 +25,14 @@ model Program {
   venueId     String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
-  isFeatured  Boolean         @default(false)
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  credits     ProgramCredit[]
-  images      ProgramImage[]
-  articles    Article[]
+  isFeatured       Boolean         @default(false)
+  ticketingEnabled Boolean         @default(false)
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credits          ProgramCredit[]
+  images           ProgramImage[]
+  articles         Article[]
+  ticketTiers      TicketTier[]
+  orders           Order[]
 }
 
 model ProgramImage {
@@ -355,4 +358,92 @@ enum EmailStatus {
   sending
   sent
   failed
+}
+
+// ─── Ticketing & Commerce ─────────────────────────────
+
+model TicketTier {
+  id          String           @id @default(cuid())
+  programId   String
+  name        String
+  description String?
+  price       Int              // 원 단위
+  quantity    Int              // 총 수량
+  soldCount   Int              @default(0)
+  maxPerOrder Int              @default(4)
+  saleStart   DateTime?
+  saleEnd     DateTime?
+  status      TicketTierStatus @default(scheduled)
+  order       Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  program     Program          @relation(fields: [programId], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  orderNo     String      @unique
+  programId   String
+  buyerName   String
+  buyerEmail  String
+  buyerPhone  String
+  totalAmount Int
+  status      OrderStatus @default(pending)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  program     Program     @relation(fields: [programId], references: [id], onDelete: Cascade)
+  items       OrderItem[]
+  payment     Payment?
+}
+
+model OrderItem {
+  id           String     @id @default(cuid())
+  orderId      String
+  ticketTierId String
+  quantity     Int
+  unitPrice    Int
+  subtotal     Int
+  createdAt    DateTime   @default(now())
+  order        Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  ticketTier   TicketTier @relation(fields: [ticketTierId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  orderId           String        @unique
+  portonePaymentId  String        @unique
+  method            String?
+  amount            Int
+  status            PaymentStatus @default(pending)
+  paidAt            DateTime?
+  cancelledAt       DateTime?
+  cancelReason      String?
+  rawData           Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+enum TicketTierStatus {
+  scheduled
+  on_sale
+  sold_out
+  closed
+}
+
+enum OrderStatus {
+  pending
+  paid
+  confirmed
+  cancelled
+  refunded
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  cancelled
+  refunded
 }

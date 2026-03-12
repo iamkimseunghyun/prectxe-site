@@ -13,6 +13,8 @@ import {
 import { listArticlesByProgram } from '@/modules/journal/server/actions';
 import { getProgramBySlug } from '@/modules/programs/server/actions';
 import ProgramGallery from '@/modules/programs/ui/section/program-gallery';
+import { getAvailableTicketTiers } from '@/modules/tickets/server/actions';
+import { TicketPurchaseSection } from '@/modules/tickets/ui/components/ticket-purchase-section';
 
 export async function ProgramDetailView({ slug }: { slug: string }) {
   const program = await getProgramBySlug(slug);
@@ -123,6 +125,10 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
         </section>
       ) : null}
 
+      {program.ticketingEnabled && (
+        <TicketSection programId={program.id} programTitle={program.title} />
+      )}
+
       <RelatedArticles programId={program.id} />
 
       <div className="mt-12 flex items-center justify-center gap-4 border-t pt-8 text-xs sm:gap-6 sm:text-sm md:text-base">
@@ -152,6 +158,27 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
         </Link>
       </div>
     </article>
+  );
+}
+
+async function TicketSection({
+  programId,
+  programTitle,
+}: {
+  programId: string;
+  programTitle: string;
+}) {
+  const tiers = await getAvailableTicketTiers(programId);
+  if (tiers.length === 0) return null;
+
+  return (
+    <section className="mb-12">
+      <TicketPurchaseSection
+        programId={programId}
+        programTitle={programTitle}
+        tiers={tiers}
+      />
+    </section>
   );
 }
 
