@@ -357,10 +357,39 @@ enum EmailStatus {
   failed
 }
 
-// ─── Ticketing & Commerce ─────────────────────────────
+// ─── Drops & Commerce ─────────────────────────────────
+
+model Drop {
+  id          String       @id @default(cuid())
+  slug        String       @unique
+  title       String
+  summary     String?
+  description String?
+  type        DropType
+  status      DropStatus   @default(draft)
+  heroUrl     String?
+  videoUrl    String?
+  publishedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  images      DropImage[]
+  ticketTiers TicketTier[]
+  variants    GoodsVariant[]
+  orders      Order[]
+}
+
+model DropImage {
+  id       String   @id @default(cuid())
+  imageUrl String
+  alt      String
+  order    Int      @default(0)
+  dropId   String
+  drop     Drop     @relation(fields: [dropId], references: [id], onDelete: Cascade)
+}
 
 model TicketTier {
   id          String           @id @default(cuid())
+  dropId      String?
   name        String
   description String?
   price       Int              // 원 단위
@@ -373,12 +402,29 @@ model TicketTier {
   order       Int              @default(0)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+  drop        Drop?            @relation(fields: [dropId], references: [id], onDelete: Cascade)
   orderItems  OrderItem[]
+}
+
+model GoodsVariant {
+  id        String   @id @default(cuid())
+  dropId    String
+  name      String
+  price     Int
+  stock     Int      @default(0)
+  soldCount Int      @default(0)
+  options   Json?    // { size?: string, color?: string, ... }
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  drop      Drop     @relation(fields: [dropId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
 }
 
 model Order {
   id          String      @id @default(cuid())
   orderNo     String      @unique
+  dropId      String?
   buyerName   String
   buyerEmail  String
   buyerPhone  String
@@ -386,20 +432,23 @@ model Order {
   status      OrderStatus @default(pending)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+  drop        Drop?       @relation(fields: [dropId], references: [id], onDelete: Cascade)
   items       OrderItem[]
   payment     Payment?
 }
 
 model OrderItem {
-  id           String     @id @default(cuid())
-  orderId      String
-  ticketTierId String
-  quantity     Int
-  unitPrice    Int
-  subtotal     Int
-  createdAt    DateTime   @default(now())
-  order        Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  ticketTier   TicketTier @relation(fields: [ticketTierId], references: [id], onDelete: Cascade)
+  id             String        @id @default(cuid())
+  orderId        String
+  ticketTierId   String?
+  goodsVariantId String?
+  quantity       Int
+  unitPrice      Int
+  subtotal       Int
+  createdAt      DateTime      @default(now())
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  ticketTier     TicketTier?   @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
+  goodsVariant   GoodsVariant? @relation(fields: [goodsVariantId], references: [id], onDelete: SetNull)
 }
 
 model Payment {
@@ -416,6 +465,19 @@ model Payment {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+enum DropType {
+  ticket
+  goods
+}
+
+enum DropStatus {
+  draft
+  upcoming
+  on_sale
+  sold_out
+  closed
 }
 
 enum TicketTierStatus {

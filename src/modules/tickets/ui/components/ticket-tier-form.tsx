@@ -19,6 +19,7 @@ import {
 } from '@/modules/tickets/server/actions';
 
 interface TicketTierFormProps {
+  dropId: string;
   tier?: {
     id: string;
     name: string;
@@ -36,6 +37,7 @@ interface TicketTierFormProps {
 }
 
 export function TicketTierForm({
+  dropId,
   tier,
   open,
   onOpenChange,
@@ -63,7 +65,7 @@ export function TicketTierForm({
 
     const result = isEdit
       ? await updateTicketTier(tier.id, data)
-      : await createTicketTier(data);
+      : await createTicketTier(dropId, data);
 
     setIsSubmitting(false);
 

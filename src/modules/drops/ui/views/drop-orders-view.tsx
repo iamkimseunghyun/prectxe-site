@@ -17,7 +17,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { cancelOrder, getOrders } from '@/modules/tickets/server/actions';
+import { getDropOrders } from '@/modules/drops/server/actions';
+import { cancelOrder } from '@/modules/tickets/server/actions';
 
 const STATUS_LABELS: Record<
   string,
@@ -47,7 +48,8 @@ type Order = {
     quantity: number;
     unitPrice: number;
     subtotal: number;
-    ticketTier: { name: string };
+    ticketTier: { name: string } | null;
+    goodsVariant: { name: string } | null;
   }[];
   payment: {
     method: string | null;
@@ -55,10 +57,15 @@ type Order = {
   } | null;
 };
 
-export function OrdersListView() {
+export function DropOrdersView({
+  dropId,
+  page,
+}: {
+  dropId: string;
+  page: number;
+}) {
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [cancelTarget, setCancelTarget] = useState<Order | null>(null);
@@ -66,13 +73,13 @@ export function OrdersListView() {
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
-    const result = await getOrders(page, pageSize);
-    if (result.success) {
+    const result = await getDropOrders(dropId, page, pageSize);
+    if (result.success && result.data) {
       setOrders(result.data.items as Order[]);
       setTotal(result.data.total);
     }
     setLoading(false);
-  }, [page]);
+  }, [dropId, page]);
 
   useEffect(() => {
     loadOrders();
@@ -96,7 +103,7 @@ export function OrdersListView() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/admin/tickets">
+          <Link href={`/admin/drops/${dropId}`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -141,10 +148,11 @@ export function OrdersListView() {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {order.items
-                          .map(
-                            (i) =>
-                              `${i.ticketTier.name} ×${i.quantity} (${i.subtotal.toLocaleString()}원)`
-                          )
+                          .map((i) => {
+                            const name =
+                              i.ticketTier?.name ?? i.goodsVariant?.name ?? '?';
+                            return `${name} ×${i.quantity} (${i.subtotal.toLocaleString()}원)`;
+                          })
                           .join(', ')}
                       </p>
                     </div>
@@ -182,9 +190,15 @@ export function OrdersListView() {
             variant="outline"
             size="sm"
             disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
+            asChild={page > 1}
           >
-            이전
+            {page > 1 ? (
+              <Link href={`/admin/drops/${dropId}/orders?page=${page - 1}`}>
+                이전
+              </Link>
+            ) : (
+              '이전'
+            )}
           </Button>
           <span className="text-sm text-muted-foreground">
             {page} / {totalPages}
@@ -193,9 +207,15 @@ export function OrdersListView() {
             variant="outline"
             size="sm"
             disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
+            asChild={page < totalPages}
           >
-            다음
+            {page < totalPages ? (
+              <Link href={`/admin/drops/${dropId}/orders?page=${page + 1}`}>
+                다음
+              </Link>
+            ) : (
+              '다음'
+            )}
           </Button>
         </div>
       )}

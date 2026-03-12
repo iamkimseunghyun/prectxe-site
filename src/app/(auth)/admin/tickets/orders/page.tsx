@@ -1,5 +1,5 @@
-import { OrdersListView } from '@/modules/tickets/ui/views/orders-list-view';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <OrdersListView />;
+  redirect('/admin/drops');
 }

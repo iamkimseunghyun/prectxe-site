@@ -27,6 +27,7 @@ type AvailableTier = {
 };
 
 interface TicketPurchaseSectionProps {
+  dropId: string;
   title: string;
   tiers: AvailableTier[];
 }
@@ -38,6 +39,7 @@ function randomPaymentId() {
 }
 
 export function TicketPurchaseSection({
+  dropId,
   title,
   tiers,
 }: TicketPurchaseSectionProps) {
@@ -84,7 +86,7 @@ export function TicketPurchaseSection({
     setIsProcessing(true);
 
     try {
-      const orderResult = await createOrder({
+      const orderResult = await createOrder(dropId, {
         buyerName,
         buyerEmail,
         buyerPhone,

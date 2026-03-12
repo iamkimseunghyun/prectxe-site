@@ -42,6 +42,7 @@ type Tier = {
 };
 
 interface TicketTierListProps {
+  dropId: string;
   tiers: Tier[];
   onRefresh: () => void;
 }
@@ -60,6 +61,7 @@ const STATUS_LABELS: Record<
 };
 
 export function TicketTierList({
+  dropId,
   tiers,
   onRefresh,
 }: TicketTierListProps) {
@@ -219,6 +221,7 @@ export function TicketTierList({
       </div>
 
       <TicketTierForm
+        dropId={dropId}
         tier={editTier}
         open={formOpen}
         onOpenChange={setFormOpen}

@@ -50,10 +50,10 @@ const ADMIN_TABS: NavItem[] = [
     href: '/admin/forms',
   },
   {
-    value: 'tickets',
-    label: 'Tickets',
+    value: 'drops',
+    label: 'Drops',
     icon: Ticket,
-    href: '/admin/tickets',
+    href: '/admin/drops',
   },
   { value: 'sms', label: 'SMS', icon: MessageSquare, href: '/admin/sms' },
   { value: 'email', label: 'Email', icon: Mail, href: '/admin/email' },

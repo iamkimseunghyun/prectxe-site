@@ -1,5 +1,5 @@
-import { TicketDashboardView } from '@/modules/tickets/ui/views/ticket-dashboard-view';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <TicketDashboardView />;
+  redirect('/admin/drops');
 }

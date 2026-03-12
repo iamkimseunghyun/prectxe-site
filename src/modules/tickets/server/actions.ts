@@ -20,7 +20,7 @@ function generateOrderNo(): string {
 
 // ─── TicketTier CRUD (Admin) ─────────────────────────
 
-export async function createTicketTier(data: TicketTierInput) {
+export async function createTicketTier(dropId: string, data: TicketTierInput) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error };
 
@@ -30,6 +30,7 @@ export async function createTicketTier(data: TicketTierInput) {
 
   const tier = await prisma.ticketTier.create({
     data: {
+      dropId,
       name: parsed.data.name,
       description: parsed.data.description,
       price: parsed.data.price,
@@ -41,7 +42,7 @@ export async function createTicketTier(data: TicketTierInput) {
     },
   });
 
-  revalidatePath('/admin/tickets');
+  revalidatePath('/admin/drops');
   return { success: true, data: tier };
 }
 
@@ -53,7 +54,7 @@ export async function updateTicketTier(tierId: string, data: TicketTierInput) {
   if (!parsed.success)
     return { success: false, error: parsed.error.errors[0].message };
 
-  const tier = await prisma.ticketTier.update({
+  await prisma.ticketTier.update({
     where: { id: tierId },
     data: {
       name: parsed.data.name,
@@ -67,8 +68,8 @@ export async function updateTicketTier(tierId: string, data: TicketTierInput) {
     },
   });
 
-  revalidatePath('/admin/tickets');
-  return { success: true, data: tier };
+  revalidatePath('/admin/drops');
+  return { success: true };
 }
 
 export async function deleteTicketTier(tierId: string) {
@@ -87,7 +88,7 @@ export async function deleteTicketTier(tierId: string) {
     };
 
   await prisma.ticketTier.delete({ where: { id: tierId } });
-  revalidatePath('/admin/tickets');
+  revalidatePath('/admin/drops');
   return { success: true };
 }
 
@@ -103,37 +104,27 @@ export async function updateTicketTierStatus(
     data: { status },
   });
 
-  revalidatePath('/admin/tickets');
+  revalidatePath('/admin/drops');
   return { success: true };
-}
-
-// ─── 티켓 조회 ──────────────────────────────────────
-
-export async function getAllTicketTiers() {
-  const auth = await requireAdmin();
-  if (!auth.success) return { success: false, error: auth.error } as const;
-
-  const tiers = await prisma.ticketTier.findMany({
-    orderBy: { order: 'asc' },
-  });
-  return { success: true, data: tiers } as const;
 }
 
 // ─── 주문 생성 + 결제 ───────────────────────────────
 
-export async function createOrder(input: {
-  buyerName: string;
-  buyerEmail: string;
-  buyerPhone: string;
-  items: { ticketTierId: string; quantity: number }[];
-}) {
+export async function createOrder(
+  dropId: string,
+  input: {
+    buyerName: string;
+    buyerEmail: string;
+    buyerPhone: string;
+    items: { ticketTierId: string; quantity: number }[];
+  }
+) {
   const parsed = orderFormSchema.safeParse(input);
   if (!parsed.success)
     return { success: false, error: parsed.error.errors[0].message };
 
   const { buyerName, buyerEmail, buyerPhone, items } = parsed.data;
 
-  // 트랜잭션으로 재고 확인 + 차감 + 주문 생성
   const result = await prisma.$transaction(async (tx) => {
     let totalAmount = 0;
     const orderItems: {
@@ -159,7 +150,6 @@ export async function createOrder(input: {
       if (item.quantity > remaining)
         throw new Error(`${tier.name} 잔여 수량이 부족합니다.`);
 
-      // 재고 차감
       await tx.ticketTier.update({
         where: { id: tier.id },
         data: { soldCount: { increment: item.quantity } },
@@ -178,6 +168,7 @@ export async function createOrder(input: {
     const order = await tx.order.create({
       data: {
         orderNo: generateOrderNo(),
+        dropId,
         buyerName,
         buyerEmail,
         buyerPhone,
@@ -205,7 +196,6 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
     if (order.status !== 'pending')
       return { success: false, error: '이미 처리된 주문입니다.' };
 
-    // 포트원 결제 조회
     const payment = await portone.payment.getPayment({
       paymentId: portonePaymentId,
     });
@@ -214,12 +204,10 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
       return { success: false, error: '결제가 완료되지 않았습니다.' };
     }
 
-    // 금액 검증
     if (payment.amount.total !== order.totalAmount) {
       return { success: false, error: '결제 금액이 일치하지 않습니다.' };
     }
 
-    // 결제 정보 저장 + 주문 상태 변경
     await prisma.$transaction([
       prisma.payment.create({
         data: {
@@ -238,7 +226,7 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
       }),
     ]);
 
-    revalidatePath('/admin/tickets');
+    revalidatePath('/admin/drops');
     return { success: true, data: { orderNo: order.orderNo } };
   } catch (e) {
     console.error('결제 검증 실패:', e);
@@ -263,7 +251,6 @@ export async function cancelOrder(orderId: string) {
   if (order.status === 'cancelled' || order.status === 'refunded')
     return { success: false, error: '이미 취소된 주문입니다.' };
 
-  // 포트원 결제 취소
   if (order.payment?.portonePaymentId) {
     try {
       await portone.payment.cancelPayment({
@@ -276,14 +263,15 @@ export async function cancelOrder(orderId: string) {
     }
   }
 
-  // 재고 복원 + 상태 변경
   await prisma.$transaction([
-    ...order.items.map((item) =>
-      prisma.ticketTier.update({
-        where: { id: item.ticketTierId },
-        data: { soldCount: { decrement: item.quantity } },
-      })
-    ),
+    ...order.items
+      .filter((item) => item.ticketTierId)
+      .map((item) =>
+        prisma.ticketTier.update({
+          where: { id: item.ticketTierId! },
+          data: { soldCount: { decrement: item.quantity } },
+        })
+      ),
     prisma.order.update({
       where: { id: orderId },
       data: { status: 'cancelled' },
@@ -298,7 +286,7 @@ export async function cancelOrder(orderId: string) {
       : []),
   ]);
 
-  revalidatePath('/admin/tickets');
+  revalidatePath('/admin/drops');
   return { success: true };
 }
 
@@ -312,7 +300,8 @@ export async function getOrders(page = 1, pageSize = 20) {
     prisma.order.count(),
     prisma.order.findMany({
       include: {
-        items: { include: { ticketTier: true } },
+        drop: { select: { title: true, slug: true, type: true } },
+        items: { include: { ticketTier: true, goodsVariant: true } },
         payment: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -324,50 +313,5 @@ export async function getOrders(page = 1, pageSize = 20) {
   return {
     success: true,
     data: { page, pageSize, total, items },
-  } as const;
-}
-
-// ─── 대시보드 통계 (Admin) ──────────────────────────
-
-export async function getTicketDashboard() {
-  const auth = await requireAdmin();
-  if (!auth.success) return { success: false, error: auth.error } as const;
-
-  const [tiers, orderStats, recentOrders] = await Promise.all([
-    prisma.ticketTier.findMany({
-      orderBy: { order: 'asc' },
-    }),
-    prisma.order.groupBy({
-      by: ['status'],
-      _count: true,
-      _sum: { totalAmount: true },
-    }),
-    prisma.order.findMany({
-      where: { status: { in: ['paid', 'confirmed'] } },
-      include: { items: { include: { ticketTier: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-    }),
-  ]);
-
-  const totalRevenue = orderStats
-    .filter((s) => s.status === 'paid' || s.status === 'confirmed')
-    .reduce((sum, s) => sum + (s._sum.totalAmount ?? 0), 0);
-
-  const totalSold = tiers.reduce((sum, t) => sum + t.soldCount, 0);
-  const totalCapacity = tiers.reduce((sum, t) => sum + t.quantity, 0);
-
-  return {
-    success: true,
-    data: {
-      tiers,
-      totalRevenue,
-      totalSold,
-      totalCapacity,
-      salesRate:
-        totalCapacity > 0 ? Math.round((totalSold / totalCapacity) * 100) : 0,
-      orderStats,
-      recentOrders,
-    },
   } as const;
 }
