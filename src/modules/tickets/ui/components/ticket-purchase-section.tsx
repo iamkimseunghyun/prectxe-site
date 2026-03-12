@@ -1,7 +1,7 @@
 'use client';
 
 import PortOne from '@portone/browser-sdk/v2';
-import { Minus, Plus } from 'lucide-react';
+import { CheckCircle2, Minus, Plus, Ticket } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -86,7 +86,6 @@ export function TicketPurchaseSection({
     setIsProcessing(true);
 
     try {
-      // 1. 주문 생성
       const orderResult = await createOrder(programId, {
         buyerName,
         buyerEmail,
@@ -105,23 +104,18 @@ export function TicketPurchaseSection({
 
       const order = orderResult.data!;
 
-      // 2. 무료 티켓인 경우 결제 스킵
       if (totalAmount === 0) {
         const verifyResult = await verifyPayment(order.id, `free-${order.id}`);
         if (verifyResult.success) {
           setOrderComplete(verifyResult.data?.orderNo ?? order.orderNo);
           setCheckoutOpen(false);
         } else {
-          toast({
-            title: verifyResult.error,
-            variant: 'destructive',
-          });
+          toast({ title: verifyResult.error, variant: 'destructive' });
         }
         setIsProcessing(false);
         return;
       }
 
-      // 3. 포트원 결제 요청
       const paymentId = randomPaymentId();
       const payment = await PortOne.requestPayment({
         storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID!,
@@ -131,9 +125,7 @@ export function TicketPurchaseSection({
         totalAmount,
         currency: 'CURRENCY_KRW',
         payMethod: 'CARD',
-        customData: {
-          orderId: order.id,
-        },
+        customData: { orderId: order.id },
         customer: {
           fullName: buyerName,
           email: buyerEmail,
@@ -150,7 +142,6 @@ export function TicketPurchaseSection({
         return;
       }
 
-      // 4. 결제 검증
       const verifyResult = await verifyPayment(order.id, payment.paymentId);
       if (verifyResult.success) {
         setOrderComplete(verifyResult.data?.orderNo ?? order.orderNo);
@@ -172,29 +163,45 @@ export function TicketPurchaseSection({
 
   if (tiers.length === 0) return null;
 
-  // 결제 완료 화면
   if (orderComplete) {
     return (
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">티켓 구매 완료</h2>
-        <div className="rounded-lg border bg-green-50 p-6 text-center">
-          <p className="text-lg font-medium text-green-800">
-            결제가 완료되었습니다!
+      <div className="space-y-6">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
+          Tickets
+        </h2>
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-10 text-center">
+          <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
+          <p className="mt-4 text-xl font-semibold text-emerald-900">
+            구매가 완료되었습니다
           </p>
-          <p className="mt-2 text-sm text-green-700">
-            주문번호: {orderComplete}
+          <p className="mt-2 font-mono text-sm text-emerald-700">
+            {orderComplete}
           </p>
-          <p className="mt-1 text-sm text-green-600">
+          <p className="mt-3 text-sm text-emerald-600">
             확인 이메일이 {buyerEmail}로 발송됩니다.
           </p>
         </div>
-      </section>
+      </div>
     );
   }
 
+  const lowestPrice = Math.min(...tiers.map((t) => t.price));
+
   return (
-    <section className="space-y-4">
-      <h2 className="text-lg font-semibold">티켓</h2>
+    <div className="space-y-6">
+      <div className="flex items-end justify-between">
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
+            Tickets
+          </h2>
+          <p className="mt-1 text-2xl font-bold text-neutral-900">
+            {lowestPrice === 0
+              ? '무료'
+              : `${lowestPrice.toLocaleString()}원부터`}
+          </p>
+        </div>
+        <Ticket className="h-6 w-6 text-neutral-300" />
+      </div>
 
       {/* Tier Cards */}
       <div className="space-y-3">
@@ -202,102 +209,127 @@ export function TicketPurchaseSection({
           const qty = quantities[tier.id] || 0;
           const maxQty = Math.min(tier.maxPerOrder, tier.remaining);
           const isSoldOut = tier.remaining <= 0;
+          const isSelected = qty > 0;
 
           return (
             <div
               key={tier.id}
-              className="flex items-center justify-between rounded-lg border p-4"
+              className={`rounded-xl border-2 p-5 transition-all ${
+                isSoldOut
+                  ? 'border-neutral-100 bg-neutral-50 opacity-60'
+                  : isSelected
+                    ? 'border-neutral-900 bg-neutral-50'
+                    : 'border-neutral-200 hover:border-neutral-300'
+              }`}
             >
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">{tier.name}</p>
-                {tier.description && (
-                  <p className="text-sm text-muted-foreground">
-                    {tier.description}
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-base font-semibold text-neutral-900">
+                      {tier.name}
+                    </p>
+                    {isSoldOut && (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-red-600">
+                        Sold Out
+                      </span>
+                    )}
+                  </div>
+                  {tier.description && (
+                    <p className="mt-1 text-sm leading-relaxed text-neutral-500">
+                      {tier.description}
+                    </p>
+                  )}
+                  <p className="mt-2 text-lg font-bold text-neutral-900">
+                    {tier.price === 0
+                      ? '무료'
+                      : `${tier.price.toLocaleString()}원`}
                   </p>
-                )}
-                <p className="mt-1 text-sm font-semibold">
-                  {tier.price === 0
-                    ? '무료'
-                    : `${tier.price.toLocaleString()}원`}
-                </p>
-                {isSoldOut && (
-                  <p className="mt-1 text-sm font-medium text-red-500">매진</p>
+                  {!isSoldOut && (
+                    <p className="mt-0.5 text-xs text-neutral-400">
+                      잔여 {tier.remaining}장
+                    </p>
+                  )}
+                </div>
+                {!isSoldOut && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-neutral-400 hover:text-neutral-700 disabled:opacity-30"
+                      onClick={() => updateQuantity(tier.id, -1, maxQty)}
+                      disabled={qty <= 0}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <span className="w-10 text-center text-base font-semibold tabular-nums text-neutral-900">
+                      {qty}
+                    </span>
+                    <button
+                      type="button"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-neutral-400 hover:text-neutral-700 disabled:opacity-30"
+                      onClick={() => updateQuantity(tier.id, 1, maxQty)}
+                      disabled={qty >= maxQty}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
                 )}
               </div>
-              {!isSoldOut && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => updateQuantity(tier.id, -1, maxQty)}
-                    disabled={qty <= 0}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <span className="w-8 text-center text-sm font-medium">
-                    {qty}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => updateQuantity(tier.id, 1, maxQty)}
-                    disabled={qty >= maxQty}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
             </div>
           );
         })}
       </div>
 
       {/* Purchase CTA */}
-      {totalAmount > 0 || selectedItems.length > 0 ? (
-        <div className="sticky bottom-4 rounded-lg border bg-background p-4 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {selectedItems
-                  .map((i) => `${i.tier.name} ×${i.quantity}`)
-                  .join(', ')}
-              </p>
-              <p className="text-lg font-semibold">
-                {totalAmount === 0
-                  ? '무료'
-                  : `${totalAmount.toLocaleString()}원`}
-              </p>
+      {selectedItems.length > 0 && (
+        <div className="sticky bottom-4 z-10">
+          <div className="rounded-2xl border bg-white p-5 shadow-xl">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="truncate text-sm text-neutral-500">
+                  {selectedItems
+                    .map((i) => `${i.tier.name} × ${i.quantity}`)
+                    .join(', ')}
+                </p>
+                <p className="text-xl font-bold text-neutral-900">
+                  {totalAmount === 0
+                    ? '무료'
+                    : `${totalAmount.toLocaleString()}원`}
+                </p>
+              </div>
+              <Button
+                size="lg"
+                className="h-12 shrink-0 rounded-xl px-8 text-base font-semibold"
+                onClick={handleCheckout}
+              >
+                {totalAmount === 0 ? '신청하기' : '구매하기'}
+              </Button>
             </div>
-            <Button size="lg" onClick={handleCheckout}>
-              구매하기
-            </Button>
           </div>
         </div>
-      ) : null}
+      )}
 
       {/* Checkout Dialog */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>구매자 정보</DialogTitle>
+            <DialogTitle className="text-lg">구매자 정보</DialogTitle>
           </DialogHeader>
           <form onSubmit={handlePayment} className="space-y-4">
-            <div>
-              <Label htmlFor="buyerName">
-                이름 <span className="text-red-500">*</span>
+            <div className="space-y-1.5">
+              <Label htmlFor="buyerName" className="text-sm font-medium">
+                이름
               </Label>
               <Input
                 id="buyerName"
                 value={buyerName}
                 onChange={(e) => setBuyerName(e.target.value)}
                 required
+                className="h-11"
               />
             </div>
-            <div>
-              <Label htmlFor="buyerEmail">
-                이메일 <span className="text-red-500">*</span>
+            <div className="space-y-1.5">
+              <Label htmlFor="buyerEmail" className="text-sm font-medium">
+                이메일
               </Label>
               <Input
                 id="buyerEmail"
@@ -305,11 +337,12 @@ export function TicketPurchaseSection({
                 value={buyerEmail}
                 onChange={(e) => setBuyerEmail(e.target.value)}
                 required
+                className="h-11"
               />
             </div>
-            <div>
-              <Label htmlFor="buyerPhone">
-                전화번호 <span className="text-red-500">*</span>
+            <div className="space-y-1.5">
+              <Label htmlFor="buyerPhone" className="text-sm font-medium">
+                전화번호
               </Label>
               <Input
                 id="buyerPhone"
@@ -318,32 +351,45 @@ export function TicketPurchaseSection({
                 value={buyerPhone}
                 onChange={(e) => setBuyerPhone(e.target.value)}
                 required
+                className="h-11"
               />
             </div>
 
             {/* Order Summary */}
-            <div className="rounded-md bg-muted p-3">
-              <p className="mb-2 text-sm font-medium">주문 내역</p>
-              {selectedItems.map((item) => (
-                <div
-                  key={item.tier.id}
-                  className="flex justify-between text-sm"
-                >
-                  <span>
-                    {item.tier.name} × {item.quantity}
-                  </span>
-                  <span>
-                    {(item.tier.price * item.quantity).toLocaleString()}원
-                  </span>
-                </div>
-              ))}
-              <div className="mt-2 flex justify-between border-t pt-2 font-semibold">
+            <div className="rounded-xl bg-neutral-50 p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">
+                주문 내역
+              </p>
+              <div className="space-y-1.5">
+                {selectedItems.map((item) => (
+                  <div
+                    key={item.tier.id}
+                    className="flex justify-between text-sm"
+                  >
+                    <span className="text-neutral-600">
+                      {item.tier.name} × {item.quantity}
+                    </span>
+                    <span className="font-medium text-neutral-900">
+                      {(item.tier.price * item.quantity).toLocaleString()}원
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 flex justify-between border-t border-neutral-200 pt-3 text-base font-bold">
                 <span>합계</span>
-                <span>{totalAmount.toLocaleString()}원</span>
+                <span>
+                  {totalAmount === 0
+                    ? '무료'
+                    : `${totalAmount.toLocaleString()}원`}
+                </span>
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={isProcessing}>
+            <Button
+              type="submit"
+              className="h-12 w-full rounded-xl text-base font-semibold"
+              disabled={isProcessing}
+            >
               {isProcessing
                 ? '처리 중...'
                 : totalAmount === 0
@@ -353,6 +399,6 @@ export function TicketPurchaseSection({
           </form>
         </DialogContent>
       </Dialog>
-    </section>
+    </div>
   );
 }
