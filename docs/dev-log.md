@@ -2783,3 +2783,81 @@ bddf947 feat(sms): add personalized SMS sending with individual coupons
 **다음 단계**:
 - Solapi 발신번호 등록 (방문 인증 필요)
 - Aligo에서 Solapi로 전면 전환
+
+---
+
+## 2026-03-13
+
+### 티켓팅 시스템 프로덕션 마이그레이션
+
+**배경:**
+- 티켓팅 테이블(TicketTier, Order, OrderItem, Payment)이 dev DB에만 존재
+- 프로덕션(Neon main 브랜치)에 수동 마이그레이션 필요
+
+**작업 내용:**
+1. **수동 마이그레이션 SQL 작성** (`prisma/migrations/20250313000000_add_ticketing_tables/migration.sql`)
+   - `TicketTierStatus`, `OrderStatus`, `PaymentStatus` enum 생성
+   - `TicketTier`, `Order`, `OrderItem`, `Payment` 테이블 생성
+   - `Program.ticketingEnabled` 컬럼 추가
+   - 인덱스 및 외래키 제약조건 설정
+2. **Neon 콘솔에서 직접 SQL 실행** (prisma migrate dev는 히스토리 drift로 사용 불가)
+3. **Article.programId 컬럼 누락 수정** — `ALTER TABLE "Article" ADD COLUMN "programId" TEXT` 실행
+
+**참고:** `prisma migrate dev`는 마이그레이션 히스토리가 실제 DB와 drift되어 사용 불가. `db push` 또는 직접 ALTER TABLE로 대응.
+
+---
+
+### 프로덕션 ProgramImage/ProgramCredit 데이터 복구
+
+**문제:**
+- 프로덕션 DB에서 `ProgramImage`와 `ProgramCredit` 테이블이 0건
+- 추정 원인: `db push`가 테이블을 drop/recreate하면서 데이터 소실, 또는 갤러리 수정 시 `deleteRemovedImages()` 버그 (빈 배열 전달 시 전체 삭제)
+- Neon 무료 티어: point-in-time recovery 최대 24시간으로 복구 불가
+
+**해결:**
+1. Dev DB에서 ProgramImage, ProgramCredit 데이터 추출
+2. Program slug 기준으로 dev programId → prod programId 매핑
+3. 복구 SQL 생성 후 Neon 콘솔에서 실행
+4. Vercel ISR 캐시 퍼지 후 갤러리 정상 표시 확인
+
+**교훈:**
+- `db push`는 프로덕션에서 주의 (테이블 drop 가능성)
+- 갤러리 편집 시 빈 배열 전달 방지 로직 필요
+- 중요 데이터는 주기적 백업 권장
+
+---
+
+### 프로그램 상세 페이지 UI 개선
+
+**변경 사항:**
+
+1. **뒤로가기 버튼 위치 이동**
+   - Before: 히어로 이미지 위 오버레이 (좌상단)
+   - After: URL 복사 아이콘과 같은 라인 (nav bar 좌측)
+   - `BackButton`의 기본 `hidden md:flex`를 `flex`로 오버라이드
+
+2. **갤러리 모달 슬라이드 번호 배지 고정**
+   - Before: 각 `CarouselItem` 안에 배치 → 스와이프 시 이미지와 함께 이동
+   - After: `Carousel` 바깥 고정 배치, `modalApi.on('select')` 이벤트로 현재 인덱스 추적
+   - 파일: `src/modules/programs/ui/section/program-gallery.tsx`
+
+3. **종료된 이벤트 티켓 섹션 분기**
+   - 일반 사용자: "Closed" 텍스트만 표시
+   - 관리자 로그인 시: 관리자 전용 안내 배너 + 기존 티켓 UI 노출
+   - `getSession()`으로 관리자 여부 확인
+   - 파일: `src/modules/programs/ui/views/program-detail-view.tsx`
+
+4. **발행 설정 UI 개선**
+   - Before: `{isPublished ? '비공개' : '공개'}` — 상태 언어 + 반대로 표시되어 혼란
+   - After: 체크박스 라벨 "공개하기" (액션 언어) + 상태 안내 텍스트 추가
+   - 파일: `src/modules/programs/ui/views/program-form-view.tsx`
+
+**커밋:**
+```
+b145d58 fix: 프로그램 상세 페이지 UI 개선
+b36471c style: apply biome formatting
+```
+
+**다음 단계:**
+- Prisma 마이그레이션 히스토리 베이스라이닝 (긴급하지 않음)
+- PortOne 환경변수 설정 및 결제 테스트
