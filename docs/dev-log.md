@@ -2858,6 +2858,80 @@ b145d58 fix: 프로그램 상세 페이지 UI 개선
 b36471c style: apply biome formatting
 ```
 
+---
+
+### 티켓 시스템 프로그램 분리
+
+**변경 사항:**
+- 프로그램 상세 페이지에서 티켓 섹션 완전 제거
+- 프로그램 수정 페이지에서 티켓 관련 UI 제거
+- `TicketTier`/`Order`에서 `programId` 외래키 제거
+- `Program.ticketingEnabled` 컬럼 제거
+- 독립 `/admin/tickets` 페이지 생성 (이후 Drops로 전환)
+
+**마이그레이션:** `prisma/migrations/20250313100000_decouple_tickets_from_programs/migration.sql`
+
+**커밋:** `0b4ef1a refactor: 티켓 시스템을 프로그램에서 분리하여 독립 관리로 전환`
+
+---
+
+### Drops 시스템 구현
+
+**배경:** 티켓만이 아닌 굿즈도 판매할 수 있는 통합 판매 플랫폼 필요. "Shop" 대신 "Drop"으로 네이밍. Drop 모델이 컨테이너 역할을 하여 `TicketTier[]` 또는 `GoodsVariant[]`를 포함.
+
+**스키마 변경:**
+- `Drop` 모델 추가 (slug, title, type: ticket|goods, status: 5단계)
+- `DropImage` 모델 추가
+- `GoodsVariant` 모델 추가 (name, price, stock, soldCount, options JSON)
+- `TicketTier.dropId?`, `Order.dropId?` 추가 (nullable — 기존 고아 데이터 호환)
+- `OrderItem.goodsVariantId?` 추가
+- `DropType`, `DropStatus` enum 추가
+
+**Admin 페이지:**
+- `/admin/drops` — Drop 목록 (타입, 상태, 매출, 주문수)
+- `/admin/drops/new` — 새 Drop 생성 (티켓/굿즈 선택)
+- `/admin/drops/[id]` — Drop 상세 편집 + 통계 카드 + 티켓 등급 관리
+- `/admin/drops/[id]/orders` — 주문 목록 + 취소 기능
+- 기존 `/admin/tickets` → `/admin/drops` 리다이렉트
+
+**Public 페이지:**
+- `/drops` — 전체/티켓/굿즈 필터 탭 + 카드 그리드
+- `/drops/[slug]` — 타입별 두 가지 레이아웃:
+  - 티켓: 풀스크린 히어로(영상/이미지) + 오버레이 타이틀 + sticky 구매 사이드바
+  - 굿즈: 29cm 스타일 세로 이미지 갤러리 + sticky 옵션 선택/수량/구매 UI
+
+**파일 구조:**
+```
+src/modules/drops/
+├── server/actions.ts          # CRUD + getDropStats, getDropOrders, listDrops, listAdminDrops
+└── ui/views/
+    ├── drops-admin-list-view.tsx
+    ├── drop-form-view.tsx
+    ├── drop-detail-view.tsx
+    ├── drop-orders-view.tsx
+    ├── drops-list-view.tsx      # Public 목록 (Server Component)
+    ├── ticket-drop-detail-view.tsx
+    └── goods-drop-detail-view.tsx
+```
+
+**티켓 컴포넌트 dropId 연동:**
+- `ticket-tier-form.tsx` — `dropId` prop 추가, `createTicketTier(dropId, data)` 호출
+- `ticket-tier-list.tsx` — `dropId` prop 전달
+- `ticket-purchase-section.tsx` — `dropId` prop 추가, `createOrder(dropId, input)` 호출
+
+**삭제된 파일:**
+- `ticket-dashboard-view.tsx` → `drop-detail-view.tsx`로 대체
+- `orders-list-view.tsx` → `drop-orders-view.tsx`로 대체
+
+**마이그레이션:** `prisma/migrations/20250313200000_add_drops_tables/migration.sql`
+- Dev DB: `prisma db push --accept-data-loss` (programId/ticketingEnabled 컬럼 제거 포함)
+- Prod DB: Neon 콘솔에서 SQL 직접 실행
+
+**커밋:** `f6fc9e3 feat: Drops 시스템 구현 — 티켓/굿즈 통합 판매 플랫폼`
+
 **다음 단계:**
+- 굿즈 옵션(GoodsVariant) Admin CRUD UI 구현
+- 굿즈 결제 플로우 연동 (PortOne)
+- Drop 이미지 업로드 (Cloudflare Images 연동)
+- PortOne 환경변수 설정 및 티켓 결제 테스트
 - Prisma 마이그레이션 히스토리 베이스라이닝 (긴급하지 않음)
-- PortOne 환경변수 설정 및 결제 테스트

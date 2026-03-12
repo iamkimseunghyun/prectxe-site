@@ -39,7 +39,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 src/
 ├── app/                          # Next.js App Router
 │   ├── (home)/                   # Homepage
-│   ├── (content)/                # Public content (programs, journal)
+│   ├── (content)/                # Public content (programs, journal, drops)
 │   ├── (page)/                   # Static pages + public entity views (artists, venues, artworks, forms)
 │   ├── (auth)/                   # Auth pages + admin routes (/admin/*)
 │   ├── (marketing)/              # Marketing pages
@@ -60,6 +60,7 @@ src/
 │   ├── auth/                     # session.ts (Iron Session), require-admin.ts, make-login.ts
 │   ├── cdn/cloudflare.ts         # Image upload/delete utilities
 │   ├── db/prisma.ts              # Prisma client instance
+│   ├── payment/portone.ts        # PortOne V2 SDK client instance
 │   ├── schemas/                  # Zod schemas (program, article, artist, artwork, venue, form, auth, seo, base, types)
 │   ├── sms/                      # SMS provider abstraction (aligo.ts, solapi.ts, provider.ts)
 │   ├── email/                    # Email templates and utilities
@@ -71,7 +72,7 @@ src/
 
 ### Modules
 
-Full modules (with server actions + UI): `programs`, `journal`, `artists`, `venues`, `artworks`, `auth`, `forms`, `sms`, `email`
+Full modules (with server actions + UI): `programs`, `journal`, `artists`, `venues`, `artworks`, `auth`, `forms`, `sms`, `email`, `drops`, `tickets`
 UI-only: `home` (section components only, no server actions)
 
 Each full module follows the pattern:
@@ -135,6 +136,12 @@ Each full module follows the pattern:
   - `Venue` — Standalone venue management with VenueImage[]
   - `Artwork` — Multi-artist relation via ArtistArtwork junction, ArtworkImage[]
   - `Form/FormField/FormSubmission/FormResponse` — Dynamic form builder (12 field types), FormField has `archived` flag for soft delete
+  - `Drop` — Container for ticket/goods sales. slug (unique), type (ticket/goods), status (draft/upcoming/on_sale/sold_out/closed), heroUrl, videoUrl, DropImage[]
+  - `TicketTier` — Ticket tiers linked to Drop via `dropId?`. name, price, quantity, soldCount, maxPerOrder, status (scheduled/on_sale/sold_out/closed)
+  - `GoodsVariant` — Goods options linked to Drop via `dropId`. name, price, stock, soldCount, options (JSON)
+  - `Order` — Purchase orders linked to Drop via `dropId?`. orderNo (unique), buyer info, totalAmount, status (pending/paid/confirmed/cancelled/refunded)
+  - `OrderItem` — Polymorphic: links to `ticketTierId?` or `goodsVariantId?`
+  - `Payment` — PortOne payment records linked to Order. portonePaymentId (unique)
   - `SMSCampaign/SMSRecipient` — Bulk SMS tracking with personalized name/value per recipient
   - `EmailCampaign/EmailRecipient` — Email campaign tracking
   - `User` — Role-based (ADMIN/USER)
@@ -164,6 +171,7 @@ Each full module follows the pattern:
 - Dashboard: `/admin` — Tab-based navigation (ADMIN role only)
 - Content: `/admin/programs`, `/admin/journal` (CRUD with image uploads)
 - Entities: `/admin/artists`, `/admin/venues`, `/admin/artworks`
+- Drops: `/admin/drops` — 티켓/굿즈 통합 판매 관리. Drop 생성/편집, 티켓 등급 관리, 주문 목록. Public: `/drops`, `/drops/[slug]` (타입별 두 가지 레이아웃)
 - Forms: `/admin/forms` — Dynamic form builder with 12 field types, drag-and-drop ordering, public rendering at `/forms/[slug]`
 - SMS: `/admin/sms` — Bulk SMS to form respondents (multi-provider: Aligo/Solapi)
 - Email: `/admin/email` — Email campaigns via Resend
@@ -181,6 +189,7 @@ Optional:
 - SMS (Solapi): `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, `SOLAPI_SENDER_PHONE`
 - `SMS_PROVIDER` — `aligo` (default, requires fixed IP) or `solapi` (no IP restriction, works on Vercel)
 - Email: `RESEND_API_KEY` — for email campaigns via Resend
+- Payment (PortOne V2): `PORTONE_API_SECRET` (server), `NEXT_PUBLIC_PORTONE_STORE_ID`, `NEXT_PUBLIC_PORTONE_CHANNEL_KEY` (client)
 
 ## Development Workflow
 
