@@ -311,9 +311,7 @@ async function TicketSection({
             </h2>
           </div>
           <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 px-6 py-8 text-center">
-            <p className="text-sm font-medium text-neutral-400">
-              Closed
-            </p>
+            <p className="text-sm font-medium text-neutral-400">Closed</p>
           </div>
         </section>
       );
