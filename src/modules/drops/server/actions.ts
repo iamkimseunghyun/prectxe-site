@@ -2,6 +2,14 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import {
+  deleteAllImages,
+  deleteCloudflareImage,
+  deleteCloudflareVideo,
+  deleteRemovedImages,
+  extractImageId,
+  extractVideoId,
+} from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
 
 // ─── Drop CRUD (Admin) ──────────────────────────────
@@ -15,6 +23,7 @@ export async function createDrop(data: {
   heroUrl?: string;
   videoUrl?: string;
   status?: string;
+  images?: { imageUrl: string; alt: string; order: number }[];
 }) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error };
@@ -34,6 +43,9 @@ export async function createDrop(data: {
       heroUrl: data.heroUrl || null,
       videoUrl: data.videoUrl || null,
       status: (data.status as any) || 'draft',
+      images: data.images?.length
+        ? { createMany: { data: data.images } }
+        : undefined,
     },
   });
 
@@ -53,6 +65,7 @@ export async function updateDrop(
     videoUrl?: string;
     status?: string;
     publishedAt?: string | null;
+    images?: { imageUrl: string; alt: string; order: number }[];
   }
 ) {
   const auth = await requireAdmin();
@@ -64,6 +77,39 @@ export async function updateDrop(
     });
     if (existing)
       return { success: false, error: '이미 사용 중인 slug입니다.' };
+  }
+
+  // 기존 데이터 조회 (미디어 정리용)
+  const prev = await prisma.drop.findUnique({
+    where: { id },
+    include: { images: true },
+  });
+  if (!prev) return { success: false, error: 'Drop을 찾을 수 없습니다.' };
+
+  // Hero 이미지 변경 시 이전 것 삭제
+  if (
+    data.heroUrl !== undefined &&
+    prev.heroUrl &&
+    data.heroUrl !== prev.heroUrl
+  ) {
+    const oldId = extractImageId(prev.heroUrl);
+    if (oldId) await deleteCloudflareImage(oldId).catch(() => {});
+  }
+
+  // 비디오 변경 시 이전 것 삭제
+  if (
+    data.videoUrl !== undefined &&
+    prev.videoUrl &&
+    data.videoUrl !== prev.videoUrl
+  ) {
+    const oldVid = extractVideoId(prev.videoUrl);
+    if (oldVid) await deleteCloudflareVideo(oldVid).catch(() => {});
+  }
+
+  // 갤러리 이미지 변경 시 제거된 것 삭제
+  if (data.images !== undefined) {
+    const newImageUrls = data.images.map((img) => img.imageUrl);
+    await deleteRemovedImages(prev.images, newImageUrls);
   }
 
   const drop = await prisma.drop.update({
@@ -81,6 +127,14 @@ export async function updateDrop(
       ...(data.publishedAt !== undefined && {
         publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
       }),
+      ...(data.images !== undefined && {
+        images: {
+          deleteMany: {},
+          ...(data.images.length > 0
+            ? { createMany: { data: data.images } }
+            : {}),
+        },
+      }),
     },
   });
 
@@ -97,6 +151,7 @@ export async function deleteDrop(id: string) {
   const drop = await prisma.drop.findUnique({
     where: { id },
     include: {
+      images: { select: { imageUrl: true } },
       orders: { where: { status: { in: ['paid', 'confirmed'] } }, take: 1 },
     },
   });
@@ -106,6 +161,19 @@ export async function deleteDrop(id: string) {
       success: false,
       error: '결제된 주문이 있어 삭제할 수 없습니다.',
     };
+
+  // Cloudflare 미디어 정리
+  if (drop.heroUrl) {
+    const heroId = extractImageId(drop.heroUrl);
+    if (heroId) await deleteCloudflareImage(heroId).catch(() => {});
+  }
+  if (drop.videoUrl) {
+    const vidId = extractVideoId(drop.videoUrl);
+    if (vidId) await deleteCloudflareVideo(vidId).catch(() => {});
+  }
+  if (drop.images.length > 0) {
+    await deleteAllImages(drop.images);
+  }
 
   await prisma.drop.delete({ where: { id } });
   revalidatePath('/admin/drops');

@@ -1,9 +1,11 @@
 'use client';
 
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Video } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { type ChangeEvent, useState } from 'react';
+import SingleImageBox from '@/components/image/single-image-box';
+import MultiImageBox from '@/components/image/multi-image-box';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,12 +18,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { useToast } from '@/hooks/use-toast';
+import { getCloudflareVideoUploadUrl } from '@/lib/cdn/cloudflare';
+import { uploadImage } from '@/lib/utils';
 import {
   createDrop,
   deleteDrop,
   updateDrop,
 } from '@/modules/drops/server/actions';
+
+type DropImage = {
+  imageUrl: string;
+  alt: string;
+  order: number;
+};
 
 type DropData = {
   id: string;
@@ -34,6 +46,7 @@ type DropData = {
   heroUrl: string | null;
   videoUrl: string | null;
   publishedAt: Date | null;
+  images?: DropImage[];
 };
 
 interface DropFormViewProps {
@@ -47,37 +60,155 @@ export function DropFormView({ drop }: DropFormViewProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // 히어로 이미지 (single)
+  const [heroUrl, setHeroUrl] = useState(drop?.heroUrl ?? '');
+  const {
+    preview,
+    imageFile,
+    error: heroError,
+    uploadURL: heroUploadURL,
+    handleImageChange: handleHeroChange,
+    displayUrl,
+    finalizeUpload: finalizeHero,
+  } = useSingleImageUpload({
+    initialImage: drop?.heroUrl ?? '',
+    onImageUrlChange: (url) => setHeroUrl(url),
+  });
+
+  // 갤러리 이미지 (multi)
+  const [galleryImages, setGalleryImages] = useState<DropImage[]>(
+    drop?.images ?? []
+  );
+  const {
+    multiImagePreview,
+    handleMultiImageChange,
+    removeMultiImage,
+    error: galleryError,
+    uploadPendingWithProgress,
+    retryAtWithProgress,
+  } = useMultiImageUpload({
+    initialImages: drop?.images,
+    onGalleryChange: (imgs) =>
+      setGalleryImages(
+        imgs.map((i) => ({ imageUrl: i.imageUrl, alt: i.alt, order: i.order }))
+      ),
+  });
+
+  // 비디오
+  const [videoUrl, setVideoUrl] = useState(drop?.videoUrl ?? '');
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoUploadURL, setVideoUploadURL] = useState('');
+  const [videoPreview, setVideoPreview] = useState(drop?.videoUrl ?? '');
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoError, setVideoError] = useState('');
+
+  const handleVideoChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setVideoError('');
+
+    if (file.size > 200 * 1024 * 1024) {
+      setVideoError('비디오 파일은 200MB 이하만 가능합니다.');
+      return;
+    }
+
+    setVideoFile(file);
+    setVideoPreview(URL.createObjectURL(file));
+
+    try {
+      const result = await getCloudflareVideoUploadUrl();
+      if (!result.success || !result.uploadURL || !result.videoUrl) {
+        setVideoError('비디오 업로드 URL을 가져올 수 없습니다.');
+        return;
+      }
+      setVideoUploadURL(result.uploadURL);
+      setVideoUrl(result.videoUrl);
+    } catch {
+      setVideoError('비디오 업로드 준비에 실패했습니다.');
+    }
+  };
+
+  const removeVideo = () => {
+    setVideoFile(null);
+    setVideoPreview('');
+    setVideoUrl('');
+    setVideoUploadURL('');
+    setVideoError('');
+  };
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
 
     const fd = new FormData(e.currentTarget);
-    const data = {
-      title: fd.get('title') as string,
-      slug: fd.get('slug') as string,
-      type: fd.get('type') as 'ticket' | 'goods',
-      summary: (fd.get('summary') as string) || undefined,
-      description: (fd.get('description') as string) || undefined,
-      heroUrl: (fd.get('heroUrl') as string) || undefined,
-      videoUrl: (fd.get('videoUrl') as string) || undefined,
-      status: fd.get('status') as string,
-    };
 
-    const result = isEdit
-      ? await updateDrop(drop.id, data)
-      : await createDrop(data);
-
-    setIsSubmitting(false);
-
-    if (result.success) {
-      toast({
-        title: isEdit ? 'Drop이 수정되었습니다.' : 'Drop이 생성되었습니다.',
-      });
-      if (!isEdit && result.data) {
-        router.push(`/admin/drops/${result.data.id}`);
+    try {
+      // 1) 히어로 이미지 업로드
+      if (imageFile && heroUploadURL) {
+        await uploadImage(imageFile, heroUploadURL);
+        finalizeHero();
       }
-    } else {
-      toast({ title: result.error, variant: 'destructive' });
+
+      // 2) 갤러리 이미지 업로드
+      const { failCount } = await uploadPendingWithProgress();
+      if (failCount > 0) {
+        toast({
+          title: '일부 갤러리 이미지 업로드에 실패했습니다.',
+          variant: 'destructive',
+        });
+      }
+
+      // 3) 비디오 업로드
+      if (videoFile && videoUploadURL) {
+        setVideoUploading(true);
+        try {
+          const vfd = new FormData();
+          vfd.append('file', videoFile);
+          await fetch(videoUploadURL, { method: 'POST', body: vfd });
+          setVideoFile(null);
+          setVideoUploadURL('');
+        } catch {
+          toast({
+            title: '비디오 업로드에 실패했습니다.',
+            variant: 'destructive',
+          });
+        } finally {
+          setVideoUploading(false);
+        }
+      }
+
+      // 4) 서버 액션 호출
+      const payload = {
+        title: fd.get('title') as string,
+        slug: fd.get('slug') as string,
+        type: fd.get('type') as 'ticket' | 'goods',
+        summary: (fd.get('summary') as string) || undefined,
+        description: (fd.get('description') as string) || undefined,
+        heroUrl: heroUrl || undefined,
+        videoUrl: videoUrl || undefined,
+        status: fd.get('status') as string,
+        images: galleryImages,
+      };
+
+      const result = isEdit
+        ? await updateDrop(drop.id, payload)
+        : await createDrop(payload);
+
+      if (result.success) {
+        toast({
+          title: isEdit
+            ? 'Drop이 수정되었습니다.'
+            : 'Drop이 생성되었습니다.',
+        });
+        if (!isEdit && result.data) {
+          router.push(`/admin/drops/${result.data.id}`);
+        }
+      } else {
+        toast({ title: result.error, variant: 'destructive' });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -198,29 +329,93 @@ export function DropFormView({ drop }: DropFormViewProps) {
               </CardContent>
             </Card>
 
+            {/* 미디어 */}
             <Card>
               <CardHeader>
                 <CardTitle>미디어</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
+                {/* 히어로 이미지 */}
                 <div>
-                  <Label htmlFor="heroUrl">히어로 이미지 URL</Label>
-                  <Input
-                    id="heroUrl"
-                    name="heroUrl"
-                    type="url"
-                    defaultValue={drop?.heroUrl ?? ''}
-                    placeholder="https://..."
+                  <Label>히어로 이미지</Label>
+                  <SingleImageBox
+                    register={{
+                      name: 'heroUrl',
+                      onBlur: () => {},
+                      ref: () => {},
+                    }}
+                    preview={preview}
+                    displayUrl={displayUrl}
+                    error={heroError}
+                    handleImageChange={handleHeroChange}
+                    inputId="heroImage"
+                    aspectRatio="video"
+                    placeholder="히어로 이미지를 추가해주세요."
                   />
                 </div>
+
+                {/* 비디오 */}
                 <div>
-                  <Label htmlFor="videoUrl">영상 URL</Label>
-                  <Input
-                    id="videoUrl"
-                    name="videoUrl"
-                    type="url"
-                    defaultValue={drop?.videoUrl ?? ''}
-                    placeholder="https://..."
+                  <Label>영상</Label>
+                  {videoPreview ? (
+                    <div className="relative mt-1 overflow-hidden rounded-md border bg-black">
+                      <video
+                        src={videoPreview}
+                        controls
+                        className="aspect-video w-full"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeVideo}
+                        className="absolute right-2 top-2 rounded-full bg-red-500 px-2 py-1 text-xs text-white hover:bg-red-600"
+                      >
+                        삭제
+                      </button>
+                      {videoUploading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                          <Loader2 className="h-8 w-8 animate-spin text-white" />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <label
+                      htmlFor="videoInput"
+                      className="mt-1 flex aspect-video cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-neutral-300 text-neutral-300 transition-colors hover:border-neutral-400 hover:bg-neutral-50"
+                    >
+                      <Video className="h-8 w-8" />
+                      <span className="mt-2 text-sm text-neutral-400">
+                        영상을 추가해주세요.
+                      </span>
+                    </label>
+                  )}
+                  <input
+                    type="file"
+                    id="videoInput"
+                    accept="video/*"
+                    onChange={handleVideoChange}
+                    className="hidden"
+                  />
+                  {videoError && (
+                    <p className="mt-1 text-sm text-red-500">{videoError}</p>
+                  )}
+                </div>
+
+                {/* 갤러리 이미지 */}
+                <div>
+                  <Label>갤러리 이미지</Label>
+                  <MultiImageBox
+                    register={{
+                      name: 'images',
+                      onBlur: () => {},
+                      ref: () => {},
+                    }}
+                    previews={multiImagePreview as any}
+                    handleMultiImageChange={handleMultiImageChange}
+                    removeMultiImage={removeMultiImage}
+                    error={galleryError}
+                    onRetryUpload={async (idx) => {
+                      await retryAtWithProgress(idx);
+                    }}
                   />
                 </div>
               </CardContent>

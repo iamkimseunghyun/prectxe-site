@@ -74,7 +74,7 @@ export async function deleteAllImages(images: { imageUrl: string }[]) {
   }
 }
 
-function extractImageId(url: string) {
+export function extractImageId(url: string) {
   const regex = /imagedelivery\.net\/[^/]+\/([^/]+)/;
   const match = url.match(regex);
   return match ? match[1] : null;
@@ -121,6 +121,81 @@ export async function deleteAllHtmlImages(html: string | null) {
     await deleteCloudflareImage(id);
   }
 }
+
+// ─── Cloudflare Stream (Video) ─────────────────────
+
+export async function getCloudflareVideoUploadUrl(maxDurationSeconds = 300) {
+  try {
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_IMAGE_STREAM_API_ACCOUNT_ID}/stream/direct_upload`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.CLOUDFLARE_IMAGE_STREAM_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ maxDurationSeconds }),
+      }
+    );
+
+    if (!response.ok) {
+      console.error('Cloudflare Stream API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+      });
+      return { success: false, error: `Stream upload URL 실패: ${response.status}` };
+    }
+
+    const data = await response.json();
+    const uid = data.result?.uid;
+    const uploadURL = data.result?.uploadURL;
+    return {
+      success: true,
+      uploadURL,
+      videoId: uid,
+      videoUrl: `https://customer-${process.env.CLOUDFLARE_STREAM_CUSTOMER_CODE || 'default'}.cloudflarestream.com/${uid}`,
+    };
+  } catch (error) {
+    console.error('Cloudflare Stream API Request failed:', error);
+    return { success: false, error: 'Stream API 요청 실패' };
+  }
+}
+
+export async function deleteCloudflareVideo(videoId: string) {
+  try {
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_IMAGE_STREAM_API_ACCOUNT_ID}/stream/${videoId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${process.env.CLOUDFLARE_IMAGE_STREAM_API_TOKEN}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error('Cloudflare Stream Delete Error:', {
+        status: response.status,
+        statusText: response.statusText,
+      });
+      return { success: false };
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Cloudflare Stream Delete Error:', error);
+    return { success: false };
+  }
+}
+
+export function extractVideoId(url: string | null): string | null {
+  if (!url) return null;
+  // cloudflarestream.com/{uid} 또는 watch.cloudflarestream.com/{uid}
+  const regex = /cloudflarestream\.com\/([a-f0-9]+)/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+}
+
+// ─── Cloudflare Images ─────────────────────────────
 
 export async function deleteCloudflareImage(imageId: string) {
   try {
