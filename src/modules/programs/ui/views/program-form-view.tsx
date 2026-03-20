@@ -8,6 +8,7 @@ import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -589,20 +590,16 @@ export function ProgramFormView({
         <CardContent className="space-y-4">
           <div>
             <Label>공개 설정</Label>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
+            <div className="mt-1 flex items-center gap-3">
+              <Switch
+                id="published"
                 checked={isPublished}
-                onChange={(e) => handlePublishToggle(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300"
+                onCheckedChange={handlePublishToggle}
               />
-              <span className="text-sm">공개하기</span>
-            </label>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {isPublished
-                ? '현재 공개 상태입니다.'
-                : '체크하면 사이트에 공개됩니다.'}
-            </p>
+              <label htmlFor="published" className="text-sm font-medium">
+                {isPublished ? '공개' : '비공개'}
+              </label>
+            </div>
             {isPublished && (
               <div className="mt-2">
                 <Label>상태</Label>
