@@ -1,6 +1,12 @@
 'use client';
 
-import { ArrowLeft, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Minus,
+  Plus,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -50,8 +56,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
 
   const selected = drop.variants.find((v) => v.id === selectedVariant);
   const remaining = selected ? selected.stock - selected.soldCount : 0;
-  const isSaleActive =
-    drop.status !== 'closed' && drop.status !== 'sold_out';
+  const isSaleActive = drop.status !== 'closed' && drop.status !== 'sold_out';
 
   return (
     <div className="min-h-screen bg-white">
@@ -78,7 +83,10 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                   {/* Main Image */}
                   <div className="relative aspect-square overflow-hidden rounded-2xl bg-neutral-100">
                     <Image
-                      src={getImageUrl(allImages[activeImageIndex].imageUrl, 'hires')}
+                      src={getImageUrl(
+                        allImages[activeImageIndex].imageUrl,
+                        'hires'
+                      )}
                       alt={allImages[activeImageIndex].alt}
                       fill
                       priority
@@ -193,9 +201,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                     )}
                   >
                     <p className="text-lg font-semibold">
-                      {drop.status === 'sold_out'
-                        ? 'Sold Out'
-                        : '판매 종료'}
+                      {drop.status === 'sold_out' ? 'Sold Out' : '판매 종료'}
                     </p>
                   </div>
                 ) : (
@@ -205,8 +211,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {drop.variants.map((variant) => {
-                        const varRemaining =
-                          variant.stock - variant.soldCount;
+                        const varRemaining = variant.stock - variant.soldCount;
                         const isSoldOut = varRemaining <= 0;
                         const isSelected = selectedVariant === variant.id;
 
@@ -255,9 +260,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                         type="button"
                         aria-label="수량 감소"
                         className="flex h-10 w-10 items-center justify-center text-neutral-500 transition-colors hover:text-neutral-900 disabled:opacity-30"
-                        onClick={() =>
-                          setQuantity((q) => Math.max(1, q - 1))
-                        }
+                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                         disabled={quantity <= 1}
                       >
                         <Minus className="h-4 w-4" />

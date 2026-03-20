@@ -1,6 +1,7 @@
 import { Package, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { getImageUrl } from '@/lib/utils';
 import { listDrops } from '@/modules/drops/server/actions';
 
 interface DropsListViewProps {
@@ -85,7 +86,7 @@ export async function DropsListView({ type, page }: DropsListViewProps) {
                   {heroImage ? (
                     <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                       <img
-                        src={heroImage}
+                        src={getImageUrl(heroImage, 'public')}
                         alt={drop.title}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />

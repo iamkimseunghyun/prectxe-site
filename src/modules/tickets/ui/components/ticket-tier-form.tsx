@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,11 @@ interface TicketTierFormProps {
   onSuccess: () => void;
 }
 
+const formatDateForInput = (date: Date | null) => {
+  if (!date) return '';
+  return new Date(date).toISOString().slice(0, 16);
+};
+
 export function TicketTierForm({
   dropId,
   tier,
@@ -45,6 +51,12 @@ export function TicketTierForm({
 }: TicketTierFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saleStart, setSaleStart] = useState(
+    formatDateForInput(tier?.saleStart ?? null)
+  );
+  const [saleEnd, setSaleEnd] = useState(
+    formatDateForInput(tier?.saleEnd ?? null)
+  );
   const isEdit = !!tier;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -58,8 +70,8 @@ export function TicketTierForm({
       price: Number(fd.get('price')),
       quantity: Number(fd.get('quantity')),
       maxPerOrder: Number(fd.get('maxPerOrder')) || 4,
-      saleStart: (fd.get('saleStart') as string) || undefined,
-      saleEnd: (fd.get('saleEnd') as string) || undefined,
+      saleStart: saleStart || undefined,
+      saleEnd: saleEnd || undefined,
       order: Number(fd.get('order')) || 0,
     };
 
@@ -79,11 +91,6 @@ export function TicketTierForm({
       toast({ title: result.error, variant: 'destructive' });
     }
   }
-
-  const formatDateForInput = (date: Date | null) => {
-    if (!date) return '';
-    return new Date(date).toISOString().slice(0, 16);
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -162,21 +169,19 @@ export function TicketTierForm({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="saleStart">판매 시작</Label>
-              <Input
-                id="saleStart"
+              <Label>판매 시작</Label>
+              <DateTimePicker
                 name="saleStart"
-                type="datetime-local"
-                defaultValue={formatDateForInput(tier?.saleStart ?? null)}
+                value={saleStart}
+                onChange={setSaleStart}
               />
             </div>
             <div>
-              <Label htmlFor="saleEnd">판매 종료</Label>
-              <Input
-                id="saleEnd"
+              <Label>판매 종료</Label>
+              <DateTimePicker
                 name="saleEnd"
-                type="datetime-local"
-                defaultValue={formatDateForInput(tier?.saleEnd ?? null)}
+                value={saleEnd}
+                onChange={setSaleEnd}
               />
             </div>
           </div>

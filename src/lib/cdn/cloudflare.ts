@@ -74,7 +74,7 @@ export async function deleteAllImages(images: { imageUrl: string }[]) {
   }
 }
 
-export function extractImageId(url: string) {
+function extractImageId(url: string) {
   const regex = /imagedelivery\.net\/[^/]+\/([^/]+)/;
   const match = url.match(regex);
   return match ? match[1] : null;
@@ -143,7 +143,10 @@ export async function getCloudflareVideoUploadUrl(maxDurationSeconds = 300) {
         status: response.status,
         statusText: response.statusText,
       });
-      return { success: false, error: `Stream upload URL 실패: ${response.status}` };
+      return {
+        success: false,
+        error: `Stream upload URL 실패: ${response.status}`,
+      };
     }
 
     const data = await response.json();
@@ -187,7 +190,7 @@ export async function deleteCloudflareVideo(videoId: string) {
   }
 }
 
-export function extractVideoId(url: string | null): string | null {
+function extractVideoId(url: string | null): string | null {
   if (!url) return null;
   // cloudflarestream.com/{uid} 또는 watch.cloudflarestream.com/{uid}
   const regex = /cloudflarestream\.com\/([a-f0-9]+)/;

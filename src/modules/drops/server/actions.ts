@@ -7,9 +7,8 @@ import {
   deleteCloudflareImage,
   deleteCloudflareVideo,
   deleteRemovedImages,
-  extractImageId,
-  extractVideoId,
 } from '@/lib/cdn/cloudflare';
+import { extractImageId, extractVideoId } from '@/lib/utils';
 import { prisma } from '@/lib/db/prisma';
 
 // ─── Drop CRUD (Admin) ──────────────────────────────
@@ -43,6 +42,7 @@ export async function createDrop(data: {
       heroUrl: data.heroUrl || null,
       videoUrl: data.videoUrl || null,
       status: (data.status as any) || 'draft',
+      publishedAt: data.status && data.status !== 'draft' ? new Date() : null,
       images: data.images?.length
         ? { createMany: { data: data.images } }
         : undefined,
@@ -112,6 +112,13 @@ export async function updateDrop(
     await deleteRemovedImages(prev.images, newImageUrls);
   }
 
+  // draft → 공개 상태 전환 시 publishedAt 자동 설정
+  const isPublishing =
+    data.status &&
+    data.status !== 'draft' &&
+    prev.status === 'draft' &&
+    !prev.publishedAt;
+
   const drop = await prisma.drop.update({
     where: { id },
     data: {
@@ -124,9 +131,11 @@ export async function updateDrop(
       ...(data.heroUrl !== undefined && { heroUrl: data.heroUrl || null }),
       ...(data.videoUrl !== undefined && { videoUrl: data.videoUrl || null }),
       ...(data.status !== undefined && { status: data.status as any }),
-      ...(data.publishedAt !== undefined && {
-        publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
-      }),
+      ...(data.publishedAt !== undefined
+        ? { publishedAt: data.publishedAt ? new Date(data.publishedAt) : null }
+        : isPublishing
+          ? { publishedAt: new Date() }
+          : {}),
       ...(data.images !== undefined && {
         images: {
           deleteMany: {},

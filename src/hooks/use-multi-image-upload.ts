@@ -1,4 +1,4 @@
-import { type ChangeEvent, useEffect, useState } from 'react';
+import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 
 import { getCloudflareImageUrl } from '@/lib/cdn/cloudflare';
 import validateImageFile from '@/lib/utils';
@@ -44,6 +44,7 @@ interface ImageUploadHookReturn {
   uploadPendingWithProgress: () => Promise<{
     successCount: number;
     failCount: number;
+    images: BaseImage[];
   }>;
 }
 
@@ -62,19 +63,19 @@ export function useMultiImageUpload({
 
   const [error, setError] = useState('');
 
-  // 이미지 변경 시 onGalleryChange 호출하는 useEffect 추가
+  // 콜백을 ref로 저장하여 useEffect deps에서 제외 (인라인 함수 무한루프 방지)
+  const onGalleryChangeRef = useRef(onGalleryChange);
+  onGalleryChangeRef.current = onGalleryChange;
+
   useEffect(() => {
-    if (onGalleryChange && multiImagePreview.length >= 0) {
-      const baseImages: BaseImage[] = multiImagePreview.map(
-        ({ imageUrl, alt, order }) => ({
-          imageUrl,
-          alt,
-          order,
-        })
-      );
-      onGalleryChange(baseImages);
-    }
-  }, [multiImagePreview, onGalleryChange]);
+    onGalleryChangeRef.current?.(
+      multiImagePreview.map(({ imageUrl, alt, order }) => ({
+        imageUrl,
+        alt,
+        order,
+      }))
+    );
+  }, [multiImagePreview]);
 
   // handleSingleFileUpload 함수 추가
   const handleSingleFileUpload = async (
@@ -259,10 +260,28 @@ export function useMultiImageUpload({
           onProgress(pct);
         }
       };
+      xhr.onerror = () => {
+        console.error('[Gallery Upload] Network error:', file.name);
+        reject('network_error');
+      };
+      xhr.ontimeout = () => {
+        console.error('[Gallery Upload] Timeout:', file.name);
+        reject('timeout');
+      };
+      xhr.timeout = 60000; // 60s
       xhr.onreadystatechange = () => {
         if (xhr.readyState === 4) {
-          if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.status);
-          else reject(xhr.status);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(xhr.status);
+          } else {
+            console.error(
+              '[Gallery Upload] Failed:',
+              file.name,
+              xhr.status,
+              xhr.responseText?.slice(0, 200)
+            );
+            reject(xhr.status);
+          }
         }
       };
       const fd = new FormData();
@@ -327,9 +346,12 @@ export function useMultiImageUpload({
   const uploadPendingWithProgress = async (): Promise<{
     successCount: number;
     failCount: number;
+    images: BaseImage[];
   }> => {
     let success = 0;
     let fail = 0;
+    // 최종 imageUrl을 동기적으로 추적 (state 업데이트는 비동기라 payload에 반영 안 됨)
+    const resolvedUrls: Record<number, string> = {};
     for (let i = 0; i < multiImagePreview.length; i++) {
       const item = multiImagePreview[i];
       if (!item.file) continue;
@@ -355,6 +377,7 @@ export function useMultiImageUpload({
           });
         });
         success++;
+        resolvedUrls[i] = imageUrl;
         setMultiImagePreview((prev) => {
           const next = [...prev];
           next[i] = {
@@ -382,7 +405,13 @@ export function useMultiImageUpload({
         });
       }
     }
-    return { successCount: success, failCount: fail };
+    // 업로드 완료된 URL을 반영한 최종 이미지 목록 반환
+    const images: BaseImage[] = multiImagePreview.map((item, i) => ({
+      imageUrl: resolvedUrls[i] ?? item.imageUrl,
+      alt: item.alt,
+      order: item.order,
+    }));
+    return { successCount: success, failCount: fail, images };
   };
   return {
     multiImagePreview,

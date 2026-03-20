@@ -110,6 +110,13 @@ export function extractImageId(url: string) {
   return match ? match[1] : null;
 }
 
+export function extractVideoId(url: string | null): string | null {
+  if (!url) return null;
+  const regex = /cloudflarestream\.com\/([a-f0-9]+)/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+}
+
 export const isSameDay = (date1: Date, date2: Date): boolean => {
   return (
     date1.getFullYear() === date2.getFullYear() &&

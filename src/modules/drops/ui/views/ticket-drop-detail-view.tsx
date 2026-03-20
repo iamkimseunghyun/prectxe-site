@@ -39,9 +39,7 @@ type TicketDrop = {
 
 export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
   const heroImage = drop.heroUrl || drop.images[0]?.imageUrl || null;
-  const galleryImages = drop.heroUrl
-    ? drop.images
-    : drop.images.slice(1);
+  const galleryImages = drop.heroUrl ? drop.images : drop.images.slice(1);
   const availableTiers = drop.ticketTiers
     .filter((t) => t.status === 'on_sale')
     .map((t) => ({
@@ -97,11 +95,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
           <div className="mx-auto max-w-5xl">
             {/* Eyebrow */}
             <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
-              {isClosed
-                ? 'Closed'
-                : isSoldOut
-                  ? 'Sold Out'
-                  : 'Now Available'}
+              {isClosed ? 'Closed' : isSoldOut ? 'Sold Out' : 'Now Available'}
             </p>
 
             <h1 className="max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
@@ -183,9 +177,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
               <div className="lg:sticky lg:top-8">
                 {isClosed ? (
                   <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-6 py-12 text-center">
-                    <p className="text-xl font-bold text-neutral-400">
-                      Closed
-                    </p>
+                    <p className="text-xl font-bold text-neutral-400">Closed</p>
                     <p className="mt-2 text-sm text-neutral-400">
                       판매가 종료되었습니다.
                     </p>
@@ -193,9 +185,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                 ) : isSoldOut ? (
                   <div className="rounded-2xl border border-red-100 bg-red-50 px-6 py-12 text-center">
                     <p className="text-xl font-bold text-red-500">Sold Out</p>
-                    <p className="mt-2 text-sm text-red-400">
-                      매진되었습니다.
-                    </p>
+                    <p className="mt-2 text-sm text-red-400">매진되었습니다.</p>
                   </div>
                 ) : (
                   <TicketPurchaseSection

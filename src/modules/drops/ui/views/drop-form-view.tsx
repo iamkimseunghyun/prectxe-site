@@ -94,6 +94,10 @@ export function DropFormView({ drop }: DropFormViewProps) {
       ),
   });
 
+  // Select 상태 (controlled — Radix name prop이 React 19 form에서 무한루프 유발)
+  const [type, setType] = useState(drop?.type ?? 'ticket');
+  const [status, setStatus] = useState(drop?.status ?? 'draft');
+
   // 비디오
   const [videoUrl, setVideoUrl] = useState(drop?.videoUrl ?? '');
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -151,12 +155,15 @@ export function DropFormView({ drop }: DropFormViewProps) {
       }
 
       // 2) 갤러리 이미지 업로드
-      const { failCount } = await uploadPendingWithProgress();
+      const { failCount, images: uploadedImages } =
+        await uploadPendingWithProgress();
       if (failCount > 0) {
         toast({
-          title: '일부 갤러리 이미지 업로드에 실패했습니다.',
+          title: `${failCount}장의 이미지 업로드에 실패했습니다. 다시 시도해 주세요.`,
           variant: 'destructive',
         });
+        setIsSubmitting(false);
+        return;
       }
 
       // 3) 비디오 업로드
@@ -188,7 +195,7 @@ export function DropFormView({ drop }: DropFormViewProps) {
         heroUrl: heroUrl || undefined,
         videoUrl: videoUrl || undefined,
         status: fd.get('status') as string,
-        images: galleryImages,
+        images: uploadedImages,
       };
 
       const result = isEdit
@@ -197,11 +204,11 @@ export function DropFormView({ drop }: DropFormViewProps) {
 
       if (result.success) {
         toast({
-          title: isEdit
-            ? 'Drop이 수정되었습니다.'
-            : 'Drop이 생성되었습니다.',
+          title: isEdit ? 'Drop이 수정되었습니다.' : 'Drop이 생성되었습니다.',
         });
-        if (!isEdit && result.data) {
+        if (isEdit) {
+          router.push(`/admin/drops/${drop.id}`);
+        } else if (result.data) {
           router.push(`/admin/drops/${result.data.id}`);
         }
       } else {
@@ -292,9 +299,10 @@ export function DropFormView({ drop }: DropFormViewProps) {
                   <Label htmlFor="type">
                     유형 <span className="text-red-500">*</span>
                   </Label>
+                  <input type="hidden" name="type" value={type} />
                   <Select
-                    name="type"
-                    defaultValue={drop?.type ?? 'ticket'}
+                    value={type}
+                    onValueChange={setType}
                     disabled={isEdit}
                   >
                     <SelectTrigger>
@@ -429,7 +437,8 @@ export function DropFormView({ drop }: DropFormViewProps) {
                 <CardTitle>상태</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Select name="status" defaultValue={drop?.status ?? 'draft'}>
+                <input type="hidden" name="status" value={status} />
+                <Select value={status} onValueChange={setStatus}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

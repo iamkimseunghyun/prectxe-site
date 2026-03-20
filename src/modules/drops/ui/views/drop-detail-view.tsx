@@ -7,6 +7,7 @@ import {
   ExternalLink,
   Loader2,
   Package,
+  Pencil,
   ShoppingCart,
   Ticket,
 } from 'lucide-react';
@@ -33,6 +34,7 @@ import {
   getDropStats,
   updateDrop,
 } from '@/modules/drops/server/actions';
+import { GoodsVariantList } from '@/modules/drops/ui/components/goods-variant-list';
 import { TicketTierList } from '@/modules/tickets/ui/components/ticket-tier-list';
 
 type DropData = {
@@ -100,6 +102,7 @@ export function DropDetailView({ dropId }: { dropId: string }) {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [statusValue, setStatusValue] = useState(drop?.status ?? 'draft');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -108,6 +111,7 @@ export function DropDetailView({ dropId }: { dropId: string }) {
       getDropStats(dropId),
     ]);
     setDrop(dropData as DropData | null);
+    if (dropData) setStatusValue(dropData.status);
     setStats(statsData);
     setLoading(false);
   }, [dropId]);
@@ -207,6 +211,12 @@ export function DropDetailView({ dropId }: { dropId: string }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/admin/drops/${drop.id}/edit`}>
+              <Pencil className="mr-1 h-4 w-4" />
+              수정
+            </Link>
+          </Button>
           {drop.status !== 'draft' && (
             <Button variant="outline" size="sm" asChild>
               <Link href={`/drops/${drop.slug}`} target="_blank">
@@ -278,10 +288,10 @@ export function DropDetailView({ dropId }: { dropId: string }) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Main */}
-          <div className="space-y-6 lg:col-span-2">
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Main */}
+        <div className="space-y-6 lg:col-span-2">
+          <form id="drop-form" onSubmit={handleSubmit}>
             <Card>
               <CardHeader>
                 <CardTitle>기본 정보</CardTitle>
@@ -346,33 +356,33 @@ export function DropDetailView({ dropId }: { dropId: string }) {
                 </div>
               </CardContent>
             </Card>
+          </form>
 
-            {/* Ticket Tiers or Goods Variants */}
-            {drop.type === 'ticket' && (
-              <Card>
-                <CardContent className="p-6">
-                  <TicketTierList
-                    dropId={drop.id}
-                    tiers={drop.ticketTiers}
-                    onRefresh={loadData}
-                  />
-                </CardContent>
-              </Card>
-            )}
+          {/* Ticket Tiers or Goods Variants — form 밖에 배치 */}
+          {drop.type === 'ticket' && (
+            <Card>
+              <CardContent className="p-6">
+                <TicketTierList
+                  dropId={drop.id}
+                  tiers={drop.ticketTiers}
+                  onRefresh={loadData}
+                />
+              </CardContent>
+            </Card>
+          )}
 
-            {drop.type === 'goods' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>굿즈 옵션</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    굿즈 옵션 관리 기능은 준비 중입니다.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          {drop.type === 'goods' && (
+            <Card>
+              <CardContent className="p-6">
+                <GoodsVariantList
+                  dropId={drop.id}
+                  variants={drop.variants}
+                  onRefresh={loadData}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
@@ -381,7 +391,8 @@ export function DropDetailView({ dropId }: { dropId: string }) {
                 <CardTitle>상태</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Select name="status" defaultValue={drop.status}>
+                <input type="hidden" name="status" value={statusValue} form="drop-form" />
+                <Select value={statusValue} onValueChange={setStatusValue}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -407,6 +418,7 @@ export function DropDetailView({ dropId }: { dropId: string }) {
 
                 <Button
                   type="submit"
+                  form="drop-form"
                   className="w-full"
                   disabled={isSubmitting}
                 >
@@ -429,7 +441,6 @@ export function DropDetailView({ dropId }: { dropId: string }) {
             </Card>
           </div>
         </div>
-      </form>
     </div>
   );
 }

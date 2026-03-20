@@ -15,6 +15,18 @@ export const ticketTierSchema = z.object({
 
 export type TicketTierInput = z.infer<typeof ticketTierSchema>;
 
+// ─── GoodsVariant ────────────────────────────────────
+
+export const goodsVariantSchema = z.object({
+  name: z.string().min(1, '옵션 이름을 입력해주세요.'),
+  price: z.coerce.number().int().min(0, '가격은 0원 이상이어야 합니다.'),
+  stock: z.coerce.number().int().min(0, '재고는 0개 이상이어야 합니다.'),
+  options: z.string().optional(), // JSON string
+  order: z.coerce.number().int().default(0),
+});
+
+export type GoodsVariantInput = z.infer<typeof goodsVariantSchema>;
+
 // ─── Order (구매자 입력) ──────────────────────────────
 
 export const orderFormSchema = z.object({

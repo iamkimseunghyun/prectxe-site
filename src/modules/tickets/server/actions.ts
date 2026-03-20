@@ -5,6 +5,8 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
 import portone, { PortOneError } from '@/lib/payment/portone';
 import {
+  type GoodsVariantInput,
+  goodsVariantSchema,
   orderFormSchema,
   type TicketTierInput,
   ticketTierSchema,
@@ -104,6 +106,80 @@ export async function updateTicketTierStatus(
     data: { status },
   });
 
+  revalidatePath('/admin/drops');
+  return { success: true };
+}
+
+// ─── GoodsVariant CRUD (Admin) ──────────────────────
+
+export async function createGoodsVariant(
+  dropId: string,
+  data: GoodsVariantInput
+) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error };
+
+  const parsed = goodsVariantSchema.safeParse(data);
+  if (!parsed.success)
+    return { success: false, error: parsed.error.errors[0].message };
+
+  const variant = await prisma.goodsVariant.create({
+    data: {
+      dropId,
+      name: parsed.data.name,
+      price: parsed.data.price,
+      stock: parsed.data.stock,
+      options: parsed.data.options ? JSON.parse(parsed.data.options) : null,
+      order: parsed.data.order,
+    },
+  });
+
+  revalidatePath('/admin/drops');
+  return { success: true, data: variant };
+}
+
+export async function updateGoodsVariant(
+  variantId: string,
+  data: GoodsVariantInput
+) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error };
+
+  const parsed = goodsVariantSchema.safeParse(data);
+  if (!parsed.success)
+    return { success: false, error: parsed.error.errors[0].message };
+
+  await prisma.goodsVariant.update({
+    where: { id: variantId },
+    data: {
+      name: parsed.data.name,
+      price: parsed.data.price,
+      stock: parsed.data.stock,
+      options: parsed.data.options ? JSON.parse(parsed.data.options) : null,
+      order: parsed.data.order,
+    },
+  });
+
+  revalidatePath('/admin/drops');
+  return { success: true };
+}
+
+export async function deleteGoodsVariant(variantId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error };
+
+  const variant = await prisma.goodsVariant.findUnique({
+    where: { id: variantId },
+    select: { soldCount: true },
+  });
+  if (!variant) return { success: false, error: '옵션을 찾을 수 없습니다.' };
+  if (variant.soldCount > 0)
+    return {
+      success: false,
+      error: '이미 판매된 상품이 있어 삭제할 수 없습니다.',
+    };
+
+  await prisma.goodsVariant.delete({ where: { id: variantId } });
   revalidatePath('/admin/drops');
   return { success: true };
 }
