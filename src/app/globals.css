@@ -131,6 +131,12 @@ body {
   animation: float 7s ease-in-out 4s infinite;
 }
 
+/* TipTap 빈 줄(empty paragraph)에 높이 부여 */
+.prose p:empty,
+.prose p:has(> br:only-child) {
+  min-height: 1.5em;
+}
+
 @layer utilities {
   .scrollbar-hide {
     -ms-overflow-style: none;

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -415,17 +416,19 @@ export function JournalFormView({
           <div className="space-y-4">
             <div>
               <Label>공개 설정</Label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+              <div className="mt-1 flex items-center gap-3">
+                <Switch
+                  id="published"
                   checked={isPublished}
-                  onChange={(e) => handlePublishToggle(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300"
+                  onCheckedChange={handlePublishToggle}
                 />
-                <span className="text-sm">
-                  {isPublished ? '비공개' : '공개'}
-                </span>
-              </label>
+                <label
+                  htmlFor="published"
+                  className="text-sm font-medium"
+                >
+                  {isPublished ? '공개' : '비공개'}
+                </label>
+              </div>
               {isPublished && form.publishedAt && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   발행일: {form.publishedAt}
