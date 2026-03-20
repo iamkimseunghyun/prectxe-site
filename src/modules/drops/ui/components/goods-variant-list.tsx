@@ -103,9 +103,7 @@ export function GoodsVariantList({
             {variants.map((v) => {
               const remaining = v.stock - v.soldCount;
               const soldPercent =
-                v.stock > 0
-                  ? Math.round((v.soldCount / v.stock) * 100)
-                  : 0;
+                v.stock > 0 ? Math.round((v.soldCount / v.stock) * 100) : 0;
 
               return (
                 <div

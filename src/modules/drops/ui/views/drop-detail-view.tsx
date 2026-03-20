@@ -384,63 +384,68 @@ export function DropDetailView({ dropId }: { dropId: string }) {
           )}
         </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>상태</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <input type="hidden" name="status" value={statusValue} form="drop-form" />
-                <Select value={statusValue} onValueChange={setStatusValue}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">초안</SelectItem>
-                    <SelectItem value="upcoming">예정</SelectItem>
-                    <SelectItem value="on_sale">판매 중</SelectItem>
-                    <SelectItem value="sold_out">매진</SelectItem>
-                    <SelectItem value="closed">종료</SelectItem>
-                  </SelectContent>
-                </Select>
+        {/* Sidebar */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>상태</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <input
+                type="hidden"
+                name="status"
+                value={statusValue}
+                form="drop-form"
+              />
+              <Select value={statusValue} onValueChange={setStatusValue}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">초안</SelectItem>
+                  <SelectItem value="upcoming">예정</SelectItem>
+                  <SelectItem value="on_sale">판매 중</SelectItem>
+                  <SelectItem value="sold_out">매진</SelectItem>
+                  <SelectItem value="closed">종료</SelectItem>
+                </SelectContent>
+              </Select>
 
-                {drop.status === 'draft' && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={handlePublish}
-                  >
-                    공개하기
-                  </Button>
-                )}
-
-                <Button
-                  type="submit"
-                  form="drop-form"
-                  className="w-full"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  저장
-                </Button>
-
+              {drop.status === 'draft' && (
                 <Button
                   type="button"
-                  variant="destructive"
+                  variant="outline"
                   className="w-full"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
+                  onClick={handlePublish}
                 >
-                  {isDeleting ? '삭제 중...' : '삭제'}
+                  공개하기
                 </Button>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+
+              <Button
+                type="submit"
+                form="drop-form"
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                저장
+              </Button>
+
+              <Button
+                type="button"
+                variant="destructive"
+                className="w-full"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? '삭제 중...' : '삭제'}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
+      </div>
     </div>
   );
 }

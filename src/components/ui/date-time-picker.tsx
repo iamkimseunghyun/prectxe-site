@@ -81,9 +81,7 @@ export function DateTimePicker({
 
   return (
     <>
-      {name && (
-        <input type="hidden" name={name} value={value ?? ''} />
-      )}
+      {name && <input type="hidden" name={name} value={value ?? ''} />}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
