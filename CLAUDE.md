@@ -171,7 +171,7 @@ Each full module follows the pattern:
 - Dashboard: `/admin` — Tab-based navigation (ADMIN role only)
 - Content: `/admin/programs`, `/admin/journal` (CRUD with image uploads)
 - Entities: `/admin/artists`, `/admin/venues`, `/admin/artworks`
-- Drops: `/admin/drops` — 티켓/굿즈 통합 판매 관리. Drop 생성/편집, 티켓 등급 관리, 주문 목록. Public: `/drops`, `/drops/[slug]` (타입별 두 가지 레이아웃)
+- Drops: `/admin/drops` — 티켓/굿즈 통합 판매 관리. Drop 생성/편집(`/admin/drops/[id]/edit`), 티켓 등급 관리, 굿즈 옵션(GoodsVariant) CRUD, 주문 목록. Public: `/drops`, `/drops/[slug]` (타입별 두 가지 레이아웃). 결제: PortOne V2 연동 (티켓/굿즈 모두). 결제 완료 시 주문 확인 이메일 자동 발송.
 - Forms: `/admin/forms` — Dynamic form builder with 12 field types, drag-and-drop ordering, public rendering at `/forms/[slug]`
 - SMS: `/admin/sms` — Bulk SMS to form respondents (multi-provider: Aligo/Solapi)
 - Email: `/admin/email` — Email campaigns via Resend
