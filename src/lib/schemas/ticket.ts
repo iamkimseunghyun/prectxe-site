@@ -47,3 +47,24 @@ export const orderFormSchema = z.object({
 });
 
 export type OrderFormInput = z.infer<typeof orderFormSchema>;
+
+// ─── Goods Order (구매자 입력) ───────────────────────
+
+export const goodsOrderFormSchema = z.object({
+  buyerName: z.string().min(1, '이름을 입력해주세요.'),
+  buyerEmail: z.string().email('올바른 이메일을 입력해주세요.'),
+  buyerPhone: z
+    .string()
+    .min(10, '전화번호를 입력해주세요.')
+    .regex(/^01[016789]\d{7,8}$/, '올바른 전화번호 형식이 아닙니다.'),
+  items: z
+    .array(
+      z.object({
+        goodsVariantId: z.string(),
+        quantity: z.coerce.number().int().min(1),
+      })
+    )
+    .min(1, '최소 1개 이상의 상품을 선택해주세요.'),
+});
+
+export type GoodsOrderFormInput = z.infer<typeof goodsOrderFormSchema>;

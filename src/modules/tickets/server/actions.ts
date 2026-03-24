@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db/prisma';
 import portone, { PortOneError } from '@/lib/payment/portone';
 import {
   type GoodsVariantInput,
+  goodsOrderFormSchema,
   goodsVariantSchema,
   orderFormSchema,
   type TicketTierInput,
@@ -260,6 +261,76 @@ export async function createOrder(
   return { success: true, data: result };
 }
 
+// ─── 굿즈 주문 생성 ─────────────────────────────────
+
+export async function createGoodsOrder(
+  dropId: string,
+  input: {
+    buyerName: string;
+    buyerEmail: string;
+    buyerPhone: string;
+    items: { goodsVariantId: string; quantity: number }[];
+  }
+) {
+  const parsed = goodsOrderFormSchema.safeParse(input);
+  if (!parsed.success)
+    return { success: false, error: parsed.error.errors[0].message };
+
+  const { buyerName, buyerEmail, buyerPhone, items } = parsed.data;
+
+  const result = await prisma.$transaction(async (tx) => {
+    let totalAmount = 0;
+    const orderItems: {
+      goodsVariantId: string;
+      quantity: number;
+      unitPrice: number;
+      subtotal: number;
+    }[] = [];
+
+    for (const item of items) {
+      const variant = await tx.goodsVariant.findUnique({
+        where: { id: item.goodsVariantId },
+      });
+      if (!variant) throw new Error('옵션을 찾을 수 없습니다.');
+
+      const remaining = variant.stock - variant.soldCount;
+      if (item.quantity > remaining)
+        throw new Error(`${variant.name} 재고가 부족합니다.`);
+
+      await tx.goodsVariant.update({
+        where: { id: variant.id },
+        data: { soldCount: { increment: item.quantity } },
+      });
+
+      const subtotal = variant.price * item.quantity;
+      totalAmount += subtotal;
+      orderItems.push({
+        goodsVariantId: variant.id,
+        quantity: item.quantity,
+        unitPrice: variant.price,
+        subtotal,
+      });
+    }
+
+    const order = await tx.order.create({
+      data: {
+        orderNo: generateOrderNo(),
+        dropId,
+        buyerName,
+        buyerEmail,
+        buyerPhone,
+        totalAmount,
+        items: { create: orderItems },
+      },
+      include: { items: true },
+    });
+
+    return order;
+  });
+
+  return { success: true, data: result };
+}
+
 // ─── 결제 완료 검증 ─────────────────────────────────
 
 export async function verifyPayment(orderId: string, portonePaymentId: string) {
@@ -345,6 +416,14 @@ export async function cancelOrder(orderId: string) {
       .map((item) =>
         prisma.ticketTier.update({
           where: { id: item.ticketTierId! },
+          data: { soldCount: { decrement: item.quantity } },
+        })
+      ),
+    ...order.items
+      .filter((item) => item.goodsVariantId)
+      .map((item) =>
+        prisma.goodsVariant.update({
+          where: { id: item.goodsVariantId! },
           data: { soldCount: { decrement: item.quantity } },
         })
       ),

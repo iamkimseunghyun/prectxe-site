@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn, getImageUrl } from '@/lib/utils';
+import { GoodsPurchaseSection } from '@/modules/drops/ui/components/goods-purchase-section';
 
 type GoodsVariant = {
   id: string;
@@ -37,6 +38,7 @@ type GoodsDrop = {
   summary: string | null;
   description: string | null;
   heroUrl: string | null;
+  videoUrl: string | null;
   status: string;
   images: DropImage[];
   variants: GoodsVariant[];
@@ -45,14 +47,23 @@ type GoodsDrop = {
 export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
 
+  // 비디오가 있으면 첫 번째 미디어로, 이후 이미지
+  const hasVideo = !!drop.videoUrl;
   const allImages = [
     ...(drop.heroUrl
       ? [{ id: 'hero', imageUrl: drop.heroUrl, alt: drop.title, order: -1 }]
       : []),
     ...drop.images,
   ];
+  const totalMedia = (hasVideo ? 1 : 0) + allImages.length;
+  // 현재 비디오를 보여줄지 여부
+  const showingVideo = hasVideo && activeMediaIndex === 0;
+  // 이미지 인덱스 (비디오가 있으면 1부터 시작)
+  const activeImageIndex = hasVideo
+    ? activeMediaIndex - 1
+    : activeMediaIndex;
 
   const selected = drop.variants.find((v) => v.id === selectedVariant);
   const remaining = selected ? selected.stock - selected.soldCount : 0;
@@ -78,33 +89,43 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
           {/* ── Image Gallery (left: 3/5) ── */}
           <div className="lg:basis-3/5 lg:border-r">
             <div className="relative py-6 lg:pr-8 lg:py-12">
-              {allImages.length > 0 ? (
+              {totalMedia > 0 ? (
                 <>
-                  {/* Main Image */}
+                  {/* Main Media */}
                   <div className="relative aspect-square overflow-hidden rounded-2xl bg-neutral-100">
-                    <Image
-                      src={getImageUrl(
-                        allImages[activeImageIndex].imageUrl,
-                        'hires'
-                      )}
-                      alt={allImages[activeImageIndex].alt}
-                      fill
-                      priority
-                      sizes="(min-width: 1024px) 60vw, 100vw"
-                      className="object-contain"
-                    />
+                    {showingVideo ? (
+                      <video
+                        src={drop.videoUrl!}
+                        controls
+                        autoPlay
+                        muted
+                        playsInline
+                        className="h-full w-full object-contain"
+                      />
+                    ) : activeImageIndex >= 0 && allImages[activeImageIndex] ? (
+                      <Image
+                        src={getImageUrl(
+                          allImages[activeImageIndex].imageUrl,
+                          'hires'
+                        )}
+                        alt={allImages[activeImageIndex].alt}
+                        fill
+                        priority
+                        sizes="(min-width: 1024px) 60vw, 100vw"
+                        className="object-contain"
+                      />
+                    ) : null}
 
                     {/* Prev / Next Arrows */}
-                    {allImages.length > 1 && (
+                    {totalMedia > 1 && (
                       <>
                         <button
                           type="button"
-                          aria-label="이전 이미지"
+                          aria-label="이전"
                           className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 text-neutral-600 backdrop-blur-sm transition-all hover:scale-110 hover:border-white hover:bg-white"
                           onClick={() =>
-                            setActiveImageIndex(
-                              (i) =>
-                                (i - 1 + allImages.length) % allImages.length
+                            setActiveMediaIndex(
+                              (i) => (i - 1 + totalMedia) % totalMedia
                             )
                           }
                         >
@@ -112,11 +133,11 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                         </button>
                         <button
                           type="button"
-                          aria-label="다음 이미지"
+                          aria-label="다음"
                           className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 text-neutral-600 backdrop-blur-sm transition-all hover:scale-110 hover:border-white hover:bg-white"
                           onClick={() =>
-                            setActiveImageIndex(
-                              (i) => (i + 1) % allImages.length
+                            setActiveMediaIndex(
+                              (i) => (i + 1) % totalMedia
                             )
                           }
                         >
@@ -127,8 +148,23 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                   </div>
 
                   {/* Thumbnails */}
-                  {allImages.length > 1 && (
+                  {totalMedia > 1 && (
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      {hasVideo && (
+                        <button
+                          type="button"
+                          aria-label="영상"
+                          className={cn(
+                            'flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border-2 transition-all',
+                            activeMediaIndex === 0
+                              ? 'border-neutral-900 ring-1 ring-neutral-900'
+                              : 'border-transparent opacity-60 hover:opacity-100'
+                          )}
+                          onClick={() => setActiveMediaIndex(0)}
+                        >
+                          <span className="text-2xl">▶</span>
+                        </button>
+                      )}
                       {allImages.map((img, idx) => (
                         <button
                           key={img.id}
@@ -136,11 +172,13 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                           aria-label={`이미지 ${idx + 1}`}
                           className={cn(
                             'relative h-20 w-20 overflow-hidden rounded-lg border-2 transition-all',
-                            activeImageIndex === idx
+                            activeMediaIndex === (hasVideo ? idx + 1 : idx)
                               ? 'border-neutral-900 ring-1 ring-neutral-900'
                               : 'border-transparent opacity-60 hover:opacity-100'
                           )}
-                          onClick={() => setActiveImageIndex(idx)}
+                          onClick={() =>
+                            setActiveMediaIndex(hasVideo ? idx + 1 : idx)
+                          }
                         >
                           <Image
                             src={getImageUrl(img.imageUrl, 'thumbnail')}
@@ -295,12 +333,14 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                   </div>
 
                   {/* CTA */}
-                  <Button
-                    className="mt-6 h-14 w-full rounded-full text-base font-semibold tracking-wide"
-                    size="lg"
-                  >
-                    구매하기
-                  </Button>
+                  <GoodsPurchaseSection
+                    dropId={drop.id}
+                    title={drop.title}
+                    variantId={selected.id}
+                    variantName={selected.name}
+                    unitPrice={selected.price}
+                    quantity={quantity}
+                  />
                 </div>
               )}
 
@@ -322,21 +362,19 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
         </div>
       </div>
 
-      {/* Mobile Sticky CTA */}
+      {/* Mobile Sticky Summary */}
       {isSaleActive && selected && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white/95 px-4 py-3 backdrop-blur-sm lg:hidden">
-          <div className="flex items-center gap-3">
-            <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
               <p className="truncate text-sm font-medium text-neutral-900">
-                {selected.name}
+                {selected.name} × {quantity}
               </p>
               <p className="text-lg font-bold tabular-nums">
                 {(selected.price * quantity).toLocaleString()}원
               </p>
             </div>
-            <Button className="h-12 rounded-full px-8 text-sm font-semibold">
-              구매하기
-            </Button>
+            <p className="text-xs text-neutral-400">↑ 위에서 구매</p>
           </div>
         </div>
       )}
