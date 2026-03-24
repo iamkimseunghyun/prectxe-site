@@ -8,7 +8,7 @@ import {
 
 interface AdminStatsCardProps {
   title: string;
-  value: number;
+  value: number | string;
   description?: string;
   icon?: LucideIcon;
 }
@@ -26,7 +26,9 @@ export function AdminStatsCard({
         {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value.toLocaleString()}</div>
+        <div className="text-2xl font-bold">
+          {typeof value === 'number' ? value.toLocaleString() : value}
+        </div>
         {description && (
           <p className="mt-1 text-xs text-muted-foreground">{description}</p>
         )}

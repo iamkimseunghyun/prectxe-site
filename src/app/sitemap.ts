@@ -28,6 +28,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     select: { slug: true, updatedAt: true },
   });
 
+  const drops = await prisma.drop.findMany({
+    where: { status: { not: 'draft' }, publishedAt: { not: null } },
+    select: { slug: true, updatedAt: true },
+  });
+
   // 정적 라우트
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -49,6 +54,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${baseUrl}/about`,
       lastModified: new Date(),
       priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/drops`,
+      lastModified: new Date(),
+      priority: 0.9,
     },
     {
       url: `${baseUrl}/artists`,
@@ -102,6 +112,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  // 동적 라우트 - Drops
+  const dropRoutes: MetadataRoute.Sitemap = drops.map((d) => ({
+    url: `${baseUrl}/drops/${d.slug}`,
+    lastModified: d.updatedAt,
+    priority: 0.8,
+  }));
+
   return [
     ...staticRoutes,
     ...artistRoutes,
@@ -109,5 +126,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...programRoutes,
     ...venueRoutes,
     ...articleRoutes,
+    ...dropRoutes,
   ];
 }

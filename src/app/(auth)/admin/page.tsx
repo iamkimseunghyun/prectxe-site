@@ -1,10 +1,13 @@
 import {
   Archive,
+  Banknote,
   ClipboardList,
   FileText,
   Image as ImageIcon,
   MapPin,
+  ShoppingCart,
   Star,
+  Ticket,
   Users,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -16,17 +19,29 @@ import { getImageUrl } from '@/lib/utils';
 
 export default async function Page() {
   // Stats (safe fallbacks when DB empty or unavailable)
-  const counts = await Promise.allSettled([
-    prisma.program.count(),
-    prisma.article.count(),
-    prisma.form.count(),
-    prisma.artist.count(),
-    prisma.venue.count(),
-    prisma.artwork.count(),
+  const [counts, revenueResult] = await Promise.all([
+    Promise.allSettled([
+      prisma.program.count(),
+      prisma.article.count(),
+      prisma.form.count(),
+      prisma.artist.count(),
+      prisma.venue.count(),
+      prisma.artwork.count(),
+      prisma.drop.count(),
+      prisma.order.count({ where: { status: { in: ['paid', 'confirmed'] } } }),
+    ]),
+    prisma.order
+      .aggregate({
+        where: { status: { in: ['paid', 'confirmed'] } },
+        _sum: { totalAmount: true },
+      })
+      .catch(() => ({ _sum: { totalAmount: 0 } })),
   ]);
 
   const getNum = (i: number) =>
     counts[i].status === 'fulfilled' ? counts[i].value : 0;
+
+  const totalRevenue = revenueResult._sum.totalAmount ?? 0;
 
   const stats = [
     {
@@ -64,6 +79,24 @@ export default async function Page() {
       value: getNum(5),
       icon: ImageIcon,
       href: '/admin/artworks',
+    },
+    {
+      title: 'Drops',
+      value: getNum(6),
+      icon: Ticket,
+      href: '/admin/drops',
+    },
+    {
+      title: '주문',
+      value: getNum(7),
+      icon: ShoppingCart,
+      href: '/admin/drops',
+    },
+    {
+      title: '매출',
+      value: `${totalRevenue.toLocaleString()}원`,
+      icon: Banknote,
+      href: '/admin/drops',
     },
   ];
 
