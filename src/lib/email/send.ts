@@ -2,13 +2,14 @@ import type { ReactElement } from 'react';
 import { createResendClient, getSenderEmail } from './resend';
 import FormNotification from './templates/form-notification';
 import Newsletter from './templates/newsletter';
+import OrderConfirmation from './templates/order-confirmation';
 
 // 이메일 발송 인터페이스
 export interface SendEmailParams {
-  to: string | string[]; // 단일 이메일 또는 이메일 배열
+  to: string | string[];
   subject: string;
-  template: 'form-notification' | 'newsletter';
-  data: any; // 템플릿 props
+  template: 'form-notification' | 'newsletter' | 'order-confirmation';
+  data: any;
 }
 
 export interface SendEmailResult {
@@ -32,6 +33,8 @@ function getTemplate(template: string, data: any): ReactElement {
       return FormNotification(data);
     case 'newsletter':
       return Newsletter(data);
+    case 'order-confirmation':
+      return OrderConfirmation(data);
     default:
       return FormNotification(data);
   }

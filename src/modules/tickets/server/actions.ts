@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
+import { sendEmail } from '@/lib/email/send';
 import portone, { PortOneError } from '@/lib/payment/portone';
 import {
   type GoodsVariantInput,
@@ -337,7 +338,10 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
   try {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: { include: { ticketTier: true } } },
+      include: {
+        drop: { select: { title: true } },
+        items: { include: { ticketTier: true, goodsVariant: true } },
+      },
     });
     if (!order) return { success: false, error: '주문을 찾을 수 없습니다.' };
     if (order.status !== 'pending')
@@ -374,6 +378,33 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
     ]);
 
     revalidatePath('/admin/drops');
+
+    // 주문 확인 이메일 발송 (실패해도 결제 결과에 영향 없음)
+    try {
+      const dropTitle = order.drop?.title ?? 'PRECTXE';
+      const items = order.items.map((item) => ({
+        name: item.ticketTier?.name ?? item.goodsVariant?.name ?? '상품',
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        subtotal: item.subtotal,
+      }));
+
+      await sendEmail({
+        to: order.buyerEmail,
+        subject: `[PRECTXE] 주문 확인 — ${dropTitle}`,
+        template: 'order-confirmation',
+        data: {
+          buyerName: order.buyerName,
+          orderNo: order.orderNo,
+          dropTitle,
+          items,
+          totalAmount: order.totalAmount,
+        },
+      });
+    } catch (emailErr) {
+      console.error('주문 확인 이메일 발송 실패:', emailErr);
+    }
+
     return { success: true, data: { orderNo: order.orderNo } };
   } catch (e) {
     console.error('결제 검증 실패:', e);

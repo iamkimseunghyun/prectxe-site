@@ -1,4 +1,5 @@
 import { Package, Ticket } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { getImageUrl } from '@/lib/utils';
@@ -85,10 +86,12 @@ export async function DropsListView({ type, page }: DropsListViewProps) {
                 <div className="overflow-hidden rounded-xl border transition-shadow hover:shadow-lg">
                   {heroImage ? (
                     <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                      <img
+                      <Image
                         src={getImageUrl(heroImage, 'public')}
                         alt={drop.title}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        fill
+                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <Badge
                         variant="secondary"
