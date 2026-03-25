@@ -367,9 +367,13 @@ model Drop {
   description String?
   type        DropType
   status      DropStatus   @default(draft)
-  heroUrl     String?
-  videoUrl    String?
-  publishedAt DateTime?
+  heroUrl      String?
+  videoUrl     String?
+  eventDate    DateTime?
+  eventEndDate DateTime?
+  venue        String?
+  venueAddress String?
+  publishedAt  DateTime?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   images      DropImage[]

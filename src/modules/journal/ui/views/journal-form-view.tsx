@@ -422,10 +422,7 @@ export function JournalFormView({
                   checked={isPublished}
                   onCheckedChange={handlePublishToggle}
                 />
-                <label
-                  htmlFor="published"
-                  className="text-sm font-medium"
-                >
+                <label htmlFor="published" className="text-sm font-medium">
                   {isPublished ? '공개' : '비공개'}
                 </label>
               </div>

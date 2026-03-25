@@ -21,10 +21,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import {
-  deleteTicketTier,
-  updateTicketTierStatus,
-} from '@/modules/tickets/server/actions';
+import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
+import { deleteTicketTier } from '@/modules/tickets/server/actions';
 import { TicketTierForm } from './ticket-tier-form';
 
 type Tier = {
@@ -92,19 +90,6 @@ export function TicketTierList({
     setDeleteTarget(null);
   }
 
-  async function handleStatusChange(
-    tierId: string,
-    status: 'scheduled' | 'on_sale' | 'sold_out' | 'closed'
-  ) {
-    const result = await updateTicketTierStatus(tierId, status);
-    if (result.success) {
-      toast({ title: '상태가 변경되었습니다.' });
-      onRefresh();
-    } else {
-      toast({ title: result.error, variant: 'destructive' });
-    }
-  }
-
   return (
     <>
       <div className="space-y-3">
@@ -140,8 +125,9 @@ export function TicketTierList({
                 tier.quantity > 0
                   ? Math.round((tier.soldCount / tier.quantity) * 100)
                   : 0;
+              const effectiveStatus = getEffectiveTierStatus(tier);
               const statusInfo =
-                STATUS_LABELS[tier.status] ?? STATUS_LABELS.scheduled;
+                STATUS_LABELS[effectiveStatus] ?? STATUS_LABELS.scheduled;
 
               return (
                 <div
@@ -190,20 +176,6 @@ export function TicketTierList({
                         <Edit2 className="mr-2 h-4 w-4" />
                         수정
                       </DropdownMenuItem>
-                      {tier.status !== 'on_sale' && (
-                        <DropdownMenuItem
-                          onClick={() => handleStatusChange(tier.id, 'on_sale')}
-                        >
-                          판매 시작
-                        </DropdownMenuItem>
-                      )}
-                      {tier.status === 'on_sale' && (
-                        <DropdownMenuItem
-                          onClick={() => handleStatusChange(tier.id, 'closed')}
-                        >
-                          판매 종료
-                        </DropdownMenuItem>
-                      )}
                       <DropdownMenuItem
                         className="text-destructive"
                         onClick={() => setDeleteTarget(tier)}

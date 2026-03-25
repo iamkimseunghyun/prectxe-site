@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import {
@@ -51,13 +51,17 @@ export function TicketTierForm({
 }: TicketTierFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [saleStart, setSaleStart] = useState(
-    formatDateForInput(tier?.saleStart ?? null)
-  );
-  const [saleEnd, setSaleEnd] = useState(
-    formatDateForInput(tier?.saleEnd ?? null)
-  );
+  const [saleStart, setSaleStart] = useState('');
+  const [saleEnd, setSaleEnd] = useState('');
   const isEdit = !!tier;
+
+  // 다이얼로그 열릴 때 tier 데이터로 동기화
+  useEffect(() => {
+    if (open) {
+      setSaleStart(formatDateForInput(tier?.saleStart ?? null));
+      setSaleEnd(formatDateForInput(tier?.saleEnd ?? null));
+    }
+  }, [open, tier?.saleStart, tier?.saleEnd]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

@@ -21,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { useToast } from '@/hooks/use-toast';
+import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
 import { getCloudflareVideoUploadUrl } from '@/lib/cdn/cloudflare';
 import { uploadImage } from '@/lib/utils';
 import {
@@ -45,6 +46,10 @@ type DropData = {
   description: string | null;
   heroUrl: string | null;
   videoUrl: string | null;
+  eventDate: Date | null;
+  eventEndDate: Date | null;
+  venue: string | null;
+  venueAddress: string | null;
   publishedAt: Date | null;
   images?: DropImage[];
 };
@@ -194,6 +199,10 @@ export function DropFormView({ drop }: DropFormViewProps) {
         description: (fd.get('description') as string) || undefined,
         heroUrl: heroUrl || undefined,
         videoUrl: videoUrl || undefined,
+        eventDate: (fd.get('eventDate') as string) || undefined,
+        eventEndDate: (fd.get('eventEndDate') as string) || undefined,
+        venue: (fd.get('venue') as string) || undefined,
+        venueAddress: (fd.get('venueAddress') as string) || undefined,
         status: fd.get('status') as string,
         images: uploadedImages,
       };
@@ -334,6 +343,60 @@ export function DropFormView({ drop }: DropFormViewProps) {
                     rows={4}
                   />
                 </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="eventDate">행사 시작일</Label>
+                    <Input
+                      id="eventDate"
+                      name="eventDate"
+                      type="datetime-local"
+                      defaultValue={
+                        drop?.eventDate
+                          ? new Date(drop.eventDate)
+                              .toISOString()
+                              .slice(0, 16)
+                          : ''
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="eventEndDate">행사 종료일</Label>
+                    <Input
+                      id="eventEndDate"
+                      name="eventEndDate"
+                      type="datetime-local"
+                      defaultValue={
+                        drop?.eventEndDate
+                          ? new Date(drop.eventEndDate)
+                              .toISOString()
+                              .slice(0, 16)
+                          : ''
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="venue">장소</Label>
+                    <Input
+                      id="venue"
+                      name="venue"
+                      defaultValue={drop?.venue ?? ''}
+                      placeholder="예: 홍대 무브홀"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="venueAddress">주소</Label>
+                    <Input
+                      id="venueAddress"
+                      name="venueAddress"
+                      defaultValue={drop?.venueAddress ?? ''}
+                      placeholder="예: 서울시 마포구..."
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -367,11 +430,19 @@ export function DropFormView({ drop }: DropFormViewProps) {
                   <Label>영상</Label>
                   {videoPreview ? (
                     <div className="relative mt-1 overflow-hidden rounded-md border bg-black">
-                      <video
-                        src={videoPreview}
-                        controls
-                        className="aspect-video w-full"
-                      />
+                      {videoPreview.startsWith('blob:') ? (
+                        <video
+                          src={videoPreview}
+                          controls
+                          className="aspect-video w-full"
+                        />
+                      ) : (
+                        <CloudflareStreamVideo
+                          videoUrl={videoPreview}
+                          controls
+                          className="aspect-video w-full"
+                        />
+                      )}
                       <button
                         type="button"
                         onClick={removeVideo}

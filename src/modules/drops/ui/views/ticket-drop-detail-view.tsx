@@ -1,9 +1,12 @@
 'use client';
 
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
+import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
 import { getImageUrl } from '@/lib/utils';
+import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
 import { TicketPurchaseSection } from '@/modules/tickets/ui/components/ticket-purchase-section';
 
 type TicketTier = {
@@ -14,6 +17,8 @@ type TicketTier = {
   quantity: number;
   soldCount: number;
   maxPerOrder: number;
+  saleStart: Date | null;
+  saleEnd: Date | null;
   status: string;
 };
 
@@ -32,6 +37,10 @@ type TicketDrop = {
   description: string | null;
   heroUrl: string | null;
   videoUrl: string | null;
+  eventDate: Date | null;
+  eventEndDate: Date | null;
+  venue: string | null;
+  venueAddress: string | null;
   status: string;
   images: DropImage[];
   ticketTiers: TicketTier[];
@@ -40,8 +49,40 @@ type TicketDrop = {
 export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
   const heroImage = drop.heroUrl || drop.images[0]?.imageUrl || null;
   const galleryImages = drop.heroUrl ? drop.images : drop.images.slice(1);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const closeLightbox = useCallback(() => setLightboxIndex(null), []);
+  const prevImage = useCallback(
+    () =>
+      setLightboxIndex((i) =>
+        i !== null ? (i - 1 + galleryImages.length) % galleryImages.length : null
+      ),
+    [galleryImages.length]
+  );
+  const nextImage = useCallback(
+    () =>
+      setLightboxIndex((i) =>
+        i !== null ? (i + 1) % galleryImages.length : null
+      ),
+    [galleryImages.length]
+  );
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') prevImage();
+      if (e.key === 'ArrowRight') nextImage();
+    };
+    document.addEventListener('keydown', handler);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handler);
+      document.body.style.overflow = '';
+    };
+  }, [lightboxIndex, closeLightbox, prevImage, nextImage]);
   const availableTiers = drop.ticketTiers
-    .filter((t) => t.status === 'on_sale')
+    .filter((t) => getEffectiveTierStatus(t) === 'on_sale')
     .map((t) => ({
       ...t,
       remaining: t.quantity - t.soldCount,
@@ -50,19 +91,21 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
   const isClosed = drop.status === 'closed';
   const isSoldOut = drop.status === 'sold_out';
 
+  const [videoLoadFailed, setVideoLoadFailed] = useState(false);
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* ── Immersive Hero ── */}
       <section className="relative flex min-h-screen items-end">
         {/* Background Media */}
         {drop.videoUrl ? (
-          <video
-            src={drop.videoUrl}
+          <CloudflareStreamVideo
+            videoUrl={drop.videoUrl}
             autoPlay
             loop
             muted
-            playsInline
-            className="absolute inset-0 h-full w-full object-cover"
+            controls={false}
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           />
         ) : heroImage ? (
           <Image
@@ -102,8 +145,32 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
               {drop.title}
             </h1>
 
+            {/* Date & Venue */}
+            {(drop.eventDate || drop.venue) && (
+              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-white/60">
+                {drop.eventDate && (
+                  <span>
+                    {new Date(drop.eventDate).toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      weekday: 'short',
+                    })}
+                    {drop.eventEndDate &&
+                      ` ~ ${new Date(drop.eventEndDate).toLocaleDateString('ko-KR', {
+                        month: 'long',
+                        day: 'numeric',
+                      })}`}
+                  </span>
+                )}
+                {drop.venue && (
+                  <span>{drop.venue}</span>
+                )}
+              </div>
+            )}
+
             {drop.summary && (
-              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-white/70 sm:text-xl">
+              <p className="mt-4 max-w-2xl text-lg leading-relaxed text-white/70 sm:text-xl">
                 {drop.summary}
               </p>
             )}
@@ -146,6 +213,23 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                 </div>
               )}
 
+              {/* Video */}
+              {drop.videoUrl && !videoLoadFailed && (
+                <div className={drop.description ? 'mt-16' : ''}>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
+                    Video
+                  </p>
+                  <div className="relative mt-4 aspect-video overflow-hidden rounded-xl bg-neutral-100">
+                    <CloudflareStreamVideo
+                      videoUrl={drop.videoUrl}
+                      controls
+                      className="h-full w-full"
+                      onError={() => setVideoLoadFailed(true)}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Gallery */}
               {galleryImages.length > 0 && (
                 <div className="mt-16 space-y-4">
@@ -153,10 +237,12 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                     Gallery
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {galleryImages.map((img) => (
-                      <div
+                    {galleryImages.map((img, idx) => (
+                      <button
                         key={img.id}
-                        className="relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-100"
+                        type="button"
+                        className="relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-100 transition-opacity hover:opacity-90"
+                        onClick={() => setLightboxIndex(idx)}
                       >
                         <Image
                           src={getImageUrl(img.imageUrl, 'public')}
@@ -165,7 +251,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                           sizes="(min-width: 640px) 50vw, 100vw"
                           className="object-cover"
                         />
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -229,6 +315,75 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
           </Link>
         </nav>
       </footer>
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && galleryImages[lightboxIndex] && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={closeLightbox}
+        >
+          {/* Close */}
+          <button
+            type="button"
+            onClick={closeLightbox}
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+            aria-label="닫기"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          {/* Prev */}
+          {galleryImages.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                prevImage();
+              }}
+              className="absolute left-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+              aria-label="이전"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          )}
+
+          {/* Image */}
+          <div
+            className="relative max-h-[85vh] max-w-[90vw]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={getImageUrl(
+                galleryImages[lightboxIndex].imageUrl,
+                'hires'
+              )}
+              alt={galleryImages[lightboxIndex].alt}
+              width={1200}
+              height={900}
+              className="max-h-[85vh] w-auto rounded-lg object-contain"
+            />
+            {/* Counter */}
+            <p className="mt-3 text-center text-sm text-white/50">
+              {lightboxIndex + 1} / {galleryImages.length}
+            </p>
+          </div>
+
+          {/* Next */}
+          {galleryImages.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                nextImage();
+              }}
+              className="absolute right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+              aria-label="다음"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -21,6 +21,10 @@ export async function createDrop(data: {
   description?: string;
   heroUrl?: string;
   videoUrl?: string;
+  eventDate?: string;
+  eventEndDate?: string;
+  venue?: string;
+  venueAddress?: string;
   status?: string;
   images?: { imageUrl: string; alt: string; order: number }[];
 }) {
@@ -41,6 +45,10 @@ export async function createDrop(data: {
       description: data.description || null,
       heroUrl: data.heroUrl || null,
       videoUrl: data.videoUrl || null,
+      eventDate: data.eventDate ? new Date(data.eventDate) : null,
+      eventEndDate: data.eventEndDate ? new Date(data.eventEndDate) : null,
+      venue: data.venue || null,
+      venueAddress: data.venueAddress || null,
       status: (data.status as any) || 'draft',
       publishedAt: data.status && data.status !== 'draft' ? new Date() : null,
       images: data.images?.length
@@ -63,6 +71,10 @@ export async function updateDrop(
     description?: string;
     heroUrl?: string;
     videoUrl?: string;
+    eventDate?: string;
+    eventEndDate?: string;
+    venue?: string;
+    venueAddress?: string;
     status?: string;
     publishedAt?: string | null;
     images?: { imageUrl: string; alt: string; order: number }[];
@@ -130,6 +142,16 @@ export async function updateDrop(
       }),
       ...(data.heroUrl !== undefined && { heroUrl: data.heroUrl || null }),
       ...(data.videoUrl !== undefined && { videoUrl: data.videoUrl || null }),
+      ...(data.eventDate !== undefined && {
+        eventDate: data.eventDate ? new Date(data.eventDate) : null,
+      }),
+      ...(data.eventEndDate !== undefined && {
+        eventEndDate: data.eventEndDate ? new Date(data.eventEndDate) : null,
+      }),
+      ...(data.venue !== undefined && { venue: data.venue || null }),
+      ...(data.venueAddress !== undefined && {
+        venueAddress: data.venueAddress || null,
+      }),
       ...(data.status !== undefined && { status: data.status as any }),
       ...(data.publishedAt !== undefined
         ? { publishedAt: data.publishedAt ? new Date(data.publishedAt) : null }
@@ -211,13 +233,8 @@ export async function getDropBySlug(slug: string) {
     where: { slug },
     include: {
       images: { orderBy: { order: 'asc' } },
-      ticketTiers: {
-        where: { status: 'on_sale' },
-        orderBy: { order: 'asc' },
-      },
-      variants: {
-        orderBy: { order: 'asc' },
-      },
+      ticketTiers: { orderBy: { order: 'asc' } },
+      variants: { orderBy: { order: 'asc' } },
     },
   });
 }

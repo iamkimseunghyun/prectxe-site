@@ -156,7 +156,7 @@ export async function getCloudflareVideoUploadUrl(maxDurationSeconds = 300) {
       success: true,
       uploadURL,
       videoId: uid,
-      videoUrl: `https://customer-${process.env.CLOUDFLARE_STREAM_CUSTOMER_CODE || 'default'}.cloudflarestream.com/${uid}`,
+      videoUrl: `https://customer-${process.env.CLOUDFLARE_STREAM_CUSTOMER_CODE}.cloudflarestream.com/${uid}`,
     };
   } catch (error) {
     console.error('Cloudflare Stream API Request failed:', error);

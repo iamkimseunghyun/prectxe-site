@@ -73,10 +73,7 @@ export function GoodsPurchaseSection({
       const order = orderResult.data!;
 
       if (totalAmount === 0) {
-        const verifyResult = await verifyPayment(
-          order.id,
-          `free-${order.id}`
-        );
+        const verifyResult = await verifyPayment(order.id, `free-${order.id}`);
         if (verifyResult.success) {
           setOrderComplete(verifyResult.data?.orderNo ?? order.orderNo);
           setCheckoutOpen(false);

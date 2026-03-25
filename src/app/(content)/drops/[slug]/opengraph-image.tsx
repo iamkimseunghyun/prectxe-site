@@ -54,12 +54,11 @@ export default async function OGImage({
     );
   }
 
-  const heroSrc =
-    drop.heroUrl
-      ? getImageUrl(drop.heroUrl, 'public')
-      : drop.images[0]?.imageUrl
-        ? getImageUrl(drop.images[0].imageUrl, 'public')
-        : null;
+  const heroSrc = drop.heroUrl
+    ? getImageUrl(drop.heroUrl, 'public')
+    : drop.images[0]?.imageUrl
+      ? getImageUrl(drop.images[0].imageUrl, 'public')
+      : null;
   const typeLabel = TYPE_LABELS[drop.type] || 'DROP';
 
   // 최저 가격 계산

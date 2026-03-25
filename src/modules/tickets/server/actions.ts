@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
 import { sendEmail } from '@/lib/email/send';
 import portone, { PortOneError } from '@/lib/payment/portone';
+import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
 import {
   type GoodsVariantInput,
   goodsOrderFormSchema,
@@ -217,7 +218,7 @@ export async function createOrder(
         where: { id: item.ticketTierId },
       });
       if (!tier) throw new Error('티켓 등급을 찾을 수 없습니다.');
-      if (tier.status !== 'on_sale')
+      if (getEffectiveTierStatus(tier) !== 'on_sale')
         throw new Error(`${tier.name}은(는) 현재 판매 중이 아닙니다.`);
       if (item.quantity > tier.maxPerOrder)
         throw new Error(

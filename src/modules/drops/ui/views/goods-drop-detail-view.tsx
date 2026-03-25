@@ -11,6 +11,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
 import { cn, getImageUrl } from '@/lib/utils';
 import { GoodsPurchaseSection } from '@/modules/drops/ui/components/goods-purchase-section';
 
@@ -61,9 +62,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
   // 현재 비디오를 보여줄지 여부
   const showingVideo = hasVideo && activeMediaIndex === 0;
   // 이미지 인덱스 (비디오가 있으면 1부터 시작)
-  const activeImageIndex = hasVideo
-    ? activeMediaIndex - 1
-    : activeMediaIndex;
+  const activeImageIndex = hasVideo ? activeMediaIndex - 1 : activeMediaIndex;
 
   const selected = drop.variants.find((v) => v.id === selectedVariant);
   const remaining = selected ? selected.stock - selected.soldCount : 0;
@@ -94,12 +93,11 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                   {/* Main Media */}
                   <div className="relative aspect-square overflow-hidden rounded-2xl bg-neutral-100">
                     {showingVideo ? (
-                      <video
-                        src={drop.videoUrl!}
-                        controls
+                      <CloudflareStreamVideo
+                        videoUrl={drop.videoUrl!}
                         autoPlay
                         muted
-                        playsInline
+                        controls
                         className="h-full w-full object-contain"
                       />
                     ) : activeImageIndex >= 0 && allImages[activeImageIndex] ? (
@@ -136,9 +134,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                           aria-label="다음"
                           className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 text-neutral-600 backdrop-blur-sm transition-all hover:scale-110 hover:border-white hover:bg-white"
                           onClick={() =>
-                            setActiveMediaIndex(
-                              (i) => (i + 1) % totalMedia
-                            )
+                            setActiveMediaIndex((i) => (i + 1) % totalMedia)
                           }
                         >
                           <ChevronRight className="h-5 w-5" />

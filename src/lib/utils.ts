@@ -117,6 +117,7 @@ export function extractVideoId(url: string | null): string | null {
   return match ? match[1] : null;
 }
 
+
 export const isSameDay = (date1: Date, date2: Date): boolean => {
   return (
     date1.getFullYear() === date2.getFullYear() &&

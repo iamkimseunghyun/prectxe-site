@@ -75,9 +75,7 @@ export default function OrderConfirmation({
               </Text>
             </Section>
 
-            <Text style={footer}>
-              문의사항이 있으시면 답장해 주세요.
-            </Text>
+            <Text style={footer}>문의사항이 있으시면 답장해 주세요.</Text>
             <Text style={footerBrand}>PRECTXE</Text>
           </Section>
         </Container>

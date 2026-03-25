@@ -23,6 +23,10 @@ export default async function Page({ params }: PageProps) {
         description: drop.description,
         heroUrl: drop.heroUrl,
         videoUrl: drop.videoUrl,
+        eventDate: drop.eventDate,
+        eventEndDate: drop.eventEndDate,
+        venue: drop.venue,
+        venueAddress: drop.venueAddress,
         publishedAt: drop.publishedAt,
         images: drop.images,
       }}
