@@ -6,10 +6,11 @@ import {
   ChevronRight,
   Minus,
   Plus,
+  X,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
 import { cn, getImageUrl } from '@/lib/utils';
@@ -40,6 +41,7 @@ type GoodsDrop = {
   description: string | null;
   heroUrl: string | null;
   videoUrl: string | null;
+  notice: string | null;
   status: string;
   images: DropImage[];
   variants: GoodsVariant[];
@@ -49,9 +51,11 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
 
-  // 비디오가 있으면 첫 번째 미디어로, 이후 이미지
-  const hasVideo = !!drop.videoUrl;
+  // 비디오가 있고 로드 성공한 경우만 첫 번째 미디어로
+  const hasVideo = !!drop.videoUrl && !videoFailed;
   const allImages = [
     ...(drop.heroUrl
       ? [{ id: 'hero', imageUrl: drop.heroUrl, alt: drop.title, order: -1 }]
@@ -63,6 +67,25 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
   const showingVideo = hasVideo && activeMediaIndex === 0;
   // 이미지 인덱스 (비디오가 있으면 1부터 시작)
   const activeImageIndex = hasVideo ? activeMediaIndex - 1 : activeMediaIndex;
+
+  const closeLightbox = useCallback(() => setLightboxOpen(false), []);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft')
+        setActiveMediaIndex((i) => (i - 1 + totalMedia) % totalMedia);
+      if (e.key === 'ArrowRight')
+        setActiveMediaIndex((i) => (i + 1) % totalMedia);
+    };
+    document.addEventListener('keydown', handler);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handler);
+      document.body.style.overflow = '';
+    };
+  }, [lightboxOpen, closeLightbox, totalMedia]);
 
   const selected = drop.variants.find((v) => v.id === selectedVariant);
   const remaining = selected ? selected.stock - selected.soldCount : 0;
@@ -91,7 +114,15 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
               {totalMedia > 0 ? (
                 <>
                   {/* Main Media */}
-                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-neutral-100">
+                  <div
+                    className={cn(
+                      'relative aspect-square overflow-hidden rounded-2xl bg-neutral-100',
+                      !showingVideo && 'cursor-zoom-in'
+                    )}
+                    onClick={() => {
+                      if (!showingVideo) setLightboxOpen(true);
+                    }}
+                  >
                     {showingVideo ? (
                       <CloudflareStreamVideo
                         videoUrl={drop.videoUrl!}
@@ -99,6 +130,10 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                         muted
                         controls
                         className="h-full w-full object-contain"
+                        onError={() => {
+                          setVideoFailed(true);
+                          setActiveMediaIndex(0);
+                        }}
                       />
                     ) : activeImageIndex >= 0 && allImages[activeImageIndex] ? (
                       <Image
@@ -121,11 +156,12 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                           type="button"
                           aria-label="이전"
                           className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 text-neutral-600 backdrop-blur-sm transition-all hover:scale-110 hover:border-white hover:bg-white"
-                          onClick={() =>
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setActiveMediaIndex(
                               (i) => (i - 1 + totalMedia) % totalMedia
-                            )
-                          }
+                            );
+                          }}
                         >
                           <ChevronLeft className="h-5 w-5" />
                         </button>
@@ -133,9 +169,10 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                           type="button"
                           aria-label="다음"
                           className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 text-neutral-600 backdrop-blur-sm transition-all hover:scale-110 hover:border-white hover:bg-white"
-                          onClick={() =>
-                            setActiveMediaIndex((i) => (i + 1) % totalMedia)
-                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMediaIndex((i) => (i + 1) % totalMedia);
+                          }}
                         >
                           <ChevronRight className="h-5 w-5" />
                         </button>
@@ -353,10 +390,124 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                   </div>
                 </div>
               )}
+
+              {/* Notice */}
+              {drop.notice && (
+                <div className="border-t py-6">
+                  <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-neutral-400">
+                    안내사항
+                  </h3>
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-5 text-sm leading-relaxed text-neutral-600">
+                    {drop.notice.split('\n').map((line, i) => (
+                      <p key={i} className={i > 0 ? 'mt-2' : ''}>
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Lightbox */}
+      {lightboxOpen && !showingVideo && allImages[activeImageIndex] && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={closeLightbox}
+        >
+          <button
+            type="button"
+            onClick={closeLightbox}
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+            aria-label="닫기"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          {allImages.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveMediaIndex((i) =>
+                    hasVideo
+                      ? ((i - 1 - 1 + allImages.length) % allImages.length) + 1
+                      : (i - 1 + allImages.length) % allImages.length
+                  );
+                }}
+                className="absolute left-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+                aria-label="이전"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveMediaIndex((i) =>
+                    hasVideo
+                      ? ((i - 1 + 1) % allImages.length) + 1
+                      : (i + 1) % allImages.length
+                  );
+                }}
+                className="absolute right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+                aria-label="다음"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </>
+          )}
+
+          <div
+            className="relative max-h-[85vh] max-w-[90vw]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={getImageUrl(allImages[activeImageIndex].imageUrl, 'hires')}
+              alt={allImages[activeImageIndex].alt}
+              width={1200}
+              height={900}
+              className="max-h-[85vh] w-auto rounded-lg object-contain"
+            />
+            <p className="mt-3 text-center text-sm text-white/50">
+              {activeImageIndex + 1} / {allImages.length}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer className="border-t border-neutral-200 bg-white py-10">
+        <nav className="flex items-center justify-center gap-6 text-sm">
+          <Link
+            href="/"
+            className="text-neutral-400 transition-colors hover:text-neutral-900"
+          >
+            Home
+          </Link>
+          <Link
+            href="/drops"
+            className="text-neutral-400 transition-colors hover:text-neutral-900"
+          >
+            Drops
+          </Link>
+          <Link
+            href="/programs"
+            className="text-neutral-400 transition-colors hover:text-neutral-900"
+          >
+            Archive
+          </Link>
+          <Link
+            href="/about"
+            className="text-neutral-400 transition-colors hover:text-neutral-900"
+          >
+            About
+          </Link>
+        </nav>
+      </footer>
 
       {/* Mobile Sticky Summary */}
       {isSaleActive && selected && (
