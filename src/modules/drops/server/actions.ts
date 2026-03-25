@@ -25,6 +25,7 @@ export async function createDrop(data: {
   eventEndDate?: string;
   venue?: string;
   venueAddress?: string;
+  notice?: string;
   status?: string;
   images?: { imageUrl: string; alt: string; order: number }[];
 }) {
@@ -49,6 +50,7 @@ export async function createDrop(data: {
       eventEndDate: data.eventEndDate ? new Date(data.eventEndDate) : null,
       venue: data.venue || null,
       venueAddress: data.venueAddress || null,
+      notice: data.notice || null,
       status: (data.status as any) || 'draft',
       publishedAt: data.status && data.status !== 'draft' ? new Date() : null,
       images: data.images?.length
@@ -75,6 +77,7 @@ export async function updateDrop(
     eventEndDate?: string;
     venue?: string;
     venueAddress?: string;
+    notice?: string;
     status?: string;
     publishedAt?: string | null;
     images?: { imageUrl: string; alt: string; order: number }[];
@@ -152,6 +155,7 @@ export async function updateDrop(
       ...(data.venueAddress !== undefined && {
         venueAddress: data.venueAddress || null,
       }),
+      ...(data.notice !== undefined && { notice: data.notice || null }),
       ...(data.status !== undefined && { status: data.status as any }),
       ...(data.publishedAt !== undefined
         ? { publishedAt: data.publishedAt ? new Date(data.publishedAt) : null }

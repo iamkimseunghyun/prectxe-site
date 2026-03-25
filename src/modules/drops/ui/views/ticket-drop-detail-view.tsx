@@ -41,6 +41,7 @@ type TicketDrop = {
   eventEndDate: Date | null;
   venue: string | null;
   venueAddress: string | null;
+  notice: string | null;
   status: string;
   images: DropImage[];
   ticketTiers: TicketTier[];
@@ -55,7 +56,9 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
   const prevImage = useCallback(
     () =>
       setLightboxIndex((i) =>
-        i !== null ? (i - 1 + galleryImages.length) % galleryImages.length : null
+        i !== null
+          ? (i - 1 + galleryImages.length) % galleryImages.length
+          : null
       ),
     [galleryImages.length]
   );
@@ -150,21 +153,32 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
               <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-white/60">
                 {drop.eventDate && (
                   <span>
-                    {new Date(drop.eventDate).toLocaleDateString('ko-KR', {
+                    {new Date(drop.eventDate).toLocaleString('ko-KR', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric',
                       weekday: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
                     })}
                     {drop.eventEndDate &&
-                      ` ~ ${new Date(drop.eventEndDate).toLocaleDateString('ko-KR', {
-                        month: 'long',
-                        day: 'numeric',
-                      })}`}
+                      ` ~ ${new Date(drop.eventEndDate).toLocaleString(
+                        'ko-KR',
+                        {
+                          month: 'long',
+                          day: 'numeric',
+                          weekday: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        }
+                      )}`}
                   </span>
                 )}
                 {drop.venue && (
-                  <span>{drop.venue}</span>
+                  <span>
+                    {drop.venue}
+                    {drop.venueAddress && ` · ${drop.venueAddress}`}
+                  </span>
                 )}
               </div>
             )}
@@ -252,6 +266,22 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                           className="object-cover"
                         />
                       </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Notice */}
+              {drop.notice && (
+                <div className="mt-16 space-y-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
+                    안내사항
+                  </p>
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-5 text-sm leading-relaxed text-neutral-600">
+                    {drop.notice.split('\n').map((line, i) => (
+                      <p key={i} className={i > 0 ? 'mt-2' : ''}>
+                        {line}
+                      </p>
                     ))}
                   </div>
                 </div>
@@ -353,10 +383,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
             onClick={(e) => e.stopPropagation()}
           >
             <Image
-              src={getImageUrl(
-                galleryImages[lightboxIndex].imageUrl,
-                'hires'
-              )}
+              src={getImageUrl(galleryImages[lightboxIndex].imageUrl, 'hires')}
               alt={galleryImages[lightboxIndex].alt}
               width={1200}
               height={900}

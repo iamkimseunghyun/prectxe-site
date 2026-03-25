@@ -27,6 +27,7 @@ export default async function Page({ params }: PageProps) {
         eventEndDate: drop.eventEndDate,
         venue: drop.venue,
         venueAddress: drop.venueAddress,
+        notice: drop.notice,
         publishedAt: drop.publishedAt,
         images: drop.images,
       }}

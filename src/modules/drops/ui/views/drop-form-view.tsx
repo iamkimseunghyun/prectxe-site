@@ -50,6 +50,7 @@ type DropData = {
   eventEndDate: Date | null;
   venue: string | null;
   venueAddress: string | null;
+  notice: string | null;
   publishedAt: Date | null;
   images?: DropImage[];
 };
@@ -203,6 +204,7 @@ export function DropFormView({ drop }: DropFormViewProps) {
         eventEndDate: (fd.get('eventEndDate') as string) || undefined,
         venue: (fd.get('venue') as string) || undefined,
         venueAddress: (fd.get('venueAddress') as string) || undefined,
+        notice: (fd.get('notice') as string) || undefined,
         status: fd.get('status') as string,
         images: uploadedImages,
       };
@@ -353,9 +355,7 @@ export function DropFormView({ drop }: DropFormViewProps) {
                       type="datetime-local"
                       defaultValue={
                         drop?.eventDate
-                          ? new Date(drop.eventDate)
-                              .toISOString()
-                              .slice(0, 16)
+                          ? new Date(drop.eventDate).toISOString().slice(0, 16)
                           : ''
                       }
                     />
@@ -396,6 +396,17 @@ export function DropFormView({ drop }: DropFormViewProps) {
                       placeholder="예: 서울시 마포구..."
                     />
                   </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="notice">안내사항</Label>
+                  <Textarea
+                    id="notice"
+                    name="notice"
+                    defaultValue={drop?.notice ?? ''}
+                    rows={4}
+                    placeholder="입장 안내, 환불 정책, 주의사항 등"
+                  />
                 </div>
               </CardContent>
             </Card>
