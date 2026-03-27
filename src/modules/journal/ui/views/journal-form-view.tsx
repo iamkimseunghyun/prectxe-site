@@ -51,7 +51,6 @@ type Initial = {
   cover?: string | null;
   tags?: string[];
   publishedAt?: string | null;
-  isFeatured?: boolean;
   programId?: string | null;
 };
 
@@ -79,7 +78,6 @@ export function JournalFormView({
     cover: initial?.cover ?? '',
     tags: initial?.tags ?? [],
     publishedAt: initial?.publishedAt ?? '',
-    isFeatured: initial?.isFeatured ?? false,
     programId: initial?.programId ?? null,
   });
 

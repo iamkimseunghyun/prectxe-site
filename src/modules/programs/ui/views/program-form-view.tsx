@@ -89,7 +89,6 @@ export function ProgramFormView({
     heroUrl: initial?.heroUrl ?? '',
     venue: initial?.venue ?? '',
     organizer: initial?.organizer ?? '',
-    isFeatured: initial?.isFeatured ?? false,
   });
 
   // 공개 상태 (status가 draft가 아니면 공개)

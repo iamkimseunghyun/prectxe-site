@@ -247,20 +247,6 @@ export async function createProgram(input: unknown, _userId: string) {
   }
   const data = parsed.data;
 
-  // If setting as featured, unfeatured all other content
-  if (data.isFeatured) {
-    await prisma.$transaction([
-      prisma.program.updateMany({
-        where: { isFeatured: true },
-        data: { isFeatured: false },
-      }),
-      prisma.article.updateMany({
-        where: { isFeatured: true },
-        data: { isFeatured: false },
-      }),
-    ]);
-  }
-
   const program = await prisma.program.create({
     data: {
       title: data.title,
@@ -275,7 +261,6 @@ export async function createProgram(input: unknown, _userId: string) {
       heroUrl: data.heroUrl ?? null,
       venue: data.venue ?? null,
       organizer: data.organizer ?? null,
-      isFeatured: data.isFeatured ?? false,
       userId: auth.userId!,
       images: data.images
         ? {
@@ -314,20 +299,6 @@ export async function updateProgram(id: string, input: unknown) {
   if (!existing)
     return { success: false, error: '프로그램을 찾을 수 없습니다.' };
 
-  // If setting as featured, unfeatured all other content
-  if (data.isFeatured && !existing.isFeatured) {
-    await prisma.$transaction([
-      prisma.program.updateMany({
-        where: { isFeatured: true, id: { not: id } },
-        data: { isFeatured: false },
-      }),
-      prisma.article.updateMany({
-        where: { isFeatured: true },
-        data: { isFeatured: false },
-      }),
-    ]);
-  }
-
   // delete previous hero if changed
   if (data.heroUrl && existing.heroUrl && data.heroUrl !== existing.heroUrl) {
     const idToDelete = extractImageId(existing.heroUrl);
@@ -362,7 +333,6 @@ export async function updateProgram(id: string, input: unknown) {
       heroUrl: data.heroUrl ?? null,
       venue: data.venue ?? null,
       organizer: data.organizer ?? null,
-      isFeatured: data.isFeatured ?? false,
       images: hasNewImages
         ? {
             deleteMany: {},

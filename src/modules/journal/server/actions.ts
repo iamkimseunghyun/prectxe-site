@@ -182,20 +182,6 @@ export async function createArticle(input: unknown, authorId?: string | null) {
   }
   const a = parsed.data;
 
-  // If setting as featured, unfeatured all other content
-  if (a.isFeatured) {
-    await prisma.$transaction([
-      prisma.program.updateMany({
-        where: { isFeatured: true },
-        data: { isFeatured: false },
-      }),
-      prisma.article.updateMany({
-        where: { isFeatured: true },
-        data: { isFeatured: false },
-      }),
-    ]);
-  }
-
   const created = await prisma.article.create({
     data: {
       slug: a.slug,
@@ -205,7 +191,6 @@ export async function createArticle(input: unknown, authorId?: string | null) {
       cover: a.cover ?? null,
       tags: a.tags ?? [],
       publishedAt: a.publishedAt ? new Date(a.publishedAt) : null,
-      isFeatured: a.isFeatured ?? false,
       programId: a.programId ?? null,
       authorId: auth.userId ?? authorId ?? null,
     },
@@ -231,26 +216,12 @@ export async function updateArticle(slug: string, input: unknown) {
 
   const existing = await prisma.article.findUnique({
     where: { slug },
-    select: { body: true, isFeatured: true },
+    select: { body: true },
   });
   if (!existing) return { success: false, error: '게시글을 찾을 수 없습니다.' };
 
   // 본문에서 제거된 Cloudflare 이미지 정리
   await cleanupRemovedHtmlImages(existing.body, a.body ?? null);
-
-  // If setting as featured, unfeatured all other content
-  if (a.isFeatured && !existing.isFeatured) {
-    await prisma.$transaction([
-      prisma.program.updateMany({
-        where: { isFeatured: true },
-        data: { isFeatured: false },
-      }),
-      prisma.article.updateMany({
-        where: { isFeatured: true, slug: { not: slug } },
-        data: { isFeatured: false },
-      }),
-    ]);
-  }
 
   const updated = await prisma.article.update({
     where: { slug },
@@ -262,7 +233,6 @@ export async function updateArticle(slug: string, input: unknown) {
       cover: a.cover ?? null,
       tags: a.tags ?? [],
       publishedAt: a.publishedAt ? new Date(a.publishedAt) : null,
-      isFeatured: a.isFeatured ?? false,
       programId: a.programId ?? null,
     },
     select: { slug: true },
