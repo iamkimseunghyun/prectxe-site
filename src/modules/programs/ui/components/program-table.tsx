@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { DeleteButton } from '@/components/admin/delete-button';
+import { Switch } from '@/components/ui/switch';
 import {
   Table,
   TableBody,
@@ -10,6 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
+import { toggleProgramFeatured } from '@/modules/programs/server/actions';
 
 type Program = {
   id: string;
@@ -18,6 +22,7 @@ type Program = {
   status: string;
   startAt: Date | string;
   city: string | null;
+  isFeatured: boolean;
 };
 
 interface ProgramTableProps {
@@ -25,6 +30,22 @@ interface ProgramTableProps {
 }
 
 export function ProgramTable({ data }: ProgramTableProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleToggleFeatured = async (id: string) => {
+    const res = await toggleProgramFeatured(id);
+    if (res.success) {
+      router.refresh();
+    } else {
+      toast({
+        title: '메인 노출 설정 실패',
+        description: res.error,
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="overflow-hidden rounded-lg border">
       <div className="overflow-x-auto">
@@ -36,6 +57,7 @@ export function ProgramTable({ data }: ProgramTableProps) {
               <TableHead style={{ width: '5rem' }}>상태</TableHead>
               <TableHead style={{ width: '8rem' }}>일정</TableHead>
               <TableHead style={{ width: '6rem' }}>도시</TableHead>
+              <TableHead style={{ width: '5rem' }}>메인</TableHead>
               <TableHead style={{ width: '8rem' }}>관리</TableHead>
             </TableRow>
           </TableHeader>
@@ -43,7 +65,7 @@ export function ProgramTable({ data }: ProgramTableProps) {
             {data.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="py-8 text-center text-muted-foreground"
                 >
                   등록된 프로그램이 없습니다.
@@ -61,6 +83,14 @@ export function ProgramTable({ data }: ProgramTableProps) {
                     {new Date(item.startAt).toLocaleDateString('ko-KR')}
                   </TableCell>
                   <TableCell>{item.city ?? '-'}</TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={item.isFeatured}
+                      onCheckedChange={() =>
+                        handleToggleFeatured(item.id)
+                      }
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Link

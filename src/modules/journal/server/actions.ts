@@ -76,6 +76,7 @@ export async function listArticlesPaged(
           cover: true,
           tags: true,
           publishedAt: true,
+          isFeatured: true,
           createdAt: true,
         },
       }),
@@ -88,6 +89,42 @@ export async function listArticlesPaged(
     }
     return { page, pageSize, total: 0, items: [] as any[] };
   }
+}
+
+export async function toggleArticleFeatured(slug: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error } as const;
+
+  const article = await prisma.article.findUnique({
+    where: { slug },
+    select: { isFeatured: true },
+  });
+  if (!article) return { success: false, error: '글을 찾을 수 없습니다.' };
+
+  const newValue = !article.isFeatured;
+
+  if (newValue) {
+    await prisma.$transaction([
+      prisma.program.updateMany({
+        where: { isFeatured: true },
+        data: { isFeatured: false },
+      }),
+      prisma.article.updateMany({
+        where: { isFeatured: true, slug: { not: slug } },
+        data: { isFeatured: false },
+      }),
+    ]);
+  }
+
+  await prisma.article.update({
+    where: { slug },
+    data: { isFeatured: newValue },
+  });
+
+  revalidatePath('/admin/journal');
+  revalidatePath('/journal');
+  revalidatePath('/');
+  return { success: true, data: { isFeatured: newValue } };
 }
 
 export async function getArticleBySlug(slug: string) {

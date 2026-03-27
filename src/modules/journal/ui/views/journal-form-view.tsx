@@ -432,21 +432,6 @@ export function JournalFormView({
                 </p>
               )}
             </div>
-            <div>
-              <Label>메인 노출 설정</Label>
-              <div className="mt-1 flex items-center gap-3">
-                <Switch
-                  id="featured"
-                  checked={form.isFeatured as boolean}
-                  onCheckedChange={(checked: boolean) =>
-                    handleChange('isFeatured', Boolean(checked))
-                  }
-                />
-                <label htmlFor="featured" className="text-sm font-medium">
-                  {form.isFeatured ? '노출' : '숨김'}
-                </label>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>

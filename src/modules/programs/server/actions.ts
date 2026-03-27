@@ -183,6 +183,7 @@ export async function listProgramsPaged(
           city: true,
           heroUrl: true,
           venue: true,
+          isFeatured: true,
           createdAt: true,
         },
       }),
@@ -195,6 +196,43 @@ export async function listProgramsPaged(
     }
     return { page, pageSize, total: 0, items: [] as any[] };
   }
+}
+
+export async function toggleProgramFeatured(id: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error } as const;
+
+  const program = await prisma.program.findUnique({
+    where: { id },
+    select: { isFeatured: true },
+  });
+  if (!program)
+    return { success: false, error: '프로그램을 찾을 수 없습니다.' };
+
+  const newValue = !program.isFeatured;
+
+  if (newValue) {
+    await prisma.$transaction([
+      prisma.program.updateMany({
+        where: { isFeatured: true, id: { not: id } },
+        data: { isFeatured: false },
+      }),
+      prisma.article.updateMany({
+        where: { isFeatured: true },
+        data: { isFeatured: false },
+      }),
+    ]);
+  }
+
+  await prisma.program.update({
+    where: { id },
+    data: { isFeatured: newValue },
+  });
+
+  revalidatePath('/admin/programs');
+  revalidatePath('/programs');
+  revalidatePath('/');
+  return { success: true, data: { isFeatured: newValue } };
 }
 
 export async function createProgram(input: unknown, _userId: string) {
