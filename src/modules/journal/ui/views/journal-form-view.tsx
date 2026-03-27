@@ -434,19 +434,16 @@ export function JournalFormView({
             </div>
             <div>
               <Label>메인 노출 설정</Label>
-              <div className="flex items-center gap-2">
-                <Checkbox
+              <div className="mt-1 flex items-center gap-3">
+                <Switch
                   id="featured"
                   checked={form.isFeatured as boolean}
                   onCheckedChange={(checked: boolean) =>
                     handleChange('isFeatured', Boolean(checked))
                   }
                 />
-                <label
-                  htmlFor="featured"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  메인 페이지에 노출
+                <label htmlFor="featured" className="text-sm font-medium">
+                  {form.isFeatured ? '노출' : '숨김'}
                 </label>
               </div>
             </div>
