@@ -6,7 +6,7 @@ const TAG_FILTERS = [
   { value: '', label: '전체' },
   { value: 'tech-note', label: 'Tech Note' },
   { value: 'scene-report', label: 'Scene Report' },
-  { value: 'archive', label: 'Archive' },
+  { value: 'news', label: 'News' },
 ] as const;
 
 export async function JournalListView({ tag }: { tag?: string }) {

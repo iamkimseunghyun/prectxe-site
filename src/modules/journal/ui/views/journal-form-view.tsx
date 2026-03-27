@@ -25,7 +25,7 @@ import { containsKorean, getImageUrl, slugify, uploadImage } from '@/lib/utils';
 const STANDARD_TAGS = [
   { value: 'tech-note', label: 'Tech Note' },
   { value: 'scene-report', label: 'Scene Report' },
-  { value: 'archive', label: 'Archive' },
+  { value: 'news', label: 'News' },
 ] as const;
 
 function Label({
