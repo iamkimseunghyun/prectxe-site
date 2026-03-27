@@ -47,16 +47,23 @@ export async function getCloudflareImageUrl() {
 
 /**
  * 기존 이미지 중 새 목록에 없는 이미지를 Cloudflare에서 삭제 (update용)
+ * 안전장치: newImageUrls가 비어있으면 전체 삭제 방지
  */
 export async function deleteRemovedImages(
   existingImages: { imageUrl: string }[],
   newImageUrls: string[]
 ) {
+  if (existingImages.length > 0 && newImageUrls.length === 0) {
+    console.warn(
+      'deleteRemovedImages: newImageUrls가 비어있어 전체 삭제를 건너뜁니다.'
+    );
+    return;
+  }
   for (const img of existingImages) {
     if (!newImageUrls.includes(img.imageUrl)) {
       const imageId = extractImageId(img.imageUrl);
       if (imageId) {
-        await deleteCloudflareImage(imageId);
+        await deleteCloudflareImage(imageId).catch(() => {});
       }
     }
   }
@@ -64,12 +71,13 @@ export async function deleteRemovedImages(
 
 /**
  * 이미지 배열의 모든 이미지를 Cloudflare에서 삭제 (delete용)
+ * 개별 이미지 삭제 실패해도 나머지 계속 진행
  */
 export async function deleteAllImages(images: { imageUrl: string }[]) {
   for (const img of images) {
     const imageId = extractImageId(img.imageUrl);
     if (imageId) {
-      await deleteCloudflareImage(imageId);
+      await deleteCloudflareImage(imageId).catch(() => {});
     }
   }
 }
@@ -106,7 +114,7 @@ export async function cleanupRemovedHtmlImages(
   const newIds = newHtml ? extractImageIdsFromHtml(newHtml) : [];
   for (const id of oldIds) {
     if (!newIds.includes(id)) {
-      await deleteCloudflareImage(id);
+      await deleteCloudflareImage(id).catch(() => {});
     }
   }
 }
