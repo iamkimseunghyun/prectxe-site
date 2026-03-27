@@ -301,10 +301,13 @@ export async function updateProgram(id: string, input: unknown) {
   }
 
   // 갤러리 이미지: 제거된 이미지를 Cloudflare에서 삭제
-  if (data.images) {
-    const newImageUrls = data.images.map((img) => img.imageUrl);
+  const hasNewImages = data.images && data.images.length > 0;
+  if (hasNewImages) {
+    const newImageUrls = data.images!.map((img) => img.imageUrl);
     await deleteRemovedImages(existing.images, newImageUrls);
   }
+
+  const hasNewCredits = data.credits && data.credits.length > 0;
 
   const updated = await prisma.program.update({
     where: { id },
@@ -322,16 +325,16 @@ export async function updateProgram(id: string, input: unknown) {
       venue: data.venue ?? null,
       organizer: data.organizer ?? null,
       isFeatured: data.isFeatured ?? false,
-      images: data.images
+      images: hasNewImages
         ? {
             deleteMany: {},
-            createMany: { data: data.images },
+            createMany: { data: data.images! },
           }
         : undefined,
-      credits: data.credits
+      credits: hasNewCredits
         ? {
             deleteMany: {},
-            createMany: { data: data.credits },
+            createMany: { data: data.credits! },
           }
         : undefined,
     },

@@ -124,24 +124,24 @@ export async function updateVenue(
     }
 
     // Prisma 업데이트 데이터 준비
-    const prismaUpdateData = {
+    const prismaUpdateData: Record<string, unknown> = {
       name: validatedData.name,
       description: validatedData.description,
       address: validatedData.address,
-      images: {
-        deleteMany: {},
-        ...(validatedData.images &&
-          validatedData.images.length > 0 && {
-            createMany: {
-              data: validatedData.images.map((image) => ({
-                imageUrl: image.imageUrl,
-                alt: image.alt || '',
-                order: image.order,
-              })),
-            },
-          }),
-      },
     };
+
+    if (validatedData.images && validatedData.images.length > 0) {
+      prismaUpdateData.images = {
+        deleteMany: {},
+        createMany: {
+          data: validatedData.images.map((image) => ({
+            imageUrl: image.imageUrl,
+            alt: image.alt || '',
+            order: image.order,
+          })),
+        },
+      };
+    }
 
     // 베뉴 업데이트 실행
     const venue = await prisma.venue.update({

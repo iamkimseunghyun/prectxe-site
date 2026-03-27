@@ -122,8 +122,9 @@ export async function updateDrop(
   }
 
   // 갤러리 이미지 변경 시 제거된 것 삭제
-  if (data.images !== undefined) {
-    const newImageUrls = data.images.map((img) => img.imageUrl);
+  const hasNewImages = data.images && data.images.length > 0;
+  if (hasNewImages) {
+    const newImageUrls = data.images!.map((img) => img.imageUrl);
     await deleteRemovedImages(prev.images, newImageUrls);
   }
 
@@ -162,12 +163,10 @@ export async function updateDrop(
         : isPublishing
           ? { publishedAt: new Date() }
           : {}),
-      ...(data.images !== undefined && {
+      ...(hasNewImages && {
         images: {
           deleteMany: {},
-          ...(data.images.length > 0
-            ? { createMany: { data: data.images } }
-            : {}),
+          createMany: { data: data.images! },
         },
       }),
     },

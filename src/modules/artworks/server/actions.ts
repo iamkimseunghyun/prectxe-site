@@ -259,7 +259,7 @@ export async function updateArtwork(
     };
 
     // 이미지와 아트워크 관계 처리
-    if (validatedData.images) {
+    if (validatedData.images && validatedData.images.length > 0) {
       prismaUpdateData.images = {
         deleteMany: {},
         createMany: {
@@ -272,7 +272,7 @@ export async function updateArtwork(
       };
     }
 
-    if (validatedData.artists) {
+    if (validatedData.artists && validatedData.artists.length > 0) {
       prismaUpdateData.artists = {
         deleteMany: {},
         createMany: {
