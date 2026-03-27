@@ -83,11 +83,12 @@ const VenueFormView = ({
     async (data: z.infer<typeof createVenueSchema>) => {
       setIsSubmitting(true);
       try {
-        const { successCount, failCount } = await uploadPendingWithProgress();
+        const { failCount } = await uploadPendingWithProgress();
         if (failCount > 0) {
           form.setError('root', {
             message: `${failCount}개 이미지 업로드 실패. 재시도 하세요.`,
           });
+          return;
         }
 
         const result =

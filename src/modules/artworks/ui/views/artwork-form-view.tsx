@@ -83,6 +83,7 @@ const ArtworkFormView = ({
     error: fileError,
     handleMultiImageChange,
     removeMultiImage,
+    markAllAsUploaded,
   } = useMultiImageUpload({
     initialImages: initialData?.images,
     onGalleryChange: (galleryData) => {
@@ -94,8 +95,10 @@ const ArtworkFormView = ({
     async (data: z.infer<typeof createArtworkSchema>) => {
       setIsSubmitting(true);
       try {
-        if (multiImagePreview.length > 0) {
-          await uploadGalleryImages(multiImagePreview);
+        const toUpload = multiImagePreview.filter((p) => (p as any).file);
+        if (toUpload.length > 0) {
+          await uploadGalleryImages(toUpload as any);
+          markAllAsUploaded();
         }
 
         const result =

@@ -214,21 +214,20 @@ export function ProgramFormView({
       }
 
       // upload gallery images if any (only ones with a file to avoid re-uploads)
-      const { successCount, failCount } = await uploadPendingWithProgress();
+      const { failCount, images: uploadedImages } =
+        await uploadPendingWithProgress();
       if (failCount > 0) {
         toast({
           title: '일부 이미지 업로드 실패',
           description: `${failCount}개 실패, 재시도해 주세요.`,
+          variant: 'destructive',
         });
+        return;
       }
 
       const payload: any = {
         ...form,
-        images: multiImagePreview.map((p: any, i: number) => ({
-          imageUrl: p.imageUrl || p.url,
-          alt: p.alt ?? '',
-          order: i,
-        })),
+        images: uploadedImages,
         credits: credits.map((c) => ({ artistId: c.artistId, role: c.role })),
         intent,
       };
