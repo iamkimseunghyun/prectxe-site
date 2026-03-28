@@ -240,7 +240,7 @@ export default async function Page({
 
       {/* Profile Image + About */}
       {(artist.mainImageUrl || hasBio) && (
-        <section className="border-t pt-10 pb-2">
+        <section className="border-t pt-10 pb-10">
           <div
             className={
               artist.mainImageUrl && hasBio
@@ -274,7 +274,7 @@ export default async function Page({
 
       {/* Gallery */}
       {hasGallery && (
-        <section className="border-t pt-10 pb-2">
+        <section className="border-t pt-10 pb-10">
           <h2 className="mb-4 text-lg font-semibold">Gallery</h2>
           <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide">
             {artist.images.map((img) => (
@@ -297,14 +297,14 @@ export default async function Page({
 
       {/* Programs */}
       {hasPrograms && (
-        <section className="border-t pt-10 pb-2">
+        <section className="border-t pt-10 pb-10">
           <ProgramSection credits={artist.programCredits} />
         </section>
       )}
 
       {/* Works */}
       {hasArtworks && (
-        <section className="border-t pt-10 pb-2">
+        <section className="border-t pt-10 pb-10">
           <h2 className="mb-6 text-xl font-semibold">Works</h2>
           <ArtworkListSection artistId={id} />
         </section>
@@ -312,7 +312,7 @@ export default async function Page({
 
       {/* CV */}
       {hasCv && (
-        <section className="border-t pt-10 pb-2">
+        <section className="border-t pt-10 pb-10">
           <details className="group">
             <summary className="flex cursor-pointer items-center gap-2 text-xl font-semibold">
               CV
