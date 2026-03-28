@@ -1,6 +1,5 @@
 'use server';
 
-import { Prisma } from '@prisma/client';
 import { unstable_cache as next_cache, revalidatePath } from 'next/cache';
 import { notFound } from 'next/navigation';
 import type { z } from 'zod';
@@ -11,31 +10,16 @@ import { createArtworkSchema, updateArtworkSchema } from '@/lib/schemas';
 
 export const getArtworksByArtistIdWithCache = next_cache(
   async (artistId: string) => {
-    const artworks = await prisma.artwork.findMany({
-      where: {
-        artists: {
-          some: {
-            artistId: artistId,
-          },
-        },
-      },
+    return prisma.artwork.findMany({
+      where: { artists: { some: { artistId } } },
       select: {
         id: true,
         title: true,
-
         year: true,
-        images: {
-          orderBy: {
-            order: 'asc',
-          },
-        },
+        images: { orderBy: { order: 'asc' } },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
-    console.log(`Found ${artworks.length} artworks for artist ${artistId}`);
-    return artworks;
   },
   ['artworks-list'],
   { revalidate: CACHE_TIMES.ARTWORKS_LIST }
@@ -47,38 +31,27 @@ export async function getArtworksByArtistId(artistId: string) {
 
 export const getArtworkByIdWithCache = next_cache(
   async (id: string) => {
-    try {
-      const artwork = await prisma.artwork.findUnique({
-        where: { id },
-
-        include: {
-          images: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-          artists: {
-            include: {
-              artist: {
-                select: {
-                  id: true,
-                  name: true,
-                  nameKr: true,
-                  mainImageUrl: true,
-                },
+    const artwork = await prisma.artwork.findUnique({
+      where: { id },
+      include: {
+        images: { orderBy: { order: 'asc' } },
+        artists: {
+          include: {
+            artist: {
+              select: {
+                id: true,
+                name: true,
+                nameKr: true,
+                mainImageUrl: true,
               },
             },
           },
         },
-      });
+      },
+    });
 
-      if (!artwork) notFound();
-
-      return artwork;
-    } catch (error) {
-      console.error('Error fetching artwork:', error);
-      throw error;
-    }
+    if (!artwork) notFound();
+    return artwork;
   },
   ['artworks-detail'],
   { revalidate: CACHE_TIMES.ARTWORK_DETAIL }
@@ -89,47 +62,28 @@ export async function getArtworkById(id: string) {
 }
 
 export const getArtworksPage = next_cache(
-  async (page = 0, pageSize = PAGINATION.ARTISTS_PAGE_SIZE) => {
-    try {
-      return prisma.artwork.findMany({
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          year: true,
-          media: true,
-          size: true,
-          images: {
-            select: {
-              id: true,
-              imageUrl: true,
-              alt: true,
-            },
-          },
-          artists: {
-            select: {
-              artist: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
-          user: {
-            select: {
-              id: true,
-            },
-          },
+  async (page = 0, pageSize = PAGINATION.ARTWORKS_PAGE_SIZE) => {
+    return prisma.artwork.findMany({
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        year: true,
+        media: true,
+        size: true,
+        images: {
+          select: { id: true, imageUrl: true, alt: true },
+          orderBy: { order: 'asc' },
+          take: 1,
         },
-
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        skip: page * pageSize,
-        take: pageSize,
-      });
-    } catch (error) {
-      console.error('작품 목록 조회 오류:', error);
-      throw new Error('작품 목록을 불러오는데 실패했습니다.');
-    }
+        artists: {
+          select: { artist: { select: { name: true } } },
+        },
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: page * pageSize,
+      take: pageSize,
+    });
   },
   ['artworks-list'],
   { revalidate: CACHE_TIMES.ARTWORKS_LIST }
@@ -144,70 +98,49 @@ export async function createArtwork(
   userId: string
 ) {
   try {
-    const result = createArtworkSchema.safeParse(data);
-
-    if (!result.success) {
-      const errorMessage = result.error.issues
-        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-        .join(', ');
-      return { success: false, error: errorMessage };
+    const parsed = createArtworkSchema.safeParse(data);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: parsed.error.errors[0]?.message ?? '유효성 오류',
+      };
     }
+    const d = parsed.data;
 
-    const validatedData = result.data;
-
-    // Create artwork with Prisma
     const artwork = await prisma.artwork.create({
       data: {
-        title: validatedData.title,
-        size: validatedData.size,
-        media: validatedData.media,
-        year: validatedData.year,
-        description: validatedData.description,
-        style: validatedData.style,
-        userId: userId,
-        images: {
-          create: validatedData.images.map((image) => ({
-            imageUrl: image.imageUrl,
-            alt: image.alt,
-            order: image.order,
-          })),
-        },
-        artists: {
-          create: validatedData.artists.map((artist: any) => ({
-            artistId: artist.artistId,
-          })),
-        },
+        title: d.title,
+        size: d.size ?? null,
+        media: d.media ?? null,
+        year: d.year ?? null,
+        description: d.description ?? null,
+        style: d.style ?? null,
+        userId,
+        images: d.images?.length
+          ? { createMany: { data: d.images } }
+          : undefined,
+        artists: d.artists?.length
+          ? {
+              createMany: {
+                data: d.artists.map((a) => ({ artistId: a.artistId })),
+              },
+            }
+          : undefined,
       },
-      include: {
-        images: true,
-        artists: {
-          include: {
-            artist: true,
-          },
-        },
-      },
+      select: { id: true },
     });
 
-    // Revalidate the artworks page
     revalidatePath('/artworks');
-    revalidatePath(`/artworks/${artwork.id}`);
-    // artwork.artists에 있는 모든 아티스트 ID에 대해 캐시 무효화
-    artwork.artists.forEach((artist) => {
-      revalidatePath(`/artists/${artist.artistId}`);
-    });
-    console.log(
-      'Created/Updated artwork with relationships:',
-      JSON.stringify(artwork, null, 2)
-    );
+    for (const a of d.artists ?? []) {
+      revalidatePath(`/artists/${a.artistId}`);
+    }
     return { success: true, data: artwork };
   } catch (error) {
-    console.error('아트워크 등록 중 서버 에러 발생.', error);
+    console.error('작품 등록 실패:', error);
     return {
       success: false,
       error:
-        error instanceof Error
-          ? error.message
-          : '아트워크 등록 중 서버 에러 발생.',
+        error instanceof Error ? error.message : '작품 등록에 실패했습니다.',
     };
   }
 }
@@ -217,147 +150,104 @@ export async function updateArtwork(
   artworkId: string
 ) {
   try {
-    // 1. 기존 프로젝트 정보 가져오기 (이미지 삭제 처리를 위해)
-    const existingArtwork = await prisma.artwork.findUnique({
+    const parsed = updateArtworkSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: '입력 값이 올바르지 않습니다.' };
+    }
+    const d = parsed.data;
+
+    const existing = await prisma.artwork.findUnique({
       where: { id: artworkId },
       include: { images: true },
     });
-
-    if (!existingArtwork) {
-      return { success: false, error: '아트워크를 찾을 수 없습니다.' };
+    if (!existing) {
+      return { success: false, error: '작품을 찾을 수 없습니다.' };
     }
 
-    // 2. 폼 데이터에서 필요한 정보 추출
-
-    // 5. 데이터 유효성 검사
-    const result = updateArtworkSchema.safeParse(data);
-
-    if (!result.success) {
-      return {
-        success: false,
-        error: `입력 값이 올바르지 않습니다.`,
-      };
+    // 갤러리: 제거된 이미지를 Cloudflare에서 삭제
+    const hasNewImages = d.images && d.images.length > 0;
+    if (hasNewImages) {
+      const newImageUrls = d.images!.map((img) => img.imageUrl);
+      await deleteRemovedImages(existing.images, newImageUrls);
     }
 
-    const validatedData = result.data;
+    const hasNewArtists = d.artists && d.artists.length > 0;
 
-    // Cloudflare 이미지 삭제 처리
-    if (validatedData.images && existingArtwork.images.length > 0) {
-      const newImageUrls = validatedData.images.map((img) => img.imageUrl);
-      await deleteRemovedImages(existingArtwork.images, newImageUrls);
-    }
-
-    // 7. Prisma 업데이트 데이터 준비
-    const prismaUpdateData: Prisma.ArtworkUpdateInput = {
-      title: validatedData.title,
-      size: validatedData.size,
-      media: validatedData.media,
-      year: validatedData.year,
-      description: validatedData.description,
-      style: validatedData.style,
-      updatedAt: new Date(),
-    };
-
-    // 이미지와 아트워크 관계 처리
-    if (validatedData.images && validatedData.images.length > 0) {
-      prismaUpdateData.images = {
-        deleteMany: {},
-        createMany: {
-          data: validatedData.images.map((image) => ({
-            imageUrl: image.imageUrl,
-            alt: image.alt || '',
-            order: image.order,
-          })),
-        },
-      };
-    }
-
-    if (validatedData.artists && validatedData.artists.length > 0) {
-      prismaUpdateData.artists = {
-        deleteMany: {},
-        createMany: {
-          data: validatedData.artists
-            .filter((pa) => pa.artistId)
-            .map((pa) => ({
-              artistId: pa.artistId,
-            })),
-        },
-      };
-    }
-
-    // 8. 프로젝트 업데이트 실행
     const artwork = await prisma.artwork.update({
       where: { id: artworkId },
-      data: prismaUpdateData,
-      include: {
-        images: true,
-        artists: {
-          include: {
-            artist: true,
-          },
-        },
+      data: {
+        title: d.title,
+        size: d.size ?? null,
+        media: d.media ?? null,
+        year: d.year ?? null,
+        description: d.description ?? null,
+        style: d.style ?? null,
+        images: hasNewImages
+          ? { deleteMany: {}, createMany: { data: d.images! } }
+          : undefined,
+        artists: hasNewArtists
+          ? {
+              deleteMany: {},
+              createMany: {
+                data: d.artists!.map((a) => ({ artistId: a.artistId })),
+              },
+            }
+          : undefined,
+      },
+      select: {
+        id: true,
+        artists: { select: { artistId: true } },
       },
     });
 
-    // 캐시 무효화
+    revalidatePath('/artworks');
     revalidatePath(`/artworks/${artwork.id}`);
-    // 관계된 아티스트 페이지 캐시 무효화:
-    artwork.artists.forEach((artist) => {
-      revalidatePath(`/artists/${artist.artistId}`);
-    });
+    for (const a of artwork.artists) {
+      revalidatePath(`/artists/${a.artistId}`);
+    }
     return { success: true, data: artwork };
   } catch (error) {
-    console.error('작품 페이지 수정 실패:', error);
-
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return {
-        success: false,
-        error: '데이터베이스 작업 중 오류가 발생했습니다.',
-        details: error.message,
-      };
-    }
-
+    console.error('작품 수정 실패:', error);
     return {
       success: false,
       error:
-        error instanceof Error
-          ? error.message
-          : '작품 페이지 수정에 실패했습니다',
+        error instanceof Error ? error.message : '작품 수정에 실패했습니다.',
     };
   }
 }
 
 export async function deleteArtwork(id: string) {
   try {
-    // 1. 프로젝트 정보와 관련 이미지 정보 가져오기
     const artwork = await prisma.artwork.findUnique({
-      where: { id: id },
-      include: { images: true },
+      where: { id },
+      select: {
+        images: { select: { imageUrl: true } },
+        artists: { select: { artistId: true } },
+      },
     });
 
     if (!artwork) {
-      return { success: false, error: '아트워크를 찾을 수 없습니다.' };
+      return { success: false, error: '작품을 찾을 수 없습니다.' };
     }
 
     // Cloudflare에서 갤러리 이미지 삭제
-    await deleteAllImages(artwork.images);
+    if (artwork.images.length > 0) {
+      await deleteAllImages(artwork.images);
+    }
 
-    // 3. 데이터베이스에서 아트워크 삭제 (관계 데이터는 cascade 삭제됨)
-    await prisma.artwork.delete({
-      where: { id: id },
-    });
+    await prisma.artwork.delete({ where: { id } });
 
-    // 4. 캐시 무효화
-    revalidatePath(`/artworks`);
+    revalidatePath('/artworks');
+    for (const a of artwork.artists) {
+      revalidatePath(`/artists/${a.artistId}`);
+    }
     return { success: true };
   } catch (error) {
-    console.error('아트워크 삭제 실패: ', error);
+    console.error('작품 삭제 실패:', error);
     return {
       success: false,
       error:
-        error instanceof Error
-          ? error.message
-          : '아트워크 삭제 중 오류가 발생했습니다.',
+        error instanceof Error ? error.message : '작품 삭제에 실패했습니다.',
     };
   }
 }
@@ -377,25 +267,10 @@ export async function listArtworksPaged(
         select: {
           id: true,
           title: true,
-          description: true,
           year: true,
           media: true,
-          size: true,
-          images: {
-            select: {
-              id: true,
-              imageUrl: true,
-              alt: true,
-            },
-          },
           artists: {
-            select: {
-              artist: {
-                select: {
-                  name: true,
-                },
-              },
-            },
+            select: { artist: { select: { name: true } } },
           },
         },
       }),
@@ -404,6 +279,6 @@ export async function listArtworksPaged(
     return { page, pageSize, total, items };
   } catch (e) {
     console.error('Artworks paged list error:', e);
-    return { page, pageSize, total: 0, items: [] as any[] };
+    return { page, pageSize, total: 0, items: [] as never[] };
   }
 }

@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { z } from 'zod';
 import MultiImageBox from '@/components/image/multi-image-box';
 import FormSubmitButton from '@/components/layout/form-submit-button';
 import { Button } from '@/components/ui/button';
@@ -27,13 +26,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import { useToast } from '@/hooks/use-toast';
 import {
   type Artwork,
   type CreateArtworkInput,
   createArtworkSchema,
   type UpdateArtworkInput,
 } from '@/lib/schemas';
-import { uploadGalleryImages } from '@/lib/utils';
 import ArtistSelect from '@/modules/artists/ui/components/artist-select';
 import {
   createArtwork,
@@ -56,6 +55,7 @@ const ArtworkFormView = ({
   artists,
 }: ArtworkFormProps) => {
   const router = useRouter();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const defaultValues = {
@@ -83,41 +83,43 @@ const ArtworkFormView = ({
     error: fileError,
     handleMultiImageChange,
     removeMultiImage,
-    markAllAsUploaded,
+    uploadPendingWithProgress,
   } = useMultiImageUpload({
     initialImages: initialData?.images,
-    onGalleryChange: (galleryData) => {
-      form.setValue('images', galleryData);
-    },
   });
 
-  const onSubmit = form.handleSubmit(
-    async (data: z.infer<typeof createArtworkSchema>) => {
-      setIsSubmitting(true);
-      try {
-        const toUpload = multiImagePreview.filter((p) => (p as any).file);
-        if (toUpload.length > 0) {
-          await uploadGalleryImages(toUpload as any);
-          markAllAsUploaded();
-        }
-
-        const result =
-          mode === 'edit'
-            ? await updateArtwork(data, artworkId!)
-            : await createArtwork(data, userId!);
-
-        if (!result.success) return new Error(result.error);
-        router.push(`/artworks/${result.data?.id}`);
-      } catch (error) {
-        console.error(error);
-        form.setError('root', {
-          message: error instanceof Error ? error.message : '작품 등록 실패',
+  const onSubmit = form.handleSubmit(async (data) => {
+    setIsSubmitting(true);
+    try {
+      // 갤러리 이미지 업로드 (진행률 추적, 실패 시 중단)
+      const { failCount, images: uploadedImages } =
+        await uploadPendingWithProgress();
+      if (failCount > 0) {
+        toast({
+          title: '일부 이미지 업로드 실패',
+          description: `${failCount}개 실패, 재시도해 주세요.`,
+          variant: 'destructive',
         });
-      } finally {
-        setIsSubmitting(false);
+        return;
       }
+
+      const payload = { ...data, images: uploadedImages };
+      const result =
+        mode === 'edit'
+          ? await updateArtwork(payload, artworkId!)
+          : await createArtwork(payload, userId!);
+
+      if (!result.success) throw new Error(result.error);
+      router.push(`/artworks/${result.data?.id}`);
+    } catch (error) {
+      console.error('Error:', error);
+      form.setError('root', {
+        message: error instanceof Error ? error.message : '작품 등록 실패',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-  );
+  });
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -132,149 +134,55 @@ const ArtworkFormView = ({
         <Form {...form}>
           <form onSubmit={onSubmit}>
             <CardContent className="space-y-6">
-              <div className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="artists"
-                  render={({ field }) => (
-                    <FormItem className="space-y-2">
-                      <FormLabel className="text-sm font-medium">
-                        작가 선택
-                      </FormLabel>
-                      <FormControl>
-                        <ArtistSelect
-                          artists={artists}
-                          value={field.value || []}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="artists"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>작가 선택</FormLabel>
+                    <FormControl>
+                      <ArtistSelect
+                        artists={artists}
+                        value={field.value || []}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>작품 제목</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="작품의 제목을 입력하세요"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}
-                  name="title"
+                  name="year"
                   render={({ field }) => (
-                    <FormItem className="space-y-2">
-                      <FormLabel className="text-sm font-medium">
-                        작품 제목
-                      </FormLabel>
+                    <FormItem>
+                      <FormLabel>연도</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="작품의 제목을 입력하세요"
+                          type="number"
+                          min={2018}
+                          max={new Date().getFullYear()}
                           {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div
-                  className="grid grid-cols-1 gap-4 sm:grid-cols-2"
-                  style={{ width: '100%' }}
-                >
-                  <FormField
-                    control={form.control}
-                    name="year"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2">
-                        <FormLabel className="text-sm font-medium">
-                          연도
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={2018}
-                            max={new Date().getFullYear()}
-                            {...field}
-                            value={field.value ?? ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="size"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2">
-                        <FormLabel className="text-sm font-medium">
-                          규격
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="text"
-                            {...field}
-                            value={field.value ?? ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="media"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2">
-                        <FormLabel className="text-sm font-medium">
-                          재료
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="text"
-                            {...field}
-                            value={field.value ?? ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="style"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2">
-                        <FormLabel className="text-sm font-medium">
-                          유형
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="text"
-                            {...field}
-                            value={field.value ?? ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* 갤러리 이미지 섹션 */}
-                <FormField
-                  control={form.control}
-                  name="images"
-                  render={({ field }) => (
-                    <FormItem className="space-y-2">
-                      <FormLabel className="text-sm font-medium">
-                        작품 이미지
-                      </FormLabel>
-                      <FormControl>
-                        <MultiImageBox
-                          register={field}
-                          previews={multiImagePreview}
-                          error={fileError}
-                          handleMultiImageChange={handleMultiImageChange}
-                          removeMultiImage={removeMultiImage}
+                          value={field.value ?? ''}
                         />
                       </FormControl>
                       <FormMessage />
@@ -284,17 +192,50 @@ const ArtworkFormView = ({
 
                 <FormField
                   control={form.control}
-                  name="description"
+                  name="size"
                   render={({ field }) => (
-                    <FormItem className="space-y-2">
-                      <FormLabel className="text-sm font-medium">
-                        작품 설명
-                      </FormLabel>
+                    <FormItem>
+                      <FormLabel>규격</FormLabel>
                       <FormControl>
-                        <Textarea
+                        <Input
+                          type="text"
                           {...field}
-                          placeholder="작품에 대한 간단한 설명을 입력하세요"
-                          rows={15}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="media"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>재료</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="text"
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="style"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>유형</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="text"
+                          {...field}
                           value={field.value ?? ''}
                         />
                       </FormControl>
@@ -303,6 +244,45 @@ const ArtworkFormView = ({
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="images"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>작품 이미지</FormLabel>
+                    <FormControl>
+                      <MultiImageBox
+                        register={field}
+                        previews={multiImagePreview}
+                        error={fileError}
+                        handleMultiImageChange={handleMultiImageChange}
+                        removeMultiImage={removeMultiImage}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>작품 설명</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="작품에 대한 간단한 설명을 입력하세요"
+                        rows={15}
+                        value={field.value ?? ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
 
             <CardFooter className="flex justify-end gap-4">
