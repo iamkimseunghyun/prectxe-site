@@ -84,7 +84,7 @@ export default async function Page({
 
       {/* About */}
       {venue.description && (
-        <section className="border-t pt-8 pb-2">
+        <section className="border-t pt-8 pb-8">
           <h2 className="mb-4 text-lg font-semibold">About</h2>
           <div className="prose max-w-none whitespace-pre-line text-muted-foreground">
             {venue.description}

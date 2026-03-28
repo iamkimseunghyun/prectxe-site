@@ -125,7 +125,7 @@ export default async function Page({
 
       {/* Description */}
       {hasDescription && (
-        <section className="border-t pt-8 pb-2">
+        <section className="border-t pt-8 pb-8">
           <h2 className="mb-4 text-lg font-semibold">Description</h2>
           <div className="prose max-w-none whitespace-pre-wrap text-muted-foreground">
             {artwork.description}
@@ -135,7 +135,7 @@ export default async function Page({
 
       {/* Artists */}
       {hasArtists && (
-        <section className="border-t pt-8 pb-2">
+        <section className="border-t pt-8 pb-8">
           <h2 className="mb-4 text-lg font-semibold">Artists</h2>
           <div className="flex flex-wrap gap-4">
             {artwork.artists.map((rel) => {
@@ -176,7 +176,7 @@ export default async function Page({
 
       {/* Details */}
       {details.length > 0 && (
-        <section className="border-t pt-8 pb-2">
+        <section className="border-t pt-8 pb-8">
           <h2 className="mb-4 text-lg font-semibold">Details</h2>
           <dl className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-4">
             {details.map((d) => (
