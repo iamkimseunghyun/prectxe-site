@@ -1,6 +1,6 @@
 import {
   Calendar,
-  ChevronDown,
+  ChevronRight,
   ExternalLink,
   Globe,
   MapPin,
@@ -318,7 +318,7 @@ export default async function Page({
           <details className="group">
             <summary className="flex cursor-pointer items-center gap-2 text-xl font-semibold">
               이력 (CV)
-              <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+              <ChevronRight className="h-5 w-5 transition-transform group-open:rotate-90" />
             </summary>
             <div className="prose mt-4 max-w-none whitespace-pre-line text-muted-foreground">
               {artist.cv}
