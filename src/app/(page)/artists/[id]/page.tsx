@@ -264,7 +264,7 @@ export default async function Page({
             )}
             {hasBio && (
               <div>
-                <h2 className="mb-4 text-lg font-semibold">소개</h2>
+                <h2 className="mb-4 text-lg font-semibold">About</h2>
                 <div className="prose max-w-none whitespace-pre-line text-muted-foreground">
                   {artist.biography}
                 </div>
@@ -307,7 +307,7 @@ export default async function Page({
       {/* Artworks */}
       {hasArtworks && (
         <section className="mb-12">
-          <h2 className="mb-6 text-xl font-semibold">작품</h2>
+          <h2 className="mb-6 text-xl font-semibold">Works</h2>
           <ArtworkListSection artistId={id} />
         </section>
       )}
@@ -317,7 +317,7 @@ export default async function Page({
         <section className="mb-12">
           <details className="group">
             <summary className="flex cursor-pointer items-center gap-2 text-xl font-semibold">
-              이력 (CV)
+              CV
               <ChevronRight className="h-5 w-5 transition-transform group-open:rotate-90" />
             </summary>
             <div className="prose mt-4 max-w-none whitespace-pre-line text-muted-foreground">
