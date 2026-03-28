@@ -1,13 +1,9 @@
-import { Calendar, MapPin, Share2 } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import CarouselGallery from '@/components/image/carousel-gallery';
-import AdminButton from '@/components/layout/admin-button';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import VenueSchema from '@/components/seo/venue-schema';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import canManage from '@/lib/auth/make-login';
-import getSession from '@/lib/auth/session';
 import { getVenueById } from '@/modules/venues/server/actions';
 
 export async function generateMetadata({
@@ -15,31 +11,25 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const id = (await params).id;
+  const { id } = await params;
   const venue = await getVenueById(id);
 
   if (!venue) {
-    return {
-      title: '장소를 찾을 수 없습니다',
-      robots: { index: false },
-    };
+    return { title: 'Venue Not Found' };
   }
 
-  const description = `${venue.description.substring(0, 155)}...`;
+  const description = venue.description?.slice(0, 160) || venue.name;
 
   return {
     title: venue.name,
     description,
-    alternates: {
-      canonical: `https://prectxe.com/venues/${id}`,
-    },
+    alternates: { canonical: `https://prectxe.com/venues/${id}` },
     openGraph: {
-      title: `${venue.name} - PRECTXE 전시 공간`,
+      title: venue.name,
       description,
-      images: venue.images.map((img) => ({
-        url: img.imageUrl,
-        alt: img.alt,
-      })),
+      images: venue.images[0]
+        ? [{ url: venue.images[0].imageUrl, alt: venue.images[0].alt }]
+        : undefined,
     },
     twitter: {
       card: 'summary_large_image',
@@ -50,18 +40,20 @@ export async function generateMetadata({
   };
 }
 
-const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
-  const id = (await params).id;
-
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   const venue = await getVenueById(id);
-  if (!venue) return;
 
-  const session = await getSession();
+  if (!venue) notFound();
 
-  const canEdit = await canManage(session.id!, venue.id);
+  const hasImages = venue.images.length > 0;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12">
+    <div className="mx-auto max-w-5xl px-4 py-10">
       <VenueSchema
         venue={{
           id: venue.id,
@@ -70,61 +62,35 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
           images: venue.images,
         }}
       />
-      <BreadcrumbNav entityType={'venue'} title={venue.name} />
+      <BreadcrumbNav entityType="venue" title={venue.name} />
 
-      {/* Gallery Section */}
-      <div className="relative mb-4 aspect-[16/9] w-full overflow-hidden rounded-lg">
-        <CarouselGallery images={venue.images} />
-      </div>
+      {/* Gallery */}
+      {hasImages && (
+        <section className="mb-10">
+          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg">
+            <CarouselGallery images={venue.images} />
+          </div>
+        </section>
+      )}
 
-      {/* Main Info Card */}
-      <Card className="w-full bg-card">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-3xl font-bold">{venue.name}</CardTitle>
-          <div className="flex gap-2">
-            <Button variant="outline" size="icon">
-              <Share2 className="h-4 w-4" />
-            </Button>
-            <Button>이벤트 보기</Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            <span>{venue.address}</span>
-          </div>
-
-          <div className="prose max-w-none">
-            <p className="text-lg leading-relaxed">{venue.description}</p>
-          </div>
-
-          {/* Upcoming Events Section */}
-          <div className="space-y-4">
-            <h3 className="flex items-center gap-2 text-xl font-semibold">
-              <Calendar className="h-5 w-5" />
-              예정된 이벤트
-            </h3>
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Event cards will go here */}
-              <Card className="bg-muted/50">
-                <CardContent className="p-4">
-                  <p className="text-muted-foreground">
-                    예정된 이벤트가 없습니다.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      {canEdit && (
-        <div className="mt-12 flex justify-end gap-x-2">
-          {/* 섹션 */}
-          <AdminButton id={venue.id} entityType="venue" />
+      {/* Header */}
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">{venue.name}</h1>
+        <div className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5" />
+          {venue.address}
         </div>
+      </header>
+
+      {/* About */}
+      {venue.description && (
+        <section className="border-t pt-8 pb-2">
+          <h2 className="mb-4 text-lg font-semibold">About</h2>
+          <div className="prose max-w-none whitespace-pre-line text-muted-foreground">
+            {venue.description}
+          </div>
+        </section>
       )}
     </div>
   );
-};
-
-export default Page;
+}

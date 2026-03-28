@@ -5,7 +5,6 @@ import { MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { z } from 'zod';
 import MultiImageBox from '@/components/image/multi-image-box';
 import FormSubmitButton from '@/components/layout/form-submit-button';
 import { Button } from '@/components/ui/button';
@@ -27,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import { useToast } from '@/hooks/use-toast';
 import {
   type CreateVenueInput,
   createVenueSchema,
@@ -48,6 +48,7 @@ const VenueFormView = ({
   userId,
 }: VenueFormProps) => {
   const router = useRouter();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<CreateVenueInput>({
     resolver: zodResolver(createVenueSchema),
@@ -59,59 +60,53 @@ const VenueFormView = ({
     },
     resetOptions: {
       keepErrors: true,
-      keepDirtyValues: true, // 변경된 값 유지
+      keepDirtyValues: true,
     },
   });
 
-  // 갤러리 이미지 훅
   const {
     multiImagePreview,
     error: fileError,
     handleMultiImageChange,
     removeMultiImage,
-    markAllAsUploaded,
     retryAtWithProgress,
     uploadPendingWithProgress,
   } = useMultiImageUpload({
     initialImages: initialData?.images,
-    onGalleryChange: (galleryData) => {
-      form.setValue('images', galleryData);
-    },
   });
 
-  const onSubmit = form.handleSubmit(
-    async (data: z.infer<typeof createVenueSchema>) => {
-      setIsSubmitting(true);
-      try {
-        const { failCount } = await uploadPendingWithProgress();
-        if (failCount > 0) {
-          form.setError('root', {
-            message: `${failCount}개 이미지 업로드 실패. 재시도 하세요.`,
-          });
-          return;
-        }
-
-        const result =
-          mode === 'edit'
-            ? await updateVenue(data, venueId!)
-            : await createVenue(data, userId!);
-
-        // throw 대신 return 사용
-        if (!result.success) return new Error(result.error);
-        router.push(`/venues/${result.data?.id}`);
-      } catch (error) {
-        console.error('Error: ', error);
-        form.setError('root', {
-          message: error instanceof Error ? error.message : '장소 등록 실패',
+  const onSubmit = form.handleSubmit(async (data) => {
+    setIsSubmitting(true);
+    try {
+      const { failCount, images: uploadedImages } =
+        await uploadPendingWithProgress();
+      if (failCount > 0) {
+        toast({
+          title: '일부 이미지 업로드 실패',
+          description: `${failCount}개 실패, 재시도해 주세요.`,
+          variant: 'destructive',
         });
-      } finally {
-        setIsSubmitting(false);
+        return;
       }
+
+      const payload = { ...data, images: uploadedImages };
+      const result =
+        mode === 'edit'
+          ? await updateVenue(payload, venueId!)
+          : await createVenue(payload, userId!);
+
+      if (!result.success) throw new Error(result.error);
+      router.push(`/venues/${result.data?.id}`);
+    } catch (error) {
+      console.error('Error:', error);
+      form.setError('root', {
+        message: error instanceof Error ? error.message : '장소 등록 실패',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-  );
-  /*  const onValid = async () => {
-    await onSubmit();
-  };*/
+  });
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <Card>
@@ -125,16 +120,10 @@ const VenueFormView = ({
                 control={form.control}
                 name="name"
                 render={({ field }) => (
-                  <FormItem className="space-y-2">
-                    <FormLabel className="text-sm font-medium">
-                      장소 이름
-                    </FormLabel>
+                  <FormItem>
+                    <FormLabel>장소 이름</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="장소 이름을 입력하세요."
-                        {...field}
-                        type="text"
-                      />
+                      <Input placeholder="장소 이름을 입력하세요." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -144,8 +133,8 @@ const VenueFormView = ({
                 control={form.control}
                 name="description"
                 render={({ field }) => (
-                  <FormItem className="space-y-2">
-                    <FormLabel className="text-sm font-medium">소개</FormLabel>
+                  <FormItem>
+                    <FormLabel>소개</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
@@ -162,8 +151,8 @@ const VenueFormView = ({
                 control={form.control}
                 name="address"
                 render={({ field }) => (
-                  <FormItem className="space-y-2">
-                    <FormLabel className="text-sm font-medium">주소</FormLabel>
+                  <FormItem>
+                    <FormLabel>주소</FormLabel>
                     <FormControl>
                       <div className="flex items-center gap-4">
                         <Input {...field} placeholder="주소를 입력해주세요." />
@@ -171,9 +160,7 @@ const VenueFormView = ({
                           type="button"
                           variant="outline"
                           size="icon"
-                          onClick={() => {
-                            /* Implement map selection */
-                          }}
+                          onClick={() => {}}
                         >
                           <MapPin className="h-4 w-4" />
                         </Button>
@@ -184,15 +171,12 @@ const VenueFormView = ({
                 )}
               />
 
-              {/* 갤러리 이미지 섹션 */}
               <FormField
                 control={form.control}
                 name="images"
                 render={({ field }) => (
-                  <FormItem className="space-y-2">
-                    <FormLabel className="text-sm font-medium">
-                      장소 사진
-                    </FormLabel>
+                  <FormItem>
+                    <FormLabel>장소 사진</FormLabel>
                     <FormControl>
                       <MultiImageBox
                         register={field}
@@ -228,11 +212,6 @@ const VenueFormView = ({
                 {mode === 'edit' ? '수정하기' : '등록하기'}
               </FormSubmitButton>
             </CardFooter>
-            {form.formState.errors.root && (
-              <p className="text-sm text-red-500">
-                {form.formState.errors.root.message}
-              </p>
-            )}
           </form>
         </Form>
       </Card>
