@@ -6,6 +6,7 @@ import { FormRecipientsSender } from '../components/form-recipients-sender';
 import { IndependentSender } from '../components/independent-sender';
 import { PersonalizedSMSSender } from '../components/personalized-sms-sender';
 import { SMSCampaignList } from '../components/sms-campaign-list';
+import { SMSStats } from '../components/sms-stats';
 
 interface SMSDashboardProps {
   userId: string;
@@ -13,16 +14,21 @@ interface SMSDashboardProps {
 }
 
 export function SMSDashboard({ userId, isAdmin }: SMSDashboardProps) {
-  const [activeTab, setActiveTab] = useState('form');
+  const [activeTab, setActiveTab] = useState('stats');
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
+        <TabsTrigger value="stats">통계</TabsTrigger>
         <TabsTrigger value="form">Form 응답자 발송</TabsTrigger>
         <TabsTrigger value="independent">독립 발송</TabsTrigger>
         <TabsTrigger value="personalized">개별 쿠폰 발송</TabsTrigger>
         <TabsTrigger value="history">발송 이력</TabsTrigger>
       </TabsList>
+
+      <TabsContent value="stats" className="space-y-4">
+        <SMSStats userId={userId} isAdmin={isAdmin} />
+      </TabsContent>
 
       <TabsContent value="form" className="space-y-4">
         <FormRecipientsSender userId={userId} isAdmin={isAdmin} />
