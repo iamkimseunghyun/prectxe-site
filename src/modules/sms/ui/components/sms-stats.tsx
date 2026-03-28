@@ -27,8 +27,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { CampaignStats } from '../../server/stats';
 import { getSMSStats } from '../../server/stats';
+import type { CampaignStats } from '../../server/stats.types';
 
 interface SMSStatsProps {
   userId: string;

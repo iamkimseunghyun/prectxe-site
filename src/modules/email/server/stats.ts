@@ -1,9 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
-import type { CampaignStats } from '@/modules/sms/server/stats';
-
-export type { CampaignStats };
+import type { CampaignStats } from '@/modules/sms/server/stats.types';
 
 export async function getEmailStats(
   userId: string,
