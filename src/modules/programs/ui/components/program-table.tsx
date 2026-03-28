@@ -86,9 +86,7 @@ export function ProgramTable({ data }: ProgramTableProps) {
                   <TableCell>
                     <Switch
                       checked={item.isFeatured}
-                      onCheckedChange={() =>
-                        handleToggleFeatured(item.id)
-                      }
+                      onCheckedChange={() => handleToggleFeatured(item.id)}
                     />
                   </TableCell>
                   <TableCell>

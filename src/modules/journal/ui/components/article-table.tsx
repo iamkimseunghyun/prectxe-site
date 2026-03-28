@@ -73,17 +73,13 @@ export function ArticleTable({ data }: ArticleTableProps) {
                   </TableCell>
                   <TableCell>
                     {item.publishedAt
-                      ? new Date(item.publishedAt).toLocaleDateString(
-                          'ko-KR'
-                        )
+                      ? new Date(item.publishedAt).toLocaleDateString('ko-KR')
                       : '미발행'}
                   </TableCell>
                   <TableCell>
                     <Switch
                       checked={item.isFeatured}
-                      onCheckedChange={() =>
-                        handleToggleFeatured(item.slug)
-                      }
+                      onCheckedChange={() => handleToggleFeatured(item.slug)}
                     />
                   </TableCell>
                   <TableCell>
