@@ -1,7 +1,6 @@
 import {
   Calendar,
   ChevronDown,
-  Edit,
   ExternalLink,
   Globe,
   MapPin,
@@ -13,9 +12,6 @@ import { notFound } from 'next/navigation';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import ArtistSchema from '@/components/seo/artist-schema';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import canManage from '@/lib/auth/make-login';
-import getSession from '@/lib/auth/session';
 import { prisma } from '@/lib/db/prisma';
 import { formatArtistName, getImageUrl } from '@/lib/utils';
 import { getArtistById } from '@/modules/artists/server/actions';
@@ -179,11 +175,9 @@ export default async function Page({
 }) {
   const { id } = await params;
   const artist = await getArtistById(id);
-  const session = await getSession();
 
   if (!artist) notFound();
 
-  const canEdit = await canManage(session.id!, artist.userId);
   const displayName = formatArtistName(
     artist.nameKr ?? null,
     artist.name ?? null
@@ -245,14 +239,6 @@ export default async function Page({
               )}
             </div>
           </div>
-          {canEdit && (
-            <Link href={`/artists/${id}/edit`}>
-              <Button variant="outline" size="sm">
-                <Edit className="mr-1.5 h-4 w-4" />
-                수정
-              </Button>
-            </Link>
-          )}
         </div>
       </header>
 
@@ -321,16 +307,7 @@ export default async function Page({
       {/* Artworks */}
       {hasArtworks && (
         <section className="mb-12">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">작품</h2>
-            {canEdit && (
-              <Link href="/artworks/new">
-                <Button variant="outline" size="sm">
-                  작품 등록
-                </Button>
-              </Link>
-            )}
-          </div>
+          <h2 className="mb-6 text-xl font-semibold">작품</h2>
           <ArtworkListSection artistId={id} />
         </section>
       )}
