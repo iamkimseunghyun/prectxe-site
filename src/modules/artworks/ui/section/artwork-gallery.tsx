@@ -57,43 +57,26 @@ export default function ArtworkGallery({
 
   return (
     <div>
-      {/* Thumbnail grid/row */}
-      {images.length === 1 ? (
-        <button
-          type="button"
-          onClick={() => handleImageClick(0)}
-          className="relative aspect-[4/3] w-full cursor-zoom-in overflow-hidden rounded-lg"
-        >
-          <Image
-            src={getImageUrl(images[0].imageUrl, 'public')}
-            alt={images[0].alt || title}
-            fill
-            priority
-            sizes="(min-width: 768px) 80vw, 100vw"
-            className="object-contain bg-muted"
-          />
-        </button>
-      ) : (
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {images.map((img, i) => (
-            <button
-              type="button"
-              key={img.id}
-              onClick={() => handleImageClick(i)}
-              className="group relative aspect-square w-56 shrink-0 cursor-zoom-in overflow-hidden rounded-lg sm:w-64"
-            >
-              <Image
-                src={getImageUrl(img.imageUrl, 'smaller')}
-                alt={img.alt || title}
-                fill
-                priority={i === 0}
-                sizes="(min-width: 640px) 256px, 224px"
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Thumbnail grid */}
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+        {images.map((img, i) => (
+          <button
+            type="button"
+            key={img.id}
+            onClick={() => handleImageClick(i)}
+            className="group relative aspect-square cursor-zoom-in overflow-hidden rounded-md"
+          >
+            <Image
+              src={getImageUrl(img.imageUrl, 'thumbnail')}
+              alt={img.alt || title}
+              fill
+              priority={i === 0}
+              sizes="(min-width: 768px) 20vw, 33vw"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          </button>
+        ))}
+      </div>
 
       {/* Fullscreen modal */}
       <Dialog open={open} onOpenChange={setOpen}>
