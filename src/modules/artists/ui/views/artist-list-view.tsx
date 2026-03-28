@@ -5,53 +5,28 @@ import { Button } from '@/components/ui/button';
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 import { PAGINATION } from '@/lib/constants/constants';
 import { getMoreArtists } from '@/modules/artists/server/actions';
+import type { ArtistCardData } from '@/modules/artists/server/types';
 import ArtistCard from '@/modules/artists/ui/section/artist-card';
 
-// 기본적인 이미지 타입
-interface ImageData {
-  id: string;
-  imageUrl: string;
-  alt: string;
-}
-
-// 작품 타입
-interface ArtworkData {
-  id: string;
-  title: string;
-  description?: string | null;
-  images: ImageData[];
-}
-
-// 아티스트 타입
-interface ArtistData {
-  id: string;
-  name: string;
-  nameKr?: string;
-  mainImageUrl?: string | null;
-  biography?: string | null;
-  city?: string | null;
-  country?: string | null;
-  images?: ImageData[];
-  artistArtworks: {
-    artwork: ArtworkData;
-  }[];
-}
-
 interface ArtistGridProps {
-  initialArtists: ArtistData[];
+  initialArtists: ArtistCardData[];
   searchQuery?: string;
 }
 
-export function ArtistListView({ initialArtists }: ArtistGridProps) {
+export function ArtistListView({
+  initialArtists,
+  searchQuery,
+}: ArtistGridProps) {
   const {
     items: artists,
     isLoading,
     isLastPage,
     trigger,
-  } = useInfiniteScroll<ArtistData>({
-    fetchFunction: getMoreArtists,
+  } = useInfiniteScroll<ArtistCardData>({
+    fetchFunction: (page) => getMoreArtists(page, searchQuery),
     initialData: initialArtists,
-    pageSize: PAGINATION.ARTISTS_PAGE_SIZE, // 페이지 크기 명시적으로 전달
+    pageSize: PAGINATION.ARTISTS_PAGE_SIZE,
+    resetKey: searchQuery,
   });
 
   if (artists.length === 0) {

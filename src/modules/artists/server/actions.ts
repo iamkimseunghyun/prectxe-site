@@ -1,7 +1,5 @@
 'use server';
 
-import { Prisma } from '@prisma/client';
-
 import {
   unstable_cache as next_cache,
   revalidatePath,
@@ -50,13 +48,34 @@ export const getArtistByIdWithCache =
               },
             },
           },
+          programCredits: {
+            include: {
+              program: {
+                select: {
+                  id: true,
+                  title: true,
+                  slug: true,
+                  status: true,
+                  type: true,
+                  startAt: true,
+                  endAt: true,
+                  heroUrl: true,
+                  venue: true,
+                  city: true,
+                },
+              },
+            },
+            orderBy: {
+              program: { startAt: 'desc' },
+            },
+          },
         },
       });
       if (!artist) return null;
 
       const formattedData = {
         ...artist,
-        email: artist.email ?? undefined, // null 값을 undefined로 변환
+        email: artist.email ?? undefined,
         city: artist.city ?? undefined,
         country: artist.country ?? undefined,
         homepage: artist.homepage ?? undefined,
@@ -69,6 +88,7 @@ export const getArtistByIdWithCache =
           alt,
           order,
         })),
+        programCredits: artist.programCredits,
       };
 
       // DB 데이터를 ArtistFormData 형식으로 변환
@@ -101,20 +121,18 @@ export const getArtistsPage = next_cache(
             ? [
                 { name: { contains: searchQuery, mode: 'insensitive' } },
                 { nameKr: { contains: searchQuery, mode: 'insensitive' } },
-                { biography: { contains: searchQuery, mode: 'insensitive' } },
               ]
             : undefined,
         },
-        include: {
-          images: true,
+        select: {
+          id: true,
+          name: true,
+          nameKr: true,
+          mainImageUrl: true,
+          city: true,
+          country: true,
           artistArtworks: {
-            include: {
-              artwork: {
-                include: {
-                  images: true,
-                },
-              },
-            },
+            select: { artwork: { select: { id: true } } },
           },
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -219,32 +237,24 @@ export async function createArtist(
       return { success: false, error: errorMessage };
     }
 
+    const d = validatedData.data;
     const artist = await prisma.artist.create({
       data: {
-        name: validatedData.data.name,
-        nameKr: validatedData.data.nameKr,
-        mainImageUrl: validatedData.data.mainImageUrl,
-        email: validatedData.data.email,
-        city: validatedData.data.city,
-        country: validatedData.data.country,
-        homepage: validatedData.data.homepage,
-        biography: validatedData.data.biography,
-        cv: validatedData.data.cv,
-        images: {
-          create: validatedData.data.images.map((image) => ({
-            imageUrl: image.imageUrl,
-            alt: image.alt,
-            order: image.order,
-          })),
-        },
+        name: d.name,
+        nameKr: d.nameKr,
+        mainImageUrl: d.mainImageUrl ?? null,
+        email: d.email,
+        city: d.city,
+        country: d.country,
+        homepage: d.homepage,
+        biography: d.biography,
+        cv: d.cv,
         userId,
+        images: d.images?.length
+          ? { createMany: { data: d.images } }
+          : undefined,
       },
-      select: {
-        id: true,
-        name: true,
-        nameKr: true,
-        mainImageUrl: true,
-      },
+      select: { id: true, name: true, nameKr: true, mainImageUrl: true },
     });
 
     // 캐시 무효화 개선
@@ -271,124 +281,89 @@ export async function updateArtist(
   artistId: string
 ) {
   try {
-    // 1. 기존 아티스트 정보 가져오기 (이미지 삭제 처리를 위해)
-    const existingArtist = await prisma.artist.findUnique({
+    const parsed = updateArtistSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: '입력 값이 올바르지 않습니다.' };
+    }
+    const d = parsed.data;
+
+    const existing = await prisma.artist.findUnique({
       where: { id: artistId },
       include: { images: true },
     });
-
-    if (!existingArtist) {
+    if (!existing) {
       return { success: false, error: '아티스트를 찾을 수 없습니다.' };
     }
 
-    // 2. 폼 데이터에서 필요한 정보 추출
-    // 3. 이미지 데이터 처리
-
-    // 4. 데이터 유효성 검사
-    const result = updateArtistSchema.safeParse(data);
-
-    if (!result.success) {
-      return { success: false, error: '입력 값이 올바르지 않습니다.' };
-    }
-
-    const validatedData = result.data;
-    // 6. Cloudflare 이미지 삭제 처리
-    // 6.1. 메인 이미지 처리
+    // 메인 이미지가 변경된 경우 기존 이미지 Cloudflare에서 삭제
     if (
-      validatedData.mainImageUrl &&
-      existingArtist.mainImageUrl !== validatedData.mainImageUrl
+      d.mainImageUrl &&
+      existing.mainImageUrl &&
+      d.mainImageUrl !== existing.mainImageUrl
     ) {
-      const imageId = extractImageId(existingArtist.mainImageUrl!);
-      if (imageId) {
-        await deleteCloudflareImage(imageId);
-        console.log(`메인 이미지 삭제됨: ${imageId}`);
-      }
+      const oldId = extractImageId(existing.mainImageUrl);
+      if (oldId) await deleteCloudflareImage(oldId).catch(() => {});
     }
 
-    // 6.2. 갤러리 이미지 처리
-    if (validatedData.images && existingArtist.images.length > 0) {
-      const newImageUrls = validatedData.images.map((img) => img.imageUrl);
-      await deleteRemovedImages(existingArtist.images, newImageUrls);
+    // 갤러리: 제거된 이미지를 Cloudflare에서 삭제
+    const hasNewImages = d.images && d.images.length > 0;
+    if (hasNewImages) {
+      const newImageUrls = d.images!.map((img) => img.imageUrl);
+      await deleteRemovedImages(existing.images, newImageUrls);
     }
 
-    // 7. Prisma 업데이트 데이터 준비
-    const prismaUpdateData = {
-      name: validatedData.name,
-      nameKr: validatedData.nameKr,
-      mainImageUrl: validatedData.mainImageUrl,
-      email: validatedData.email,
-      city: validatedData.city,
-      country: validatedData.country,
-      homepage: validatedData.homepage,
-      biography: validatedData.biography,
-      cv: validatedData.cv,
-      images: {
-        ...(validatedData.images &&
-          validatedData.images.length > 0 && {
-            deleteMany: {},
-            createMany: {
-              data: validatedData.images.map((image) => ({
-                imageUrl: image.imageUrl,
-                alt: image.alt || '',
-                order: image.order,
-              })),
-            },
-          }),
-      },
-    };
-
-    // 8. 아티스트 업데이트 실행
     const artist = await prisma.artist.update({
       where: { id: artistId },
-      data: prismaUpdateData,
-      include: {
-        images: true,
+      data: {
+        name: d.name,
+        nameKr: d.nameKr,
+        mainImageUrl: d.mainImageUrl ?? null,
+        email: d.email,
+        city: d.city,
+        country: d.country,
+        homepage: d.homepage,
+        biography: d.biography,
+        cv: d.cv,
+        images: hasNewImages
+          ? { deleteMany: {}, createMany: { data: d.images! } }
+          : undefined,
       },
+      select: { id: true, name: true },
     });
 
     // 캐시 무효화
     revalidatePath('/');
     revalidatePath(`/artists/${artist.id}`);
 
-    // 아티스트와 관련된 작품 페이지의 캐시도 무효화
-    const artistArtworks = await prisma.artistArtwork.findMany({
+    const relatedArtworks = await prisma.artistArtwork.findMany({
       where: { artistId },
       select: { artworkId: true },
     });
-
-    artistArtworks.forEach(({ artworkId }) => {
+    for (const { artworkId } of relatedArtworks) {
       revalidatePath(`/artworks/${artworkId}`);
-    });
+    }
 
     return { success: true, data: artist };
   } catch (error) {
-    console.error('아티스트 페이지 수정 실패:', error);
-
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return {
-        success: false,
-        error: '데이터베이스 작업 중 오류가 발생했습니다.',
-        details: error.message,
-      };
-    }
-
+    console.error('아티스트 수정 실패:', error);
     return {
       success: false,
       error:
         error instanceof Error
           ? error.message
-          : '아티스트 페이지 수정에 실패했습니다.',
+          : '아티스트 수정에 실패했습니다.',
     };
   }
 }
 
 export async function deleteArtist(artistId: string) {
   try {
-    // 1. 아티스트 정보와 관련 이미지 정보 가져오기
+    // Cloudflare 이미지 정리 (메인 + 갤러리)
     const artist = await prisma.artist.findUnique({
       where: { id: artistId },
-      include: {
-        images: true,
+      select: {
+        mainImageUrl: true,
+        images: { select: { imageUrl: true } },
       },
     });
 
@@ -396,46 +371,31 @@ export async function deleteArtist(artistId: string) {
       return { success: false, error: '아티스트를 찾을 수 없습니다.' };
     }
 
-    // 2. Cloudflare에서 이미지 삭제
-    // 2.1. 메인 이미지 삭제
     if (artist.mainImageUrl) {
-      const mainImageId = extractImageId(artist.mainImageUrl);
-      if (mainImageId) {
-        await deleteCloudflareImage(mainImageId);
-        console.log(`메인 이미지 삭제됨: ${mainImageId}`);
-      }
+      const heroId = extractImageId(artist.mainImageUrl);
+      if (heroId) await deleteCloudflareImage(heroId).catch(() => {});
+    }
+    if (artist.images.length > 0) {
+      await deleteAllImages(artist.images);
     }
 
-    // 2.2. 갤러리 이미지들 삭제
-    await deleteAllImages(artist.images);
-
-    // 3. 데이터베이스에서 아티스트 삭제 (관계 데이터는 cascade 삭제됨)
-
-    // 아티스트 삭제 전에 관련 작품 ID 가져오기
-    const artistArtworks = await prisma.artistArtwork.findMany({
+    // 삭제 전 관련 작품 ID 수집
+    const relatedArtworks = await prisma.artistArtwork.findMany({
       where: { artistId },
       select: { artworkId: true },
     });
 
-    await prisma.artist.delete({
-      where: {
-        id: artistId,
-      },
-    });
-    // 캐시 무효화 개선
+    await prisma.artist.delete({ where: { id: artistId } });
+
     revalidatePath('/');
     revalidatePath('/artists');
-
-    // 아티스트와 관련된 작품 페이지의 캐시도 무효화
-    artistArtworks.forEach(({ artworkId }) => {
+    for (const { artworkId } of relatedArtworks) {
       revalidatePath(`/artworks/${artworkId}`);
-    });
+    }
 
-    return {
-      success: true,
-    };
+    return { success: true };
   } catch (error) {
-    console.error('아티스트 삭제 실패', error);
+    console.error('아티스트 삭제 실패:', error);
     return {
       success: false,
       error:

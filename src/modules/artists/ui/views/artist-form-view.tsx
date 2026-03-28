@@ -28,13 +28,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
+import { useToast } from '@/hooks/use-toast';
 import {
-  type artistSchema,
   type CreateArtistInput,
   createArtistSchema,
   type UpdateArtistInput,
 } from '@/lib/schemas';
-import { uploadGalleryImages, uploadSingleImage } from '@/lib/utils';
+import { uploadSingleImage } from '@/lib/utils';
 import { createArtist, updateArtist } from '@/modules/artists/server/actions';
 
 type ArtistFormProps = {
@@ -51,6 +51,7 @@ const ArtistFormView = ({
   userId,
 }: ArtistFormProps) => {
   const router = useRouter();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const defaultValues = {
@@ -93,47 +94,50 @@ const ArtistFormView = ({
     error,
     handleMultiImageChange,
     removeMultiImage,
-    markAllAsUploaded,
+    uploadPendingWithProgress,
   } = useMultiImageUpload({
     initialImages: initialData?.images,
-    onGalleryChange: (galleryData) => {
-      form.setValue('images', galleryData);
-    },
   });
 
-  const onSubmit = form.handleSubmit(
-    async (data: z.infer<typeof artistSchema>) => {
-      setIsSubmitting(true);
-      try {
-        if (imageFile) {
-          await uploadSingleImage(imageFile, uploadURL);
-          finalizeUpload();
-        }
-        const toUpload = multiImagePreview.filter((p) => (p as any).file);
-        if (toUpload.length > 0) {
-          await uploadGalleryImages(toUpload as any);
-          markAllAsUploaded();
-        }
-
-        const result =
-          mode === 'edit'
-            ? await updateArtist(data, artistId!)
-            : await createArtist(data, userId!);
-
-        // 에러 처리 수정
-        if (!result.success) return new Error(result.error);
-        router.push(`/artists/${result.data?.id}`);
-      } catch (error) {
-        console.error('Error: ', error);
-        form.setError('root', {
-          message:
-            error instanceof Error ? error.message : '아티스트 등록 실패',
-        });
-      } finally {
-        setIsSubmitting(false);
+  const onSubmit = form.handleSubmit(async (data) => {
+    setIsSubmitting(true);
+    try {
+      // 1. 메인 이미지 업로드
+      if (imageFile) {
+        await uploadSingleImage(imageFile, uploadURL);
+        finalizeUpload();
       }
+
+      // 2. 갤러리 이미지 업로드 (진행률 추적, 실패 시 중단)
+      const { failCount, images: uploadedImages } =
+        await uploadPendingWithProgress();
+      if (failCount > 0) {
+        toast({
+          title: '일부 이미지 업로드 실패',
+          description: `${failCount}개 실패, 재시도해 주세요.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // 3. 서버 액션 호출 (업로드된 이미지 URL 사용)
+      const payload = { ...data, images: uploadedImages };
+      const result =
+        mode === 'edit'
+          ? await updateArtist(payload, artistId!)
+          : await createArtist(payload, userId!);
+
+      if (!result.success) throw new Error(result.error);
+      router.push(`/artists/${result.data?.id}`);
+    } catch (error) {
+      console.error('Error: ', error);
+      form.setError('root', {
+        message: error instanceof Error ? error.message : '아티스트 등록 실패',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-  );
+  });
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -271,7 +275,7 @@ const ArtistFormView = ({
                   control={form.control}
                   name="biography"
                   render={({ field }) => (
-                    <FormItem className="my-4 mt-4">
+                    <FormItem className="mt-4 md:col-span-2">
                       <FormLabel>작가 소개</FormLabel>
                       <FormControl>
                         <Textarea
@@ -288,7 +292,7 @@ const ArtistFormView = ({
                   control={form.control}
                   name="cv"
                   render={({ field }) => (
-                    <FormItem className="my-4 mt-4">
+                    <FormItem className="mt-4 md:col-span-2">
                       <FormLabel>C.V</FormLabel>
                       <FormControl>
                         <Textarea
