@@ -10,7 +10,6 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import AdminButton from '@/components/layout/admin-button';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import ArtistSchema from '@/components/seo/artist-schema';
 import { Badge } from '@/components/ui/badge';
@@ -349,13 +348,6 @@ export default async function Page({
             </div>
           </details>
         </section>
-      )}
-
-      {/* Admin Actions */}
-      {canEdit && (
-        <div className="flex justify-end">
-          <AdminButton id={id} entityType="artist" />
-        </div>
       )}
     </div>
   );
