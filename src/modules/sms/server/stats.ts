@@ -41,7 +41,8 @@ export async function getSMSStats(
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
-    const [campaigns, thisMonthCampaigns, errorRecipients] = await Promise.all([
+    // 캠페인 목록 (최근 12개월) + 에러 집계를 병렬 실행
+    const [campaigns, errorGroups] = await Promise.all([
       prisma.sMSCampaign.findMany({
         where: {
           ...where,
@@ -58,23 +59,17 @@ export async function getSMSStats(
         },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.sMSCampaign.findMany({
-        where: {
-          ...where,
-          sentAt: { gte: thisMonthStart },
-        },
-        select: {
-          sentCount: true,
-          failedCount: true,
-        },
-      }),
-      prisma.sMSRecipient.findMany({
+      // DB에서 직접 에러 집계 — 개별 레코드 조회 대신 groupBy 사용
+      prisma.sMSRecipient.groupBy({
+        by: ['error'],
         where: {
           campaign: where,
           success: false,
           error: { not: null },
         },
-        select: { error: true },
+        _count: { error: true },
+        orderBy: { _count: { error: 'desc' } },
+        take: 10,
       }),
     ]);
 
@@ -85,7 +80,11 @@ export async function getSMSStats(
     const successRate =
       total > 0 ? Math.round((totalSent / total) * 1000) / 10 : 0;
 
-    const thisMonthSent = thisMonthCampaigns.reduce(
+    // 이번 달 통계는 이미 조회한 캠페인에서 필터
+    const thisMonthData = campaigns.filter(
+      (c) => (c.sentAt ?? c.createdAt) >= thisMonthStart
+    );
+    const thisMonthSent = thisMonthData.reduce(
       (sum, c) => sum + c.sentCount,
       0
     );
@@ -116,16 +115,10 @@ export async function getSMSStats(
       ([month, data]) => ({ month, ...data })
     );
 
-    // 에러 분류
-    const errorMap = new Map<string, number>();
-    for (const r of errorRecipients) {
-      const err = r.error ?? '알 수 없는 오류';
-      errorMap.set(err, (errorMap.get(err) ?? 0) + 1);
-    }
-    const errorBreakdown = Array.from(errorMap.entries())
-      .map(([error, count]) => ({ error, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+    const errorBreakdown = errorGroups.map((g) => ({
+      error: g.error ?? '알 수 없는 오류',
+      count: g._count.error,
+    }));
 
     return {
       success: true,
@@ -135,7 +128,7 @@ export async function getSMSStats(
         totalFailed,
         successRate,
         thisMonthSent,
-        thisMonthCampaigns: thisMonthCampaigns.length,
+        thisMonthCampaigns: thisMonthData.length,
         monthlyTrend,
         recentCampaigns: campaigns.slice(0, 5),
         errorBreakdown,

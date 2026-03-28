@@ -16,7 +16,7 @@ export async function getEmailStats(
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
-    const [campaigns, thisMonthCampaigns, errorRecipients] = await Promise.all([
+    const [campaigns, errorGroups] = await Promise.all([
       prisma.emailCampaign.findMany({
         where: {
           ...where,
@@ -33,23 +33,16 @@ export async function getEmailStats(
         },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.emailCampaign.findMany({
-        where: {
-          ...where,
-          sentAt: { gte: thisMonthStart },
-        },
-        select: {
-          sentCount: true,
-          failedCount: true,
-        },
-      }),
-      prisma.emailRecipient.findMany({
+      prisma.emailRecipient.groupBy({
+        by: ['error'],
         where: {
           campaign: where,
           success: false,
           error: { not: null },
         },
-        select: { error: true },
+        _count: { error: true },
+        orderBy: { _count: { error: 'desc' } },
+        take: 10,
       }),
     ]);
 
@@ -60,7 +53,10 @@ export async function getEmailStats(
     const successRate =
       total > 0 ? Math.round((totalSent / total) * 1000) / 10 : 0;
 
-    const thisMonthSent = thisMonthCampaigns.reduce(
+    const thisMonthData = campaigns.filter(
+      (c) => (c.sentAt ?? c.createdAt) >= thisMonthStart
+    );
+    const thisMonthSent = thisMonthData.reduce(
       (sum, c) => sum + c.sentCount,
       0
     );
@@ -91,16 +87,10 @@ export async function getEmailStats(
       ([month, data]) => ({ month, ...data })
     );
 
-    // 에러 분류
-    const errorMap = new Map<string, number>();
-    for (const r of errorRecipients) {
-      const err = r.error ?? '알 수 없는 오류';
-      errorMap.set(err, (errorMap.get(err) ?? 0) + 1);
-    }
-    const errorBreakdown = Array.from(errorMap.entries())
-      .map(([error, count]) => ({ error, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+    const errorBreakdown = errorGroups.map((g) => ({
+      error: g.error ?? '알 수 없는 오류',
+      count: g._count.error,
+    }));
 
     return {
       success: true,
@@ -110,7 +100,7 @@ export async function getEmailStats(
         totalFailed,
         successRate,
         thisMonthSent,
-        thisMonthCampaigns: thisMonthCampaigns.length,
+        thisMonthCampaigns: thisMonthData.length,
         monthlyTrend,
         recentCampaigns: campaigns.slice(0, 5),
         errorBreakdown,
