@@ -6,16 +6,10 @@ import { notFound } from 'next/navigation';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import ArtworkSchema from '@/components/seo/artwork-schema';
 import { Badge } from '@/components/ui/badge';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel';
 import { prisma } from '@/lib/db/prisma';
 import { formatArtistName, getImageUrl } from '@/lib/utils';
 import { getArtworkById } from '@/modules/artworks/server/actions';
+import ArtworkGallery from '@/modules/artworks/ui/section/artwork-gallery';
 
 export async function generateMetadata({
   params,
@@ -107,39 +101,7 @@ export default async function Page({
       {/* Image Gallery */}
       {hasImages ? (
         <section className="mb-10">
-          {artwork.images.length === 1 ? (
-            <div className="relative aspect-[4/3] overflow-hidden rounded-lg">
-              <Image
-                src={getImageUrl(artwork.images[0].imageUrl, 'public')}
-                alt={artwork.images[0].alt || artwork.title}
-                fill
-                priority
-                sizes="(min-width: 768px) 80vw, 100vw"
-                className="object-contain bg-muted"
-              />
-            </div>
-          ) : (
-            <Carousel>
-              <CarouselContent>
-                {artwork.images.map((image, idx) => (
-                  <CarouselItem key={image.id} className="md:basis-1/2">
-                    <div className="relative aspect-square overflow-hidden rounded-lg">
-                      <Image
-                        src={getImageUrl(image.imageUrl, 'public')}
-                        alt={image.alt || artwork.title}
-                        fill
-                        priority={idx === 0}
-                        sizes="(min-width: 768px) 50vw, 100vw"
-                        className="object-contain bg-muted"
-                      />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="absolute left-4 top-1/2" />
-              <CarouselNext className="absolute right-4 top-1/2" />
-            </Carousel>
-          )}
+          <ArtworkGallery images={artwork.images} title={artwork.title} />
         </section>
       ) : (
         <section className="mb-10 flex aspect-[4/3] items-center justify-center rounded-lg bg-muted">
