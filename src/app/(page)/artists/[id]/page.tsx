@@ -90,7 +90,7 @@ function ProgramSection({ credits }: { credits: ArtistProgramCredit[] }) {
 
   return (
     <section>
-      <h2 className="mb-6 text-xl font-semibold">참여 프로그램</h2>
+      <h2 className="mb-6 text-xl font-semibold">Programs</h2>
       {upcoming.length > 0 && (
         <div className="mb-8">
           <h3 className="mb-4 text-sm font-medium uppercase tracking-wider text-muted-foreground">
@@ -204,54 +204,52 @@ export default async function Page({
 
       {/* Hero Header */}
       <header className="mb-10">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {artist.nameKr && <span className="block">{artist.nameKr}</span>}
-              <span
-                className={
-                  artist.nameKr
-                    ? 'block text-xl font-normal text-muted-foreground'
-                    : ''
-                }
-              >
-                {artist.name}
-              </span>
-            </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              {location && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {location}
-                </span>
-              )}
-              {artist.homepage && (
-                <a
-                  href={artist.homepage}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 hover:text-foreground"
-                >
-                  <Globe className="h-3.5 w-3.5" />
-                  웹사이트
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              )}
-            </div>
-          </div>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {artist.nameKr && <span className="block">{artist.nameKr}</span>}
+          <span
+            className={
+              artist.nameKr
+                ? 'block text-xl font-normal text-muted-foreground'
+                : ''
+            }
+          >
+            {artist.name}
+          </span>
+        </h1>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          {location && (
+            <span className="flex items-center gap-1">
+              <MapPin className="h-3.5 w-3.5" />
+              {location}
+            </span>
+          )}
+          {artist.homepage && (
+            <a
+              href={artist.homepage}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 hover:text-foreground"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              웹사이트
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
         </div>
       </header>
 
-      {/* Profile Image + Bio */}
+      {/* Profile Image + About */}
       {(artist.mainImageUrl || hasBio) && (
-        <section className="mb-12">
+        <section className="border-t pt-10 pb-2">
           <div
             className={
-              artist.mainImageUrl && hasBio ? 'grid gap-8 md:grid-cols-2' : ''
+              artist.mainImageUrl && hasBio
+                ? 'grid items-start gap-8 md:grid-cols-2'
+                : ''
             }
           >
             {artist.mainImageUrl && (
-              <div className="relative aspect-[4/5] overflow-hidden rounded-lg">
+              <div className="relative aspect-[3/4] overflow-hidden rounded-lg">
                 <Image
                   src={getImageUrl(artist.mainImageUrl, 'public')}
                   alt={displayName}
@@ -263,7 +261,7 @@ export default async function Page({
               </div>
             )}
             {hasBio && (
-              <div>
+              <div className="self-start">
                 <h2 className="mb-4 text-lg font-semibold">About</h2>
                 <div className="prose max-w-none whitespace-pre-line text-muted-foreground">
                   {artist.biography}
@@ -274,21 +272,21 @@ export default async function Page({
         </section>
       )}
 
-      {/* Gallery Images */}
+      {/* Gallery */}
       {hasGallery && (
-        <section className="mb-12">
-          <h2 className="mb-4 text-lg font-semibold">갤러리</h2>
-          <div className="flex gap-3 overflow-x-auto pb-4">
+        <section className="border-t pt-10 pb-2">
+          <h2 className="mb-4 text-lg font-semibold">Gallery</h2>
+          <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide">
             {artist.images.map((img) => (
               <div
                 key={img.id}
-                className="relative h-64 w-64 shrink-0 overflow-hidden rounded-lg"
+                className="relative aspect-[4/5] w-56 shrink-0 overflow-hidden rounded-lg"
               >
                 <Image
                   src={getImageUrl(img.imageUrl, 'smaller')}
                   alt={img.alt || displayName}
                   fill
-                  sizes="256px"
+                  sizes="224px"
                   className="object-cover"
                 />
               </div>
@@ -299,14 +297,14 @@ export default async function Page({
 
       {/* Programs */}
       {hasPrograms && (
-        <div className="mb-12">
+        <section className="border-t pt-10 pb-2">
           <ProgramSection credits={artist.programCredits} />
-        </div>
+        </section>
       )}
 
-      {/* Artworks */}
+      {/* Works */}
       {hasArtworks && (
-        <section className="mb-12">
+        <section className="border-t pt-10 pb-2">
           <h2 className="mb-6 text-xl font-semibold">Works</h2>
           <ArtworkListSection artistId={id} />
         </section>
@@ -314,7 +312,7 @@ export default async function Page({
 
       {/* CV */}
       {hasCv && (
-        <section className="mb-12">
+        <section className="border-t pt-10 pb-2">
           <details className="group">
             <summary className="flex cursor-pointer items-center gap-2 text-xl font-semibold">
               CV
