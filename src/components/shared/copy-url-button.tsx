@@ -1,6 +1,6 @@
 'use client';
 
-import { Link } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 
@@ -48,7 +48,7 @@ export function CopyUrlButton({ className, url: providedUrl }: Props) {
       onClick={handleCopy}
       disabled={copying}
     >
-      <Link className="h-4 w-4" />
+      <Share2 className="h-4 w-4" />
     </button>
   );
 }

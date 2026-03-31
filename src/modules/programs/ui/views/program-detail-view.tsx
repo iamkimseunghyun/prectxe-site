@@ -57,7 +57,10 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
         </div>
       )}
       <header className="mb-8">
-        <h1 className="text-3xl font-bold">{program.title}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-3xl font-bold">{program.title}</h1>
+          <CopyUrlButton className="mt-1.5 shrink-0 text-neutral-400 transition-colors hover:text-neutral-600" />
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-neutral-500">
           {start && end && <span>{formatEventDate(start, end)}</span>}
           {(program.city || program.venue) && (
@@ -65,7 +68,6 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
               {[program.city, program.venue].filter(Boolean).join(' · ')}
             </span>
           )}
-          <CopyUrlButton className="ml-auto text-xs text-neutral-400 hover:text-neutral-600" />
         </div>
       </header>
 
