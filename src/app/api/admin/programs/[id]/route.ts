@@ -1,9 +1,7 @@
 import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/require-admin';
-import { deleteAllImages, deleteCloudflareImage } from '@/lib/cdn/cloudflare';
-import { prisma } from '@/lib/db/prisma';
-import { extractImageId } from '@/lib/utils';
+import { deleteProgram } from '@/modules/programs/server/actions';
 
 export async function DELETE(
   _req: Request,
@@ -18,29 +16,21 @@ export async function DELETE(
       );
     const { id } = await params;
 
-    // Cloudflare 이미지 정리 (hero + 갤러리)
-    const program = await prisma.program.findUnique({
-      where: { id },
-      select: { heroUrl: true, images: { select: { imageUrl: true } } },
-    });
-    if (program) {
-      if (program.heroUrl) {
-        const heroId = extractImageId(program.heroUrl);
-        if (heroId) await deleteCloudflareImage(heroId).catch(() => {});
-      }
-      if (program.images.length > 0) {
-        await deleteAllImages(program.images);
-      }
+    const result = await deleteProgram(id);
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error ?? '삭제에 실패했습니다.' },
+        { status: 400 }
+      );
     }
 
-    await prisma.program.delete({ where: { id } });
     revalidatePath('/admin/programs');
-    revalidatePath('/programs');
     return NextResponse.json({ success: true });
   } catch (e) {
-    console.error(e);
+    const message = e instanceof Error ? e.message : '삭제에 실패했습니다.';
+    console.error('프로그램 삭제 API 에러:', message, e);
     return NextResponse.json(
-      { success: false, error: '삭제에 실패했습니다.' },
+      { success: false, error: message },
       { status: 500 }
     );
   }

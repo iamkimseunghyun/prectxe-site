@@ -355,15 +355,20 @@ export async function updateProgram(id: string, input: unknown) {
 }
 
 export async function deleteProgram(id: string) {
-  const auth = await requireAdmin();
-  if (!auth.success) return { success: false } as const;
+  try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다.' };
 
-  // Cloudflare 이미지 정리 (hero + 갤러리)
-  const program = await prisma.program.findUnique({
-    where: { id },
-    select: { heroUrl: true, images: { select: { imageUrl: true } } },
-  });
-  if (program) {
+    // Cloudflare 이미지 정리 (hero + 갤러리)
+    const program = await prisma.program.findUnique({
+      where: { id },
+      select: { heroUrl: true, images: { select: { imageUrl: true } } },
+    });
+
+    if (!program) {
+      return { success: false, error: '프로그램을 찾을 수 없습니다.' };
+    }
+
     if (program.heroUrl) {
       const heroId = extractImageId(program.heroUrl);
       if (heroId) await deleteCloudflareImage(heroId).catch(() => {});
@@ -371,11 +376,21 @@ export async function deleteProgram(id: string) {
     if (program.images.length > 0) {
       await deleteAllImages(program.images);
     }
-  }
 
-  await prisma.program.delete({ where: { id } });
-  revalidatePath('/programs');
-  return { success: true };
+    await prisma.program.delete({ where: { id } });
+    revalidatePath('/programs');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('프로그램 삭제 실패:', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : '프로그램 삭제에 실패했습니다.',
+    };
+  }
 }
 
 export const getProgramBySlugWithCache = next_cache(
