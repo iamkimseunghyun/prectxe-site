@@ -2,12 +2,12 @@
 
 import { X } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import MultiImageBox from '@/components/image/multi-image-box';
 import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
@@ -74,8 +75,11 @@ export function ProgramFormView({
   initial?: Partial<ProgramCreateInput> & { id?: string };
   onSubmit: (
     data: any
-  ) => Promise<{ ok?: boolean; error?: string } | undefined>;
+  ) => Promise<
+    { success: boolean; redirect?: string; error?: string } | undefined
+  >;
 }) {
+  const router = useRouter();
   const [form, setForm] = useState<Partial<ProgramCreateInput>>({
     title: initial?.title ?? '',
     slug: initial?.slug ?? '',
@@ -230,10 +234,14 @@ export function ProgramFormView({
         intent,
       };
       const res = await onSubmit(payload);
-      if (res && (res as any).success === false) {
+      if (res?.success && res.redirect) {
+        router.push(res.redirect);
+        return;
+      }
+      if (res && !res.success) {
         toast({
           title: '오류',
-          description: (res as any).error || '저장 중 오류가 발생했습니다.',
+          description: res.error || '저장 중 오류가 발생했습니다.',
         });
       }
     } finally {

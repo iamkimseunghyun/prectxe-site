@@ -22,13 +22,17 @@ export default async function Page({
   async function onSubmit(formData: any) {
     'use server';
     const session = await getSession();
-    if (!session.id) redirect('/');
+    if (!session.id) return { success: false, error: '인증이 필요합니다.' };
     const { intent, ...data } = formData || {};
     const res = await updateProgram(id, data);
     if (res?.success) {
-      if (intent === 'continue') redirect(`/admin/programs/${id}/edit`);
-      if (intent === 'new') redirect(`/admin/programs/new`);
-      redirect(`/admin/programs`);
+      let redirectTo = '/admin/programs';
+      if (intent === 'continue') {
+        redirectTo = `/admin/programs/${id}/edit`;
+      } else if (intent === 'new') {
+        redirectTo = '/admin/programs/new';
+      }
+      return { success: true, redirect: redirectTo };
     }
     return {
       success: false,

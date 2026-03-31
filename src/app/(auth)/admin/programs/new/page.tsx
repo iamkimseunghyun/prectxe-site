@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
 import { createProgram } from '@/modules/programs/server/actions';
 import { ProgramFormView } from '@/modules/programs/ui/views/program-form-view';
@@ -7,17 +6,17 @@ export default async function Page() {
   async function onSubmit(formData: any) {
     'use server';
     const session = await getSession();
-    if (!session.id) redirect('/');
+    if (!session.id) return { success: false, error: '인증이 필요합니다.' };
     const { intent, ...data } = formData || {};
     const res = await createProgram(data, session.id);
     if (res?.success) {
+      let redirectTo = '/admin/programs';
       if (intent === 'continue' && res.data?.id) {
-        redirect(`/admin/programs/${res.data.id}/edit`);
+        redirectTo = `/admin/programs/${res.data.id}/edit`;
+      } else if (intent === 'new') {
+        redirectTo = '/admin/programs/new';
       }
-      if (intent === 'new') {
-        redirect(`/admin/programs/new`);
-      }
-      redirect(`/admin/programs`);
+      return { success: true, redirect: redirectTo };
     }
     return {
       success: false,
