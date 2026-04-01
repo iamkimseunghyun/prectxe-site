@@ -56,10 +56,13 @@ export function DeleteButton({
     try {
       const url = `${RESOURCE_API_MAP[resource]}/${id}`;
       const res = await fetch(url, { method: 'DELETE' });
+      const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || '삭제 실패');
+        throw new Error(data?.error || `삭제 실패 (HTTP ${res.status})`);
+      }
+      if (data && data.success === false) {
+        throw new Error(data.error || '삭제에 실패했습니다.');
       }
 
       toast({
