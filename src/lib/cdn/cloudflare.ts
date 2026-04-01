@@ -59,14 +59,12 @@ export async function deleteRemovedImages(
     );
     return;
   }
-  for (const img of existingImages) {
-    if (!newImageUrls.includes(img.imageUrl)) {
-      const imageId = extractImageId(img.imageUrl);
-      if (imageId) {
-        await deleteCloudflareImage(imageId).catch(() => {});
-      }
-    }
-  }
+  const toDelete = existingImages
+    .filter((img) => !newImageUrls.includes(img.imageUrl))
+    .map((img) => extractImageId(img.imageUrl))
+    .filter(Boolean);
+
+  await Promise.allSettled(toDelete.map((id) => deleteCloudflareImage(id!)));
 }
 
 /**
@@ -74,12 +72,12 @@ export async function deleteRemovedImages(
  * 개별 이미지 삭제 실패해도 나머지 계속 진행
  */
 export async function deleteAllImages(images: { imageUrl: string }[]) {
-  for (const img of images) {
-    const imageId = extractImageId(img.imageUrl);
-    if (imageId) {
-      await deleteCloudflareImage(imageId).catch(() => {});
-    }
-  }
+  await Promise.allSettled(
+    images
+      .map((img) => extractImageId(img.imageUrl))
+      .filter(Boolean)
+      .map((id) => deleteCloudflareImage(id!))
+  );
 }
 
 function extractImageId(url: string) {
@@ -112,11 +110,8 @@ export async function cleanupRemovedHtmlImages(
   if (!oldHtml) return;
   const oldIds = extractImageIdsFromHtml(oldHtml);
   const newIds = newHtml ? extractImageIdsFromHtml(newHtml) : [];
-  for (const id of oldIds) {
-    if (!newIds.includes(id)) {
-      await deleteCloudflareImage(id).catch(() => {});
-    }
-  }
+  const toDelete = oldIds.filter((id) => !newIds.includes(id));
+  await Promise.allSettled(toDelete.map((id) => deleteCloudflareImage(id)));
 }
 
 /**
@@ -125,9 +120,7 @@ export async function cleanupRemovedHtmlImages(
 export async function deleteAllHtmlImages(html: string | null) {
   if (!html) return;
   const ids = extractImageIdsFromHtml(html);
-  for (const id of ids) {
-    await deleteCloudflareImage(id);
-  }
+  await Promise.allSettled(ids.map((id) => deleteCloudflareImage(id)));
 }
 
 // ─── Cloudflare Stream (Video) ─────────────────────
@@ -220,19 +213,21 @@ export async function deleteCloudflareImage(imageId: string) {
       }
     );
 
+    // 404 = 이미 삭제됨 → 성공으로 처리
+    if (response.status === 404) {
+      return { success: true };
+    }
+
     if (!response.ok) {
       console.error('Cloudflare Delete API Error:', {
         status: response.status,
         statusText: response.statusText,
       });
-      return {
-        success: false,
-        error: `Failed to delete upload URL: ${response.status} ${response.statusText}`,
-      };
+      return { success: false };
     }
     return await response.json();
   } catch (error) {
     console.error('Cloudflare Delete API Error:', error);
-    return { success: false, error };
+    return { success: false };
   }
 }
