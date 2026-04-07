@@ -4,8 +4,9 @@ import { ArrowLeft, Loader2, Video } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type ChangeEvent, useState } from 'react';
-import SingleImageBox from '@/components/image/single-image-box';
+import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
 import MultiImageBox from '@/components/image/multi-image-box';
+import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { useToast } from '@/hooks/use-toast';
-import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
 import { getCloudflareVideoUploadUrl } from '@/lib/cdn/cloudflare';
 import { uploadImage } from '@/lib/utils';
 import {

@@ -5,7 +5,6 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
 import { sendEmail } from '@/lib/email/send';
 import portone, { PortOneError } from '@/lib/payment/portone';
-import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
 import {
   type GoodsVariantInput,
   goodsOrderFormSchema,
@@ -14,6 +13,7 @@ import {
   type TicketTierInput,
   ticketTierSchema,
 } from '@/lib/schemas/ticket';
+import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
 
 // ─── 주문번호 생성 ───────────────────────────────────
 
