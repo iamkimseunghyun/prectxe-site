@@ -91,6 +91,7 @@ model User {
   emailCampaigns EmailCampaign[]
   pnlTemplates   PnLTemplate[]
   pnlSheets      PnLSheet[]
+  estimates      Estimate[]
 }
 
 model PnLTemplate {
@@ -121,9 +122,56 @@ model PnLSheet {
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  estimates   Estimate[]
 
   @@index([userId])
   @@index([templateId])
+}
+
+/// 공급자 정보 (회사 단일 프로필 — id="singleton" 강제)
+model SupplierProfile {
+  id                  String   @id @default("singleton")
+  companyName         String
+  businessNo          String?
+  ceo                 String?
+  address             String?
+  phone               String?
+  email               String?
+  contactName         String?
+  contactPhone        String?
+  sealUrl             String?
+  defaultValidityDays Int      @default(30)
+  watermarkText       String?
+  updatedAt           DateTime @updatedAt
+}
+
+/// 견적번호 발번 카운터 (연도별 분리)
+model EstimateCounter {
+  year Int @id
+  last Int @default(0)
+}
+
+/// 견적서 (PnL 시트로부터 생성된 스냅샷, 이후 독립 편집)
+model Estimate {
+  id             String    @id @default(cuid())
+  number         String    @unique
+  title          String
+  issueDate      DateTime  @default(now())
+  validUntil     DateTime?
+  supplier       Json
+  recipient      Json
+  lineItems      Json
+  notes          String?
+  sourceSheetId  String?
+  sourceSheet    PnLSheet? @relation(fields: [sourceSheetId], references: [id], onDelete: SetNull)
+  sourceScenario String?
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([sourceSheetId])
 }
 
 model Artist {

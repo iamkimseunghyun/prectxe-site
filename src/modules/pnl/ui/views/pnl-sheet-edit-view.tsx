@@ -1,6 +1,6 @@
 'use client';
 
-import { Download } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { PnLRow } from '@/lib/schemas/pnl';
+import { CreateEstimateDialog } from '@/modules/estimates/ui/components/create-estimate-dialog';
 import {
   deletePnLSheet,
   saveSheetAsTemplate,
@@ -57,6 +58,7 @@ export function PnLSheetEditView({ sheet }: Props) {
 
   const [templateName, setTemplateName] = useState(`${sheet.name} (템플릿)`);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [estimateDialogOpen, setEstimateDialogOpen] = useState(false);
 
   function handleSave() {
     setError(null);
@@ -106,6 +108,14 @@ export function PnLSheetEditView({ sheet }: Props) {
           <h1 className="mt-1 text-2xl font-semibold">PnL 시트 편집</h1>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setEstimateDialogOpen(true)}
+          >
+            <FileText className="mr-1 h-4 w-4" />
+            견적서 만들기
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button type="button" variant="outline">
@@ -240,6 +250,15 @@ export function PnLSheetEditView({ sheet }: Props) {
       <SheetGrid rows={rows} scenarios={scenarios} onChange={setRows} />
 
       <TotalsSummary rows={rows} scenarios={scenarios} />
+
+      <CreateEstimateDialog
+        open={estimateDialogOpen}
+        onOpenChange={setEstimateDialogOpen}
+        sheetId={sheet.id}
+        sheetName={sheet.name}
+        scenarios={scenarios}
+        rows={rows}
+      />
     </div>
   );
 }

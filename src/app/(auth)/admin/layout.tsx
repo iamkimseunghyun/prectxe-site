@@ -31,9 +31,9 @@ export default async function AdminLayout({
   if (user?.role !== 'ADMIN') redirect('/');
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 print:max-w-full print:p-0">
       {/* Header */}
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Admin
@@ -53,7 +53,7 @@ export default async function AdminLayout({
       </header>
 
       {/* Tab Navigation */}
-      <div className="mb-6">
+      <div className="mb-6 print:hidden">
         <AdminNav />
       </div>
 
