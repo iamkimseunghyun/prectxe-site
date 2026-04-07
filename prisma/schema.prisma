@@ -89,6 +89,41 @@ model User {
   venues         Venue[]
   smsCampaigns   SMSCampaign[]
   emailCampaigns EmailCampaign[]
+  pnlTemplates   PnLTemplate[]
+  pnlSheets      PnLSheet[]
+}
+
+model PnLTemplate {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  rows        Json
+  scenarios   Json
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  sheets      PnLSheet[]
+
+  @@index([userId])
+}
+
+model PnLSheet {
+  id          String       @id @default(cuid())
+  name        String
+  projectName String?
+  notes       String?
+  scenarios   Json
+  rows        Json
+  templateId  String?
+  template    PnLTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([templateId])
 }
 
 model Artist {

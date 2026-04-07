@@ -2,6 +2,7 @@
 
 import {
   Archive,
+  Calculator,
   ClipboardList,
   FileText,
   Image,
@@ -54,6 +55,12 @@ const ADMIN_TABS: NavItem[] = [
     label: 'Drops',
     icon: Ticket,
     href: '/admin/drops',
+  },
+  {
+    value: 'pnl',
+    label: 'PnL',
+    icon: Calculator,
+    href: '/admin/pnl',
   },
   { value: 'sms', label: 'SMS', icon: MessageSquare, href: '/admin/sms' },
   { value: 'email', label: 'Email', icon: Mail, href: '/admin/email' },
