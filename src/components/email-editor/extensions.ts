@@ -97,10 +97,10 @@ export const getEmailEditorExtensions = () => [
  * - Optimize for Gmail, Outlook, Apple Mail
  */
 export function convertToEmailHTML(html: string): string {
-  // YouTube iframe을 썸네일 + 링크로 변환
+  // YouTube iframe을 썸네일 + 링크로 변환 (쿼리 파라미터 제거)
   let emailHtml = html.replace(
-    /<iframe[^>]+src="https:\/\/www\.youtube\.com\/embed\/([^"]+)"[^>]*><\/iframe>/g,
-    (match, videoId) => {
+    /<iframe[^>]+src="https:\/\/www\.youtube\.com\/embed\/([^"?]+)[^"]*"[^>]*><\/iframe>/g,
+    (_match, videoId) => {
       const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
       const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
       return `
