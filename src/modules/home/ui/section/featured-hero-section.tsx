@@ -167,7 +167,7 @@ export async function FeaturedHeroSection() {
           </div>
         )}
 
-        <div className="flex items-center justify-center gap-4 py-6 text-xs sm:gap-6 sm:py-8 sm:text-sm md:text-base">
+        <div className="flex items-center justify-center gap-4 pt-6 text-xs sm:gap-6 sm:pt-8 sm:text-sm md:text-base">
           <Link
             href="/programs"
             className="text-neutral-500 transition-colors hover:text-neutral-900"
@@ -187,11 +187,11 @@ export async function FeaturedHeroSection() {
             About
           </Link>
         </div>
-      </div>
 
-      <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-neutral-400">
-        © 2026 PRECTXE
-      </p>
+        <p className="pb-6 pt-3 text-center text-xs text-neutral-400 sm:pb-8">
+          © {new Date().getFullYear()} PRECTXE
+        </p>
+      </div>
     </section>
   );
 }
