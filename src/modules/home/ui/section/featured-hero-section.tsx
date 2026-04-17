@@ -149,7 +149,7 @@ export async function FeaturedHeroSection() {
               />
               <div className="absolute inset-0 flex items-center justify-center p-6 text-white md:p-12">
                 <div className="max-w-4xl space-y-2 rounded-xl bg-black/40 px-8 py-6 text-center backdrop-blur-md sm:px-12 sm:py-8">
-                  <h1 className="font-serif text-xl font-light tracking-wide sm:text-2xl md:text-3xl">
+                  <h1 className="text-xl font-light tracking-wide sm:text-2xl md:text-3xl">
                     {title}
                   </h1>
                   {artists && (
