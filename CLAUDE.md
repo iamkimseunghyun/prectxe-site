@@ -35,7 +35,8 @@ src/
 │   ├── (home)/             # Homepage
 │   ├── (content)/          # Public: programs, journal, drops
 │   ├── (page)/             # Static pages + entity views (artists, venues, artworks, forms)
-│   ├── (auth)/             # Auth + admin routes (/admin/*)
+│   ├── (auth)/             # Auth pages (/auth/signin, /auth/signup)
+│   ├── admin/              # Admin dashboard (top-level, middleware-protected)
 │   └── api/                # API routes
 ├── modules/<domain>/       # Feature modules
 │   ├── server/actions.ts   # Server actions ('use server')
@@ -50,7 +51,7 @@ src/
 
 ### Modules
 
-`programs`, `journal`, `artists`, `venues`, `artworks`, `auth`, `forms`, `sms`, `email`, `drops`, `tickets`, `home`, `providers` — each with `server/actions.ts` + `ui/`
+`programs`, `journal`, `artists`, `venues`, `artworks`, `auth`, `forms`, `sms`, `email`, `drops`, `tickets`, `home`, `estimates`, `pnl` — each with `server/actions.ts` + `ui/`. Query provider: `src/modules/providers.tsx`.
 
 ## Key Patterns
 
