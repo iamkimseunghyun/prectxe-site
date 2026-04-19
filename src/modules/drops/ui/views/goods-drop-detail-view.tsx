@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
 import { Button } from '@/components/ui/button';
+import { trackViewItem } from '@/lib/analytics/gtag';
 import { cn, getImageUrl } from '@/lib/utils';
 import { GoodsPurchaseSection } from '@/modules/drops/ui/components/goods-purchase-section';
 
@@ -53,6 +54,18 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
+
+  useEffect(() => {
+    const minPrice = drop.variants.length
+      ? Math.min(...drop.variants.map((v) => v.price))
+      : 0;
+    trackViewItem({
+      id: drop.id,
+      name: drop.title,
+      category: 'goods',
+      price: minPrice,
+    });
+  }, [drop.id, drop.title, drop.variants]);
 
   // 비디오가 있고 로드 성공한 경우만 첫 번째 미디어로
   const hasVideo = !!drop.videoUrl && !videoFailed;

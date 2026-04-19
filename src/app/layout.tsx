@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
+import { GoogleAnalytics } from '@next/third-parties/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata } from 'next';
@@ -8,6 +9,8 @@ import type React from 'react';
 import Header from '@/components/layout/header';
 import { Toaster } from '@/components/ui/toaster';
 import Providers from '@/modules/providers';
+
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 // 메타데이터 설정
 export const metadata: Metadata = {
@@ -114,6 +117,7 @@ export default function RootLayout({
             <Toaster />
           </main>
         </Providers>
+        {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
       </body>
     </html>
   );

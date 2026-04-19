@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
+import { trackViewItem } from '@/lib/analytics/gtag';
 import { getImageUrl } from '@/lib/utils';
 import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
 import { TicketPurchaseSection } from '@/modules/tickets/ui/components/ticket-purchase-section';
@@ -51,6 +52,18 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
   const heroImage = drop.heroUrl || drop.images[0]?.imageUrl || null;
   const galleryImages = drop.heroUrl ? drop.images : drop.images.slice(1);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const minPrice = drop.ticketTiers.length
+      ? Math.min(...drop.ticketTiers.map((t) => t.price))
+      : 0;
+    trackViewItem({
+      id: drop.id,
+      name: drop.title,
+      category: 'ticket',
+      price: minPrice,
+    });
+  }, [drop.id, drop.title, drop.ticketTiers]);
 
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
   const prevImage = useCallback(

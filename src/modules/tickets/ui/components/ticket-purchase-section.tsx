@@ -13,6 +13,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import {
+  type GAItem,
+  trackBeginCheckout,
+  trackPurchase,
+} from '@/lib/analytics/gtag';
 import { createOrder, verifyPayment } from '@/modules/tickets/server/actions';
 
 type AvailableTier = {
@@ -80,10 +85,21 @@ export function TicketPurchaseSection({
     setCheckoutOpen(true);
   }
 
+  const gaItems: GAItem[] = selectedItems.map((item) => ({
+    item_id: item.tier.id,
+    item_name: `${title} - ${item.tier.name}`,
+    item_category: 'ticket',
+    item_variant: item.tier.name,
+    price: item.tier.price,
+    quantity: item.quantity,
+  }));
+
   async function handlePayment(e: React.FormEvent) {
     e.preventDefault();
     if (isProcessing) return;
     setIsProcessing(true);
+
+    trackBeginCheckout(totalAmount, gaItems);
 
     try {
       const orderResult = await createOrder(dropId, {
@@ -107,6 +123,11 @@ export function TicketPurchaseSection({
       if (totalAmount === 0) {
         const verifyResult = await verifyPayment(order.id, `free-${order.id}`);
         if (verifyResult.success) {
+          trackPurchase({
+            transactionId: `free-${order.id}`,
+            value: 0,
+            items: gaItems,
+          });
           setOrderComplete(verifyResult.data?.orderNo ?? order.orderNo);
           setCheckoutOpen(false);
         } else {
@@ -144,6 +165,11 @@ export function TicketPurchaseSection({
 
       const verifyResult = await verifyPayment(order.id, payment.paymentId);
       if (verifyResult.success) {
+        trackPurchase({
+          transactionId: payment.paymentId,
+          value: totalAmount,
+          items: gaItems,
+        });
         setOrderComplete(verifyResult.data?.orderNo ?? order.orderNo);
         setCheckoutOpen(false);
         setQuantities({});
