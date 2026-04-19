@@ -54,6 +54,7 @@ export function TicketPurchaseSection({
   const [buyerName, setBuyerName] = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState<string | null>(null);
 
@@ -335,7 +336,13 @@ export function TicketPurchaseSection({
       )}
 
       {/* Checkout Dialog */}
-      <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+      <Dialog
+        open={checkoutOpen}
+        onOpenChange={(open) => {
+          setCheckoutOpen(open);
+          if (!open) setAgreedToTerms(false);
+        }}
+      >
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg">구매자 정보</DialogTitle>
@@ -411,10 +418,50 @@ export function TicketPurchaseSection({
               </div>
             </div>
 
+            {/* 구매조건 동의 */}
+            <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-xs leading-relaxed text-neutral-600">
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-300 accent-neutral-900"
+                required
+              />
+              <span>
+                <a
+                  href="/terms"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-neutral-900 underline underline-offset-2"
+                >
+                  이용약관
+                </a>
+                ,{' '}
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-neutral-900 underline underline-offset-2"
+                >
+                  개인정보처리방침
+                </a>
+                ,{' '}
+                <a
+                  href="/refund-policy"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-neutral-900 underline underline-offset-2"
+                >
+                  환불·취소 정책
+                </a>
+                에 동의하며, 위 주문 내용을 확인하고 결제를 진행합니다.
+              </span>
+            </label>
+
             <Button
               type="submit"
               className="h-12 w-full rounded-xl text-base font-semibold"
-              disabled={isProcessing}
+              disabled={isProcessing || !agreedToTerms}
             >
               {isProcessing
                 ? '처리 중...'
