@@ -1,9 +1,7 @@
 'use client';
 
 import { Copy, Eye, Trash2 } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { CopyUrlButton } from '@/components/shared/copy-url-button';
 import {
@@ -24,25 +22,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { getImageUrl } from '@/lib/utils';
-import { copyForm, deleteForm } from '@/modules/forms/server/actions';
+import { useFormActions } from '@/hooks/use-form-actions';
+import { FormPreviewDialog } from '@/modules/forms/ui/components/form-preview-dialog';
 
 interface FormCardProps {
   form: {
@@ -72,75 +53,21 @@ interface FormCardProps {
 }
 
 export function FormCard({ form, userId, isAdmin }: FormCardProps) {
-  const router = useRouter();
-  const { toast } = useToast();
   const [showPreview, setShowPreview] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isCopying, setIsCopying] = useState(false);
+  const { handleCopy, handleDelete, isCopying, isDeleting } = useFormActions(
+    form.id,
+    userId,
+    isAdmin
+  );
   const formUrl =
     typeof window !== 'undefined'
       ? `${window.location.origin}/forms/${form.slug}`
       : '';
 
-  const handleCopy = async () => {
-    setIsCopying(true);
-
-    try {
-      const result = await copyForm(form.id, userId, isAdmin);
-
-      if (!result.success) {
-        throw new Error(result.error || '복사 실패');
-      }
-
-      toast({
-        title: '복사 완료',
-        description:
-          '폼이 성공적으로 복사되었습니다. 편집 페이지로 이동합니다.',
-      });
-
-      // Redirect to edit page of copied form
-      router.push(`/admin/forms/${result.data?.id}`);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : '복사 중 오류가 발생했습니다.';
-      toast({
-        title: '복사 실패',
-        description: message,
-        variant: 'destructive',
-      });
-      setIsCopying(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    setIsDeleting(true);
+  const onDeleteConfirmed = async () => {
     setShowDeleteConfirm(false);
-
-    try {
-      const result = await deleteForm(form.id, userId, isAdmin);
-
-      if (!result.success) {
-        throw new Error(result.error || '삭제 실패');
-      }
-
-      toast({
-        title: '삭제 완료',
-        description: '폼이 성공적으로 삭제되었습니다.',
-      });
-
-      router.refresh();
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다.';
-      toast({
-        title: '삭제 실패',
-        description: message,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsDeleting(false);
-    }
+    await handleDelete();
   };
 
   return (
@@ -218,129 +145,12 @@ export function FormCard({ form, userId, isAdmin }: FormCardProps) {
         </CardContent>
       </Card>
 
-      {/* Preview Modal */}
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>폼 미리보기</DialogTitle>
-          </DialogHeader>
+      <FormPreviewDialog
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        form={form}
+      />
 
-          <div className="space-y-6">
-            {/* Cover Image */}
-            {form.coverImage && (
-              <div className="relative h-64 w-full overflow-hidden rounded-lg">
-                <Image
-                  src={getImageUrl(form.coverImage, 'public')}
-                  alt={form.title}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            )}
-
-            {/* Title and Description */}
-            <div>
-              <h2 className="mb-2 text-2xl font-bold">{form.title}</h2>
-              {form.description && (
-                <p className="text-neutral-600">{form.description}</p>
-              )}
-            </div>
-
-            {/* Body */}
-            {form.body && (
-              <div className="rounded-lg bg-neutral-50 p-6">
-                <p className="whitespace-pre-wrap text-sm text-neutral-700">
-                  {form.body}
-                </p>
-              </div>
-            )}
-
-            {/* Form Fields */}
-            <div className="space-y-4">
-              {form.fields.map((field) => (
-                <div key={field.id} className="space-y-2">
-                  <Label>
-                    {field.label}
-                    {field.required && (
-                      <span className="ml-1 text-red-500">*</span>
-                    )}
-                  </Label>
-                  {field.helpText && (
-                    <p className="text-sm text-neutral-500">{field.helpText}</p>
-                  )}
-
-                  {/* Field Type Rendering */}
-                  {field.type === 'textarea' ? (
-                    <Textarea
-                      placeholder={field.placeholder || ''}
-                      disabled
-                      className="resize-none"
-                    />
-                  ) : field.type === 'select' ? (
-                    <Select disabled>
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={field.placeholder || '선택하세요'}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {field.options.map((option, idx) => (
-                          <SelectItem key={idx} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : field.type === 'multiselect' ? (
-                    <div className="space-y-2">
-                      {field.options.map((option, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <input type="checkbox" disabled className="h-4 w-4" />
-                          <span className="text-sm">{option}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : field.type === 'radio' ? (
-                    <div className="space-y-2">
-                      {field.options.map((option, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <input type="radio" disabled className="h-4 w-4" />
-                          <span className="text-sm">{option}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : field.type === 'checkbox' ? (
-                    <div className="space-y-2">
-                      {field.options.map((option, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <input type="checkbox" disabled className="h-4 w-4" />
-                          <span className="text-sm">{option}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : field.type === 'file' ? (
-                    <Input type="file" disabled />
-                  ) : (
-                    <Input
-                      type={field.type}
-                      placeholder={field.placeholder || ''}
-                      disabled
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {form.fields.length === 0 && (
-              <p className="text-center text-sm text-neutral-400">
-                아직 필드가 추가되지 않았습니다
-              </p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -352,7 +162,9 @@ export function FormCard({ form, userId, isAdmin }: FormCardProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>삭제</AlertDialogAction>
+            <AlertDialogAction onClick={onDeleteConfirmed}>
+              삭제
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

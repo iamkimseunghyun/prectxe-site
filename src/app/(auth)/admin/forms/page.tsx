@@ -5,23 +5,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import getSession from '@/lib/auth/session';
 import { listForms } from '@/modules/forms/server/actions';
 import { FormCard } from '@/modules/forms/ui/components/form-card';
+import { FormRow } from '@/modules/forms/ui/components/form-row';
 import { FormStatusFilter } from '@/modules/forms/ui/components/form-status-filter';
+import { FormViewToggle } from '@/modules/forms/ui/components/form-view-toggle';
 
 interface PageProps {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; view?: string }>;
 }
 
 export default async function FormsAdminPage({ searchParams }: PageProps) {
   const session = await getSession();
-  console.log('FormsAdminPage - session:', {
-    id: session.id,
-    name: session.name,
-    isAdmin: session.isAdmin,
-  });
   if (!session.id || !session.isAdmin) redirect('/auth/signin');
 
   const params = await searchParams;
   const status = params.status as 'draft' | 'published' | 'closed' | undefined;
+  const view = params.view === 'list' ? 'list' : 'card';
 
   const result = await listForms(session.id, session.isAdmin, {
     status,
@@ -43,8 +41,9 @@ export default async function FormsAdminPage({ searchParams }: PageProps) {
         </Link>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <FormStatusFilter />
+        <FormViewToggle />
       </div>
 
       {forms.length === 0 ? (
@@ -71,6 +70,17 @@ export default async function FormsAdminPage({ searchParams }: PageProps) {
             )}
           </CardContent>
         </Card>
+      ) : view === 'list' ? (
+        <div className="flex flex-col gap-2">
+          {forms.map((form) => (
+            <FormRow
+              key={form.id}
+              form={form}
+              userId={session.id!}
+              isAdmin={session.isAdmin!}
+            />
+          ))}
+        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {forms.map((form) => (
