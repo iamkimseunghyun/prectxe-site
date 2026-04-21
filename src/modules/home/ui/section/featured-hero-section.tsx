@@ -54,29 +54,8 @@ export async function FeaturedHeroSection() {
     featured = { type: 'article', data: featuredArticle };
   }
 
-  // 2. Fallback to default logic if no featured content
+  // 2. Fallback 순서: upcoming 우선(티켓 유도) → completed (아카이브)
   if (!featured) {
-    const completed = await prisma.program.findFirst({
-      where: { status: 'completed' },
-      orderBy: { startAt: 'desc' },
-      select: {
-        slug: true,
-        title: true,
-        heroUrl: true,
-        updatedAt: true,
-        credits: {
-          select: {
-            artist: {
-              select: {
-                name: true,
-                nameKr: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
     const upcoming = await prisma.program.findFirst({
       where: { status: 'upcoming' },
       orderBy: { startAt: 'asc' },
@@ -98,7 +77,28 @@ export async function FeaturedHeroSection() {
       },
     });
 
-    const fallbackProgram = completed ?? upcoming;
+    const completed = await prisma.program.findFirst({
+      where: { status: 'completed' },
+      orderBy: { startAt: 'desc' },
+      select: {
+        slug: true,
+        title: true,
+        heroUrl: true,
+        updatedAt: true,
+        credits: {
+          select: {
+            artist: {
+              select: {
+                name: true,
+                nameKr: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const fallbackProgram = upcoming ?? completed;
     if (fallbackProgram) {
       featured = { type: 'program', data: fallbackProgram };
     }
@@ -147,13 +147,16 @@ export async function FeaturedHeroSection() {
                 sizes="100vw"
                 className="object-cover"
               />
-              <div className="absolute inset-0 flex items-center justify-center p-6 text-white md:p-12">
-                <div className="max-w-4xl space-y-2 rounded-xl bg-black/40 px-8 py-6 text-center backdrop-blur-md sm:px-12 sm:py-8">
-                  <h1 className="text-xl font-light tracking-wide sm:text-2xl md:text-3xl">
+              {/* 어두운 그라디언트 오버레이 — 대비 개선 */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+              <div className="absolute inset-x-0 bottom-0 p-6 text-white md:p-12 lg:p-20">
+                <div className="mx-auto max-w-6xl space-y-4">
+                  <h1 className="max-w-4xl text-3xl font-light leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
                     {title}
                   </h1>
                   {artists && (
-                    <p className="font-sans text-xs font-light tracking-wider text-white/80 sm:text-sm">
+                    <p className="text-sm font-light uppercase tracking-[0.25em] text-white/80 sm:text-base">
                       {artists}
                     </p>
                   )}
