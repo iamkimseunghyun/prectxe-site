@@ -2,6 +2,7 @@ import {
   ArrowRight,
   Headphones,
   Lightbulb,
+  Mail,
   MonitorPlay,
   Sparkles,
   Users,
@@ -230,6 +231,13 @@ export default function PartnershipPage() {
               <YoutubeIcon className="size-5" />
               <span className="sr-only">YouTube</span>
             </Link>
+            <a
+              href="mailto:info@laaf.kr"
+              className="text-neutral-500 transition-colors hover:text-white"
+            >
+              <Mail className="size-5" />
+              <span className="sr-only">Email</span>
+            </a>
           </div>
         </div>
       </section>
