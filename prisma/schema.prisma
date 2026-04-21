@@ -450,7 +450,6 @@ model Drop {
   description String?
   type        DropType
   status      DropStatus   @default(draft)
-  heroUrl      String?
   eventDate    DateTime?
   eventEndDate DateTime?
   venue        String?

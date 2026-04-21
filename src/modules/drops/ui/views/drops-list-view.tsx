@@ -64,7 +64,7 @@ export async function DropsListView({ type, page }: DropsListViewProps) {
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((drop) => {
-            const heroImage = drop.heroUrl ?? drop.media[0]?.url;
+            const heroImage = drop.media[0]?.url;
             const minPrice =
               drop.type === 'ticket'
                 ? Math.min(

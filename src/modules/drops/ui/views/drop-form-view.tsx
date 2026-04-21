@@ -1,12 +1,13 @@
 'use client';
 
-import { ArrowLeft, Loader2, Video } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { type ChangeEvent, useState } from 'react';
-import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
-import MultiImageBox from '@/components/image/multi-image-box';
-import SingleImageBox from '@/components/image/single-image-box';
+import { useState } from 'react';
+import {
+  type MediaItem,
+  SortableMediaList,
+} from '@/components/media/sortable-media-list';
 import { RichEditor } from '@/components/rich-editor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,18 +21,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
-import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { useToast } from '@/hooks/use-toast';
-import { getCloudflareVideoUploadUrl } from '@/lib/cdn/cloudflare';
-import { uploadImage } from '@/lib/utils';
+import {
+  getCloudflareImageUrl,
+  getCloudflareVideoUploadUrl,
+} from '@/lib/cdn/cloudflare';
+import validateImageFile from '@/lib/utils';
 import {
   createDrop,
   deleteDrop,
   updateDrop,
 } from '@/modules/drops/server/actions';
 
-type DropMedia = {
+type DropMediaInit = {
   id: string;
   type: 'image' | 'video';
   url: string;
@@ -47,18 +49,44 @@ type DropData = {
   status: string;
   summary: string | null;
   description: string | null;
-  heroUrl: string | null;
   eventDate: Date | null;
   eventEndDate: Date | null;
   venue: string | null;
   venueAddress: string | null;
   notice: string | null;
   publishedAt: Date | null;
-  media?: DropMedia[];
+  media?: DropMediaInit[];
 };
 
 interface DropFormViewProps {
   drop?: DropData;
+}
+
+/**
+ * XHR로 파일 업로드 + 진행률 콜백.
+ * Cloudflare direct-upload(image/video) 모두 동일한 multipart POST 형식.
+ */
+function uploadFileWithProgress(
+  url: string,
+  file: File,
+  onProgress: (percent: number) => void
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) onProgress((e.loaded / e.total) * 100);
+    });
+    xhr.addEventListener('load', () =>
+      resolve(xhr.status >= 200 && xhr.status < 300)
+    );
+    xhr.addEventListener('error', () => resolve(false));
+    xhr.addEventListener('abort', () => resolve(false));
+
+    const fd = new FormData();
+    fd.append('file', file);
+    xhr.open('POST', url);
+    xhr.send(fd);
+  });
 }
 
 export function DropFormView({ drop }: DropFormViewProps) {
@@ -69,209 +97,166 @@ export function DropFormView({ drop }: DropFormViewProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [description, setDescription] = useState(drop?.description ?? '');
 
-  // 히어로 이미지 (single)
-  const [heroUrl, setHeroUrl] = useState(drop?.heroUrl ?? '');
-  const {
-    preview,
-    imageFile,
-    error: heroError,
-    uploadURL: heroUploadURL,
-    handleImageChange: handleHeroChange,
-    displayUrl,
-    finalizeUpload: finalizeHero,
-  } = useSingleImageUpload({
-    initialImage: drop?.heroUrl ?? '',
-    onImageUrlChange: (url) => setHeroUrl(url),
-  });
-
-  // 기존 미디어를 이미지/영상으로 분리 (초기값)
-  const existingImages = drop?.media
-    ?.filter((m) => m.type === 'image')
-    .map((m) => ({ imageUrl: m.url, alt: m.alt, order: m.order }));
-  const existingVideos =
-    drop?.media
-      ?.filter((m) => m.type === 'video')
-      .map((m) => ({
-        videoUrl: m.url,
-        preview: m.url,
-        file: null as File | null,
-        uploadURL: '',
-        error: '',
-      })) ?? [];
-
-  // 갤러리 이미지 (multi)
-  const [galleryImages, setGalleryImages] = useState<
-    { imageUrl: string; alt: string; order: number }[]
-  >(existingImages ?? []);
-  const {
-    multiImagePreview,
-    handleMultiImageChange,
-    removeMultiImage,
-    error: galleryError,
-    uploadPendingWithProgress,
-    retryAtWithProgress,
-  } = useMultiImageUpload({
-    initialImages: existingImages,
-    onGalleryChange: (imgs) =>
-      setGalleryImages(
-        imgs.map((i) => ({ imageUrl: i.imageUrl, alt: i.alt, order: i.order }))
-      ),
-  });
-
   // Select 상태 (controlled — Radix name prop이 React 19 form에서 무한루프 유발)
   const [type, setType] = useState(drop?.type ?? 'ticket');
   const [status, setStatus] = useState(drop?.status ?? 'draft');
 
-  // 다중 비디오
-  type VideoItem = {
-    videoUrl: string;
-    preview: string;
-    file: File | null;
-    uploadURL: string;
-    error: string;
-  };
-  const [videos, setVideos] = useState<VideoItem[]>(existingVideos);
-  const [videosUploading, setVideosUploading] = useState(false);
+  // 통합 미디어 상태 — 이미지/영상 혼합, 드래그 정렬 가능
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>(
+    (drop?.media ?? []).map((m) => ({
+      id: m.id,
+      type: m.type,
+      url: m.url,
+      preview: m.url,
+      file: null,
+      alt: m.alt,
+      status: 'done',
+    }))
+  );
 
-  const handleVideoChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = ''; // 다음 추가를 위해 리셋
-    if (!file) return;
+  function updateItem(id: string, patch: Partial<MediaItem>) {
+    setMediaItems((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...patch } : m))
+    );
+  }
 
-    if (file.size > 200 * 1024 * 1024) {
-      toast({
-        title: '비디오 파일은 200MB 이하만 가능합니다.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const preview = URL.createObjectURL(file);
-    const placeholder: VideoItem = {
-      videoUrl: '',
-      preview,
-      file,
-      uploadURL: '',
-      error: '',
-    };
-    setVideos((prev) => [...prev, placeholder]);
-
-    try {
-      const result = await getCloudflareVideoUploadUrl();
-      if (!result.success || !result.uploadURL || !result.videoUrl) {
-        setVideos((prev) =>
-          prev.map((v) =>
-            v.preview === preview
-              ? { ...v, error: '업로드 URL을 가져올 수 없습니다.' }
-              : v
-          )
-        );
-        return;
+  async function addImages(files: FileList) {
+    for (const file of Array.from(files)) {
+      try {
+        validateImageFile(file);
+      } catch (err) {
+        toast({
+          title: err instanceof Error ? err.message : '이미지 검증 실패',
+          variant: 'destructive',
+        });
+        continue;
       }
-      setVideos((prev) =>
-        prev.map((v) =>
-          v.preview === preview
-            ? {
-                ...v,
-                uploadURL: result.uploadURL as string,
-                videoUrl: result.videoUrl as string,
-              }
-            : v
-        )
-      );
-    } catch {
-      setVideos((prev) =>
-        prev.map((v) =>
-          v.preview === preview
-            ? { ...v, error: '업로드 준비에 실패했습니다.' }
-            : v
-        )
-      );
-    }
-  };
 
-  const removeVideo = (idx: number) => {
-    setVideos((prev) => prev.filter((_, i) => i !== idx));
-  };
+      const preview = URL.createObjectURL(file);
+      const tempId = preview;
+      setMediaItems((prev) => [
+        ...prev,
+        {
+          id: tempId,
+          type: 'image',
+          url: '',
+          preview,
+          file,
+          alt: '',
+          status: 'pending',
+        },
+      ]);
+
+      try {
+        const { uploadURL, imageUrl } = await getCloudflareImageUrl();
+        updateItem(tempId, { uploadURL, url: imageUrl });
+      } catch {
+        updateItem(tempId, {
+          status: 'error',
+          error: '업로드 URL 발급 실패',
+        });
+      }
+    }
+  }
+
+  async function addVideos(files: FileList) {
+    for (const file of Array.from(files)) {
+      if (file.size > 200 * 1024 * 1024) {
+        toast({
+          title: `'${file.name}': 영상은 200MB 이하만 가능합니다.`,
+          variant: 'destructive',
+        });
+        continue;
+      }
+
+      const preview = URL.createObjectURL(file);
+      const tempId = preview;
+      setMediaItems((prev) => [
+        ...prev,
+        {
+          id: tempId,
+          type: 'video',
+          url: '',
+          preview,
+          file,
+          alt: '',
+          status: 'pending',
+        },
+      ]);
+
+      try {
+        const result = await getCloudflareVideoUploadUrl();
+        if (!result.success || !result.uploadURL || !result.videoUrl) {
+          updateItem(tempId, {
+            status: 'error',
+            error: '업로드 URL 발급 실패',
+          });
+          continue;
+        }
+        updateItem(tempId, {
+          uploadURL: result.uploadURL,
+          url: result.videoUrl,
+        });
+      } catch {
+        updateItem(tempId, {
+          status: 'error',
+          error: '업로드 URL 발급 실패',
+        });
+      }
+    }
+  }
+
+  function removeMedia(id: string) {
+    setMediaItems((prev) => prev.filter((m) => m.id !== id));
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
 
-    const fd = new FormData(e.currentTarget);
-
     try {
-      // 1) 히어로 이미지 업로드
-      if (imageFile && heroUploadURL) {
-        await uploadImage(imageFile, heroUploadURL);
-        finalizeHero();
-      }
-
-      // 2) 갤러리 이미지 업로드
-      const { failCount, images: uploadedImages } =
-        await uploadPendingWithProgress();
-      if (failCount > 0) {
-        toast({
-          title: `${failCount}장의 이미지 업로드에 실패했습니다. 다시 시도해 주세요.`,
-          variant: 'destructive',
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      // 3) 비디오 업로드 (pending만)
-      const pendingVideos = videos.filter((v) => v.file && v.uploadURL);
-      if (pendingVideos.length > 0) {
-        setVideosUploading(true);
-        try {
-          for (const v of pendingVideos) {
-            const vfd = new FormData();
-            vfd.append('file', v.file!);
-            await fetch(v.uploadURL, { method: 'POST', body: vfd });
-          }
-        } catch {
+      // pending 미디어 업로드 (진행률 추적)
+      const pending = mediaItems.filter(
+        (m) => m.file && m.uploadURL && m.status !== 'done'
+      );
+      for (const item of pending) {
+        updateItem(item.id, { status: 'uploading', progress: 0 });
+        const ok = await uploadFileWithProgress(
+          item.uploadURL!,
+          item.file!,
+          (p) => updateItem(item.id, { progress: p })
+        );
+        if (ok) {
+          updateItem(item.id, { status: 'done', progress: 100 });
+        } else {
+          updateItem(item.id, { status: 'error', error: '업로드 실패' });
           toast({
-            title: '비디오 업로드에 실패했습니다.',
+            title: `미디어 업로드에 실패했습니다.`,
             variant: 'destructive',
           });
-          setVideosUploading(false);
           setIsSubmitting(false);
           return;
         }
-        setVideosUploading(false);
       }
 
-      // 4) media 배열 구성 (이미지 + 영상 통합)
-      const validVideos = videos.filter((v) => v.videoUrl);
-      const media: Array<{
-        type: 'image' | 'video';
-        url: string;
-        alt: string;
-        order: number;
-      }> = [
-        ...uploadedImages.map((img, idx) => ({
-          type: 'image' as const,
-          url: img.imageUrl,
-          alt: img.alt,
+      // media 배열 구성 (순서 = mediaItems 배열 순서)
+      const media = mediaItems
+        .filter((m) => m.url)
+        .map((m, idx) => ({
+          type: m.type,
+          url: m.url,
+          alt: m.alt,
           order: idx,
-        })),
-        ...validVideos.map((v, idx) => ({
-          type: 'video' as const,
-          url: v.videoUrl,
-          alt: '',
-          order: uploadedImages.length + idx,
-        })),
-      ];
+        }));
 
-      // 5) 서버 액션 호출
+      const fd = new FormData(e.currentTarget);
       const payload = {
         title: fd.get('title') as string,
         slug: fd.get('slug') as string,
         type: fd.get('type') as 'ticket' | 'goods',
         summary: (fd.get('summary') as string) || undefined,
         description: description || undefined,
-        heroUrl: heroUrl || undefined,
         eventDate: (fd.get('eventDate') as string) || undefined,
         eventEndDate: (fd.get('eventEndDate') as string) || undefined,
         venue: (fd.get('venue') as string) || undefined,
@@ -345,7 +330,6 @@ export function DropFormView({ drop }: DropFormViewProps) {
 
       <form onSubmit={handleSubmit}>
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Main Content */}
           <div className="space-y-6 lg:col-span-2">
             <Card>
               <CardHeader>
@@ -483,117 +467,20 @@ export function DropFormView({ drop }: DropFormViewProps) {
               </CardContent>
             </Card>
 
-            {/* 미디어 */}
+            {/* 미디어 (통합·DnD 정렬) */}
             <Card>
               <CardHeader>
                 <CardTitle>미디어</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* 히어로 이미지 */}
-                <div>
-                  <Label>히어로 이미지</Label>
-                  <SingleImageBox
-                    register={{
-                      name: 'heroUrl',
-                      onBlur: () => {},
-                      ref: () => {},
-                    }}
-                    preview={preview}
-                    displayUrl={displayUrl}
-                    error={heroError}
-                    handleImageChange={handleHeroChange}
-                    inputId="heroImage"
-                    aspectRatio="video"
-                    placeholder="히어로 이미지를 추가해주세요."
-                  />
-                </div>
-
-                {/* 영상 (다중) */}
-                <div>
-                  <Label>영상</Label>
-                  <div className="mt-1 grid gap-3 sm:grid-cols-2">
-                    {videos.map((v, idx) => (
-                      <div
-                        key={v.preview}
-                        className="relative overflow-hidden rounded-md border bg-black"
-                      >
-                        {v.preview.startsWith('blob:') ? (
-                          <video
-                            src={v.preview}
-                            controls
-                            className="aspect-video w-full"
-                          />
-                        ) : (
-                          <CloudflareStreamVideo
-                            videoUrl={v.preview}
-                            controls
-                            className="aspect-video w-full"
-                          />
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeVideo(idx)}
-                          className="absolute right-2 top-2 rounded-full bg-red-500 px-2 py-1 text-xs text-white hover:bg-red-600"
-                        >
-                          삭제
-                        </button>
-                        {v.error && (
-                          <p className="absolute inset-x-0 bottom-0 bg-red-500/80 px-2 py-1 text-xs text-white">
-                            {v.error}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-
-                    {/* 추가 버튼 */}
-                    <label
-                      htmlFor="videoInput"
-                      className="flex aspect-video cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-neutral-300 text-neutral-300 transition-colors hover:border-neutral-400 hover:bg-neutral-50"
-                    >
-                      <Video className="h-8 w-8" />
-                      <span className="mt-2 text-sm text-neutral-400">
-                        {videos.length > 0
-                          ? '영상 추가'
-                          : '영상을 추가해주세요.'}
-                      </span>
-                    </label>
-                  </div>
-                  <input
-                    type="file"
-                    id="videoInput"
-                    accept="video/*"
-                    onChange={handleVideoChange}
-                    className="hidden"
-                  />
-                  {videosUploading && (
-                    <div className="mt-2 flex items-center gap-2 text-sm text-neutral-500">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      영상 업로드 중...
-                    </div>
-                  )}
-                  <p className="mt-1 text-xs text-neutral-400">
-                    영상 하나당 최대 200MB, 여러 개 업로드 가능합니다.
-                  </p>
-                </div>
-
-                {/* 갤러리 이미지 */}
-                <div>
-                  <Label>갤러리 이미지</Label>
-                  <MultiImageBox
-                    register={{
-                      name: 'images',
-                      onBlur: () => {},
-                      ref: () => {},
-                    }}
-                    previews={multiImagePreview as any}
-                    handleMultiImageChange={handleMultiImageChange}
-                    removeMultiImage={removeMultiImage}
-                    error={galleryError}
-                    onRetryUpload={async (idx) => {
-                      await retryAtWithProgress(idx);
-                    }}
-                  />
-                </div>
+              <CardContent>
+                <SortableMediaList
+                  items={mediaItems}
+                  onReorder={setMediaItems}
+                  onRemove={removeMedia}
+                  onAddImages={addImages}
+                  onAddVideos={addVideos}
+                  disabled={isSubmitting}
+                />
               </CardContent>
             </Card>
           </div>

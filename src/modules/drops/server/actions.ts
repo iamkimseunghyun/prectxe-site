@@ -25,7 +25,6 @@ export async function createDrop(data: {
   type: 'ticket' | 'goods';
   summary?: string;
   description?: string;
-  heroUrl?: string;
   eventDate?: string;
   eventEndDate?: string;
   venue?: string;
@@ -49,7 +48,6 @@ export async function createDrop(data: {
       type: data.type as any,
       summary: data.summary || null,
       description: data.description || null,
-      heroUrl: data.heroUrl || null,
       eventDate: data.eventDate ? new Date(data.eventDate) : null,
       eventEndDate: data.eventEndDate ? new Date(data.eventEndDate) : null,
       venue: data.venue || null,
@@ -75,7 +73,6 @@ export async function updateDrop(
     slug?: string;
     summary?: string;
     description?: string;
-    heroUrl?: string;
     eventDate?: string;
     eventEndDate?: string;
     venue?: string;
@@ -104,17 +101,7 @@ export async function updateDrop(
   });
   if (!prev) return { success: false, error: 'Drop을 찾을 수 없습니다.' };
 
-  // Hero 이미지 변경 시 이전 것 삭제
-  if (
-    data.heroUrl !== undefined &&
-    prev.heroUrl &&
-    data.heroUrl !== prev.heroUrl
-  ) {
-    const oldId = extractImageId(prev.heroUrl);
-    if (oldId) await deleteCloudflareImage(oldId).catch(() => {});
-  }
-
-  // 갤러리 미디어 변경 시 제거된 Cloudflare 리소스 정리
+  // 미디어 변경 시 제거된 Cloudflare 리소스 정리
   const hasNewMedia = data.media !== undefined;
   if (hasNewMedia) {
     const newUrls = new Set(data.media!.map((m) => m.url));
@@ -151,7 +138,6 @@ export async function updateDrop(
       ...(data.description !== undefined && {
         description: data.description || null,
       }),
-      ...(data.heroUrl !== undefined && { heroUrl: data.heroUrl || null }),
       ...(data.eventDate !== undefined && {
         eventDate: data.eventDate ? new Date(data.eventDate) : null,
       }),
@@ -203,10 +189,6 @@ export async function deleteDrop(id: string) {
     };
 
   // Cloudflare 미디어 정리
-  if (drop.heroUrl) {
-    const heroId = extractImageId(drop.heroUrl);
-    if (heroId) await deleteCloudflareImage(heroId).catch(() => {});
-  }
   for (const m of drop.media) {
     if (m.type === 'image') {
       const imgId = extractImageId(m.url);

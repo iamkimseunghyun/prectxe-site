@@ -41,7 +41,6 @@ type GoodsDrop = {
   title: string;
   summary: string | null;
   description: string | null;
-  heroUrl: string | null;
   notice: string | null;
   status: string;
   media: DropMedia[];
@@ -66,21 +65,8 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
     });
   }, [drop.id, drop.title, drop.variants]);
 
-  // 통합 미디어 목록: heroUrl(포스터) 먼저, 그 다음 DropMedia (이미지·영상 혼합)
-  const allMedia: DropMedia[] = [
-    ...(drop.heroUrl
-      ? [
-          {
-            id: 'hero',
-            type: 'image' as const,
-            url: drop.heroUrl,
-            alt: drop.title,
-            order: -1,
-          },
-        ]
-      : []),
-    ...drop.media,
-  ];
+  // 통합 미디어 목록 — DropMedia 배열 그대로 (관리자가 DnD로 순서 지정)
+  const allMedia: DropMedia[] = drop.media;
   const totalMedia = allMedia.length;
   const activeMedia = allMedia[activeMediaIndex];
   const showingVideo = activeMedia?.type === 'video';

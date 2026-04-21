@@ -37,7 +37,6 @@ type TicketDrop = {
   title: string;
   summary: string | null;
   description: string | null;
-  heroUrl: string | null;
   eventDate: Date | null;
   eventEndDate: Date | null;
   venue: string | null;
@@ -49,13 +48,11 @@ type TicketDrop = {
 };
 
 export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
-  // 히어로: heroUrl(포스터)만 사용. 영상 중복 방지
+  // 히어로(포스터): 첫 이미지 미디어 (위치 무관). 없으면 gradient fallback
   const firstImage = drop.media.find((m) => m.type === 'image');
-  const heroImage = drop.heroUrl || firstImage?.url || null;
-  // 갤러리: heroUrl이 설정되어 있으면 모든 미디어, 아니면 첫 이미지 제외한 나머지
-  const galleryMedia = drop.heroUrl
-    ? drop.media
-    : drop.media.filter((m) => m.id !== firstImage?.id);
+  const heroImage = firstImage?.url ?? null;
+  // 갤러리: 히어로로 쓰인 첫 이미지를 제외한 나머지 미디어 전부
+  const galleryMedia = drop.media.filter((m) => m.id !== firstImage?.id);
 
   const lightboxImages = galleryMedia.filter((m) => m.type === 'image');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);

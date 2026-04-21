@@ -21,7 +21,6 @@ export default async function Page({ params }: PageProps) {
         status: drop.status,
         summary: drop.summary,
         description: drop.description,
-        heroUrl: drop.heroUrl,
         eventDate: drop.eventDate,
         eventEndDate: drop.eventEndDate,
         venue: drop.venue,
