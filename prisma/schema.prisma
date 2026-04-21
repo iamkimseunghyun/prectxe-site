@@ -192,6 +192,7 @@ model Artist {
   artistArtworks ArtistArtwork[]
   images         ArtistImage[]
   programCredits ProgramCredit[]
+  dropCredits    DropCredit[]
 }
 
 model ArtistImage {
@@ -459,9 +460,22 @@ model Drop {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   media       DropMedia[]
+  credits     DropCredit[]
   ticketTiers TicketTier[]
   variants    GoodsVariant[]
   orders      Order[]
+}
+
+model DropCredit {
+  dropId    String
+  artistId  String
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  drop      Drop     @relation(fields: [dropId], references: [id], onDelete: Cascade)
+
+  @@id([dropId, artistId])
 }
 
 model DropMedia {

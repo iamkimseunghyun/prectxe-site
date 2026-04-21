@@ -19,6 +19,11 @@ export type DropMediaInput = {
   order: number;
 };
 
+export type DropCreditInput = {
+  artistId: string;
+  role: string;
+};
+
 export async function createDrop(data: {
   title: string;
   slug: string;
@@ -32,6 +37,7 @@ export async function createDrop(data: {
   notice?: string;
   status?: string;
   media?: DropMediaInput[];
+  credits?: DropCreditInput[];
 }) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error };
@@ -58,6 +64,9 @@ export async function createDrop(data: {
       media: data.media?.length
         ? { createMany: { data: data.media } }
         : undefined,
+      credits: data.credits?.length
+        ? { createMany: { data: data.credits } }
+        : undefined,
     },
   });
 
@@ -81,6 +90,7 @@ export async function updateDrop(
     status?: string;
     publishedAt?: string | null;
     media?: DropMediaInput[];
+    credits?: DropCreditInput[];
   }
 ) {
   const auth = await requireAdmin();
@@ -161,6 +171,12 @@ export async function updateDrop(
           createMany: { data: data.media! },
         },
       }),
+      ...(data.credits !== undefined && {
+        credits: {
+          deleteMany: {},
+          createMany: { data: data.credits },
+        },
+      }),
     },
   });
 
@@ -219,6 +235,7 @@ export async function getDrop(id: string) {
     where: { id },
     include: {
       media: { orderBy: { order: 'asc' } },
+      credits: { include: { artist: true } },
       ticketTiers: { orderBy: { order: 'asc' } },
       variants: { orderBy: { order: 'asc' } },
     },
@@ -230,6 +247,7 @@ export async function getDropBySlug(slug: string) {
     where: { slug },
     include: {
       media: { orderBy: { order: 'asc' } },
+      credits: { include: { artist: true } },
       ticketTiers: { orderBy: { order: 'asc' } },
       variants: { orderBy: { order: 'asc' } },
     },

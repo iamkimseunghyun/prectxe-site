@@ -42,9 +42,18 @@ type DropData = {
   status: string;
   summary: string | null;
   description: string | null;
-  heroUrl: string | null;
-  videoUrl: string | null;
   publishedAt: Date | null;
+  credits: {
+    dropId: string;
+    artistId: string;
+    role: string;
+    artist: {
+      id: string;
+      name: string;
+      nameKr: string | null;
+      mainImageUrl: string | null;
+    };
+  }[];
   ticketTiers: {
     id: string;
     name: string;
@@ -368,6 +377,29 @@ export function DropDetailView({ dropId }: { dropId: string }) {
                   <p className="mt-0.5">{drop.summary}</p>
                 </div>
               )}
+              {drop.credits?.length ? (
+                <div>
+                  <p className="text-xs text-muted-foreground">크레딧</p>
+                  <ul className="mt-1 space-y-0.5">
+                    {drop.credits.map((c) => {
+                      const kr = c.artist?.nameKr || null;
+                      const en = c.artist?.name || null;
+                      const name = kr || en || '이름 없음';
+                      return (
+                        <li
+                          key={`${c.dropId}-${c.artistId}`}
+                          className="flex items-center gap-2"
+                        >
+                          <span>{name}</span>
+                          <Badge variant="outline" className="text-[10px]">
+                            {c.role}
+                          </Badge>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ) : null}
               <div>
                 <p className="text-xs text-muted-foreground">타입</p>
                 <p className="mt-0.5">

@@ -82,6 +82,7 @@ src/
 - Drop visibility: requires `status !== 'draft'` AND `publishedAt !== null`
 - Status change from draft auto-sets `publishedAt`
 - Drop statuses: `draft` → `upcoming` → `on_sale` → `sold_out` / `closed`
+- **Media**: images and videos unified in `DropMedia` model (`type: image | video`, `order` for DnD sort). No separate `DropImage`/`heroUrl`/`videoUrl` fields — first media by `order` acts as hero. Image `url` = Cloudflare Images URL; video `url` = Cloudflare Stream ID (HLS via `hls.js`).
 
 ### Email Templates
 - Available templates in `src/lib/email/templates/`: `form-notification`, `newsletter`, `order-confirmation`

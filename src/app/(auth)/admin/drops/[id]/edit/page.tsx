@@ -28,6 +28,16 @@ export default async function Page({ params }: PageProps) {
         notice: drop.notice,
         publishedAt: drop.publishedAt,
         media: drop.media,
+        credits: drop.credits.map((c) => ({
+          artistId: c.artistId,
+          role: c.role,
+          artist: {
+            id: c.artist.id,
+            name: c.artist.name,
+            nameKr: c.artist.nameKr,
+            mainImageUrl: c.artist.mainImageUrl,
+          },
+        })),
       }}
     />
   );

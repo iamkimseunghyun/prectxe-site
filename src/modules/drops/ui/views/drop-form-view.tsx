@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -26,7 +26,8 @@ import {
   getCloudflareImageUrl,
   getCloudflareVideoUploadUrl,
 } from '@/lib/cdn/cloudflare';
-import validateImageFile from '@/lib/utils';
+import validateImageFile, { formatArtistName } from '@/lib/utils';
+import ArtistSelect from '@/modules/artists/ui/components/artist-select';
 import {
   createDrop,
   deleteDrop,
@@ -40,6 +41,19 @@ type DropMediaInit = {
   alt: string;
   order: number;
 };
+
+type DropCreditInit = {
+  artistId: string;
+  role: string;
+  artist: {
+    id: string;
+    name: string;
+    nameKr?: string | null;
+    mainImageUrl: string | null;
+  };
+};
+
+type Credit = DropCreditInit;
 
 type DropData = {
   id: string;
@@ -56,6 +70,7 @@ type DropData = {
   notice: string | null;
   publishedAt: Date | null;
   media?: DropMediaInit[];
+  credits?: DropCreditInit[];
 };
 
 interface DropFormViewProps {
@@ -113,6 +128,8 @@ export function DropFormView({ drop }: DropFormViewProps) {
       status: 'done',
     }))
   );
+
+  const [credits, setCredits] = useState<Credit[]>(drop?.credits ?? []);
 
   function updateItem(id: string, patch: Partial<MediaItem>) {
     setMediaItems((prev) =>
@@ -264,6 +281,7 @@ export function DropFormView({ drop }: DropFormViewProps) {
         notice: (fd.get('notice') as string) || undefined,
         status: fd.get('status') as string,
         media,
+        credits: credits.map((c) => ({ artistId: c.artistId, role: c.role })),
       };
 
       const result = isEdit
@@ -464,6 +482,123 @@ export function DropFormView({ drop }: DropFormViewProps) {
                     placeholder="입장 안내, 환불 정책, 주의사항 등"
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* 크레딧 */}
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base">크레딧</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ArtistSelect
+                  value={
+                    credits.map(({ artistId, artist }) => ({
+                      artistId,
+                      artist,
+                    })) as any
+                  }
+                  onChange={(arr: any[]) => {
+                    setCredits((prev) => {
+                      const map = new Map(
+                        prev.map((c) => [c.artistId, c] as const)
+                      );
+                      return arr.map((x: any) =>
+                        map.has(x.artistId)
+                          ? {
+                              ...map.get(x.artistId)!,
+                              artistId: x.artistId,
+                              artist: x.artist,
+                            }
+                          : {
+                              artistId: x.artistId,
+                              artist: x.artist,
+                              role: 'artist',
+                            }
+                      );
+                    });
+                  }}
+                />
+
+                {credits.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {credits.map((c, idx) => (
+                      <div
+                        key={c.artistId}
+                        className="flex items-center gap-3 rounded-md border p-3"
+                      >
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">
+                            {formatArtistName(
+                              c.artist.nameKr as any,
+                              c.artist.name
+                            )}
+                          </div>
+                          <div className="mt-1 flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              역할
+                            </span>
+                            <Input
+                              value={c.role}
+                              onChange={(e) =>
+                                setCredits((prev) => {
+                                  const next = [...prev];
+                                  next[idx] = {
+                                    ...prev[idx],
+                                    role: e.target.value,
+                                  };
+                                  return next;
+                                })
+                              }
+                              placeholder="artist / curator / vj ..."
+                              className="h-8 max-w-[240px]"
+                            />
+                            <div className="flex flex-wrap gap-1">
+                              {[
+                                'artist',
+                                'curator',
+                                'vj',
+                                'dj',
+                                'producer',
+                                'performer',
+                                'writer',
+                                'composer',
+                              ].map((r) => (
+                                <button
+                                  key={r}
+                                  type="button"
+                                  className="rounded border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
+                                  onClick={() =>
+                                    setCredits((prev) => {
+                                      const next = [...prev];
+                                      next[idx] = { ...prev[idx], role: r };
+                                      return next;
+                                    })
+                                  }
+                                >
+                                  {r}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="크레딧 제거"
+                          onClick={() =>
+                            setCredits((prev) =>
+                              prev.filter((p) => p.artistId !== c.artistId)
+                            )
+                          }
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
