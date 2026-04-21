@@ -2,18 +2,30 @@ import { ArrowUpRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { prisma } from '@/lib/db/prisma';
-import { formatEventDate, getImageUrl } from '@/lib/utils';
+import { cn, formatEventDate, getImageUrl } from '@/lib/utils';
 
 const PROGRAM_SELECT = {
   slug: true,
   title: true,
   summary: true,
   heroUrl: true,
+  status: true,
   startAt: true,
   endAt: true,
   city: true,
   venue: true,
 } as const;
+
+const STATUS_STYLE: Record<string, { label: string; className: string }> = {
+  upcoming: {
+    label: 'Upcoming',
+    className: 'bg-white/95 text-neutral-900',
+  },
+  completed: {
+    label: 'Archive',
+    className: 'bg-neutral-900/75 text-white',
+  },
+};
 
 /**
  * 홈페이지 프로그램 섹션.
@@ -93,6 +105,16 @@ export async function UpcomingProgramsSection() {
                     />
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-neutral-200 to-neutral-100" />
+                  )}
+                  {STATUS_STYLE[program.status] && (
+                    <span
+                      className={cn(
+                        'absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] backdrop-blur-sm',
+                        STATUS_STYLE[program.status].className
+                      )}
+                    >
+                      {STATUS_STYLE[program.status].label}
+                    </span>
                   )}
                 </div>
 
