@@ -26,7 +26,10 @@ import {
   getCloudflareImageUrl,
   getCloudflareVideoUploadUrl,
 } from '@/lib/cdn/cloudflare';
-import validateImageFile, { formatArtistName } from '@/lib/utils';
+import validateImageFile, {
+  formatArtistName,
+  getImageUrl,
+} from '@/lib/utils';
 import ArtistSelect from '@/modules/artists/ui/components/artist-select';
 import {
   createDrop,
@@ -116,13 +119,14 @@ export function DropFormView({ drop }: DropFormViewProps) {
   const [type, setType] = useState(drop?.type ?? 'ticket');
   const [status, setStatus] = useState(drop?.status ?? 'draft');
 
-  // 통합 미디어 상태 — 이미지/영상 혼합, 드래그 정렬 가능
+  // 통합 미디어 상태 — 이미지/영상 혼합, 드래그 정렬 가능.
+  // 이미지 preview는 Cloudflare Images variant(/public) 필요 — raw URL은 404.
   const [mediaItems, setMediaItems] = useState<MediaItem[]>(
     (drop?.media ?? []).map((m) => ({
       id: m.id,
       type: m.type,
       url: m.url,
-      preview: m.url,
+      preview: m.type === 'image' ? getImageUrl(m.url, 'public') : m.url,
       file: null,
       alt: m.alt,
       status: 'done',
