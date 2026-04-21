@@ -492,36 +492,6 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="border-t border-neutral-200 bg-white py-10">
-        <nav className="flex items-center justify-center gap-6 text-sm">
-          <Link
-            href="/"
-            className="text-neutral-400 transition-colors hover:text-neutral-900"
-          >
-            Home
-          </Link>
-          <Link
-            href="/drops"
-            className="text-neutral-400 transition-colors hover:text-neutral-900"
-          >
-            Drops
-          </Link>
-          <Link
-            href="/programs"
-            className="text-neutral-400 transition-colors hover:text-neutral-900"
-          >
-            Archive
-          </Link>
-          <Link
-            href="/about"
-            className="text-neutral-400 transition-colors hover:text-neutral-900"
-          >
-            About
-          </Link>
-        </nav>
-      </footer>
-
       {/* Mobile Sticky Summary */}
       {isSaleActive && selected && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white/95 px-4 py-3 backdrop-blur-sm lg:hidden">

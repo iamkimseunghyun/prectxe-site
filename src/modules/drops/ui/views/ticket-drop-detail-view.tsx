@@ -329,36 +329,6 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
         </div>
       </div>
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-neutral-200 bg-white py-10">
-        <nav className="flex items-center justify-center gap-6 text-sm">
-          <Link
-            href="/"
-            className="text-neutral-400 transition-colors hover:text-neutral-900"
-          >
-            Home
-          </Link>
-          <Link
-            href="/drops"
-            className="text-neutral-400 transition-colors hover:text-neutral-900"
-          >
-            Drops
-          </Link>
-          <Link
-            href="/programs"
-            className="text-neutral-400 transition-colors hover:text-neutral-900"
-          >
-            Archive
-          </Link>
-          <Link
-            href="/about"
-            className="text-neutral-400 transition-colors hover:text-neutral-900"
-          >
-            About
-          </Link>
-        </nav>
-      </footer>
-
       {/* Lightbox */}
       {lightboxIndex !== null && galleryImages[lightboxIndex] && (
         <div
