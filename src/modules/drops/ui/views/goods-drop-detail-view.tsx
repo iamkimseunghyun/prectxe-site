@@ -495,7 +495,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
           )}
 
           <div
-            className="relative flex max-h-[85vh] max-w-[90vw] items-center justify-center"
+            className="relative flex h-[85vh] w-[90vw] items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
             {activeMedia.type === 'image' ? (
@@ -504,16 +504,17 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                 alt={activeMedia.alt}
                 width={1200}
                 height={900}
-                className="max-h-[85vh] w-auto rounded-lg object-contain"
+                className="h-auto max-h-full w-auto max-w-full rounded-lg object-contain"
               />
             ) : (
-              // URL 변경 시 재마운트되어 이전 영상은 자동 정지
+              // URL 변경 시 재마운트되어 이전 영상은 자동 정지.
+              // h-full w-full object-contain → 컨테이너를 채우고 원본 비율 유지
               <CloudflareStreamVideo
                 key={activeMedia.id}
                 videoUrl={activeMedia.url}
                 autoPlay
                 controls
-                className="max-h-[85vh] max-w-[90vw] rounded-lg"
+                className="h-full w-full rounded-lg object-contain"
               />
             )}
           </div>
