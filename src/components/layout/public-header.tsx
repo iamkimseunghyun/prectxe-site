@@ -29,13 +29,13 @@ export function PublicHeader() {
     setMobileOpen(false);
   }, [pathname]);
 
-  // /admin, /auth 경로는 퍼블릭 헤더 숨김
-  // /drops/[slug] 상세 페이지는 자체 back 네비게이션 + 몰입형 디자인이라 숨김
-  //   (리스트 /drops는 노출 유지)
+  // /admin, /auth 경로는 퍼블릭 헤더 숨김.
+  // 상세 페이지(/drops|/programs|/journal)/[slug]는 자체 back 네비게이션 +
+  // 몰입형 디자인이라 숨김. 리스트 루트 경로(/drops 등)는 노출 유지.
   if (
     pathname?.startsWith('/admin') ||
     pathname?.startsWith('/auth') ||
-    /^\/drops\/[^/]+/.test(pathname ?? '')
+    /^\/(drops|programs|journal)\/[^/]+/.test(pathname ?? '')
   ) {
     return null;
   }
