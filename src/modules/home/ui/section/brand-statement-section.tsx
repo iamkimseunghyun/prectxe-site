@@ -11,8 +11,8 @@ export function BrandStatementSection() {
           <span className="text-neutral-400">curated.</span>
         </h2>
         <p className="mt-10 max-w-2xl text-base leading-relaxed text-neutral-500 md:text-lg">
-          동시대 음악과 예술의 순간을 큐레이션합니다. 소리와 빛, 공간과
-          이야기로 경험을 설계하는 아트 플랫폼 PRECTXE.
+          동시대 음악과 예술의 순간을 큐레이션합니다. 소리와 빛, 공간과 이야기로
+          경험을 설계하는 아트 플랫폼 PRECTXE.
         </p>
       </div>
     </section>
