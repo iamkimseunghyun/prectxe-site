@@ -23,9 +23,10 @@ type TicketTier = {
   status: string;
 };
 
-type DropImage = {
+type DropMedia = {
   id: string;
-  imageUrl: string;
+  type: 'image' | 'video';
+  url: string;
   alt: string;
   order: number;
 };
@@ -37,20 +38,26 @@ type TicketDrop = {
   summary: string | null;
   description: string | null;
   heroUrl: string | null;
-  videoUrl: string | null;
   eventDate: Date | null;
   eventEndDate: Date | null;
   venue: string | null;
   venueAddress: string | null;
   notice: string | null;
   status: string;
-  images: DropImage[];
+  media: DropMedia[];
   ticketTiers: TicketTier[];
 };
 
 export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
-  const heroImage = drop.heroUrl || drop.images[0]?.imageUrl || null;
-  const galleryImages = drop.heroUrl ? drop.images : drop.images.slice(1);
+  // 히어로: heroUrl(포스터)만 사용. 영상 중복 방지
+  const firstImage = drop.media.find((m) => m.type === 'image');
+  const heroImage = drop.heroUrl || firstImage?.url || null;
+  // 갤러리: heroUrl이 설정되어 있으면 모든 미디어, 아니면 첫 이미지 제외한 나머지
+  const galleryMedia = drop.heroUrl
+    ? drop.media
+    : drop.media.filter((m) => m.id !== firstImage?.id);
+
+  const lightboxImages = galleryMedia.filter((m) => m.type === 'image');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -70,17 +77,17 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
     () =>
       setLightboxIndex((i) =>
         i !== null
-          ? (i - 1 + galleryImages.length) % galleryImages.length
+          ? (i - 1 + lightboxImages.length) % lightboxImages.length
           : null
       ),
-    [galleryImages.length]
+    [lightboxImages.length]
   );
   const nextImage = useCallback(
     () =>
       setLightboxIndex((i) =>
-        i !== null ? (i + 1) % galleryImages.length : null
+        i !== null ? (i + 1) % lightboxImages.length : null
       ),
-    [galleryImages.length]
+    [lightboxImages.length]
   );
 
   useEffect(() => {
@@ -107,23 +114,12 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
   const isClosed = drop.status === 'closed';
   const isSoldOut = drop.status === 'sold_out';
 
-  const [videoLoadFailed, setVideoLoadFailed] = useState(false);
-
   return (
     <div className="min-h-screen bg-black text-white">
       {/* ── Immersive Hero ── */}
       <section className="relative flex min-h-screen items-end">
-        {/* Background Media */}
-        {drop.videoUrl ? (
-          <CloudflareStreamVideo
-            videoUrl={drop.videoUrl}
-            autoPlay
-            loop
-            muted
-            controls={false}
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-          />
-        ) : heroImage ? (
+        {/* Background Media — 포스터 이미지 전용 (영상은 갤러리에서) */}
+        {heroImage ? (
           <Image
             src={getImageUrl(heroImage, 'hires')}
             alt={drop.title}
@@ -240,46 +236,48 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                 />
               )}
 
-              {/* Video */}
-              {drop.videoUrl && !videoLoadFailed && (
-                <div className={drop.description ? 'mt-16' : ''}>
+              {/* Media Gallery (이미지 + 영상 통합) */}
+              {galleryMedia.length > 0 && (
+                <div className={`space-y-4 ${drop.description ? 'mt-16' : ''}`}>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
-                    Video
-                  </p>
-                  <div className="relative mt-4 aspect-video overflow-hidden rounded-xl bg-neutral-100">
-                    <CloudflareStreamVideo
-                      videoUrl={drop.videoUrl}
-                      controls
-                      className="h-full w-full"
-                      onError={() => setVideoLoadFailed(true)}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Gallery */}
-              {galleryImages.length > 0 && (
-                <div className="mt-16 space-y-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
-                    Gallery
+                    Media
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {galleryImages.map((img, idx) => (
-                      <button
-                        key={img.id}
-                        type="button"
-                        className="relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-100 transition-opacity hover:opacity-90"
-                        onClick={() => setLightboxIndex(idx)}
-                      >
-                        <Image
-                          src={getImageUrl(img.imageUrl, 'public')}
-                          alt={img.alt}
-                          fill
-                          sizes="(min-width: 640px) 50vw, 100vw"
-                          className="object-cover"
-                        />
-                      </button>
-                    ))}
+                    {galleryMedia.map((m) => {
+                      if (m.type === 'video') {
+                        return (
+                          <div
+                            key={m.id}
+                            className="relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-900"
+                          >
+                            <CloudflareStreamVideo
+                              videoUrl={m.url}
+                              controls
+                              className="h-full w-full"
+                            />
+                          </div>
+                        );
+                      }
+                      const imageIdx = lightboxImages.findIndex(
+                        (img) => img.id === m.id
+                      );
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          className="relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-100 transition-opacity hover:opacity-90"
+                          onClick={() => setLightboxIndex(imageIdx)}
+                        >
+                          <Image
+                            src={getImageUrl(m.url, 'public')}
+                            alt={m.alt}
+                            fill
+                            sizes="(min-width: 640px) 50vw, 100vw"
+                            className="object-cover"
+                          />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -330,7 +328,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
       </div>
 
       {/* Lightbox */}
-      {lightboxIndex !== null && galleryImages[lightboxIndex] && (
+      {lightboxIndex !== null && lightboxImages[lightboxIndex] && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
           onClick={closeLightbox}
@@ -346,7 +344,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
           </button>
 
           {/* Prev */}
-          {galleryImages.length > 1 && (
+          {lightboxImages.length > 1 && (
             <button
               type="button"
               onClick={(e) => {
@@ -366,20 +364,20 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
             onClick={(e) => e.stopPropagation()}
           >
             <Image
-              src={getImageUrl(galleryImages[lightboxIndex].imageUrl, 'hires')}
-              alt={galleryImages[lightboxIndex].alt}
+              src={getImageUrl(lightboxImages[lightboxIndex].url, 'hires')}
+              alt={lightboxImages[lightboxIndex].alt}
               width={1200}
               height={900}
               className="max-h-[85vh] w-auto rounded-lg object-contain"
             />
             {/* Counter */}
             <p className="mt-3 text-center text-sm text-white/50">
-              {lightboxIndex + 1} / {galleryImages.length}
+              {lightboxIndex + 1} / {lightboxImages.length}
             </p>
           </div>
 
           {/* Next */}
-          {galleryImages.length > 1 && (
+          {lightboxImages.length > 1 && (
             <button
               type="button"
               onClick={(e) => {

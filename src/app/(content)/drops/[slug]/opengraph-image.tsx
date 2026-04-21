@@ -54,10 +54,11 @@ export default async function OGImage({
     );
   }
 
+  const firstImage = drop.media.find((m) => m.type === 'image');
   const heroSrc = drop.heroUrl
     ? getImageUrl(drop.heroUrl, 'public')
-    : drop.images[0]?.imageUrl
-      ? getImageUrl(drop.images[0].imageUrl, 'public')
+    : firstImage
+      ? getImageUrl(firstImage.url, 'public')
       : null;
   const typeLabel = TYPE_LABELS[drop.type] || 'DROP';
 

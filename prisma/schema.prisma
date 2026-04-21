@@ -460,12 +460,15 @@ model Drop {
   publishedAt  DateTime?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  /// @deprecated DropMedia로 마이그레이션 후 제거 예정
   images      DropImage[]
+  media       DropMedia[]
   ticketTiers TicketTier[]
   variants    GoodsVariant[]
   orders      Order[]
 }
 
+/// @deprecated DropMedia로 마이그레이션 후 제거 예정
 model DropImage {
   id       String   @id @default(cuid())
   imageUrl String
@@ -473,6 +476,19 @@ model DropImage {
   order    Int      @default(0)
   dropId   String
   drop     Drop     @relation(fields: [dropId], references: [id], onDelete: Cascade)
+}
+
+model DropMedia {
+  id        String        @id @default(cuid())
+  dropId    String
+  drop      Drop          @relation(fields: [dropId], references: [id], onDelete: Cascade)
+  type      DropMediaType
+  url       String        // 이미지: Cloudflare Images URL / 영상: Cloudflare Stream ID
+  alt       String        @default("")
+  order     Int           @default(0)
+  createdAt DateTime      @default(now())
+
+  @@index([dropId])
 }
 
 model TicketTier {
@@ -558,6 +574,11 @@ model Payment {
 enum DropType {
   ticket
   goods
+}
+
+enum DropMediaType {
+  image
+  video
 }
 
 enum DropStatus {

@@ -31,8 +31,10 @@ import {
   updateDrop,
 } from '@/modules/drops/server/actions';
 
-type DropImage = {
-  imageUrl: string;
+type DropMedia = {
+  id: string;
+  type: 'image' | 'video';
+  url: string;
   alt: string;
   order: number;
 };
@@ -46,14 +48,13 @@ type DropData = {
   summary: string | null;
   description: string | null;
   heroUrl: string | null;
-  videoUrl: string | null;
   eventDate: Date | null;
   eventEndDate: Date | null;
   venue: string | null;
   venueAddress: string | null;
   notice: string | null;
   publishedAt: Date | null;
-  images?: DropImage[];
+  media?: DropMedia[];
 };
 
 interface DropFormViewProps {
@@ -83,10 +84,16 @@ export function DropFormView({ drop }: DropFormViewProps) {
     onImageUrlChange: (url) => setHeroUrl(url),
   });
 
+  // 기존 미디어를 이미지/영상으로 분리 (초기값)
+  const existingImages = drop?.media
+    ?.filter((m) => m.type === 'image')
+    .map((m) => ({ imageUrl: m.url, alt: m.alt, order: m.order }));
+  const existingVideo = drop?.media?.find((m) => m.type === 'video');
+
   // 갤러리 이미지 (multi)
-  const [galleryImages, setGalleryImages] = useState<DropImage[]>(
-    drop?.images ?? []
-  );
+  const [galleryImages, setGalleryImages] = useState<
+    { imageUrl: string; alt: string; order: number }[]
+  >(existingImages ?? []);
   const {
     multiImagePreview,
     handleMultiImageChange,
@@ -95,7 +102,7 @@ export function DropFormView({ drop }: DropFormViewProps) {
     uploadPendingWithProgress,
     retryAtWithProgress,
   } = useMultiImageUpload({
-    initialImages: drop?.images,
+    initialImages: existingImages,
     onGalleryChange: (imgs) =>
       setGalleryImages(
         imgs.map((i) => ({ imageUrl: i.imageUrl, alt: i.alt, order: i.order }))
@@ -106,11 +113,11 @@ export function DropFormView({ drop }: DropFormViewProps) {
   const [type, setType] = useState(drop?.type ?? 'ticket');
   const [status, setStatus] = useState(drop?.status ?? 'draft');
 
-  // 비디오
-  const [videoUrl, setVideoUrl] = useState(drop?.videoUrl ?? '');
+  // 비디오 (현재 UI는 single video. 다중 영상 UI는 후속 작업)
+  const [videoUrl, setVideoUrl] = useState(existingVideo?.url ?? '');
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoUploadURL, setVideoUploadURL] = useState('');
-  const [videoPreview, setVideoPreview] = useState(drop?.videoUrl ?? '');
+  const [videoPreview, setVideoPreview] = useState(existingVideo?.url ?? '');
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoError, setVideoError] = useState('');
 
@@ -193,7 +200,32 @@ export function DropFormView({ drop }: DropFormViewProps) {
         }
       }
 
-      // 4) 서버 액션 호출
+      // 4) media 배열 구성 (이미지 + 영상 통합)
+      const media: Array<{
+        type: 'image' | 'video';
+        url: string;
+        alt: string;
+        order: number;
+      }> = [
+        ...uploadedImages.map((img, idx) => ({
+          type: 'image' as const,
+          url: img.imageUrl,
+          alt: img.alt,
+          order: idx,
+        })),
+        ...(videoUrl
+          ? [
+              {
+                type: 'video' as const,
+                url: videoUrl,
+                alt: '',
+                order: uploadedImages.length,
+              },
+            ]
+          : []),
+      ];
+
+      // 5) 서버 액션 호출
       const payload = {
         title: fd.get('title') as string,
         slug: fd.get('slug') as string,
@@ -201,14 +233,13 @@ export function DropFormView({ drop }: DropFormViewProps) {
         summary: (fd.get('summary') as string) || undefined,
         description: description || undefined,
         heroUrl: heroUrl || undefined,
-        videoUrl: videoUrl || undefined,
         eventDate: (fd.get('eventDate') as string) || undefined,
         eventEndDate: (fd.get('eventEndDate') as string) || undefined,
         venue: (fd.get('venue') as string) || undefined,
         venueAddress: (fd.get('venueAddress') as string) || undefined,
         notice: (fd.get('notice') as string) || undefined,
         status: fd.get('status') as string,
-        images: uploadedImages,
+        media,
       };
 
       const result = isEdit

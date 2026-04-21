@@ -4,15 +4,20 @@ import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import {
   cleanupRemovedHtmlImages,
-  deleteAllImages,
   deleteCloudflareImage,
   deleteCloudflareVideo,
-  deleteRemovedImages,
 } from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
 import { extractImageId, extractVideoId } from '@/lib/utils';
 
 // ─── Drop CRUD (Admin) ──────────────────────────────
+
+export type DropMediaInput = {
+  type: 'image' | 'video';
+  url: string;
+  alt: string;
+  order: number;
+};
 
 export async function createDrop(data: {
   title: string;
@@ -21,14 +26,13 @@ export async function createDrop(data: {
   summary?: string;
   description?: string;
   heroUrl?: string;
-  videoUrl?: string;
   eventDate?: string;
   eventEndDate?: string;
   venue?: string;
   venueAddress?: string;
   notice?: string;
   status?: string;
-  images?: { imageUrl: string; alt: string; order: number }[];
+  media?: DropMediaInput[];
 }) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error };
@@ -46,7 +50,6 @@ export async function createDrop(data: {
       summary: data.summary || null,
       description: data.description || null,
       heroUrl: data.heroUrl || null,
-      videoUrl: data.videoUrl || null,
       eventDate: data.eventDate ? new Date(data.eventDate) : null,
       eventEndDate: data.eventEndDate ? new Date(data.eventEndDate) : null,
       venue: data.venue || null,
@@ -54,8 +57,8 @@ export async function createDrop(data: {
       notice: data.notice || null,
       status: (data.status as any) || 'draft',
       publishedAt: data.status && data.status !== 'draft' ? new Date() : null,
-      images: data.images?.length
-        ? { createMany: { data: data.images } }
+      media: data.media?.length
+        ? { createMany: { data: data.media } }
         : undefined,
     },
   });
@@ -73,7 +76,6 @@ export async function updateDrop(
     summary?: string;
     description?: string;
     heroUrl?: string;
-    videoUrl?: string;
     eventDate?: string;
     eventEndDate?: string;
     venue?: string;
@@ -81,7 +83,7 @@ export async function updateDrop(
     notice?: string;
     status?: string;
     publishedAt?: string | null;
-    images?: { imageUrl: string; alt: string; order: number }[];
+    media?: DropMediaInput[];
   }
 ) {
   const auth = await requireAdmin();
@@ -98,7 +100,7 @@ export async function updateDrop(
   // 기존 데이터 조회 (미디어 정리용)
   const prev = await prisma.drop.findUnique({
     where: { id },
-    include: { images: true },
+    include: { media: true },
   });
   if (!prev) return { success: false, error: 'Drop을 찾을 수 없습니다.' };
 
@@ -112,21 +114,20 @@ export async function updateDrop(
     if (oldId) await deleteCloudflareImage(oldId).catch(() => {});
   }
 
-  // 비디오 변경 시 이전 것 삭제
-  if (
-    data.videoUrl !== undefined &&
-    prev.videoUrl &&
-    data.videoUrl !== prev.videoUrl
-  ) {
-    const oldVid = extractVideoId(prev.videoUrl);
-    if (oldVid) await deleteCloudflareVideo(oldVid).catch(() => {});
-  }
-
-  // 갤러리 이미지 변경 시 제거된 것 삭제
-  const hasNewImages = data.images && data.images.length > 0;
-  if (hasNewImages) {
-    const newImageUrls = data.images!.map((img) => img.imageUrl);
-    await deleteRemovedImages(prev.images, newImageUrls);
+  // 갤러리 미디어 변경 시 제거된 Cloudflare 리소스 정리
+  const hasNewMedia = data.media !== undefined;
+  if (hasNewMedia) {
+    const newUrls = new Set(data.media!.map((m) => m.url));
+    const removed = prev.media.filter((m) => !newUrls.has(m.url));
+    for (const m of removed) {
+      if (m.type === 'image') {
+        const imgId = extractImageId(m.url);
+        if (imgId) await deleteCloudflareImage(imgId).catch(() => {});
+      } else if (m.type === 'video') {
+        const vidId = extractVideoId(m.url);
+        if (vidId) await deleteCloudflareVideo(vidId).catch(() => {});
+      }
+    }
   }
 
   // description HTML 내 제거된 이미지 정리 (RichEditor 인라인 이미지)
@@ -151,7 +152,6 @@ export async function updateDrop(
         description: data.description || null,
       }),
       ...(data.heroUrl !== undefined && { heroUrl: data.heroUrl || null }),
-      ...(data.videoUrl !== undefined && { videoUrl: data.videoUrl || null }),
       ...(data.eventDate !== undefined && {
         eventDate: data.eventDate ? new Date(data.eventDate) : null,
       }),
@@ -169,10 +169,10 @@ export async function updateDrop(
         : isPublishing
           ? { publishedAt: new Date() }
           : {}),
-      ...(hasNewImages && {
-        images: {
+      ...(hasNewMedia && {
+        media: {
           deleteMany: {},
-          createMany: { data: data.images! },
+          createMany: { data: data.media! },
         },
       }),
     },
@@ -191,7 +191,7 @@ export async function deleteDrop(id: string) {
   const drop = await prisma.drop.findUnique({
     where: { id },
     include: {
-      images: { select: { imageUrl: true } },
+      media: true,
       orders: { where: { status: { in: ['paid', 'confirmed'] } }, take: 1 },
     },
   });
@@ -207,12 +207,14 @@ export async function deleteDrop(id: string) {
     const heroId = extractImageId(drop.heroUrl);
     if (heroId) await deleteCloudflareImage(heroId).catch(() => {});
   }
-  if (drop.videoUrl) {
-    const vidId = extractVideoId(drop.videoUrl);
-    if (vidId) await deleteCloudflareVideo(vidId).catch(() => {});
-  }
-  if (drop.images.length > 0) {
-    await deleteAllImages(drop.images);
+  for (const m of drop.media) {
+    if (m.type === 'image') {
+      const imgId = extractImageId(m.url);
+      if (imgId) await deleteCloudflareImage(imgId).catch(() => {});
+    } else if (m.type === 'video') {
+      const vidId = extractVideoId(m.url);
+      if (vidId) await deleteCloudflareVideo(vidId).catch(() => {});
+    }
   }
   // description 내 인라인 이미지 전부 삭제
   if (drop.description) {
@@ -234,7 +236,7 @@ export async function getDrop(id: string) {
   return prisma.drop.findUnique({
     where: { id },
     include: {
-      images: { orderBy: { order: 'asc' } },
+      media: { orderBy: { order: 'asc' } },
       ticketTiers: { orderBy: { order: 'asc' } },
       variants: { orderBy: { order: 'asc' } },
     },
@@ -245,7 +247,7 @@ export async function getDropBySlug(slug: string) {
   return prisma.drop.findUnique({
     where: { slug },
     include: {
-      images: { orderBy: { order: 'asc' } },
+      media: { orderBy: { order: 'asc' } },
       ticketTiers: { orderBy: { order: 'asc' } },
       variants: { orderBy: { order: 'asc' } },
     },
@@ -268,7 +270,11 @@ export async function listDrops(
     prisma.drop.findMany({
       where,
       include: {
-        images: { orderBy: { order: 'asc' }, take: 1 },
+        media: {
+          where: { type: 'image' },
+          orderBy: { order: 'asc' },
+          take: 1,
+        },
         ticketTiers: { select: { price: true, status: true } },
         variants: { select: { price: true, stock: true, soldCount: true } },
       },

@@ -27,9 +27,10 @@ type GoodsVariant = {
   order: number;
 };
 
-type DropImage = {
+type DropMedia = {
   id: string;
-  imageUrl: string;
+  type: 'image' | 'video';
+  url: string;
   alt: string;
   order: number;
 };
@@ -41,10 +42,9 @@ type GoodsDrop = {
   summary: string | null;
   description: string | null;
   heroUrl: string | null;
-  videoUrl: string | null;
   notice: string | null;
   status: string;
-  images: DropImage[];
+  media: DropMedia[];
   variants: GoodsVariant[];
 };
 
@@ -53,7 +53,6 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
   const [quantity, setQuantity] = useState(1);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [videoFailed, setVideoFailed] = useState(false);
 
   useEffect(() => {
     const minPrice = drop.variants.length
@@ -67,19 +66,24 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
     });
   }, [drop.id, drop.title, drop.variants]);
 
-  // 비디오가 있고 로드 성공한 경우만 첫 번째 미디어로
-  const hasVideo = !!drop.videoUrl && !videoFailed;
-  const allImages = [
+  // 통합 미디어 목록: heroUrl(포스터) 먼저, 그 다음 DropMedia (이미지·영상 혼합)
+  const allMedia: DropMedia[] = [
     ...(drop.heroUrl
-      ? [{ id: 'hero', imageUrl: drop.heroUrl, alt: drop.title, order: -1 }]
+      ? [
+          {
+            id: 'hero',
+            type: 'image' as const,
+            url: drop.heroUrl,
+            alt: drop.title,
+            order: -1,
+          },
+        ]
       : []),
-    ...drop.images,
+    ...drop.media,
   ];
-  const totalMedia = (hasVideo ? 1 : 0) + allImages.length;
-  // 현재 비디오를 보여줄지 여부
-  const showingVideo = hasVideo && activeMediaIndex === 0;
-  // 이미지 인덱스 (비디오가 있으면 1부터 시작)
-  const activeImageIndex = hasVideo ? activeMediaIndex - 1 : activeMediaIndex;
+  const totalMedia = allMedia.length;
+  const activeMedia = allMedia[activeMediaIndex];
+  const showingVideo = activeMedia?.type === 'video';
 
   const closeLightbox = useCallback(() => setLightboxOpen(false), []);
 
@@ -136,25 +140,18 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                       if (!showingVideo) setLightboxOpen(true);
                     }}
                   >
-                    {showingVideo ? (
+                    {showingVideo && activeMedia ? (
                       <CloudflareStreamVideo
-                        videoUrl={drop.videoUrl!}
+                        videoUrl={activeMedia.url}
                         autoPlay
                         muted
                         controls
                         className="h-full w-full object-contain"
-                        onError={() => {
-                          setVideoFailed(true);
-                          setActiveMediaIndex(0);
-                        }}
                       />
-                    ) : activeImageIndex >= 0 && allImages[activeImageIndex] ? (
+                    ) : activeMedia ? (
                       <Image
-                        src={getImageUrl(
-                          allImages[activeImageIndex].imageUrl,
-                          'hires'
-                        )}
-                        alt={allImages[activeImageIndex].alt}
+                        src={getImageUrl(activeMedia.url, 'hires')}
+                        alt={activeMedia.alt}
                         fill
                         priority
                         sizes="(min-width: 1024px) 60vw, 100vw"
@@ -196,43 +193,32 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                   {/* Thumbnails */}
                   {totalMedia > 1 && (
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
-                      {hasVideo && (
+                      {allMedia.map((m, idx) => (
                         <button
+                          key={m.id}
                           type="button"
-                          aria-label="영상"
-                          className={cn(
-                            'flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border-2 transition-all',
-                            activeMediaIndex === 0
-                              ? 'border-neutral-900 ring-1 ring-neutral-900'
-                              : 'border-transparent opacity-60 hover:opacity-100'
-                          )}
-                          onClick={() => setActiveMediaIndex(0)}
-                        >
-                          <span className="text-2xl">▶</span>
-                        </button>
-                      )}
-                      {allImages.map((img, idx) => (
-                        <button
-                          key={img.id}
-                          type="button"
-                          aria-label={`이미지 ${idx + 1}`}
-                          className={cn(
-                            'relative h-20 w-20 overflow-hidden rounded-lg border-2 transition-all',
-                            activeMediaIndex === (hasVideo ? idx + 1 : idx)
-                              ? 'border-neutral-900 ring-1 ring-neutral-900'
-                              : 'border-transparent opacity-60 hover:opacity-100'
-                          )}
-                          onClick={() =>
-                            setActiveMediaIndex(hasVideo ? idx + 1 : idx)
+                          aria-label={
+                            m.type === 'video' ? '영상' : `이미지 ${idx + 1}`
                           }
+                          className={cn(
+                            'relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border-2 transition-all',
+                            activeMediaIndex === idx
+                              ? 'border-neutral-900 ring-1 ring-neutral-900'
+                              : 'border-transparent opacity-60 hover:opacity-100'
+                          )}
+                          onClick={() => setActiveMediaIndex(idx)}
                         >
-                          <Image
-                            src={getImageUrl(img.imageUrl, 'thumbnail')}
-                            alt={img.alt}
-                            fill
-                            sizes="80px"
-                            className="object-cover"
-                          />
+                          {m.type === 'video' ? (
+                            <span className="text-2xl">▶</span>
+                          ) : (
+                            <Image
+                              src={getImageUrl(m.url, 'thumbnail')}
+                              alt={m.alt}
+                              fill
+                              sizes="80px"
+                              className="object-cover"
+                            />
+                          )}
                         </button>
                       ))}
                     </div>
@@ -424,8 +410,8 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
         </div>
       </div>
 
-      {/* Lightbox */}
-      {lightboxOpen && !showingVideo && allImages[activeImageIndex] && (
+      {/* Lightbox (이미지 전용) */}
+      {lightboxOpen && activeMedia?.type === 'image' && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
           onClick={closeLightbox}
@@ -439,56 +425,68 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
             <X className="h-5 w-5" />
           </button>
 
-          {allImages.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveMediaIndex((i) =>
-                    hasVideo
-                      ? ((i - 1 - 1 + allImages.length) % allImages.length) + 1
-                      : (i - 1 + allImages.length) % allImages.length
-                  );
-                }}
-                className="absolute left-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-                aria-label="이전"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveMediaIndex((i) =>
-                    hasVideo
-                      ? ((i - 1 + 1) % allImages.length) + 1
-                      : (i + 1) % allImages.length
-                  );
-                }}
-                className="absolute right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-                aria-label="다음"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            </>
-          )}
-
-          <div
-            className="relative max-h-[85vh] max-w-[90vw]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Image
-              src={getImageUrl(allImages[activeImageIndex].imageUrl, 'hires')}
-              alt={allImages[activeImageIndex].alt}
-              width={1200}
-              height={900}
-              className="max-h-[85vh] w-auto rounded-lg object-contain"
-            />
-            <p className="mt-3 text-center text-sm text-white/50">
-              {activeImageIndex + 1} / {allImages.length}
-            </p>
-          </div>
+          {(() => {
+            // 이미지만 인덱싱 (영상은 라이트박스에서 스킵)
+            const imageOnly = allMedia.filter((m) => m.type === 'image');
+            const imageIdx = imageOnly.findIndex(
+              (m) => m.id === activeMedia.id
+            );
+            const goToImage = (nextIdx: number) => {
+              const next = imageOnly[nextIdx];
+              if (next) {
+                setActiveMediaIndex(
+                  allMedia.findIndex((m) => m.id === next.id)
+                );
+              }
+            };
+            return (
+              <>
+                {imageOnly.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        goToImage(
+                          (imageIdx - 1 + imageOnly.length) % imageOnly.length
+                        );
+                      }}
+                      className="absolute left-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+                      aria-label="이전"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        goToImage((imageIdx + 1) % imageOnly.length);
+                      }}
+                      className="absolute right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+                      aria-label="다음"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </>
+                )}
+                <div
+                  className="relative max-h-[85vh] max-w-[90vw]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Image
+                    src={getImageUrl(activeMedia.url, 'hires')}
+                    alt={activeMedia.alt}
+                    width={1200}
+                    height={900}
+                    className="max-h-[85vh] w-auto rounded-lg object-contain"
+                  />
+                  <p className="mt-3 text-center text-sm text-white/50">
+                    {imageIdx + 1} / {imageOnly.length}
+                  </p>
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 

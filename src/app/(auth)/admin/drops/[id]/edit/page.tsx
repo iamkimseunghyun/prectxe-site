@@ -22,14 +22,13 @@ export default async function Page({ params }: PageProps) {
         summary: drop.summary,
         description: drop.description,
         heroUrl: drop.heroUrl,
-        videoUrl: drop.videoUrl,
         eventDate: drop.eventDate,
         eventEndDate: drop.eventEndDate,
         venue: drop.venue,
         venueAddress: drop.venueAddress,
         notice: drop.notice,
         publishedAt: drop.publishedAt,
-        images: drop.images,
+        media: drop.media,
       }}
     />
   );
