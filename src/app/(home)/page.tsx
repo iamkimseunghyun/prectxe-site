@@ -1,5 +1,4 @@
 import { FadeIn } from '@/components/shared/fade-in';
-import { ArtistMarqueeSection } from '@/modules/home/ui/section/artist-marquee-section';
 import { BrandStatementSection } from '@/modules/home/ui/section/brand-statement-section';
 import { FeaturedHeroSection } from '@/modules/home/ui/section/featured-hero-section';
 import { NewsletterCtaSection } from '@/modules/home/ui/section/newsletter-cta-section';
@@ -13,9 +12,6 @@ export default function Home() {
       <FeaturedHeroSection />
       <FadeIn>
         <BrandStatementSection />
-      </FadeIn>
-      <FadeIn>
-        <ArtistMarqueeSection />
       </FadeIn>
       <FadeIn>
         <UpcomingProgramsSection />
