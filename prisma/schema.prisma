@@ -451,7 +451,6 @@ model Drop {
   type        DropType
   status      DropStatus   @default(draft)
   heroUrl      String?
-  videoUrl     String?
   eventDate    DateTime?
   eventEndDate DateTime?
   venue        String?
@@ -460,22 +459,10 @@ model Drop {
   publishedAt  DateTime?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  /// @deprecated DropMedia로 마이그레이션 후 제거 예정
-  images      DropImage[]
   media       DropMedia[]
   ticketTiers TicketTier[]
   variants    GoodsVariant[]
   orders      Order[]
-}
-
-/// @deprecated DropMedia로 마이그레이션 후 제거 예정
-model DropImage {
-  id       String   @id @default(cuid())
-  imageUrl String
-  alt      String
-  order    Int      @default(0)
-  dropId   String
-  drop     Drop     @relation(fields: [dropId], references: [id], onDelete: Cascade)
 }
 
 model DropMedia {

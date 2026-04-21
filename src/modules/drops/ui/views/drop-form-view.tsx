@@ -88,7 +88,16 @@ export function DropFormView({ drop }: DropFormViewProps) {
   const existingImages = drop?.media
     ?.filter((m) => m.type === 'image')
     .map((m) => ({ imageUrl: m.url, alt: m.alt, order: m.order }));
-  const existingVideo = drop?.media?.find((m) => m.type === 'video');
+  const existingVideos =
+    drop?.media
+      ?.filter((m) => m.type === 'video')
+      .map((m) => ({
+        videoUrl: m.url,
+        preview: m.url,
+        file: null as File | null,
+        uploadURL: '',
+        error: '',
+      })) ?? [];
 
   // 갤러리 이미지 (multi)
   const [galleryImages, setGalleryImages] = useState<
@@ -113,46 +122,76 @@ export function DropFormView({ drop }: DropFormViewProps) {
   const [type, setType] = useState(drop?.type ?? 'ticket');
   const [status, setStatus] = useState(drop?.status ?? 'draft');
 
-  // 비디오 (현재 UI는 single video. 다중 영상 UI는 후속 작업)
-  const [videoUrl, setVideoUrl] = useState(existingVideo?.url ?? '');
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoUploadURL, setVideoUploadURL] = useState('');
-  const [videoPreview, setVideoPreview] = useState(existingVideo?.url ?? '');
-  const [videoUploading, setVideoUploading] = useState(false);
-  const [videoError, setVideoError] = useState('');
+  // 다중 비디오
+  type VideoItem = {
+    videoUrl: string;
+    preview: string;
+    file: File | null;
+    uploadURL: string;
+    error: string;
+  };
+  const [videos, setVideos] = useState<VideoItem[]>(existingVideos);
+  const [videosUploading, setVideosUploading] = useState(false);
 
   const handleVideoChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = ''; // 다음 추가를 위해 리셋
     if (!file) return;
-    setVideoError('');
 
     if (file.size > 200 * 1024 * 1024) {
-      setVideoError('비디오 파일은 200MB 이하만 가능합니다.');
+      toast({
+        title: '비디오 파일은 200MB 이하만 가능합니다.',
+        variant: 'destructive',
+      });
       return;
     }
 
-    setVideoFile(file);
-    setVideoPreview(URL.createObjectURL(file));
+    const preview = URL.createObjectURL(file);
+    const placeholder: VideoItem = {
+      videoUrl: '',
+      preview,
+      file,
+      uploadURL: '',
+      error: '',
+    };
+    setVideos((prev) => [...prev, placeholder]);
 
     try {
       const result = await getCloudflareVideoUploadUrl();
       if (!result.success || !result.uploadURL || !result.videoUrl) {
-        setVideoError('비디오 업로드 URL을 가져올 수 없습니다.');
+        setVideos((prev) =>
+          prev.map((v) =>
+            v.preview === preview
+              ? { ...v, error: '업로드 URL을 가져올 수 없습니다.' }
+              : v
+          )
+        );
         return;
       }
-      setVideoUploadURL(result.uploadURL);
-      setVideoUrl(result.videoUrl);
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.preview === preview
+            ? {
+                ...v,
+                uploadURL: result.uploadURL as string,
+                videoUrl: result.videoUrl as string,
+              }
+            : v
+        )
+      );
     } catch {
-      setVideoError('비디오 업로드 준비에 실패했습니다.');
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.preview === preview
+            ? { ...v, error: '업로드 준비에 실패했습니다.' }
+            : v
+        )
+      );
     }
   };
 
-  const removeVideo = () => {
-    setVideoFile(null);
-    setVideoPreview('');
-    setVideoUrl('');
-    setVideoUploadURL('');
-    setVideoError('');
+  const removeVideo = (idx: number) => {
+    setVideos((prev) => prev.filter((_, i) => i !== idx));
   };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -181,26 +220,30 @@ export function DropFormView({ drop }: DropFormViewProps) {
         return;
       }
 
-      // 3) 비디오 업로드
-      if (videoFile && videoUploadURL) {
-        setVideoUploading(true);
+      // 3) 비디오 업로드 (pending만)
+      const pendingVideos = videos.filter((v) => v.file && v.uploadURL);
+      if (pendingVideos.length > 0) {
+        setVideosUploading(true);
         try {
-          const vfd = new FormData();
-          vfd.append('file', videoFile);
-          await fetch(videoUploadURL, { method: 'POST', body: vfd });
-          setVideoFile(null);
-          setVideoUploadURL('');
+          for (const v of pendingVideos) {
+            const vfd = new FormData();
+            vfd.append('file', v.file!);
+            await fetch(v.uploadURL, { method: 'POST', body: vfd });
+          }
         } catch {
           toast({
             title: '비디오 업로드에 실패했습니다.',
             variant: 'destructive',
           });
-        } finally {
-          setVideoUploading(false);
+          setVideosUploading(false);
+          setIsSubmitting(false);
+          return;
         }
+        setVideosUploading(false);
       }
 
       // 4) media 배열 구성 (이미지 + 영상 통합)
+      const validVideos = videos.filter((v) => v.videoUrl);
       const media: Array<{
         type: 'image' | 'video';
         url: string;
@@ -213,16 +256,12 @@ export function DropFormView({ drop }: DropFormViewProps) {
           alt: img.alt,
           order: idx,
         })),
-        ...(videoUrl
-          ? [
-              {
-                type: 'video' as const,
-                url: videoUrl,
-                alt: '',
-                order: uploadedImages.length,
-              },
-            ]
-          : []),
+        ...validVideos.map((v, idx) => ({
+          type: 'video' as const,
+          url: v.videoUrl,
+          alt: '',
+          order: uploadedImages.length + idx,
+        })),
       ];
 
       // 5) 서버 액션 호출
@@ -469,48 +508,56 @@ export function DropFormView({ drop }: DropFormViewProps) {
                   />
                 </div>
 
-                {/* 비디오 */}
+                {/* 영상 (다중) */}
                 <div>
                   <Label>영상</Label>
-                  {videoPreview ? (
-                    <div className="relative mt-1 overflow-hidden rounded-md border bg-black">
-                      {videoPreview.startsWith('blob:') ? (
-                        <video
-                          src={videoPreview}
-                          controls
-                          className="aspect-video w-full"
-                        />
-                      ) : (
-                        <CloudflareStreamVideo
-                          videoUrl={videoPreview}
-                          controls
-                          className="aspect-video w-full"
-                        />
-                      )}
-                      <button
-                        type="button"
-                        onClick={removeVideo}
-                        className="absolute right-2 top-2 rounded-full bg-red-500 px-2 py-1 text-xs text-white hover:bg-red-600"
+                  <div className="mt-1 grid gap-3 sm:grid-cols-2">
+                    {videos.map((v, idx) => (
+                      <div
+                        key={v.preview}
+                        className="relative overflow-hidden rounded-md border bg-black"
                       >
-                        삭제
-                      </button>
-                      {videoUploading && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                          <Loader2 className="h-8 w-8 animate-spin text-white" />
-                        </div>
-                      )}
-                    </div>
-                  ) : (
+                        {v.preview.startsWith('blob:') ? (
+                          <video
+                            src={v.preview}
+                            controls
+                            className="aspect-video w-full"
+                          />
+                        ) : (
+                          <CloudflareStreamVideo
+                            videoUrl={v.preview}
+                            controls
+                            className="aspect-video w-full"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeVideo(idx)}
+                          className="absolute right-2 top-2 rounded-full bg-red-500 px-2 py-1 text-xs text-white hover:bg-red-600"
+                        >
+                          삭제
+                        </button>
+                        {v.error && (
+                          <p className="absolute inset-x-0 bottom-0 bg-red-500/80 px-2 py-1 text-xs text-white">
+                            {v.error}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* 추가 버튼 */}
                     <label
                       htmlFor="videoInput"
-                      className="mt-1 flex aspect-video cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-neutral-300 text-neutral-300 transition-colors hover:border-neutral-400 hover:bg-neutral-50"
+                      className="flex aspect-video cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-neutral-300 text-neutral-300 transition-colors hover:border-neutral-400 hover:bg-neutral-50"
                     >
                       <Video className="h-8 w-8" />
                       <span className="mt-2 text-sm text-neutral-400">
-                        영상을 추가해주세요.
+                        {videos.length > 0
+                          ? '영상 추가'
+                          : '영상을 추가해주세요.'}
                       </span>
                     </label>
-                  )}
+                  </div>
                   <input
                     type="file"
                     id="videoInput"
@@ -518,9 +565,15 @@ export function DropFormView({ drop }: DropFormViewProps) {
                     onChange={handleVideoChange}
                     className="hidden"
                   />
-                  {videoError && (
-                    <p className="mt-1 text-sm text-red-500">{videoError}</p>
+                  {videosUploading && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-neutral-500">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      영상 업로드 중...
+                    </div>
                   )}
+                  <p className="mt-1 text-xs text-neutral-400">
+                    영상 하나당 최대 200MB, 여러 개 업로드 가능합니다.
+                  </p>
                 </div>
 
                 {/* 갤러리 이미지 */}
