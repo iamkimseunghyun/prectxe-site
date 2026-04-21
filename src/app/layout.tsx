@@ -6,6 +6,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata } from 'next';
 import type React from 'react';
+import { Footer } from '@/components/layout/footer';
 import Header from '@/components/layout/header';
 import { Toaster } from '@/components/ui/toaster';
 import Providers from '@/modules/providers';
@@ -116,6 +117,7 @@ export default function RootLayout({
             <SpeedInsights />
             <Toaster />
           </main>
+          <Footer />
         </Providers>
         {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
       </body>

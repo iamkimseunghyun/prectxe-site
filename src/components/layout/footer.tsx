@@ -1,4 +1,3 @@
-'use client';
 import Link from 'next/link';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { socialIcons } from '@/lib/constants/constants';

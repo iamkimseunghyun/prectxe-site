@@ -9,8 +9,7 @@ export const BUSINESS_INFO = {
   /** 통신판매업 신고 완료 시 번호 채워넣기. null이면 "신고 예정"으로 표시됨 */
   mailOrderNumber: null as string | null,
   address: '서울특별시 강남구 영동대로 602, 6층 P282',
-  /** 고객센터 전화번호. 없으면 이메일만 노출됨 */
-  phone: null as string | null,
+  phone: '02-6207-2077' as string | null,
   email: 'info@laaf.kr',
   hostingService: 'Vercel Inc.',
   serviceName: 'PRECTXE',
