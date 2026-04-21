@@ -187,10 +187,6 @@ export async function FeaturedHeroSection() {
             About
           </Link>
         </div>
-
-        <p className="pb-6 pt-3 text-center text-xs text-neutral-400 sm:pb-8">
-          © {new Date().getFullYear()} PRECTXE
-        </p>
       </div>
     </section>
   );
