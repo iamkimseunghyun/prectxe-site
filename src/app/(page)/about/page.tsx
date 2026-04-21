@@ -6,19 +6,21 @@ import YoutubeIcon from '@/components/icons/youtube';
 export const metadata: Metadata = {
   title: 'About | PRECTXE',
   description:
-    '사운드와 비주얼이 만나는 전시, 라이브, 파티를 만들고 그 경험을 기록하는 서울 기반 테크-아트 플랫폼.',
+    '음악과 예술의 순간을 큐레이션하는 서울 기반 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠를 기획하고 그 과정을 아카이브로 남깁니다.',
   openGraph: {
     title: 'About | PRECTXE',
     description:
-      '사운드와 비주얼이 만나는 전시, 라이브, 파티를 만들고 그 경험을 기록하는 서울 기반 테크-아트 플랫폼',
+      '음악과 예술의 순간을 큐레이션하는 서울 기반 아트 플랫폼 PRECTXE.',
     type: 'website',
   },
   keywords: [
     'PRECTXE',
-    '테크-아트',
-    '디지털 아트',
+    '아트 플랫폼',
+    '음악',
+    '예술',
+    '큐레이션',
+    '공연',
     '전시',
-    '라이브',
     '아카이브',
   ],
 };
@@ -29,18 +31,18 @@ export default function Page() {
       {/* Hero */}
       <section className="flex min-h-[70vh] flex-col justify-center px-6 md:px-12 lg:px-24">
         <p className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-muted-foreground">
-          Seoul-based Tech-Art Platform
+          Seoul-based Art Platform
         </p>
         <h1 className="max-w-3xl text-3xl font-light leading-snug tracking-tight md:text-5xl md:leading-snug">
-          사운드와 비주얼이 만나는
+          음악과 예술이 만나는
           <br />
           전시, 라이브, 파티를 만들고
           <br />그 경험을 기록합니다.
         </h1>
         <p className="mt-8 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-          PRECTXE는 서울을 기반으로 활동하는 테크-아트 플랫폼입니다. 미디어
-          아트, 오디오비주얼 퍼포먼스, 사운드 중심의 프로그램을 기획하고, 그
-          과정을 디지털 아카이브로 남깁니다.
+          PRECTXE는 서울을 기반으로 활동하는 아트 플랫폼입니다. 미디어 아트,
+          오디오비주얼 퍼포먼스, 사운드 중심의 프로그램을 기획하고, 그 과정을
+          디지털 아카이브로 남깁니다.
         </p>
       </section>
 
