@@ -6,8 +6,11 @@ import { createResendClient } from '@/lib/email/resend';
 import { filterValidEmails, sendEmail } from '@/lib/email/send';
 
 /**
- * 뉴스레터 구독 — Resend Audiences에 연락처 등록 (단일 옵트인).
+ * 뉴스레터 구독 — Resend 계정 기본 Audience에 연락처 등록 (단일 옵트인).
  * 이미 구독 중이면 idempotent 성공으로 처리.
+ *
+ * 2026년부터 Resend는 audience_id 없이 계정 기본 Audience를 사용.
+ * 세분화가 필요하면 segments/topics 옵션을 추후 추가.
  */
 export async function subscribeNewsletter(email: string) {
   const normalized = email.trim().toLowerCase();
@@ -19,19 +22,9 @@ export async function subscribeNewsletter(email: string) {
     };
   }
 
-  const audienceId = process.env.RESEND_AUDIENCE_ID;
-  if (!audienceId) {
-    console.error('[newsletter] RESEND_AUDIENCE_ID 환경변수가 없습니다');
-    return {
-      success: false as const,
-      error: '뉴스레터 설정이 완료되지 않았습니다.',
-    };
-  }
-
   try {
     const resend = createResendClient();
     const { error } = await resend.contacts.create({
-      audienceId,
       email: normalized,
       unsubscribed: false,
     });
