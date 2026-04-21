@@ -4,24 +4,45 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db/prisma';
 import { formatEventDate, getImageUrl } from '@/lib/utils';
 
+const PROGRAM_SELECT = {
+  slug: true,
+  title: true,
+  summary: true,
+  heroUrl: true,
+  startAt: true,
+  endAt: true,
+  city: true,
+  venue: true,
+} as const;
+
+/**
+ * 홈페이지 프로그램 섹션.
+ * - upcoming 3개 우선 노출 (startAt 오름차순)
+ * - 없으면 최근 completed 3개로 폴백 (startAt 내림차순) + 라벨 교체
+ */
 export async function UpcomingProgramsSection() {
-  const programs = await prisma.program.findMany({
+  const upcoming = await prisma.program.findMany({
     where: { status: 'upcoming' },
     take: 3,
     orderBy: { startAt: 'asc' },
-    select: {
-      slug: true,
-      title: true,
-      summary: true,
-      heroUrl: true,
-      startAt: true,
-      endAt: true,
-      city: true,
-      venue: true,
-    },
+    select: PROGRAM_SELECT,
   });
 
+  const isUpcoming = upcoming.length > 0;
+  const programs = isUpcoming
+    ? upcoming
+    : await prisma.program.findMany({
+        where: { status: 'completed' },
+        take: 3,
+        orderBy: { startAt: 'desc' },
+        select: PROGRAM_SELECT,
+      });
+
   if (programs.length === 0) return null;
+
+  const eyebrow = isUpcoming ? "What's Next" : 'From the Stage';
+  const title = isUpcoming ? 'Upcoming' : 'Archive';
+  const ctaText = isUpcoming ? '전체 프로그램' : '아카이브 보기';
 
   return (
     <section className="bg-white py-24 md:py-32">
@@ -29,17 +50,17 @@ export async function UpcomingProgramsSection() {
         <div className="mb-14 flex items-end justify-between gap-6 md:mb-20">
           <div>
             <p className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-neutral-500 md:mb-6">
-              What's Next
+              {eyebrow}
             </p>
             <h2 className="text-3xl font-light leading-[1.15] tracking-tight text-neutral-900 md:text-5xl lg:text-6xl">
-              Upcoming
+              {title}
             </h2>
           </div>
           <Link
             href="/programs"
             className="hidden shrink-0 items-center gap-1.5 text-sm text-neutral-500 transition-colors hover:text-neutral-900 sm:inline-flex"
           >
-            전체 프로그램 <ArrowUpRight className="h-4 w-4" />
+            {ctaText} <ArrowUpRight className="h-4 w-4" />
           </Link>
         </div>
 
@@ -97,7 +118,7 @@ export async function UpcomingProgramsSection() {
           href="/programs"
           className="mt-10 inline-flex items-center gap-1.5 text-sm text-neutral-500 transition-colors hover:text-neutral-900 sm:hidden"
         >
-          전체 프로그램 <ArrowUpRight className="h-4 w-4" />
+          {ctaText} <ArrowUpRight className="h-4 w-4" />
         </Link>
       </div>
     </section>
