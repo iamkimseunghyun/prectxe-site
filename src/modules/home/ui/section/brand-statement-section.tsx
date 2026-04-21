@@ -6,13 +6,13 @@ export function BrandStatementSection() {
           About PRECTXE
         </p>
         <h2 className="max-w-5xl text-3xl font-light leading-[1.15] tracking-tight text-neutral-900 md:text-5xl lg:text-6xl">
-          Electronic music scene,
+          Music and Art,
           <br />
           <span className="text-neutral-400">curated.</span>
         </h2>
         <p className="mt-10 max-w-2xl text-base leading-relaxed text-neutral-500 md:text-lg">
-          전자음악 씬을 구성하는 아티스트·공연·공간을 기록하고 연결합니다.
-          소리와 빛으로 순간을 설계하는 문화 플랫폼 PRECTXE.
+          동시대 음악과 예술의 순간을 큐레이션합니다. 소리와 빛, 공간과
+          이야기로 경험을 설계하는 아트 플랫폼 PRECTXE.
         </p>
       </div>
     </section>
