@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import ArtworkSchema from '@/components/seo/artwork-schema';
 import { Badge } from '@/components/ui/badge';
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { prisma } from '@/lib/db/prisma';
 import { formatArtistName, getImageUrl } from '@/lib/utils';
 import { getArtworkById } from '@/modules/artworks/server/actions';
@@ -53,7 +54,7 @@ export async function generateMetadata({
   return {
     title,
     description: description.slice(0, 160),
-    alternates: { canonical: `https://prectxe.com/artworks/${id}` },
+    alternates: { canonical: `${BUSINESS_INFO.serviceUrl}/artworks/${id}` },
     openGraph: {
       title: artwork.title,
       description: description.slice(0, 160),

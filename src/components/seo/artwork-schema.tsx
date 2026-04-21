@@ -1,3 +1,4 @@
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import type { ArtworkResponse } from '@/lib/schemas/seo';
 import { formatArtistName } from '@/lib/utils';
 
@@ -37,7 +38,7 @@ const ArtworkSchema = ({ artwork }: { artwork: ArtworkResponse }) => {
       position: img.order,
     })),
     // URL
-    url: `https://prectxe.com/artworks/${artwork.id}`,
+    url: `${BUSINESS_INFO.serviceUrl}/artworks/${artwork.id}`,
     // 메타데이터
     datePublished: new Date(artwork.createdAt),
     dateModified: new Date(artwork.updatedAt),

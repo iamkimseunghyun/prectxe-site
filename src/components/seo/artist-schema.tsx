@@ -1,3 +1,5 @@
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
+
 type ArtistForSEO = {
   id: string;
   name: string;
@@ -7,7 +9,7 @@ type ArtistForSEO = {
 };
 
 const ArtistSchema = ({ artist }: { artist: ArtistForSEO }) => {
-  const url = `https://prectxe.com/artists/${artist.id}`;
+  const url = `${BUSINESS_INFO.serviceUrl}/artists/${artist.id}`;
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Person',

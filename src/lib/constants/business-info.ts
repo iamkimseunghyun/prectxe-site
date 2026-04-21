@@ -13,5 +13,5 @@ export const BUSINESS_INFO = {
   email: 'info@laaf.kr',
   hostingService: 'Vercel Inc.',
   serviceName: 'PRECTXE',
-  serviceUrl: 'https://prectxe.com',
+  serviceUrl: 'https://www.prectxe.com',
 } as const;

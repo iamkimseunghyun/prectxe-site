@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { getImageUrl } from '@/lib/utils';
 import { getArticleBySlug } from '@/modules/journal/server/actions';
 import { JournalDetailView } from '@/modules/journal/ui/views/journal-detail-view';
@@ -13,7 +14,7 @@ export async function generateMetadata({
   if (!article) return { title: 'Journal — Not Found' };
   const title = `${article.title} — PRECTXE`;
   const description = article.excerpt || undefined;
-  const url = `https://prectxe.com/journal/${article.slug}`;
+  const url = `${BUSINESS_INFO.serviceUrl}/journal/${article.slug}`;
   const cover = article.cover
     ? getImageUrl(article.cover, 'public')
     : undefined;

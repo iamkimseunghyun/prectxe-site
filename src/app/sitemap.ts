@@ -1,10 +1,10 @@
 // src/app/sitemap.ts
 import type { MetadataRoute } from 'next';
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { prisma } from '@/lib/db/prisma';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // 기본 URL
-  const baseUrl = 'https://prectxe.com';
+  const baseUrl = BUSINESS_INFO.serviceUrl;
 
   // DB에서 동적 라우트 데이터 가져오기
   const artists = await prisma.artist.findMany({

@@ -1,3 +1,5 @@
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
+
 type VenueForSEO = {
   id: string;
   name: string;
@@ -6,7 +8,7 @@ type VenueForSEO = {
 };
 
 const VenueSchema = ({ venue }: { venue: VenueForSEO }) => {
-  const url = `https://prectxe.com/venues/${venue.id}`;
+  const url = `${BUSINESS_INFO.serviceUrl}/venues/${venue.id}`;
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Place',

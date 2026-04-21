@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import CarouselGallery from '@/components/image/carousel-gallery';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import VenueSchema from '@/components/seo/venue-schema';
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { getVenueById } from '@/modules/venues/server/actions';
 
 export async function generateMetadata({
@@ -23,7 +24,7 @@ export async function generateMetadata({
   return {
     title: venue.name,
     description,
-    alternates: { canonical: `https://prectxe.com/venues/${id}` },
+    alternates: { canonical: `${BUSINESS_INFO.serviceUrl}/venues/${id}` },
     openGraph: {
       title: venue.name,
       description,

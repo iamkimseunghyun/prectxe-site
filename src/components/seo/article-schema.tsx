@@ -1,3 +1,5 @@
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
+
 type ArticleForSEO = {
   slug: string;
   title: string;
@@ -9,7 +11,7 @@ type ArticleForSEO = {
 };
 
 const ArticleSchema = ({ article }: { article: ArticleForSEO }) => {
-  const url = `https://prectxe.com/journal/${article.slug}`;
+  const url = `${BUSINESS_INFO.serviceUrl}/journal/${article.slug}`;
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',

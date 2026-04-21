@@ -1,3 +1,5 @@
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
+
 type ProgramForSEO = {
   title: string;
   summary?: string | null;
@@ -34,11 +36,11 @@ const ProgramSchema = ({ program }: { program: ProgramForSEO }) => {
       },
     },
     image: program.heroUrl ? [program.heroUrl] : undefined,
-    url: `https://prectxe.com/programs/${program.slug}`,
+    url: `${BUSINESS_INFO.serviceUrl}/programs/${program.slug}`,
     organizer: {
       '@type': 'Organization',
       name: 'PRECTXE',
-      url: 'https://prectxe.com',
+      url: BUSINESS_INFO.serviceUrl,
     },
   };
 

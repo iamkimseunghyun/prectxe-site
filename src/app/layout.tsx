@@ -9,15 +9,16 @@ import type React from 'react';
 import { Footer } from '@/components/layout/footer';
 import Header from '@/components/layout/header';
 import { Toaster } from '@/components/ui/toaster';
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import Providers from '@/modules/providers';
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 // 메타데이터 설정
 export const metadata: Metadata = {
-  metadataBase: new URL('https://prectxe.com'),
+  metadataBase: new URL(BUSINESS_INFO.serviceUrl),
   title: {
-    default: 'Music, Art Curated by PRECTXE',
+    default: 'Music and Art by PRECTXE',
     template: '%s | PRECTXE',
   },
   description: '전시, 공연, 예술이 만나는 찰나의 순간을 기억합니다.',
@@ -40,29 +41,29 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'ko_KR',
-    url: 'https://prectxe.com',
-    title: 'Music, Art Curated by PRECTXE',
+    url: BUSINESS_INFO.serviceUrl,
+    title: 'Music and Art by PRECTXE',
     description: '전시, 공연, 예술이 만나는 찰나의 순간을 기억합니다.',
     siteName: '프렉티스',
     images: [
       {
-        url: '/twitter-card.jpg', // metadataBase와 결합되어 https://prectxe.com/twitter-card.jpg가 됨
+        url: '/twitter-card.jpg', // metadataBase와 결합되어 절대 URL로 변환됨
         width: 1200,
         height: 630,
-        alt: 'Music, Art Curated by PRECTXE',
+        alt: 'Music and Art by PRECTXE',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Music, Art Curated by PRECTXE',
+    title: 'Music and Art by PRECTXE',
     description: '전시, 공연, 예술이 만나는 찰나의 순간을 기억합니다.',
     images: [
       {
-        url: '/twitter-card.jpg', // metadataBase와 결합되어 https://prectxe.com/twitter-card.jpg가 됨
+        url: '/twitter-card.jpg', // metadataBase와 결합되어 절대 URL로 변환됨
         width: 1200,
         height: 630,
-        alt: 'Music, Art Curated by PRECTXE',
+        alt: 'Music and Art by PRECTXE',
       },
     ],
   },

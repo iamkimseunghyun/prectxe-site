@@ -12,6 +12,7 @@ import { notFound } from 'next/navigation';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
 import ArtistSchema from '@/components/seo/artist-schema';
 import { Badge } from '@/components/ui/badge';
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { prisma } from '@/lib/db/prisma';
 import { formatArtistName, getImageUrl } from '@/lib/utils';
 import { getArtistById } from '@/modules/artists/server/actions';
@@ -50,7 +51,7 @@ export async function generateMetadata({
   return {
     title,
     description,
-    alternates: { canonical: `https://prectxe.com/artists/${id}` },
+    alternates: { canonical: `${BUSINESS_INFO.serviceUrl}/artists/${id}` },
     openGraph: {
       title,
       description,
