@@ -55,7 +55,13 @@ export default async function OGImage({
   }
 
   const firstImage = drop.media.find((m) => m.type === 'image');
-  const heroSrc = firstImage ? getImageUrl(firstImage.url, 'public') : null;
+  const firstVideo = drop.media.find((m) => m.type === 'video');
+  // 이미지 없으면 영상 썸네일(Cloudflare Stream) fallback
+  const heroSrc = firstImage
+    ? getImageUrl(firstImage.url, 'public')
+    : firstVideo
+      ? `${firstVideo.url}/thumbnails/thumbnail.jpg`
+      : null;
   const typeLabel = TYPE_LABELS[drop.type] || 'DROP';
 
   // 최저 가격 계산
