@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import {
+  cleanupRemovedHtmlImages,
   deleteAllImages,
   deleteCloudflareImage,
   deleteCloudflareVideo,
@@ -128,6 +129,11 @@ export async function updateDrop(
     await deleteRemovedImages(prev.images, newImageUrls);
   }
 
+  // description HTML 내 제거된 이미지 정리 (RichEditor 인라인 이미지)
+  if (data.description !== undefined) {
+    await cleanupRemovedHtmlImages(prev.description, data.description || null);
+  }
+
   // draft → 공개 상태 전환 시 publishedAt 자동 설정
   const isPublishing =
     data.status &&
@@ -207,6 +213,10 @@ export async function deleteDrop(id: string) {
   }
   if (drop.images.length > 0) {
     await deleteAllImages(drop.images);
+  }
+  // description 내 인라인 이미지 전부 삭제
+  if (drop.description) {
+    await cleanupRemovedHtmlImages(drop.description, null);
   }
 
   await prisma.drop.delete({ where: { id } });

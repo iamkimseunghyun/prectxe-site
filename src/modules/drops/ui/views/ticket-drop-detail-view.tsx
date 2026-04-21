@@ -233,11 +233,11 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
             {/* Description + Gallery (left: 3/5) */}
             <div className="lg:col-span-3">
               {drop.description && (
-                <div className="prose prose-lg prose-neutral max-w-none leading-[1.9]">
-                  {drop.description.split('\n').map((p, i) => (
-                    <p key={i}>{p}</p>
-                  ))}
-                </div>
+                <div
+                  className="prose prose-lg prose-neutral max-w-none leading-[1.9]"
+                  // biome-ignore lint/security/noDangerouslySetInnerHtml: RichEditor로 생성된 신뢰 가능한 관리자 입력 HTML
+                  dangerouslySetInnerHTML={{ __html: drop.description }}
+                />
               )}
 
               {/* Video */}

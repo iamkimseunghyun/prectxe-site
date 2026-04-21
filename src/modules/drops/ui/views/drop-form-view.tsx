@@ -7,6 +7,7 @@ import { type ChangeEvent, useState } from 'react';
 import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
 import MultiImageBox from '@/components/image/multi-image-box';
 import SingleImageBox from '@/components/image/single-image-box';
+import { RichEditor } from '@/components/rich-editor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -65,6 +66,7 @@ export function DropFormView({ drop }: DropFormViewProps) {
   const isEdit = !!drop;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [description, setDescription] = useState(drop?.description ?? '');
 
   // 히어로 이미지 (single)
   const [heroUrl, setHeroUrl] = useState(drop?.heroUrl ?? '');
@@ -197,7 +199,7 @@ export function DropFormView({ drop }: DropFormViewProps) {
         slug: fd.get('slug') as string,
         type: fd.get('type') as 'ticket' | 'goods',
         summary: (fd.get('summary') as string) || undefined,
-        description: (fd.get('description') as string) || undefined,
+        description: description || undefined,
         heroUrl: heroUrl || undefined,
         videoUrl: videoUrl || undefined,
         eventDate: (fd.get('eventDate') as string) || undefined,
@@ -337,12 +339,12 @@ export function DropFormView({ drop }: DropFormViewProps) {
                 </div>
 
                 <div>
-                  <Label htmlFor="description">상세 설명</Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    defaultValue={drop?.description ?? ''}
-                    rows={4}
+                  <Label>상세 설명</Label>
+                  <RichEditor
+                    content={description}
+                    onChange={setDescription}
+                    placeholder="Drop의 상세 설명을 입력하세요..."
+                    minHeight="300px"
                   />
                 </div>
 

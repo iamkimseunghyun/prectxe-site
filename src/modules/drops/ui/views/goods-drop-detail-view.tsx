@@ -396,11 +396,11 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                   <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-neutral-400">
                     상세 정보
                   </h3>
-                  <div className="prose prose-sm prose-neutral max-w-none leading-relaxed">
-                    {drop.description.split('\n').map((p, i) => (
-                      <p key={i}>{p}</p>
-                    ))}
-                  </div>
+                  <div
+                    className="prose prose-sm prose-neutral max-w-none leading-relaxed"
+                    // biome-ignore lint/security/noDangerouslySetInnerHtml: RichEditor로 생성된 신뢰 가능한 관리자 입력 HTML
+                    dangerouslySetInnerHTML={{ __html: drop.description }}
+                  />
                 </div>
               )}
 
