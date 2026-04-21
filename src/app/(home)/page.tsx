@@ -1,3 +1,5 @@
+import { FadeIn } from '@/components/shared/fade-in';
+import { ArtistMarqueeSection } from '@/modules/home/ui/section/artist-marquee-section';
 import { BrandStatementSection } from '@/modules/home/ui/section/brand-statement-section';
 import { FeaturedHeroSection } from '@/modules/home/ui/section/featured-hero-section';
 import { NewsletterCtaSection } from '@/modules/home/ui/section/newsletter-cta-section';
@@ -9,11 +11,24 @@ export default function Home() {
   return (
     <>
       <FeaturedHeroSection />
-      <BrandStatementSection />
-      <UpcomingProgramsSection />
-      <NowOnSaleSection />
-      <RecentJournalSection />
-      <NewsletterCtaSection />
+      <FadeIn>
+        <BrandStatementSection />
+      </FadeIn>
+      <FadeIn>
+        <ArtistMarqueeSection />
+      </FadeIn>
+      <FadeIn>
+        <UpcomingProgramsSection />
+      </FadeIn>
+      <FadeIn>
+        <NowOnSaleSection />
+      </FadeIn>
+      <FadeIn>
+        <RecentJournalSection />
+      </FadeIn>
+      <FadeIn>
+        <NewsletterCtaSection />
+      </FadeIn>
     </>
   );
 }
