@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { FilterChip } from '@/components/shared/filter-chip';
 import { listArticles } from '@/modules/journal/server/actions';
 import { ArticleCard } from '@/modules/journal/ui/section/article-card';
 
@@ -18,22 +18,15 @@ export async function JournalListView({ tag }: { tag?: string }) {
 
       {/* 태그 필터 */}
       <div className="mb-8 flex flex-wrap gap-2">
-        {TAG_FILTERS.map((f) => {
-          const isActive = (tag || '') === f.value;
-          return (
-            <Link
-              key={f.value}
-              href={f.value ? `/journal?tag=${f.value}` : '/journal'}
-              className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
-                isActive
-                  ? 'border-neutral-900 bg-neutral-900 text-white'
-                  : 'border-neutral-300 text-neutral-600 hover:border-neutral-900'
-              }`}
-            >
-              {f.label}
-            </Link>
-          );
-        })}
+        {TAG_FILTERS.map((f) => (
+          <FilterChip
+            key={f.value}
+            href={f.value ? `/journal?tag=${f.value}` : '/journal'}
+            active={(tag || '') === f.value}
+          >
+            {f.label}
+          </FilterChip>
+        ))}
       </div>
 
       {(!data || data.length === 0) && (

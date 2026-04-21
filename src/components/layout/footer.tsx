@@ -10,8 +10,6 @@ const EXPLORE_LINKS = [
 
 const COMPANY_LINKS = [
   { href: '/about', label: 'About' },
-  { href: '/artists', label: 'Artists' },
-  { href: '/venues', label: 'Venues' },
   { href: '/partnership', label: 'Partnership' },
 ];
 

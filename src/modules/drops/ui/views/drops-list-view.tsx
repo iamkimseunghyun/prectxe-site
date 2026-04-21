@@ -1,6 +1,7 @@
 import { Package, Ticket } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { FilterChip } from '@/components/shared/filter-chip';
 import { Badge } from '@/components/ui/badge';
 import { getImageUrl } from '@/lib/utils';
 import { listDrops } from '@/modules/drops/server/actions';
@@ -21,39 +22,18 @@ export async function DropsListView({ type, page }: DropsListViewProps) {
         <p className="mt-2 text-muted-foreground">티켓과 굿즈를 만나보세요.</p>
 
         {/* Type Filter */}
-        <div className="mt-4 flex gap-2">
-          <Link
-            href="/drops"
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              !type
-                ? 'bg-neutral-900 text-white'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            }`}
-          >
+        <div className="mt-6 flex flex-wrap gap-2">
+          <FilterChip href="/drops" active={!type}>
             전체
-          </Link>
-          <Link
-            href="/drops?type=ticket"
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              type === 'ticket'
-                ? 'bg-neutral-900 text-white'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            }`}
-          >
+          </FilterChip>
+          <FilterChip href="/drops?type=ticket" active={type === 'ticket'}>
             <Ticket className="mr-1 inline h-4 w-4" />
             티켓
-          </Link>
-          <Link
-            href="/drops?type=goods"
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              type === 'goods'
-                ? 'bg-neutral-900 text-white'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            }`}
-          >
+          </FilterChip>
+          <FilterChip href="/drops?type=goods" active={type === 'goods'}>
             <Package className="mr-1 inline h-4 w-4" />
             굿즈
-          </Link>
+          </FilterChip>
         </div>
       </div>
 
