@@ -3,6 +3,7 @@
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
+import { subscribeNewsletter } from '@/modules/email/server/actions';
 
 export function NewsletterForm() {
   const [email, setEmail] = useState('');
@@ -21,14 +22,23 @@ export function NewsletterForm() {
     }
 
     setIsSubmitting(true);
-    // TODO: 구독자 DB·확인 메일 발송 server action 연결
-    await new Promise((r) => setTimeout(r, 300));
+    const result = await subscribeNewsletter(email);
+    setIsSubmitting(false);
+
+    if (!result.success) {
+      toast({ title: result.error, variant: 'destructive' });
+      return;
+    }
+
     toast({
-      title: '곧 뉴스레터가 시작됩니다.',
-      description: '미리 알림을 받으시려면 info@laaf.kr로 연락주세요.',
+      title: result.alreadySubscribed
+        ? '이미 구독 중이세요.'
+        : '구독이 완료되었습니다.',
+      description: result.alreadySubscribed
+        ? '등록된 주소로 다음 소식을 보내드릴게요.'
+        : '다음 Drop과 Journal을 이 주소로 보내드릴게요.',
     });
     setEmail('');
-    setIsSubmitting(false);
   }
 
   return (

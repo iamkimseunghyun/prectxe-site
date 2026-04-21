@@ -26,10 +26,7 @@ import {
   getCloudflareImageUrl,
   getCloudflareVideoUploadUrl,
 } from '@/lib/cdn/cloudflare';
-import validateImageFile, {
-  formatArtistName,
-  getImageUrl,
-} from '@/lib/utils';
+import validateImageFile, { formatArtistName, getImageUrl } from '@/lib/utils';
 import ArtistSelect from '@/modules/artists/ui/components/artist-select';
 import {
   createDrop,

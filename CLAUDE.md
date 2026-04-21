@@ -123,7 +123,7 @@ Required: `DATABASE_URL`, `CLOUDFLARE_IMAGE_STREAM_API_ACCOUNT_ID`, `CLOUDFLARE_
 
 Payment: `PORTONE_API_SECRET`, `NEXT_PUBLIC_PORTONE_STORE_ID`, `NEXT_PUBLIC_PORTONE_CHANNEL_KEY`
 
-Email: `RESEND_API_KEY`, `RESEND_SENDER_EMAIL`. SMS: `SMS_PROVIDER` (`aligo`|`solapi`) + provider-specific keys.
+Email: `RESEND_API_KEY`, `RESEND_SENDER_EMAIL`, `RESEND_AUDIENCE_ID` (뉴스레터 구독자 리스트 ID). SMS: `SMS_PROVIDER` (`aligo`|`solapi`) + provider-specific keys.
 
 Optional: `ENABLE_PROGRAM_REDIRECTS` (legacy URL redirects)
 

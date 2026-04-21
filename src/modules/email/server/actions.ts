@@ -2,7 +2,61 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db/prisma';
+import { createResendClient } from '@/lib/email/resend';
 import { filterValidEmails, sendEmail } from '@/lib/email/send';
+
+/**
+ * 뉴스레터 구독 — Resend Audiences에 연락처 등록 (단일 옵트인).
+ * 이미 구독 중이면 idempotent 성공으로 처리.
+ */
+export async function subscribeNewsletter(email: string) {
+  const normalized = email.trim().toLowerCase();
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+    return {
+      success: false as const,
+      error: '올바른 이메일 주소를 입력해주세요.',
+    };
+  }
+
+  const audienceId = process.env.RESEND_AUDIENCE_ID;
+  if (!audienceId) {
+    console.error('[newsletter] RESEND_AUDIENCE_ID 환경변수가 없습니다');
+    return {
+      success: false as const,
+      error: '뉴스레터 설정이 완료되지 않았습니다.',
+    };
+  }
+
+  try {
+    const resend = createResendClient();
+    const { error } = await resend.contacts.create({
+      audienceId,
+      email: normalized,
+      unsubscribed: false,
+    });
+
+    if (error) {
+      // Resend는 중복 이메일에 "already exists" 유형 메시지를 반환 — idempotent 처리
+      if (error.message?.toLowerCase().includes('already')) {
+        return { success: true as const, alreadySubscribed: true };
+      }
+      console.error('[newsletter] resend error', error);
+      return {
+        success: false as const,
+        error: '구독 처리 중 오류가 발생했습니다.',
+      };
+    }
+
+    return { success: true as const, alreadySubscribed: false };
+  } catch (err) {
+    console.error('[newsletter] unexpected error', err);
+    return {
+      success: false as const,
+      error: '구독 처리 중 오류가 발생했습니다.',
+    };
+  }
+}
 
 /**
  * Form 응답자의 이메일 주소 추출
