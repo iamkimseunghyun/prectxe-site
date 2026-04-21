@@ -17,8 +17,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -26,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
   deleteDrop,
@@ -100,9 +97,9 @@ export function DropDetailView({ dropId }: { dropId: string }) {
   const [drop, setDrop] = useState<DropData | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [statusValue, setStatusValue] = useState(drop?.status ?? 'draft');
+  const [statusValue, setStatusValue] = useState('draft');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -120,26 +117,14 @@ export function DropDetailView({ dropId }: { dropId: string }) {
     loadData();
   }, [loadData]);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function handleSaveStatus() {
     if (!drop) return;
-    setIsSubmitting(true);
-
-    const fd = new FormData(e.currentTarget);
-    const result = await updateDrop(drop.id, {
-      title: fd.get('title') as string,
-      slug: fd.get('slug') as string,
-      summary: (fd.get('summary') as string) || undefined,
-      description: (fd.get('description') as string) || undefined,
-      heroUrl: (fd.get('heroUrl') as string) || undefined,
-      videoUrl: (fd.get('videoUrl') as string) || undefined,
-      status: fd.get('status') as string,
-    });
-
-    setIsSubmitting(false);
+    setIsSavingStatus(true);
+    const result = await updateDrop(drop.id, { status: statusValue });
+    setIsSavingStatus(false);
 
     if (result.success) {
-      toast({ title: '저장되었습니다.' });
+      toast({ title: '상태가 변경되었습니다.' });
       loadData();
     } else {
       toast({ title: result.error, variant: 'destructive' });
@@ -188,6 +173,7 @@ export function DropDetailView({ dropId }: { dropId: string }) {
   }
 
   const statusInfo = STATUS_LABELS[drop.status] ?? STATUS_LABELS.draft;
+  const statusChanged = statusValue !== drop.status;
 
   return (
     <div className="space-y-6">
@@ -289,76 +275,8 @@ export function DropDetailView({ dropId }: { dropId: string }) {
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main */}
+        {/* Main: Tier / Variant 리스트 */}
         <div className="space-y-6 lg:col-span-2">
-          <form id="drop-form" onSubmit={handleSubmit}>
-            <Card>
-              <CardHeader>
-                <CardTitle>기본 정보</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="title">제목</Label>
-                    <Input
-                      id="title"
-                      name="title"
-                      defaultValue={drop.title}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="slug">Slug</Label>
-                    <Input
-                      id="slug"
-                      name="slug"
-                      defaultValue={drop.slug}
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="summary">요약</Label>
-                  <Input
-                    id="summary"
-                    name="summary"
-                    defaultValue={drop.summary ?? ''}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">상세 설명</Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    defaultValue={drop.description ?? ''}
-                    rows={4}
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="heroUrl">히어로 이미지 URL</Label>
-                    <Input
-                      id="heroUrl"
-                      name="heroUrl"
-                      type="url"
-                      defaultValue={drop.heroUrl ?? ''}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="videoUrl">영상 URL</Label>
-                    <Input
-                      id="videoUrl"
-                      name="videoUrl"
-                      type="url"
-                      defaultValue={drop.videoUrl ?? ''}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </form>
-
-          {/* Ticket Tiers or Goods Variants — form 밖에 배치 */}
           {drop.type === 'ticket' && (
             <Card>
               <CardContent className="p-6">
@@ -384,19 +302,13 @@ export function DropDetailView({ dropId }: { dropId: string }) {
           )}
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar: 상태 + 삭제 */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>상태</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <input
-                type="hidden"
-                name="status"
-                value={statusValue}
-                form="drop-form"
-              />
               <Select value={statusValue} onValueChange={setStatusValue}>
                 <SelectTrigger>
                   <SelectValue />
@@ -422,15 +334,15 @@ export function DropDetailView({ dropId }: { dropId: string }) {
               )}
 
               <Button
-                type="submit"
-                form="drop-form"
+                type="button"
                 className="w-full"
-                disabled={isSubmitting}
+                onClick={handleSaveStatus}
+                disabled={isSavingStatus || !statusChanged}
               >
-                {isSubmitting && (
+                {isSavingStatus && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                저장
+                상태 저장
               </Button>
 
               <Button
@@ -442,6 +354,44 @@ export function DropDetailView({ dropId }: { dropId: string }) {
               >
                 {isDeleting ? '삭제 중...' : '삭제'}
               </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>기본 정보</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {drop.summary && (
+                <div>
+                  <p className="text-xs text-muted-foreground">요약</p>
+                  <p className="mt-0.5">{drop.summary}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs text-muted-foreground">타입</p>
+                <p className="mt-0.5">
+                  {drop.type === 'ticket' ? '티켓' : '굿즈'}
+                </p>
+              </div>
+              {drop.publishedAt && (
+                <div>
+                  <p className="text-xs text-muted-foreground">공개일</p>
+                  <p className="mt-0.5">
+                    {new Date(drop.publishedAt).toLocaleString('ko-KR')}
+                  </p>
+                </div>
+              )}
+              <p className="border-t border-neutral-200 pt-3 text-xs text-muted-foreground">
+                제목·설명·이미지·안내사항 등은{' '}
+                <Link
+                  href={`/admin/drops/${drop.id}/edit`}
+                  className="underline underline-offset-2 hover:text-neutral-900"
+                >
+                  수정 페이지
+                </Link>
+                에서 편집하세요.
+              </p>
             </CardContent>
           </Card>
         </div>
