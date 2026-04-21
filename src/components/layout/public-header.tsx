@@ -30,7 +30,13 @@ export function PublicHeader() {
   }, [pathname]);
 
   // /admin, /auth 경로는 퍼블릭 헤더 숨김
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/auth')) {
+  // /drops/[slug] 상세 페이지는 자체 back 네비게이션 + 몰입형 디자인이라 숨김
+  //   (리스트 /drops는 노출 유지)
+  if (
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/auth') ||
+    /^\/drops\/[^/]+/.test(pathname ?? '')
+  ) {
     return null;
   }
 
