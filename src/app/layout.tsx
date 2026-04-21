@@ -19,7 +19,7 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 export const metadata: Metadata = {
   metadataBase: new URL(BUSINESS_INFO.serviceUrl),
   title: {
-    default: 'Music and Art by PRECTXE',
+    default: 'Music and Art, curated by PRECTXE',
     template: '%s | PRECTXE',
   },
   description:
@@ -46,30 +46,30 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'ko_KR',
     url: BUSINESS_INFO.serviceUrl,
-    title: 'Music and Art by PRECTXE',
+    title: 'Music and Art, curated by PRECTXE',
     description:
-    '음악과 예술의 순간을 큐레이션하는 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠로 경험을 설계합니다.',
+      '음악과 예술의 순간을 큐레이션하는 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠로 경험을 설계합니다.',
     siteName: '프렉티스',
     images: [
       {
         url: '/twitter-card.jpg', // metadataBase와 결합되어 절대 URL로 변환됨
         width: 1200,
         height: 630,
-        alt: 'Music and Art by PRECTXE',
+        alt: 'Music and Art, curated by PRECTXE',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Music and Art by PRECTXE',
+    title: 'Music and Art, curated by PRECTXE',
     description:
-    '음악과 예술의 순간을 큐레이션하는 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠로 경험을 설계합니다.',
+      '음악과 예술의 순간을 큐레이션하는 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠로 경험을 설계합니다.',
     images: [
       {
         url: '/twitter-card.jpg', // metadataBase와 결합되어 절대 URL로 변환됨
         width: 1200,
         height: 630,
-        alt: 'Music and Art by PRECTXE',
+        alt: 'Music and Art, curated by PRECTXE',
       },
     ],
   },
