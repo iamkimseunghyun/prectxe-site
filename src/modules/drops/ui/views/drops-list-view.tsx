@@ -15,7 +15,7 @@ export async function DropsListView({ type, page }: DropsListViewProps) {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12">
+    <div className="mx-auto max-w-5xl px-4 pb-12 pt-28">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Drops</h1>
         <p className="mt-2 text-muted-foreground">티켓과 굿즈를 만나보세요.</p>

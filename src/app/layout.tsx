@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 import type React from 'react';
 import { Footer } from '@/components/layout/footer';
 import Header from '@/components/layout/header';
+import { PublicHeader } from '@/components/layout/public-header';
 import { Toaster } from '@/components/ui/toaster';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import Providers from '@/modules/providers';
@@ -111,6 +112,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
       >
         <Providers>
+          <PublicHeader />
           <Header />
           <main className="flex-1">
             {children}
