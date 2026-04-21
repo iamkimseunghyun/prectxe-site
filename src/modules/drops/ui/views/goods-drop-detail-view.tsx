@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Minus,
+  Play,
   Plus,
   X,
 } from 'lucide-react';
@@ -12,9 +13,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { trackViewItem } from '@/lib/analytics/gtag';
-import { cn, getImageUrl } from '@/lib/utils';
+import { artistInitials, cn, formatArtistName, getImageUrl } from '@/lib/utils';
 import { GoodsPurchaseSection } from '@/modules/drops/ui/components/goods-purchase-section';
 
 type GoodsVariant = {
@@ -35,6 +37,18 @@ type DropMedia = {
   order: number;
 };
 
+type DropCredit = {
+  dropId: string;
+  artistId: string;
+  role: string;
+  artist: {
+    id: string;
+    name: string;
+    nameKr: string | null;
+    mainImageUrl: string | null;
+  };
+};
+
 type GoodsDrop = {
   id: string;
   slug: string;
@@ -44,6 +58,7 @@ type GoodsDrop = {
   notice: string | null;
   status: string;
   media: DropMedia[];
+  credits: DropCredit[];
   variants: GoodsVariant[];
 };
 
@@ -118,22 +133,27 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                 <>
                   {/* Main Media */}
                   <div
-                    className={cn(
-                      'relative aspect-square overflow-hidden rounded-2xl bg-neutral-100',
-                      !showingVideo && 'cursor-zoom-in'
-                    )}
-                    onClick={() => {
-                      if (!showingVideo) setLightboxOpen(true);
-                    }}
+                    className="relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl bg-neutral-100"
+                    onClick={() => setLightboxOpen(true)}
                   >
                     {showingVideo && activeMedia ? (
-                      <CloudflareStreamVideo
-                        videoUrl={activeMedia.url}
-                        autoPlay
-                        muted
-                        controls
-                        className="h-full w-full object-contain"
-                      />
+                      <>
+                        <CloudflareStreamVideo
+                          key={activeMedia.id}
+                          videoUrl={activeMedia.url}
+                          autoPlay
+                          muted
+                          loop
+                          controls={false}
+                          className="h-full w-full object-contain"
+                        />
+                        {/* 재생 오버레이 — 클릭 시 라이트박스에서 풀 재생 */}
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/10">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 text-neutral-900 shadow-lg">
+                            <Play className="ml-0.5 h-6 w-6 fill-current" />
+                          </div>
+                        </div>
+                      </>
                     ) : activeMedia ? (
                       <Image
                         src={getImageUrl(activeMedia.url, 'hires')}
@@ -231,6 +251,42 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                     {drop.summary}
                   </p>
                 )}
+                {drop.credits?.length ? (
+                  <ul className="mt-4 flex flex-wrap gap-3">
+                    {drop.credits.map((c) => {
+                      const kr = c.artist?.nameKr || null;
+                      const en = c.artist?.name || null;
+                      const name = formatArtistName(kr, en);
+                      const img = c.artist?.mainImageUrl || undefined;
+                      const initials = artistInitials(
+                        en || undefined,
+                        kr || undefined
+                      );
+                      return (
+                        <li key={`${c.dropId}-${c.artistId}`}>
+                          <Link
+                            href={`/artists/${c.artistId}`}
+                            className="flex items-center gap-2 text-sm text-neutral-600 transition-colors hover:text-neutral-900"
+                          >
+                            <Avatar className="h-7 w-7">
+                              {img ? (
+                                <AvatarImage
+                                  src={getImageUrl(img, 'thumbnail')}
+                                  alt={name}
+                                />
+                              ) : (
+                                <AvatarFallback className="text-xs">
+                                  {initials}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <span>{name}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
                 {drop.variants.length > 0 && (
                   <div className="mt-4 inline-flex items-baseline gap-1 rounded-full bg-neutral-900 px-5 py-2 text-white">
                     <span className="text-xl font-semibold tabular-nums">
@@ -397,7 +453,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
       </div>
 
       {/* Lightbox (이미지 전용) */}
-      {lightboxOpen && activeMedia?.type === 'image' && (
+      {lightboxOpen && activeMedia && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
           onClick={closeLightbox}
@@ -411,68 +467,62 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
             <X className="h-5 w-5" />
           </button>
 
-          {(() => {
-            // 이미지만 인덱싱 (영상은 라이트박스에서 스킵)
-            const imageOnly = allMedia.filter((m) => m.type === 'image');
-            const imageIdx = imageOnly.findIndex(
-              (m) => m.id === activeMedia.id
-            );
-            const goToImage = (nextIdx: number) => {
-              const next = imageOnly[nextIdx];
-              if (next) {
-                setActiveMediaIndex(
-                  allMedia.findIndex((m) => m.id === next.id)
-                );
-              }
-            };
-            return (
-              <>
-                {imageOnly.length > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        goToImage(
-                          (imageIdx - 1 + imageOnly.length) % imageOnly.length
-                        );
-                      }}
-                      className="absolute left-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-                      aria-label="이전"
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        goToImage((imageIdx + 1) % imageOnly.length);
-                      }}
-                      className="absolute right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-                      aria-label="다음"
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </button>
-                  </>
-                )}
-                <div
-                  className="relative max-h-[85vh] max-w-[90vw]"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Image
-                    src={getImageUrl(activeMedia.url, 'hires')}
-                    alt={activeMedia.alt}
-                    width={1200}
-                    height={900}
-                    className="max-h-[85vh] w-auto rounded-lg object-contain"
-                  />
-                  <p className="mt-3 text-center text-sm text-white/50">
-                    {imageIdx + 1} / {imageOnly.length}
-                  </p>
-                </div>
-              </>
-            );
-          })()}
+          {totalMedia > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveMediaIndex((i) => (i - 1 + totalMedia) % totalMedia);
+                }}
+                className="absolute left-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+                aria-label="이전"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveMediaIndex((i) => (i + 1) % totalMedia);
+                }}
+                className="absolute right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+                aria-label="다음"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </>
+          )}
+
+          <div
+            className="relative flex max-h-[85vh] max-w-[90vw] items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {activeMedia.type === 'image' ? (
+              <Image
+                src={getImageUrl(activeMedia.url, 'hires')}
+                alt={activeMedia.alt}
+                width={1200}
+                height={900}
+                className="max-h-[85vh] w-auto rounded-lg object-contain"
+              />
+            ) : (
+              // URL 변경 시 재마운트되어 이전 영상은 자동 정지
+              <CloudflareStreamVideo
+                key={activeMedia.id}
+                videoUrl={activeMedia.url}
+                autoPlay
+                controls
+                className="max-h-[85vh] max-w-[90vw] rounded-lg"
+              />
+            )}
+          </div>
+
+          {totalMedia > 1 && (
+            <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-sm text-white/60">
+              {activeMediaIndex + 1} / {totalMedia}
+            </p>
+          )}
         </div>
       )}
 

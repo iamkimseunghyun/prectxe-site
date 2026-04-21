@@ -1,12 +1,13 @@
 'use client';
 
-import { ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Play, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { trackViewItem } from '@/lib/analytics/gtag';
-import { getImageUrl } from '@/lib/utils';
+import { artistInitials, formatArtistName, getImageUrl } from '@/lib/utils';
 import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
 import { TicketPurchaseSection } from '@/modules/tickets/ui/components/ticket-purchase-section';
 
@@ -31,6 +32,18 @@ type DropMedia = {
   order: number;
 };
 
+type DropCredit = {
+  dropId: string;
+  artistId: string;
+  role: string;
+  artist: {
+    id: string;
+    name: string;
+    nameKr: string | null;
+    mainImageUrl: string | null;
+  };
+};
+
 type TicketDrop = {
   id: string;
   slug: string;
@@ -44,18 +57,23 @@ type TicketDrop = {
   notice: string | null;
   status: string;
   media: DropMedia[];
+  credits: DropCredit[];
   ticketTiers: TicketTier[];
 };
 
 export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
-  // 히어로(포스터): 첫 이미지 미디어 (위치 무관). 없으면 gradient fallback
-  const firstImage = drop.media.find((m) => m.type === 'image');
-  const heroImage = firstImage?.url ?? null;
-  // 갤러리: 히어로로 쓰인 첫 이미지를 제외한 나머지 미디어 전부
-  const galleryMedia = drop.media.filter((m) => m.id !== firstImage?.id);
+  // 히어로(포스터): 첫 미디어(이미지/영상). 영상이면 autoplay muted loop 배경 재생.
+  // 없으면 gradient fallback.
+  const heroMedia = drop.media[0] ?? null;
+  // 갤러리: 전체 미디어(히어로 포함) — 히어로 영상은 컨트롤 없이 재생되므로
+  // 갤러리 카드에서 사운드/컨트롤과 함께 다시 볼 수 있게 포함.
+  const galleryMedia = drop.media;
 
-  const lightboxImages = galleryMedia.filter((m) => m.type === 'image');
+  // 라이트박스는 이미지·영상 모두 지원
+  const lightboxMedia = galleryMedia;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const activeLightboxMedia =
+    lightboxIndex !== null ? lightboxMedia[lightboxIndex] : null;
 
   useEffect(() => {
     const minPrice = drop.ticketTiers.length
@@ -70,29 +88,29 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
   }, [drop.id, drop.title, drop.ticketTiers]);
 
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
-  const prevImage = useCallback(
+  const prevMedia = useCallback(
     () =>
       setLightboxIndex((i) =>
         i !== null
-          ? (i - 1 + lightboxImages.length) % lightboxImages.length
+          ? (i - 1 + lightboxMedia.length) % lightboxMedia.length
           : null
       ),
-    [lightboxImages.length]
+    [lightboxMedia.length]
   );
-  const nextImage = useCallback(
+  const nextMedia = useCallback(
     () =>
       setLightboxIndex((i) =>
-        i !== null ? (i + 1) % lightboxImages.length : null
+        i !== null ? (i + 1) % lightboxMedia.length : null
       ),
-    [lightboxImages.length]
+    [lightboxMedia.length]
   );
 
   useEffect(() => {
     if (lightboxIndex === null) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowLeft') prevImage();
-      if (e.key === 'ArrowRight') nextImage();
+      if (e.key === 'ArrowLeft') prevMedia();
+      if (e.key === 'ArrowRight') nextMedia();
     };
     document.addEventListener('keydown', handler);
     document.body.style.overflow = 'hidden';
@@ -100,7 +118,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
       document.removeEventListener('keydown', handler);
       document.body.style.overflow = '';
     };
-  }, [lightboxIndex, closeLightbox, prevImage, nextImage]);
+  }, [lightboxIndex, closeLightbox, prevMedia, nextMedia]);
   const availableTiers = drop.ticketTiers
     .filter((t) => getEffectiveTierStatus(t) === 'on_sale')
     .map((t) => ({
@@ -115,15 +133,24 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
     <div className="min-h-screen bg-black text-white">
       {/* ── Immersive Hero ── */}
       <section className="relative flex min-h-screen items-end">
-        {/* Background Media — 포스터 이미지 전용 (영상은 갤러리에서) */}
-        {heroImage ? (
+        {/* Background Media — 이미지/영상 모두 지원 (영상은 muted autoplay loop) */}
+        {heroMedia?.type === 'image' ? (
           <Image
-            src={getImageUrl(heroImage, 'hires')}
+            src={getImageUrl(heroMedia.url, 'hires')}
             alt={drop.title}
             fill
             priority
             sizes="100vw"
             className="object-cover"
+          />
+        ) : heroMedia?.type === 'video' ? (
+          <CloudflareStreamVideo
+            videoUrl={heroMedia.url}
+            autoPlay
+            muted
+            loop
+            controls={false}
+            className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900" />
@@ -195,6 +222,43 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
               </p>
             )}
 
+            {drop.credits?.length ? (
+              <ul className="mt-6 flex flex-wrap gap-3">
+                {drop.credits.map((c) => {
+                  const kr = c.artist?.nameKr || null;
+                  const en = c.artist?.name || null;
+                  const name = formatArtistName(kr, en);
+                  const img = c.artist?.mainImageUrl || undefined;
+                  const initials = artistInitials(
+                    en || undefined,
+                    kr || undefined
+                  );
+                  return (
+                    <li key={`${c.dropId}-${c.artistId}`}>
+                      <Link
+                        href={`/artists/${c.artistId}`}
+                        className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-sm text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                      >
+                        <Avatar className="h-6 w-6">
+                          {img ? (
+                            <AvatarImage
+                              src={getImageUrl(img, 'thumbnail')}
+                              alt={name}
+                            />
+                          ) : (
+                            <AvatarFallback className="bg-white/10 text-[10px] text-white">
+                              {initials}
+                            </AvatarFallback>
+                          )}
+                        </Avatar>
+                        <span>{name}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+
             {/* Price preview */}
             {availableTiers.length > 0 && !isClosed && !isSoldOut && (
               <div className="mt-8 flex items-center gap-4">
@@ -240,31 +304,14 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                     Media
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {galleryMedia.map((m) => {
-                      if (m.type === 'video') {
-                        return (
-                          <div
-                            key={m.id}
-                            className="relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-900"
-                          >
-                            <CloudflareStreamVideo
-                              videoUrl={m.url}
-                              controls
-                              className="h-full w-full"
-                            />
-                          </div>
-                        );
-                      }
-                      const imageIdx = lightboxImages.findIndex(
-                        (img) => img.id === m.id
-                      );
-                      return (
-                        <button
-                          key={m.id}
-                          type="button"
-                          className="relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-100 transition-opacity hover:opacity-90"
-                          onClick={() => setLightboxIndex(imageIdx)}
-                        >
+                    {galleryMedia.map((m, idx) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-100 transition-opacity hover:opacity-90"
+                        onClick={() => setLightboxIndex(idx)}
+                      >
+                        {m.type === 'image' ? (
                           <Image
                             src={getImageUrl(m.url, 'public')}
                             alt={m.alt}
@@ -272,9 +319,24 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                             sizes="(min-width: 640px) 50vw, 100vw"
                             className="object-cover"
                           />
-                        </button>
-                      );
-                    })}
+                        ) : (
+                          <>
+                            {/* Cloudflare Stream 자동 생성 썸네일 */}
+                            {/** biome-ignore lint/performance/noImgElement: Cloudflare Stream 썸네일은 next/image 원격 패턴 외부 */}
+                            <img
+                              src={`${m.url}/thumbnails/thumbnail.jpg?time=2s&height=600`}
+                              alt={m.alt || '영상 썸네일'}
+                              className="absolute inset-0 h-full w-full object-cover"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors group-hover:bg-black/30">
+                              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 text-neutral-900 shadow-lg transition-transform group-hover:scale-110">
+                                <Play className="ml-0.5 h-6 w-6 fill-current" />
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -325,7 +387,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
       </div>
 
       {/* Lightbox */}
-      {lightboxIndex !== null && lightboxImages[lightboxIndex] && (
+      {activeLightboxMedia && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
           onClick={closeLightbox}
@@ -341,12 +403,12 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
           </button>
 
           {/* Prev */}
-          {lightboxImages.length > 1 && (
+          {lightboxMedia.length > 1 && (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                prevImage();
+                prevMedia();
               }}
               className="absolute left-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
               aria-label="이전"
@@ -355,31 +417,45 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
             </button>
           )}
 
-          {/* Image */}
+          {/* Media */}
           <div
-            className="relative max-h-[85vh] max-w-[90vw]"
+            className="relative flex max-h-[85vh] max-w-[90vw] items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <Image
-              src={getImageUrl(lightboxImages[lightboxIndex].url, 'hires')}
-              alt={lightboxImages[lightboxIndex].alt}
-              width={1200}
-              height={900}
-              className="max-h-[85vh] w-auto rounded-lg object-contain"
-            />
-            {/* Counter */}
-            <p className="mt-3 text-center text-sm text-white/50">
-              {lightboxIndex + 1} / {lightboxImages.length}
-            </p>
+            {activeLightboxMedia.type === 'image' ? (
+              <Image
+                src={getImageUrl(activeLightboxMedia.url, 'hires')}
+                alt={activeLightboxMedia.alt}
+                width={1200}
+                height={900}
+                className="max-h-[85vh] w-auto rounded-lg object-contain"
+              />
+            ) : (
+              // URL 변경 시 컴포넌트가 재마운트되어 이전 영상은 자동 정지됨
+              <CloudflareStreamVideo
+                key={activeLightboxMedia.id}
+                videoUrl={activeLightboxMedia.url}
+                autoPlay
+                controls
+                className="max-h-[85vh] max-w-[90vw] rounded-lg"
+              />
+            )}
           </div>
 
+          {/* Counter */}
+          {lightboxMedia.length > 1 && (
+            <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-sm text-white/60">
+              {lightboxIndex! + 1} / {lightboxMedia.length}
+            </p>
+          )}
+
           {/* Next */}
-          {lightboxImages.length > 1 && (
+          {lightboxMedia.length > 1 && (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                nextImage();
+                nextMedia();
               }}
               className="absolute right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
               aria-label="다음"
