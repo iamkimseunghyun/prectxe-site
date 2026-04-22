@@ -126,33 +126,6 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
       ) : null}
 
       <RelatedArticles programId={program.id} />
-
-      <div className="mt-12 flex items-center justify-center gap-4 border-t pt-8 text-xs sm:gap-6 sm:text-sm md:text-base">
-        <Link
-          href="/"
-          className="text-neutral-500 transition-colors hover:text-neutral-900"
-        >
-          Home
-        </Link>
-        <Link
-          href="/programs"
-          className="text-neutral-500 transition-colors hover:text-neutral-900"
-        >
-          Archive
-        </Link>
-        <Link
-          href="/journal"
-          className="text-neutral-500 transition-colors hover:text-neutral-900"
-        >
-          Journal
-        </Link>
-        <Link
-          href="/about"
-          className="text-neutral-500 transition-colors hover:text-neutral-900"
-        >
-          About
-        </Link>
-      </div>
     </article>
   );
 }

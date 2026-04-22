@@ -10,16 +10,10 @@ import { cn } from '@/lib/utils';
  * 평소: PRECTXE 로고(좌) · MENU 버튼(우) 얇은 탑 바
  * 클릭: 검정 오버레이 + 거대한 타이포 네비 + 섹션 구분
  */
-const CURATION = [
+const NAV_ITEMS = [
   { href: '/drops', label: 'Drops' },
   { href: '/programs', label: 'Programs' },
   { href: '/journal', label: 'Journal' },
-];
-
-const DIRECTORY = [
-  { href: '/artists', label: 'Artists' },
-  { href: '/venues', label: 'Venues' },
-  { href: '/artworks', label: 'Artworks' },
 ];
 
 const META = [{ href: '/about', label: 'About' }];
@@ -124,17 +118,8 @@ export function PublicHeader() {
         >
           {/* 네비 인덱스 — 잡지 목차 스타일 */}
           <nav className="flex flex-1 flex-col">
-            <div className="grid flex-1 gap-10 md:grid-cols-2 md:gap-16 lg:gap-24">
-              <NavColumn
-                eyebrow="Curation"
-                items={CURATION}
-                pathname={pathname}
-              />
-              <NavColumn
-                eyebrow="Directory"
-                items={DIRECTORY}
-                pathname={pathname}
-              />
+            <div className="flex flex-1 flex-col">
+              <NavColumn items={NAV_ITEMS} pathname={pathname} />
             </div>
 
             <div className="mt-10 flex items-end justify-between border-t border-white/10 pt-8 md:mt-14">
@@ -162,43 +147,36 @@ export function PublicHeader() {
 }
 
 function NavColumn({
-  eyebrow,
   items,
   pathname,
 }: {
-  eyebrow: string;
   items: { href: string; label: string }[];
   pathname: string | null;
 }) {
   return (
-    <div className="flex flex-col gap-4 md:gap-6">
-      <p className="text-[11px] font-medium uppercase tracking-[0.25em] text-white/40">
-        {eyebrow}
-      </p>
-      <ul className="space-y-2 md:space-y-3">
-        {items.map((l, i) => {
-          const active = pathname?.startsWith(l.href);
-          return (
-            <li key={l.href}>
-              <Link
-                href={l.href}
-                className={cn(
-                  'group flex items-baseline gap-4 text-4xl font-light leading-[1] tracking-tight transition-colors md:text-6xl lg:text-7xl',
-                  active ? 'text-white' : 'text-white/50 hover:text-white'
-                )}
+    <ul className="space-y-3 md:space-y-5">
+      {items.map((l, i) => {
+        const active = pathname?.startsWith(l.href);
+        return (
+          <li key={l.href}>
+            <Link
+              href={l.href}
+              className={cn(
+                'group flex items-baseline gap-5 text-5xl font-light leading-[1] tracking-tight transition-colors md:text-7xl lg:text-[7.5rem]',
+                active ? 'text-white' : 'text-white/50 hover:text-white'
+              )}
+            >
+              <span
+                aria-hidden
+                className="text-[11px] font-medium tabular-nums tracking-[0.2em] text-white/30 group-hover:text-white/60"
               >
-                <span
-                  aria-hidden
-                  className="text-[10px] font-medium tabular-nums tracking-[0.2em] text-white/30 group-hover:text-white/60"
-                >
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                {l.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              {l.label}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
