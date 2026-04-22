@@ -10,6 +10,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
+import { MediaGallery } from '@/components/media/media-gallery';
 import ArtistSchema from '@/components/seo/artist-schema';
 import { Badge } from '@/components/ui/badge';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
@@ -18,7 +19,6 @@ import { formatArtistName, getImageUrl } from '@/lib/utils';
 import { getArtistById } from '@/modules/artists/server/actions';
 import type { ArtistProgramCredit } from '@/modules/artists/server/types';
 import { ArtistCv } from '@/modules/artists/ui/section/artist-cv';
-import { ArtistGallery } from '@/modules/artists/ui/section/artist-gallery';
 import ArtworkListSection from '@/modules/artworks/ui/section/artwork-list-section';
 
 export async function generateMetadata({
@@ -330,7 +330,15 @@ export default async function Page({
             <SectionHeading eyebrow="Gallery" />
           </div>
           <div className="-mx-6 md:-mx-10">
-            <ArtistGallery images={artist.images} artistName={displayName} />
+            <MediaGallery
+              items={artist.images.map((img) => ({
+                id: img.id,
+                type: 'image',
+                url: img.imageUrl,
+                alt: img.alt,
+              }))}
+              title={displayName}
+            />
           </div>
         </section>
       )}

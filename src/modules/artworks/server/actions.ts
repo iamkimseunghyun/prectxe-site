@@ -62,12 +62,41 @@ export async function getArtworkById(id: string) {
 }
 
 export const getArtworksPage = next_cache(
-  async (page = 0, pageSize = PAGINATION.ARTWORKS_PAGE_SIZE) => {
+  async (
+    page = 0,
+    pageSize = PAGINATION.ARTWORKS_PAGE_SIZE,
+    searchQuery = ''
+  ) => {
     return prisma.artwork.findMany({
+      where: searchQuery
+        ? {
+            OR: [
+              { title: { contains: searchQuery, mode: 'insensitive' } },
+              {
+                artists: {
+                  some: {
+                    artist: {
+                      OR: [
+                        {
+                          name: { contains: searchQuery, mode: 'insensitive' },
+                        },
+                        {
+                          nameKr: {
+                            contains: searchQuery,
+                            mode: 'insensitive',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : undefined,
       select: {
         id: true,
         title: true,
-        description: true,
         year: true,
         media: true,
         size: true,
@@ -77,7 +106,9 @@ export const getArtworksPage = next_cache(
           take: 1,
         },
         artists: {
-          select: { artist: { select: { name: true } } },
+          select: {
+            artist: { select: { id: true, name: true, nameKr: true } },
+          },
         },
       },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -89,8 +120,8 @@ export const getArtworksPage = next_cache(
   { revalidate: CACHE_TIMES.ARTWORKS_LIST }
 );
 
-export async function getMoreArtworks(page = 0) {
-  return getArtworksPage(page, PAGINATION.ARTWORKS_PAGE_SIZE);
+export async function getMoreArtworks(page = 0, searchQuery = '') {
+  return getArtworksPage(page, PAGINATION.ARTWORKS_PAGE_SIZE, searchQuery);
 }
 
 export async function createArtwork(

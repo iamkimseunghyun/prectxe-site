@@ -1,16 +1,15 @@
-import { ImageIcon } from 'lucide-react';
+import { ImageIcon, User } from 'lucide-react';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import BreadcrumbNav from '@/components/layout/nav/breadcrum-nav';
+import { MediaGallery } from '@/components/media/media-gallery';
 import ArtworkSchema from '@/components/seo/artwork-schema';
-import { Badge } from '@/components/ui/badge';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { prisma } from '@/lib/db/prisma';
 import { formatArtistName, getImageUrl } from '@/lib/utils';
 import { getArtworkById } from '@/modules/artworks/server/actions';
-import ArtworkGallery from '@/modules/artworks/ui/section/artwork-gallery';
 
 export async function generateMetadata({
   params,
@@ -74,6 +73,14 @@ export async function generateMetadata({
   };
 }
 
+function SectionHeading({ eyebrow }: { eyebrow: string }) {
+  return (
+    <h2 className="mb-8 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400 md:mb-10">
+      {eyebrow}
+    </h2>
+  );
+}
+
 export default async function Page({
   params,
 }: {
@@ -84,61 +91,123 @@ export default async function Page({
 
   if (!artwork) notFound();
 
-  const hasImages = artwork.images.length > 0;
-  const hasDescription = !!artwork.description;
-  const hasArtists = artwork.artists.length > 0;
-  const details = [
+  const heroImage = artwork.images[0];
+  const details: { label: string; value: string }[] = [
     artwork.year && { label: 'Year', value: String(artwork.year) },
     artwork.media && { label: 'Media', value: artwork.media },
     artwork.size && { label: 'Size', value: artwork.size },
     artwork.style && { label: 'Style', value: artwork.style },
   ].filter(Boolean) as { label: string; value: string }[];
+  const hasMultipleImages = artwork.images.length > 1;
+  const hasDescription = !!artwork.description;
+  const hasArtists = artwork.artists.length > 0;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
+    <div className="mx-auto max-w-6xl px-6 py-12 md:px-10 md:py-16">
       <ArtworkSchema artwork={artwork} />
       <BreadcrumbNav entityType="artwork" title={artwork.title} />
 
-      {/* Image Gallery */}
-      {hasImages ? (
-        <section className="mb-10">
-          <ArtworkGallery images={artwork.images} title={artwork.title} />
-        </section>
-      ) : (
-        <section className="mb-10 flex aspect-[4/3] items-center justify-center rounded-lg bg-muted">
-          <ImageIcon className="h-16 w-16 text-muted-foreground/40" />
-        </section>
-      )}
+      {/* Hero — 대표 이미지 + 메타 */}
+      <section className="mt-8 grid gap-10 md:mt-12 md:grid-cols-[1.15fr_1fr] md:gap-12 lg:gap-16">
+        <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
+          {heroImage ? (
+            <Image
+              src={getImageUrl(heroImage.imageUrl, 'public')}
+              alt={heroImage.alt || artwork.title}
+              fill
+              priority
+              sizes="(min-width: 768px) 55vw, 100vw"
+              className="object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <ImageIcon className="h-20 w-20 text-neutral-300" />
+            </div>
+          )}
+        </div>
 
-      {/* Title + Badges */}
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">{artwork.title}</h1>
-        {details.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {details.map((d) => (
-              <Badge key={d.label} variant="secondary">
-                {d.value}
-              </Badge>
-            ))}
-          </div>
-        )}
-      </header>
+        <div className="flex flex-col justify-center">
+          <p className="text-xs font-medium uppercase tracking-[0.25em] text-neutral-400">
+            Artwork
+          </p>
+          <h1 className="mt-4 text-4xl font-light leading-[1.05] tracking-tight text-neutral-900 md:text-5xl lg:text-6xl">
+            {artwork.title}
+          </h1>
+
+          {hasArtists && (
+            <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1 text-base text-neutral-500 md:text-lg">
+              {artwork.artists.map((rel, i) => {
+                const name = formatArtistName(
+                  rel.artist.nameKr ?? null,
+                  rel.artist.name ?? null
+                );
+                return (
+                  <span key={rel.artist.id}>
+                    <Link
+                      href={`/artists/${rel.artist.id}`}
+                      className="hover:text-neutral-900 hover:underline"
+                    >
+                      {name}
+                    </Link>
+                    {i < artwork.artists.length - 1 ? ',' : ''}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
+          {details.length > 0 && (
+            <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
+              {details.map((d) => (
+                <div key={d.label}>
+                  <dt className="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">
+                    {d.label}
+                  </dt>
+                  <dd className="mt-1 text-neutral-900">{d.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
+      </section>
 
       {/* Description */}
       {hasDescription && (
-        <section className="border-t pt-8 pb-8">
-          <h2 className="mb-4 text-lg font-semibold">Description</h2>
-          <div className="prose max-w-none whitespace-pre-wrap text-muted-foreground">
-            {artwork.description}
+        <section className="py-20 md:py-28">
+          <div className="mx-auto max-w-3xl">
+            <SectionHeading eyebrow="About" />
+            <div className="whitespace-pre-wrap text-base leading-[1.8] text-neutral-700 md:text-lg">
+              {artwork.description}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Additional images */}
+      {hasMultipleImages && (
+        <section className="py-20 md:py-28">
+          <div className="mb-8 md:mb-10">
+            <SectionHeading eyebrow="Gallery" />
+          </div>
+          <div className="-mx-6 md:-mx-10">
+            <MediaGallery
+              items={artwork.images.map((img) => ({
+                id: img.id,
+                type: 'image',
+                url: img.imageUrl,
+                alt: img.alt,
+              }))}
+              title={artwork.title}
+            />
           </div>
         </section>
       )}
 
       {/* Artists */}
       {hasArtists && (
-        <section className="border-t pt-8 pb-8">
-          <h2 className="mb-4 text-lg font-semibold">Artists</h2>
-          <div className="flex flex-wrap gap-4">
+        <section className="py-20 md:py-28">
+          <SectionHeading eyebrow="Artists" />
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {artwork.artists.map((rel) => {
               const name = formatArtistName(
                 rel.artist.nameKr ?? null,
@@ -148,45 +217,35 @@ export default async function Page({
                 <Link
                   key={rel.artist.id}
                   href={`/artists/${rel.artist.id}`}
-                  className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
+                  className="group flex items-center gap-4"
                 >
-                  {rel.artist.mainImageUrl ? (
-                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-neutral-100">
+                    {rel.artist.mainImageUrl ? (
                       <Image
                         src={getImageUrl(rel.artist.mainImageUrl, 'thumbnail')}
                         alt={name}
                         fill
-                        sizes="48px"
-                        className="object-cover"
+                        sizes="64px"
+                        className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
                       />
-                    </div>
-                  ) : (
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground">
-                      {(rel.artist.nameKr || rel.artist.name)
-                        .charAt(0)
-                        .toUpperCase()}
-                    </div>
-                  )}
-                  <span className="font-medium">{name}</span>
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <User className="h-6 w-6 text-neutral-300" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">
+                      Artist
+                    </p>
+                    <p className="mt-1 text-base font-medium leading-snug transition-colors group-hover:text-neutral-500">
+                      {name}
+                    </p>
+                  </div>
                 </Link>
               );
             })}
           </div>
-        </section>
-      )}
-
-      {/* Details */}
-      {details.length > 0 && (
-        <section className="border-t pt-8 pb-8">
-          <h2 className="mb-4 text-lg font-semibold">Details</h2>
-          <dl className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-4">
-            {details.map((d) => (
-              <div key={d.label}>
-                <dt className="text-muted-foreground">{d.label}</dt>
-                <dd className="mt-0.5 font-medium">{d.value}</dd>
-              </div>
-            ))}
-          </dl>
         </section>
       )}
     </div>
