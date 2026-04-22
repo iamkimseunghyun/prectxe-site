@@ -10,8 +10,8 @@ const Page = async ({ searchParams }: PageProps) => {
 };
 
 export const metadata = {
-  title: 'Archive — PRECTXE',
-  description: '완료된 프로그램 아카이브를 탐색하세요.',
+  title: 'Programs — PRECTXE',
+  description: '다가오는 이벤트와 지난 프로그램 아카이브.',
 };
 
 export default Page;
