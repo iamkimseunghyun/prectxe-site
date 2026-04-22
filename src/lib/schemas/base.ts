@@ -25,8 +25,12 @@ export const isoDateStringSchema = z
 // 이메일 스키마
 export const emailSchema = z.string().email('유효한 이메일 주소를 입력하세요');
 
-// URL 스키마
-export const urlSchema = z.string().url('유효한 URL을 입력하세요').optional();
+// URL 스키마 — 빈 문자열은 undefined로 치환해 optional 동작 보장
+// (입력 폼에서 빈 값으로 두면 검증 통과, 서버 payload에서는 undefined로 전달)
+export const urlSchema = z.preprocess(
+  (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
+  z.string().url('유효한 URL을 입력하세요').optional()
+);
 
 // 비어있지 않은 텍스트 스키마
 export const nonEmptyStringSchema = z.string().min(1, '이 필드는 필수입니다');
@@ -51,7 +55,7 @@ export const idSchema = z.string().uuid('유효한 ID 형식이 아닙니다');
 // Improved implementation - preserves Unicode characters
 export const sanitizedTextTransformer = (value: string) => {
   // Option 1: Remove only truly dangerous control characters but keep Unicode
-  // eslint-disable-next-line no-control-regex
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — strip C0 control chars (keeps \t \n \r)
   return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 
   // Option 2: Or if you need to remove specific characters but keep Korean, emojis, etc.
