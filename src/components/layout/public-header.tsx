@@ -1,21 +1,32 @@
 'use client';
 
-import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
-const NAV_LINKS = [
+/**
+ * 풀스크린 오버레이 네비 — 잡지 마스트헤드 + 에디토리얼 인덱스 문법.
+ * 평소: PRECTXE 로고(좌) · MENU 버튼(우) 얇은 탑 바
+ * 클릭: 검정 오버레이 + 거대한 타이포 네비 + 섹션 구분
+ */
+const CURATION = [
   { href: '/drops', label: 'Drops' },
   { href: '/programs', label: 'Programs' },
   { href: '/journal', label: 'Journal' },
-  { href: '/about', label: 'About' },
 ];
+
+const DIRECTORY = [
+  { href: '/artists', label: 'Artists' },
+  { href: '/venues', label: 'Venues' },
+  { href: '/artworks', label: 'Artworks' },
+];
+
+const META = [{ href: '/about', label: 'About' }];
 
 export function PublicHeader() {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -25,107 +36,169 @@ export function PublicHeader() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // 경로 변경 시 오버레이 닫기
   useEffect(() => {
-    setMobileOpen(false);
+    setOpen(false);
   }, [pathname]);
 
-  // /admin, /auth 경로는 퍼블릭 헤더 숨김.
-  // 상세 페이지(/drops|/programs|/journal)/[slug]는 자체 back 네비게이션 +
-  // 몰입형 디자인이라 숨김. 리스트 루트 경로(/drops 등)는 노출 유지.
-  if (
-    pathname?.startsWith('/admin') ||
-    pathname?.startsWith('/auth') ||
-    /^\/(drops|programs|journal)\/[^/]+/.test(pathname ?? '')
-  ) {
+  // Escape + body scroll 잠금
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/auth')) {
     return null;
   }
 
+  const isDarkOver = open;
+
   return (
-    <header
-      className={cn(
-        'fixed inset-x-0 top-0 z-40 transition-all duration-200',
-        scrolled
-          ? 'border-b border-neutral-200/80 bg-white/85 backdrop-blur-md'
-          : 'bg-transparent'
-      )}
-    >
-      <div className="mx-auto flex max-w-screen-2xl items-center justify-between px-6 py-4 md:px-12 lg:px-24">
-        <Link
-          href="/"
-          className="text-sm font-medium tracking-[0.2em] text-neutral-900"
-          aria-label="PRECTXE 홈으로"
-        >
-          PRECTXE
-        </Link>
-
-        <nav className="hidden md:block">
-          <ul className="flex items-center gap-8">
-            {NAV_LINKS.map((l) => {
-              const active =
-                l.href === '/'
-                  ? pathname === '/'
-                  : pathname?.startsWith(l.href);
-              return (
-                <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    className={cn(
-                      'text-sm transition-colors',
-                      active
-                        ? 'text-neutral-900'
-                        : 'text-neutral-500 hover:text-neutral-900'
-                    )}
-                  >
-                    {l.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        <button
-          type="button"
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-label={mobileOpen ? '메뉴 닫기' : '메뉴 열기'}
-          className="-mr-2 flex h-10 w-10 items-center justify-center text-neutral-900 md:hidden"
-        >
-          {mobileOpen ? (
-            <X className="h-5 w-5" />
-          ) : (
-            <Menu className="h-5 w-5" />
+    <>
+      {/* Top bar — 로고 + MENU/CLOSE 텍스트 버튼만 */}
+      <header
+        className={cn(
+          'fixed inset-x-0 top-0 z-50 transition-colors duration-300',
+          isDarkOver
+            ? 'bg-transparent'
+            : scrolled
+              ? 'border-b border-neutral-200/80 bg-white/85 backdrop-blur-md'
+              : 'bg-transparent'
+        )}
+      >
+        <div
+          className={cn(
+            'mx-auto flex max-w-screen-2xl items-center justify-between px-6 py-5 md:px-12 md:py-6 lg:px-24',
+            isDarkOver ? 'text-white' : 'text-neutral-900'
           )}
-        </button>
-      </div>
+        >
+          <Link
+            href="/"
+            aria-label="PRECTXE 홈으로"
+            className="text-sm font-light tracking-[0.25em] md:text-base"
+          >
+            PRECTXE
+          </Link>
 
-      {/* 모바일 드로어 */}
-      {mobileOpen && (
-        <div className="border-t border-neutral-200 bg-white md:hidden">
-          <nav>
-            <ul className="flex flex-col divide-y divide-neutral-100 px-6">
-              {NAV_LINKS.map((l) => {
-                const active =
-                  l.href === '/'
-                    ? pathname === '/'
-                    : pathname?.startsWith(l.href);
-                return (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls="site-nav"
+            className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.25em] transition-opacity hover:opacity-60"
+          >
+            <span
+              aria-hidden
+              className={cn(
+                'inline-block h-px bg-current transition-all duration-200',
+                open ? 'w-3' : 'w-6'
+              )}
+            />
+            {open ? 'Close' : 'Menu'}
+          </button>
+        </div>
+      </header>
+
+      {/* Overlay 네비 */}
+      <div
+        id="site-nav"
+        aria-hidden={!open}
+        className={cn(
+          'fixed inset-0 z-40 flex flex-col bg-neutral-950 text-white transition-[opacity,visibility] duration-300',
+          open ? 'visible opacity-100' : 'invisible opacity-0'
+        )}
+      >
+        <div
+          className={cn(
+            'mx-auto flex h-full w-full max-w-screen-2xl flex-1 flex-col px-6 pt-28 pb-12 transition-transform duration-300 md:px-12 md:pt-36 md:pb-16 lg:px-24',
+            open ? 'translate-y-0' : '-translate-y-4'
+          )}
+        >
+          {/* 네비 인덱스 — 잡지 목차 스타일 */}
+          <nav className="flex flex-1 flex-col">
+            <div className="grid flex-1 gap-10 md:grid-cols-2 md:gap-16 lg:gap-24">
+              <NavColumn
+                eyebrow="Curation"
+                items={CURATION}
+                pathname={pathname}
+              />
+              <NavColumn
+                eyebrow="Directory"
+                items={DIRECTORY}
+                pathname={pathname}
+              />
+            </div>
+
+            <div className="mt-10 flex items-end justify-between border-t border-white/10 pt-8 md:mt-14">
+              <ul className="flex flex-wrap gap-x-6 gap-y-2">
+                {META.map((l) => (
                   <li key={l.href}>
                     <Link
                       href={l.href}
-                      className={cn(
-                        'block py-4 text-base transition-colors',
-                        active ? 'text-neutral-900' : 'text-neutral-600'
-                      )}
+                      className="text-sm text-white/60 transition-colors hover:text-white"
                     >
                       {l.label}
                     </Link>
                   </li>
-                );
-              })}
-            </ul>
+                ))}
+              </ul>
+              <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">
+                Music and Art, curated.
+              </p>
+            </div>
           </nav>
         </div>
-      )}
-    </header>
+      </div>
+    </>
+  );
+}
+
+function NavColumn({
+  eyebrow,
+  items,
+  pathname,
+}: {
+  eyebrow: string;
+  items: { href: string; label: string }[];
+  pathname: string | null;
+}) {
+  return (
+    <div className="flex flex-col gap-4 md:gap-6">
+      <p className="text-[11px] font-medium uppercase tracking-[0.25em] text-white/40">
+        {eyebrow}
+      </p>
+      <ul className="space-y-2 md:space-y-3">
+        {items.map((l, i) => {
+          const active = pathname?.startsWith(l.href);
+          return (
+            <li key={l.href}>
+              <Link
+                href={l.href}
+                className={cn(
+                  'group flex items-baseline gap-4 text-4xl font-light leading-[1] tracking-tight transition-colors md:text-6xl lg:text-7xl',
+                  active ? 'text-white' : 'text-white/50 hover:text-white'
+                )}
+              >
+                <span
+                  aria-hidden
+                  className="text-[10px] font-medium tabular-nums tracking-[0.2em] text-white/30 group-hover:text-white/60"
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                {l.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
