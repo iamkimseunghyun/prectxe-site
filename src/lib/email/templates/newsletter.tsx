@@ -5,6 +5,7 @@ import {
   Head,
   Heading,
   Html,
+  Link,
   Preview,
   Section,
   Text,
@@ -34,6 +35,7 @@ export default function Newsletter({
           <Section style={box}>
             <Heading style={heading}>PRECTXE</Heading>
             <Heading style={subheading}>{title}</Heading>
+            {/* biome-ignore lint/security/noDangerouslySetInnerHtml: admin-authored rich text from EmailEditor */}
             <div dangerouslySetInnerHTML={{ __html: message }} />
             {ctaText && ctaUrl && (
               <Button style={button} href={ctaUrl}>
@@ -41,8 +43,12 @@ export default function Newsletter({
               </Button>
             )}
             <Text style={footer}>
-              이 메일은 PRECTXE에서 발송되었습니다.
-              <br />더 이상 메일을 받지 않으려면 회신으로 알려주세요.
+              이 메일은 PRECTXE에서 발송된 발신 전용 메일입니다. 회신은 수신되지
+              않습니다.
+              <br />
+              <Link href="{{{RESEND_UNSUBSCRIBE_URL}}}" style={unsubscribeLink}>
+                수신 거부
+              </Link>
             </Text>
           </Section>
         </Container>
@@ -83,7 +89,7 @@ const subheading = {
   color: '#0a0a0a',
 };
 
-const messageText = {
+const _messageText = {
   color: '#525f7f',
   fontSize: '16px',
   lineHeight: '24px',
@@ -111,4 +117,9 @@ const footer = {
   lineHeight: '20px',
   marginTop: '32px',
   textAlign: 'center' as const,
+};
+
+const unsubscribeLink = {
+  color: '#8898aa',
+  textDecoration: 'underline',
 };

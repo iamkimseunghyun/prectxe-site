@@ -88,6 +88,13 @@ src/
 - Available templates in `src/lib/email/templates/`: `form-notification`, `newsletter`, `order-confirmation`
 - Sent via Resend API through `src/lib/email/send.ts`
 
+### Newsletter Broadcasts (Resend Segments)
+- 구독자는 Resend에 저장(`subscribeNewsletter` 액션) — 자체 DB에 구독자 모델 없음
+- Resend 2026부터 Broadcasts API는 `segment_id` 필수. `src/lib/email/segments.ts`의 `getOrCreateNewsletterSegmentId()`가 기본 세그먼트(이름: `RESEND_SEGMENT_NAME` env, 기본 `Newsletter`)를 자동 탐지/생성
+- 구독 시 `contacts.create` + `contacts.segments.add` 동시 수행 — 이미 구독된 사용자도 segment에 없으면 자동 편입(idempotent)
+- 어드민 `/admin/email` > **뉴스레터 발송** 탭에서 `broadcasts.create({send:true})` 호출. 발송 기록은 `EmailCampaign.broadcastId`에 저장(수신자 목록은 Resend가 관리, `EmailRecipient` 미사용)
+- 템플릿 푸터에 `{{{RESEND_UNSUBSCRIBE_URL}}}` 플레이스홀더 — Resend가 수신자별로 자동 치환
+
 ### OG Images
 - Programs, Journal, Drops all have `opengraph-image.tsx` route handlers
 - Noto Sans KR web font loaded for Korean text rendering
@@ -123,7 +130,7 @@ Required: `DATABASE_URL`, `CLOUDFLARE_IMAGE_STREAM_API_ACCOUNT_ID`, `CLOUDFLARE_
 
 Payment: `PORTONE_API_SECRET`, `NEXT_PUBLIC_PORTONE_STORE_ID`, `NEXT_PUBLIC_PORTONE_CHANNEL_KEY`
 
-Email: `RESEND_API_KEY`, `RESEND_SENDER_EMAIL`. 뉴스레터 구독은 Resend 계정 기본 Audience로 자동 추가(별도 audience ID 불필요). SMS: `SMS_PROVIDER` (`aligo`|`solapi`) + provider-specific keys.
+Email: `RESEND_API_KEY`, `RESEND_SENDER_EMAIL`. 뉴스레터 구독/발송은 Resend Segment 기반 — `RESEND_SEGMENT_NAME` (선택, 기본 `Newsletter`)로 기본 세그먼트 자동 생성/재사용. SMS: `SMS_PROVIDER` (`aligo`|`solapi`) + provider-specific keys.
 
 Optional: `ENABLE_PROGRAM_REDIRECTS` (legacy URL redirects)
 

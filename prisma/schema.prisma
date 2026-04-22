@@ -415,6 +415,7 @@ model EmailCampaign {
   failedCount Int              @default(0)
   status      EmailStatus      @default(draft)
   sentAt      DateTime?
+  broadcastId String?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)

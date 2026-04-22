@@ -1,16 +1,20 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
-import { createResendClient } from '@/lib/email/resend';
+import { createResendClient, getSenderEmail } from '@/lib/email/resend';
+import { getOrCreateNewsletterSegmentId } from '@/lib/email/segments';
 import { filterValidEmails, sendEmail } from '@/lib/email/send';
+import Newsletter from '@/lib/email/templates/newsletter';
 
 /**
- * 뉴스레터 구독 — Resend 계정 기본 Audience에 연락처 등록 (단일 옵트인).
- * 이미 구독 중이면 idempotent 성공으로 처리.
+ * 뉴스레터 구독 — Resend contacts 등록 + 뉴스레터 segment에 포함.
+ * 이미 구독 중이어도 segment 추가는 항상 시도(idempotent) — 과거에 segment 없이
+ * 등록된 구독자도 이 흐름으로 정상 포함시킴.
  *
- * 2026년부터 Resend는 audience_id 없이 계정 기본 Audience를 사용.
- * 세분화가 필요하면 segments/topics 옵션을 추후 추가.
+ * 2026년부터 Resend Broadcasts는 segment_id 필수. 본 액션이 뉴스레터 세그먼트를
+ * 자동 탐지/생성해서 신규·기존 구독자를 모두 세그먼트에 편입시킴.
  */
 export async function subscribeNewsletter(email: string) {
   const normalized = email.trim().toLowerCase();
@@ -24,24 +28,44 @@ export async function subscribeNewsletter(email: string) {
 
   try {
     const resend = createResendClient();
+    const segmentId = await getOrCreateNewsletterSegmentId();
+
     const { error } = await resend.contacts.create({
       email: normalized,
       unsubscribed: false,
     });
 
+    let alreadySubscribed = false;
     if (error) {
-      // Resend는 중복 이메일에 "already exists" 유형 메시지를 반환 — idempotent 처리
       if (error.message?.toLowerCase().includes('already')) {
-        return { success: true as const, alreadySubscribed: true };
+        alreadySubscribed = true;
+      } else {
+        console.error('[newsletter] resend create error', error);
+        return {
+          success: false as const,
+          error: '구독 처리 중 오류가 발생했습니다.',
+        };
       }
-      console.error('[newsletter] resend error', error);
-      return {
-        success: false as const,
-        error: '구독 처리 중 오류가 발생했습니다.',
-      };
     }
 
-    return { success: true as const, alreadySubscribed: false };
+    // 세그먼트 편입 — 신규/기존 모두 실행(이미 속해 있으면 Resend가 무시)
+    const addResult = await resend.contacts.segments.add({
+      email: normalized,
+      segmentId,
+    });
+    if (addResult.error) {
+      // already-in-segment류 에러는 무시, 그 외는 로깅 후 실패 처리
+      const msg = addResult.error.message?.toLowerCase() ?? '';
+      if (!msg.includes('already')) {
+        console.error('[newsletter] segment add error', addResult.error);
+        return {
+          success: false as const,
+          error: '구독 처리 중 오류가 발생했습니다.',
+        };
+      }
+    }
+
+    return { success: true as const, alreadySubscribed };
   } catch (err) {
     console.error('[newsletter] unexpected error', err);
     return {
@@ -219,6 +243,94 @@ export async function createAndSendEmailCampaign(params: {
       success: false,
       error:
         error instanceof Error ? error.message : '이메일 발송에 실패했습니다',
+    };
+  }
+}
+
+/**
+ * 뉴스레터 브로드캐스트 — Resend Segment에 속한 모든 구독자에게 즉시 발송.
+ * - 수신자 목록은 Resend가 관리(본 DB에 EmailRecipient 저장 안 함)
+ * - broadcastId는 EmailCampaign에 저장해 Resend 대시보드에서 추적 가능
+ */
+export async function createAndSendNewsletterBroadcast(params: {
+  title: string;
+  subject: string;
+  body: string; // HTML (에디터 출력)
+}) {
+  const auth = await requireAdmin();
+  if (!auth.success) {
+    return { success: false as const, error: auth.error };
+  }
+
+  const { title, subject, body } = params;
+
+  if (!title.trim() || !subject.trim() || !body.trim()) {
+    return {
+      success: false as const,
+      error: '제목·본문을 모두 입력해주세요.',
+    };
+  }
+
+  const campaign = await prisma.emailCampaign.create({
+    data: {
+      title,
+      subject,
+      body,
+      template: 'newsletter',
+      userId: auth.userId,
+      status: 'sending',
+    },
+  });
+
+  try {
+    const segmentId = await getOrCreateNewsletterSegmentId();
+    const resend = createResendClient();
+    const from = getSenderEmail();
+
+    const result = await resend.broadcasts.create({
+      segmentId,
+      from,
+      subject,
+      react: Newsletter({ title, message: body }),
+      name: title,
+      send: true,
+    });
+
+    if (result.error || !result.data) {
+      await prisma.emailCampaign.update({
+        where: { id: campaign.id },
+        data: { status: 'failed' },
+      });
+      return {
+        success: false as const,
+        error: result.error?.message ?? '브로드캐스트 생성에 실패했습니다.',
+      };
+    }
+
+    await prisma.emailCampaign.update({
+      where: { id: campaign.id },
+      data: {
+        broadcastId: result.data.id,
+        status: 'sent',
+        sentAt: new Date(),
+      },
+    });
+
+    revalidatePath('/admin/email');
+
+    return {
+      success: true as const,
+      data: { campaignId: campaign.id, broadcastId: result.data.id },
+    };
+  } catch (err) {
+    console.error('[newsletter broadcast] error', err);
+    await prisma.emailCampaign.update({
+      where: { id: campaign.id },
+      data: { status: 'failed' },
+    });
+    return {
+      success: false as const,
+      error: err instanceof Error ? err.message : '브로드캐스트 발송 실패',
     };
   }
 }
