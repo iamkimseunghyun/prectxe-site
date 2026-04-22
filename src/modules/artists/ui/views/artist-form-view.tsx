@@ -1,13 +1,14 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { z } from 'zod';
 import MultiImageBox from '@/components/image/multi-image-box';
 import SingleImageBox from '@/components/image/single-image-box';
 import FormSubmitButton from '@/components/layout/form-submit-button';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -19,6 +20,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -53,6 +55,7 @@ const ArtistFormView = ({
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tagInput, setTagInput] = useState('');
 
   const defaultValues = {
     name: initialData?.name ?? '',
@@ -62,6 +65,13 @@ const ArtistFormView = ({
     city: initialData?.city ?? '',
     country: initialData?.country ?? '',
     homepage: initialData?.homepage ?? '',
+    instagram: initialData?.instagram ?? '',
+    soundcloud: initialData?.soundcloud ?? '',
+    bandcamp: initialData?.bandcamp ?? '',
+    youtube: initialData?.youtube ?? '',
+    spotify: initialData?.spotify ?? '',
+    tagline: initialData?.tagline ?? '',
+    tags: initialData?.tags ?? [],
     biography: initialData?.biography ?? '',
     cv: initialData?.cv ?? '',
     images: initialData?.images ?? [],
@@ -191,19 +201,6 @@ const ArtistFormView = ({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="homepage"
-                  render={({ field }) => (
-                    <FormItem className="space-y-2">
-                      <FormLabel>홈페이지</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <FormField
                   control={form.control}
@@ -271,6 +268,96 @@ const ArtistFormView = ({
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="tagline"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>한 줄 소개</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="예: Seoul-based sound artist exploring noise and silence"
+                          maxLength={120}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        카드·상세 페이지 상단에 표시됩니다 (최대 120자).
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="tags"
+                  render={({ field }) => {
+                    const tags: string[] = field.value ?? [];
+                    const commit = (raw: string) => {
+                      const tag = raw.trim().replace(/,$/, '');
+                      if (!tag) return;
+                      if (tags.length >= 10) return;
+                      if (tags.includes(tag)) return;
+                      field.onChange([...tags, tag]);
+                      setTagInput('');
+                    };
+                    return (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>태그</FormLabel>
+                        <FormControl>
+                          <div className="space-y-2">
+                            <Input
+                              placeholder="장르·역할 입력 후 Enter (예: Visual Artist, Electronic)"
+                              value={tagInput}
+                              onChange={(e) => setTagInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ',') {
+                                  e.preventDefault();
+                                  commit(tagInput);
+                                }
+                              }}
+                              onBlur={() => {
+                                if (tagInput.trim()) commit(tagInput);
+                              }}
+                            />
+                            {tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {tags.map((t) => (
+                                  <Badge
+                                    key={t}
+                                    variant="secondary"
+                                    className="gap-1 pr-1"
+                                  >
+                                    {t}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        field.onChange(
+                                          tags.filter((x) => x !== t)
+                                        )
+                                      }
+                                      className="rounded-sm p-0.5 hover:bg-muted-foreground/20"
+                                      aria-label={`${t} 제거`}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          최대 10개. 쉼표 또는 Enter로 추가됩니다.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+
                 <FormField
                   control={form.control}
                   name="biography"
@@ -305,6 +392,116 @@ const ArtistFormView = ({
                     </FormItem>
                   )}
                 />
+
+                <div className="mt-4 space-y-4 md:col-span-2">
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                      Links
+                    </h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      전체 URL을 입력하세요. 비어 있는 항목은 상세 페이지에
+                      표시되지 않습니다.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="homepage"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>홈페이지</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://example.com"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="instagram"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Instagram</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://instagram.com/..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="soundcloud"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>SoundCloud</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://soundcloud.com/..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="bandcamp"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Bandcamp</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://....bandcamp.com"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="youtube"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>YouTube</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://youtube.com/@..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="spotify"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Spotify</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://open.spotify.com/artist/..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-4">

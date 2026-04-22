@@ -181,6 +181,13 @@ model Artist {
   country        String?
   email          String?
   homepage       String?
+  instagram      String?
+  soundcloud     String?
+  bandcamp       String?
+  youtube        String?
+  spotify        String?
+  tagline        String?
+  tags           String[]        @default([])
   biography      String?
   cv             String?
   createdAt      DateTime        @default(now())

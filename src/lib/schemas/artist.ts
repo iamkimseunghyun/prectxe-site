@@ -16,6 +16,20 @@ export const artistSchema = z.object({
   city: z.string().optional(),
   country: z.string().optional(),
   homepage: urlSchema,
+  instagram: urlSchema,
+  soundcloud: urlSchema,
+  bandcamp: urlSchema,
+  youtube: urlSchema,
+  spotify: urlSchema,
+  tagline: z
+    .string()
+    .max(120, '한 줄 소개는 120자 이하로 입력하세요.')
+    .optional(),
+  tags: z
+    .array(z.string().min(1).max(30))
+    .max(10, '태그는 최대 10개까지 지정할 수 있습니다.')
+    .optional()
+    .default([]),
   biography: z.string().transform(sanitizedTextTransformer).optional(),
   cv: z.string().transform(sanitizedTextTransformer).optional(),
   images: z.array(baseImageSchema).optional().default([]),

@@ -39,6 +39,13 @@ export type ArtistDetail = {
   city?: string;
   country?: string;
   homepage?: string;
+  instagram?: string;
+  soundcloud?: string;
+  bandcamp?: string;
+  youtube?: string;
+  spotify?: string;
+  tagline?: string;
+  tags: string[];
   biography?: string;
   cv?: string;
   userId: string;
@@ -55,5 +62,7 @@ export type ArtistCardData = {
   mainImageUrl?: string | null;
   city?: string | null;
   country?: string | null;
+  tagline?: string | null;
+  tags: string[];
   artistArtworks: { artwork: { id: string } }[];
 };
