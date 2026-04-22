@@ -2,8 +2,8 @@ import {
   Calendar,
   ChevronRight,
   ExternalLink,
-  Globe,
   MapPin,
+  User,
 } from 'lucide-react';
 import type { Metadata } from 'next';
 import Image from 'next/image';
@@ -17,6 +17,8 @@ import { prisma } from '@/lib/db/prisma';
 import { formatArtistName, getImageUrl } from '@/lib/utils';
 import { getArtistById } from '@/modules/artists/server/actions';
 import type { ArtistProgramCredit } from '@/modules/artists/server/types';
+import { ArtistCv } from '@/modules/artists/ui/section/artist-cv';
+import { ArtistGallery } from '@/modules/artists/ui/section/artist-gallery';
 import ArtworkListSection from '@/modules/artworks/ui/section/artwork-list-section';
 
 export async function generateMetadata({
@@ -31,6 +33,7 @@ export async function generateMetadata({
       name: true,
       nameKr: true,
       biography: true,
+      tagline: true,
       mainImageUrl: true,
       city: true,
       country: true,
@@ -45,6 +48,7 @@ export async function generateMetadata({
     ? `${artist.nameKr} (${artist.name})`
     : artist.name;
   const description =
+    artist.tagline ||
     artist.biography?.slice(0, 160) ||
     `${title} - ${[artist.city, artist.country].filter(Boolean).join(', ')}`;
 
@@ -78,6 +82,55 @@ function formatProgramDate(startAt: Date | null, endAt: Date | null) {
   return `${fmt(startAt)} — ${fmt(endAt)}`;
 }
 
+function ProgramCard({ credit }: { credit: ArtistProgramCredit }) {
+  const { program, role } = credit;
+  const dateStr = formatProgramDate(program.startAt, program.endAt);
+  const location = [program.venue, program.city].filter(Boolean).join(', ');
+
+  return (
+    <Link
+      href={`/programs/${program.slug}`}
+      className="group flex gap-4 rounded-xl border border-neutral-200 p-5 transition-colors hover:border-neutral-900"
+    >
+      {program.heroUrl && (
+        <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+          <Image
+            src={getImageUrl(program.heroUrl, 'thumbnail')}
+            alt={program.title}
+            fill
+            sizes="112px"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          />
+        </div>
+      )}
+      <div className="flex min-w-0 flex-1 flex-col justify-center">
+        {role && (
+          <span className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">
+            {role}
+          </span>
+        )}
+        <h4 className="line-clamp-2 text-base font-medium leading-snug transition-colors group-hover:text-neutral-500">
+          {program.title}
+        </h4>
+        <div className="mt-2 space-y-0.5 text-xs text-neutral-500">
+          {dateStr && (
+            <p className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5" />
+              {dateStr}
+            </p>
+          )}
+          {location && (
+            <p className="flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5" />
+              {location}
+            </p>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 function ProgramSection({ credits }: { credits: ArtistProgramCredit[] }) {
   if (credits.length === 0) return null;
 
@@ -90,11 +143,10 @@ function ProgramSection({ credits }: { credits: ArtistProgramCredit[] }) {
   );
 
   return (
-    <section>
-      <h2 className="mb-6 text-xl font-semibold">Programs</h2>
+    <div>
       {upcoming.length > 0 && (
-        <div className="mb-8">
-          <h3 className="mb-4 text-sm font-medium uppercase tracking-wider text-muted-foreground">
+        <div className="mb-10">
+          <h3 className="mb-5 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400">
             Upcoming
           </h3>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -107,7 +159,7 @@ function ProgramSection({ credits }: { credits: ArtistProgramCredit[] }) {
       {past.length > 0 && (
         <div>
           {upcoming.length > 0 && (
-            <h3 className="mb-4 text-sm font-medium uppercase tracking-wider text-muted-foreground">
+            <h3 className="mb-5 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400">
               Past
             </h3>
           )}
@@ -118,54 +170,29 @@ function ProgramSection({ credits }: { credits: ArtistProgramCredit[] }) {
           </div>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
-function ProgramCard({ credit }: { credit: ArtistProgramCredit }) {
-  const { program, role } = credit;
-  const dateStr = formatProgramDate(program.startAt, program.endAt);
-  const location = [program.venue, program.city].filter(Boolean).join(', ');
-
+function SocialPill({ href, label }: { href: string; label: string }) {
   return (
-    <Link
-      href={`/programs/${program.slug}`}
-      className="group flex gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50"
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-3.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-neutral-900 hover:text-neutral-900"
     >
-      {program.heroUrl && (
-        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md">
-          <Image
-            src={getImageUrl(program.heroUrl, 'thumbnail')}
-            alt={program.title}
-            fill
-            sizes="80px"
-            className="object-cover"
-          />
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <h4 className="truncate font-medium group-hover:underline">
-          {program.title}
-        </h4>
-        {role && (
-          <Badge variant="secondary" className="mt-1">
-            {role}
-          </Badge>
-        )}
-        {dateStr && (
-          <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            {dateStr}
-          </p>
-        )}
-        {location && (
-          <p className="flex items-center gap-1 text-xs text-muted-foreground">
-            <MapPin className="h-3 w-3" />
-            {location}
-          </p>
-        )}
-      </div>
-    </Link>
+      {label}
+      <ExternalLink className="h-3 w-3" />
+    </a>
+  );
+}
+
+function SectionHeading({ eyebrow }: { eyebrow: string }) {
+  return (
+    <h2 className="mb-8 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400 md:mb-10">
+      {eyebrow}
+    </h2>
   );
 }
 
@@ -183,7 +210,21 @@ export default async function Page({
     artist.nameKr ?? null,
     artist.name ?? null
   );
+  const secondaryName =
+    artist.nameKr && artist.name && displayName !== artist.name
+      ? artist.name
+      : null;
   const location = [artist.city, artist.country].filter(Boolean).join(', ');
+  const tags = artist.tags ?? [];
+  const socials: [string | undefined, string][] = [
+    [artist.homepage, 'Website'],
+    [artist.instagram, 'Instagram'],
+    [artist.soundcloud, 'SoundCloud'],
+    [artist.bandcamp, 'Bandcamp'],
+    [artist.youtube, 'YouTube'],
+    [artist.spotify, 'Spotify'],
+  ];
+  const hasSocials = socials.some(([url]) => !!url);
   const hasGallery = artist.images.length > 0;
   const hasBio = !!artist.biography;
   const hasCv = !!artist.cv;
@@ -191,7 +232,7 @@ export default async function Page({
   const hasArtworks = artist.artistArtworks.length > 0;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
+    <div className="mx-auto max-w-6xl px-6 py-12 md:px-10 md:py-16">
       <ArtistSchema
         artist={{
           id,
@@ -203,124 +244,123 @@ export default async function Page({
       />
       <BreadcrumbNav entityType="artist" title={displayName} />
 
-      {/* Hero Header */}
-      <header className="mb-10">
-        <h1 className="text-3xl font-bold tracking-tight">
-          {artist.nameKr && <span className="block">{artist.nameKr}</span>}
-          <span
-            className={
-              artist.nameKr
-                ? 'block text-xl font-normal text-muted-foreground'
-                : ''
-            }
-          >
-            {artist.name}
-          </span>
-        </h1>
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          {location && (
-            <span className="flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5" />
-              {location}
-            </span>
-          )}
-          {artist.homepage && (
-            <a
-              href={artist.homepage}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 hover:text-foreground"
-            >
-              <Globe className="h-3.5 w-3.5" />
-              웹사이트
-              <ExternalLink className="h-3 w-3" />
-            </a>
+      {/* Hero — 2분할: 이미지 + 메타 */}
+      <section className="mt-8 grid gap-10 md:mt-12 md:grid-cols-[1.05fr_1fr] md:gap-12 lg:gap-16">
+        <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-neutral-100">
+          {artist.mainImageUrl ? (
+            <Image
+              src={getImageUrl(artist.mainImageUrl, 'public')}
+              alt={displayName}
+              fill
+              priority
+              sizes="(min-width: 768px) 50vw, 100vw"
+              className="object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <User className="h-20 w-20 text-neutral-300" />
+            </div>
           )}
         </div>
-      </header>
 
-      {/* Profile Image + About */}
-      {(artist.mainImageUrl || hasBio) && (
-        <section className="border-t pt-10 pb-10">
-          <div
-            className={
-              artist.mainImageUrl && hasBio
-                ? 'grid items-start gap-8 md:grid-cols-2'
-                : ''
-            }
-          >
-            {artist.mainImageUrl && (
-              <div className="relative aspect-[3/4] overflow-hidden rounded-lg">
-                <Image
-                  src={getImageUrl(artist.mainImageUrl, 'public')}
-                  alt={displayName}
-                  fill
-                  priority
-                  sizes="(min-width: 768px) 50vw, 100vw"
-                  className="object-cover"
-                />
-              </div>
-            )}
-            {hasBio && (
-              <div className="self-start">
-                <h2 className="mb-4 text-lg font-semibold">About</h2>
-                <div className="prose max-w-none whitespace-pre-line text-muted-foreground">
-                  {artist.biography}
-                </div>
-              </div>
-            )}
+        <div className="flex flex-col justify-center">
+          <p className="text-xs font-medium uppercase tracking-[0.25em] text-neutral-400">
+            Artist
+          </p>
+          <h1 className="mt-4 text-4xl font-light leading-[1.05] tracking-tight text-neutral-900 md:text-5xl lg:text-6xl">
+            {displayName}
+          </h1>
+          {secondaryName && (
+            <p className="mt-2 text-lg font-light text-neutral-500 md:text-xl">
+              {secondaryName}
+            </p>
+          )}
+          {artist.tagline && (
+            <p className="mt-6 text-base leading-relaxed text-neutral-600 md:text-lg">
+              {artist.tagline}
+            </p>
+          )}
+          {tags.length > 0 && (
+            <div className="mt-6 flex flex-wrap gap-1.5">
+              {tags.map((t) => (
+                <Badge
+                  key={t}
+                  variant="secondary"
+                  className="rounded-full bg-neutral-100 font-normal text-neutral-700 hover:bg-neutral-200"
+                >
+                  {t}
+                </Badge>
+              ))}
+            </div>
+          )}
+          {location && (
+            <p className="mt-6 flex items-center gap-1.5 text-sm text-neutral-500">
+              <MapPin className="h-4 w-4" />
+              {location}
+            </p>
+          )}
+          {hasSocials && (
+            <div className="mt-6 flex flex-wrap gap-2">
+              {socials
+                .filter(([url]) => !!url)
+                .map(([url, label]) => (
+                  <SocialPill key={label} href={url as string} label={label} />
+                ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* About */}
+      {hasBio && (
+        <section className="py-20 md:py-28">
+          <div className="mx-auto max-w-3xl">
+            <SectionHeading eyebrow="About" />
+            <div className="whitespace-pre-line text-base leading-[1.8] text-neutral-700 md:text-lg">
+              {artist.biography}
+            </div>
           </div>
         </section>
       )}
 
-      {/* Gallery */}
+      {/* Gallery — full-bleed horizontal scroll */}
       {hasGallery && (
-        <section className="border-t pt-10 pb-10">
-          <h2 className="mb-4 text-lg font-semibold">Gallery</h2>
-          <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide">
-            {artist.images.map((img) => (
-              <div
-                key={img.id}
-                className="relative aspect-[4/5] w-56 shrink-0 overflow-hidden rounded-lg"
-              >
-                <Image
-                  src={getImageUrl(img.imageUrl, 'smaller')}
-                  alt={img.alt || displayName}
-                  fill
-                  sizes="224px"
-                  className="object-cover"
-                />
-              </div>
-            ))}
+        <section className="py-20 md:py-28">
+          <div className="mb-8 px-0 md:mb-10">
+            <SectionHeading eyebrow="Gallery" />
+          </div>
+          <div className="-mx-6 md:-mx-10">
+            <ArtistGallery images={artist.images} artistName={displayName} />
           </div>
         </section>
       )}
 
       {/* Programs */}
       {hasPrograms && (
-        <section className="border-t pt-10 pb-10">
+        <section className="py-20 md:py-28">
+          <SectionHeading eyebrow="Programs" />
           <ProgramSection credits={artist.programCredits} />
         </section>
       )}
 
       {/* Works */}
       {hasArtworks && (
-        <section className="border-t pt-10 pb-10">
-          <h2 className="mb-6 text-xl font-semibold">Works</h2>
+        <section className="py-20 md:py-28">
+          <SectionHeading eyebrow="Works" />
           <ArtworkListSection artistId={id} />
         </section>
       )}
 
       {/* CV */}
       {hasCv && (
-        <section className="border-t pt-10 pb-10">
+        <section className="py-20 md:py-28">
           <details className="group">
-            <summary className="flex cursor-pointer items-center gap-2 text-xl font-semibold">
-              CV
-              <ChevronRight className="h-5 w-5 transition-transform group-open:rotate-90" />
+            <summary className="flex cursor-pointer items-center justify-between gap-4 border-b border-neutral-200 pb-4 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400 transition-colors hover:text-neutral-900">
+              <span>Curriculum Vitae</span>
+              <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
             </summary>
-            <div className="prose mt-4 max-w-none whitespace-pre-line text-muted-foreground">
-              {artist.cv}
+            <div className="mt-8">
+              <ArtistCv cv={artist.cv as string} />
             </div>
           </details>
         </section>

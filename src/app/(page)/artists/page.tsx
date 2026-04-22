@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 
 import { Suspense } from 'react';
-import PageHeader from '@/components/layout/page-header';
 import GridSkeleton from '@/components/layout/skeleton/grid-skeleton';
 import { PAGINATION } from '@/lib/constants/constants';
 import { getArtistsPage } from '@/modules/artists/server/actions';
+import { ArtistSearchBar } from '@/modules/artists/ui/components/artist-search-bar';
 import { ArtistListView } from '@/modules/artists/ui/views/artist-list-view';
 
 export const metadata: Metadata = {
@@ -29,11 +29,28 @@ const Page = async ({
   );
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <PageHeader
-        title="아티스트"
-        description="PRECTXE와 함께했던 모든 아티스트들을 만나보세요"
-      />
+    <div className="mx-auto max-w-6xl px-6 py-20 md:px-10 md:py-28">
+      <header className="mb-14 md:mb-20">
+        <p className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-neutral-400">
+          Artists
+        </p>
+        <h1 className="text-4xl font-light leading-[1.1] tracking-tight text-neutral-900 md:text-6xl">
+          {searchQuery ? (
+            <>
+              <span className="text-neutral-400">Searching</span>{' '}
+              <span className="italic">"{searchQuery}"</span>
+            </>
+          ) : (
+            '아티스트'
+          )}
+        </h1>
+        <p className="mt-5 max-w-xl text-base leading-relaxed text-neutral-500">
+          PRECTXE와 함께한 음악·비주얼 창작자들의 프로필과 활동 기록.
+        </p>
+        <div className="mt-10 max-w-md">
+          <ArtistSearchBar initialValue={searchQuery} />
+        </div>
+      </header>
 
       <Suspense fallback={<GridSkeleton />}>
         <ArtistListView
