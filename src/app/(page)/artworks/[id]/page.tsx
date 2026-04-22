@@ -107,30 +107,31 @@ export default async function Page({
       <ArtworkSchema artwork={artwork} />
       <BreadcrumbNav entityType="artwork" title={artwork.title} />
 
-      {/* Hero — 대표 이미지 + 메타 */}
-      <section className="mt-8 grid gap-10 md:mt-12 md:grid-cols-[1.15fr_1fr] md:gap-12 lg:gap-16">
-        <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
-          {heroImage ? (
-            <Image
-              src={getImageUrl(heroImage.imageUrl, 'public')}
-              alt={heroImage.alt || artwork.title}
-              fill
-              priority
-              sizes="(min-width: 768px) 55vw, 100vw"
-              className="object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <ImageIcon className="h-20 w-20 text-neutral-300" />
-            </div>
-          )}
+      {/* Hero — 작품 이미지가 주인공: 중앙 정렬, 원본 비율 유지 */}
+      <section className="mt-8 md:mt-12">
+        <div className="mx-auto max-w-4xl">
+          <div className="relative flex aspect-[4/5] items-center justify-center overflow-hidden rounded-sm bg-neutral-50">
+            {heroImage ? (
+              <Image
+                src={getImageUrl(heroImage.imageUrl, 'hires')}
+                alt={heroImage.alt || artwork.title}
+                fill
+                priority
+                sizes="(min-width: 1024px) 900px, 100vw"
+                className="object-contain"
+              />
+            ) : (
+              <ImageIcon className="h-24 w-24 text-neutral-300" />
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-col justify-center">
+        {/* 캡션 블록 — 잡지 도판 스타일 */}
+        <div className="mx-auto mt-10 max-w-3xl md:mt-14">
           <p className="text-xs font-medium uppercase tracking-[0.25em] text-neutral-400">
             Artwork
           </p>
-          <h1 className="mt-4 text-4xl font-light leading-[1.05] tracking-tight text-neutral-900 md:text-5xl lg:text-6xl">
+          <h1 className="mt-4 text-3xl font-light leading-[1.1] tracking-tight text-neutral-900 md:text-5xl">
             {artwork.title}
           </h1>
 
@@ -157,13 +158,13 @@ export default async function Page({
           )}
 
           {details.length > 0 && (
-            <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
+            <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4 border-t border-neutral-200 pt-8">
               {details.map((d) => (
                 <div key={d.label}>
                   <dt className="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">
                     {d.label}
                   </dt>
-                  <dd className="mt-1 text-neutral-900">{d.value}</dd>
+                  <dd className="mt-1 text-sm text-neutral-900">{d.value}</dd>
                 </div>
               ))}
             </dl>

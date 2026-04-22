@@ -1,10 +1,4 @@
-import {
-  Calendar,
-  ChevronRight,
-  ExternalLink,
-  MapPin,
-  User,
-} from 'lucide-react';
+import { Calendar, ExternalLink, MapPin, User } from 'lucide-react';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -311,34 +305,24 @@ export default async function Page({
         </div>
       </section>
 
-      {/* About */}
+      {/* About — 인터뷰 페이지 톤: drop cap 강조 */}
       {hasBio && (
         <section className="py-20 md:py-28">
           <div className="mx-auto max-w-3xl">
             <SectionHeading eyebrow="About" />
-            <div className="whitespace-pre-line text-base leading-[1.8] text-neutral-700 md:text-lg">
+            <div className="whitespace-pre-line text-base leading-[1.8] text-neutral-700 first-letter:float-left first-letter:mr-3 first-letter:mt-1 first-letter:font-serif first-letter:text-5xl first-letter:font-light first-letter:leading-[0.9] first-letter:text-neutral-900 md:text-lg md:first-letter:text-6xl">
               {artist.biography}
             </div>
           </div>
         </section>
       )}
 
-      {/* Gallery — full-bleed horizontal scroll */}
-      {hasGallery && (
+      {/* CV — 아티스트 서사의 핵심이라 기본 노출 */}
+      {hasCv && (
         <section className="py-20 md:py-28">
-          <div className="mb-8 px-0 md:mb-10">
-            <SectionHeading eyebrow="Gallery" />
-          </div>
-          <div className="-mx-6 md:-mx-10">
-            <MediaGallery
-              items={artist.images.map((img) => ({
-                id: img.id,
-                type: 'image',
-                url: img.imageUrl,
-                alt: img.alt,
-              }))}
-              title={displayName}
-            />
+          <SectionHeading eyebrow="Curriculum Vitae" />
+          <div className="mx-auto max-w-4xl">
+            <ArtistCv cv={artist.cv as string} />
           </div>
         </section>
       )}
@@ -359,18 +343,23 @@ export default async function Page({
         </section>
       )}
 
-      {/* CV */}
-      {hasCv && (
+      {/* Gallery — 시각 마무리, 전체 스크롤 */}
+      {hasGallery && (
         <section className="py-20 md:py-28">
-          <details className="group">
-            <summary className="flex cursor-pointer items-center justify-between gap-4 border-b border-neutral-200 pb-4 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400 transition-colors hover:text-neutral-900">
-              <span>Curriculum Vitae</span>
-              <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
-            </summary>
-            <div className="mt-8">
-              <ArtistCv cv={artist.cv as string} />
-            </div>
-          </details>
+          <div className="mb-8 px-0 md:mb-10">
+            <SectionHeading eyebrow="Gallery" />
+          </div>
+          <div className="-mx-6 md:-mx-10">
+            <MediaGallery
+              items={artist.images.map((img) => ({
+                id: img.id,
+                type: 'image',
+                url: img.imageUrl,
+                alt: img.alt,
+              }))}
+              title={displayName}
+            />
+          </div>
         </section>
       )}
     </div>

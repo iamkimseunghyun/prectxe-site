@@ -51,11 +51,7 @@ export async function generateMetadata({
 function formatEventDate(startAt: Date | null, endAt: Date | null) {
   if (!startAt) return null;
   const fmt = (d: Date) =>
-    d.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
   if (!endAt) return fmt(startAt);
   return `${fmt(startAt)} — ${fmt(endAt)}`;
 }
@@ -65,6 +61,73 @@ function SectionHeading({ eyebrow }: { eyebrow: string }) {
     <h2 className="mb-8 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400 md:mb-10">
       {eyebrow}
     </h2>
+  );
+}
+
+type TimelineItem =
+  | {
+      kind: 'program';
+      id: string;
+      slug: string;
+      title: string;
+      startAt: Date | null;
+      endAt: Date | null;
+      heroUrl: string | null;
+      sortDate: Date | null;
+    }
+  | {
+      kind: 'drop';
+      id: string;
+      slug: string;
+      title: string;
+      eventDate: Date | null;
+      eventEndDate: Date | null;
+      heroUrl: string | null;
+      sortDate: Date | null;
+    };
+
+function EventCard({ item }: { item: TimelineItem }) {
+  const href =
+    item.kind === 'program' ? `/programs/${item.slug}` : `/drops/${item.slug}`;
+  const dateStr =
+    item.kind === 'program'
+      ? formatEventDate(item.startAt, item.endAt)
+      : formatEventDate(item.eventDate, item.eventEndDate);
+  const badgeLabel = item.kind === 'program' ? 'Program' : 'Drop';
+
+  return (
+    <Link
+      href={href}
+      className="group flex gap-4 border-b border-neutral-100 py-5 transition-colors hover:bg-neutral-50"
+    >
+      {item.heroUrl ? (
+        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-neutral-100 md:h-24 md:w-24">
+          <Image
+            src={getImageUrl(item.heroUrl, 'thumbnail')}
+            alt={item.title}
+            fill
+            sizes="96px"
+            className="object-cover"
+          />
+        </div>
+      ) : (
+        <div className="h-20 w-20 shrink-0 rounded-md bg-neutral-100 md:h-24 md:w-24" />
+      )}
+      <div className="flex min-w-0 flex-1 flex-col justify-center">
+        <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">
+          {badgeLabel}
+        </span>
+        <h4 className="mt-1 line-clamp-2 text-base font-medium leading-snug transition-colors group-hover:text-neutral-500 md:text-lg">
+          {item.title}
+        </h4>
+        {dateStr && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-neutral-500">
+            <Calendar className="h-3.5 w-3.5" />
+            {dateStr}
+          </p>
+        )}
+      </div>
+    </Link>
   );
 }
 
@@ -89,17 +152,53 @@ export default async function Page({
   const hasBio = !!venue.description;
   const hasAdditionalImages = venue.images.length > 1;
   const heroImage = venue.images[0];
-  const now = new Date();
-  const upcomingPrograms = programs.filter(
-    (p) => p.startAt && new Date(p.startAt) > now
-  );
-  const pastPrograms = programs.filter(
-    (p) => !p.startAt || new Date(p.startAt) <= now
-  );
-  const hasEvents = programs.length > 0 || drops.length > 0;
+
+  // 프로그램·드롭을 병합 → 연도별 내림차순 그룹화
+  const timeline: TimelineItem[] = [
+    ...programs.map(
+      (p): TimelineItem => ({
+        kind: 'program',
+        id: p.id,
+        slug: p.slug,
+        title: p.title,
+        startAt: p.startAt,
+        endAt: p.endAt,
+        heroUrl: p.heroUrl,
+        sortDate: p.startAt,
+      })
+    ),
+    ...drops.map(
+      (d): TimelineItem => ({
+        kind: 'drop',
+        id: d.id,
+        slug: d.slug,
+        title: d.title,
+        eventDate: d.eventDate,
+        eventEndDate: d.eventEndDate,
+        heroUrl: d.media[0]?.url ?? null,
+        sortDate: d.eventDate,
+      })
+    ),
+  ].sort((a, b) => {
+    const ad = a.sortDate ? new Date(a.sortDate).getTime() : 0;
+    const bd = b.sortDate ? new Date(b.sortDate).getTime() : 0;
+    return bd - ad;
+  });
+
+  const byYear = new Map<string, TimelineItem[]>();
+  for (const item of timeline) {
+    const year = item.sortDate
+      ? String(new Date(item.sortDate).getFullYear())
+      : 'Undated';
+    const bucket = byYear.get(year) ?? [];
+    bucket.push(item);
+    byYear.set(year, bucket);
+  }
+  const yearEntries = Array.from(byYear.entries());
+  const hasEvents = timeline.length > 0;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12 md:px-10 md:py-16">
+    <div>
       <VenueSchema
         venue={{
           id: venue.id,
@@ -108,67 +207,76 @@ export default async function Page({
           images: venue.images,
         }}
       />
-      <BreadcrumbNav entityType="venue" title={venue.name} />
 
-      {/* Hero — 사진 + 메타 */}
-      <section className="mt-8 grid gap-10 md:mt-12 md:grid-cols-[1.1fr_1fr] md:gap-12 lg:gap-16">
-        <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
+      {/* Hero — 가로 파노라마 full-bleed */}
+      <section className="relative">
+        <div className="relative aspect-[16/9] w-full overflow-hidden bg-neutral-100 md:aspect-[21/9]">
           {heroImage ? (
             <Image
-              src={getImageUrl(heroImage.imageUrl, 'public')}
+              src={getImageUrl(heroImage.imageUrl, 'hires')}
               alt={heroImage.alt || venue.name}
               fill
               priority
-              sizes="(min-width: 768px) 55vw, 100vw"
+              sizes="100vw"
               className="object-cover"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
-              <MapPin className="h-16 w-16 text-neutral-300" />
+              <MapPin className="h-24 w-24 text-neutral-300" />
             </div>
           )}
+          {/* 하단 그라디언트 — 제목 가독성 */}
+          <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 px-6 pb-10 md:px-10 md:pb-14">
+            <div className="mx-auto max-w-6xl">
+              <p className="text-xs font-medium uppercase tracking-[0.25em] text-white/70">
+                Venue
+              </p>
+              <h1 className="mt-3 text-4xl font-light leading-[1.05] tracking-tight text-white md:text-6xl lg:text-7xl">
+                {venue.name}
+              </h1>
+              {venue.tagline && (
+                <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/80 md:text-lg">
+                  {venue.tagline}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
+      </section>
 
-        <div className="flex flex-col justify-center">
-          <p className="text-xs font-medium uppercase tracking-[0.25em] text-neutral-400">
-            Venue
-          </p>
-          <h1 className="mt-4 text-4xl font-light leading-[1.05] tracking-tight text-neutral-900 md:text-5xl lg:text-6xl">
-            {venue.name}
-          </h1>
-          {venue.tagline && (
-            <p className="mt-6 text-base leading-relaxed text-neutral-600 md:text-lg">
-              {venue.tagline}
-            </p>
+      {/* 메타 블록 — hero 바로 아래, 컴팩트 */}
+      <section className="border-b border-neutral-200">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-4 px-6 py-6 md:px-10">
+          <div className="mx-4 md:mx-0">
+            <BreadcrumbNav entityType="venue" title={venue.name} />
+          </div>
+          {(venue.address || location) && (
+            <div className="flex items-start gap-1.5 text-sm text-neutral-600">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" />
+              <div>
+                {venue.address && <div>{venue.address}</div>}
+                {location && venue.address !== location && (
+                  <div className="text-xs text-neutral-400">{location}</div>
+                )}
+              </div>
+            </div>
           )}
           {tags.length > 0 && (
-            <div className="mt-6 flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5">
               {tags.map((t) => (
                 <Badge
                   key={t}
                   variant="secondary"
-                  className="rounded-full bg-neutral-100 font-normal text-neutral-700 hover:bg-neutral-200"
+                  className="rounded-full bg-neutral-100 font-normal text-neutral-700"
                 >
                   {t}
                 </Badge>
               ))}
             </div>
           )}
-          {(venue.address || location) && (
-            <div className="mt-6 space-y-1 text-sm text-neutral-500">
-              {venue.address && (
-                <p className="flex items-start gap-1.5">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                  {venue.address}
-                </p>
-              )}
-              {location && venue.address !== location && (
-                <p className="pl-5 text-neutral-400">{location}</p>
-              )}
-            </div>
-          )}
           {hasSocials && (
-            <div className="mt-6 flex flex-wrap gap-2">
+            <div className="ml-auto flex flex-wrap gap-2">
               {socials
                 .filter(([url]) => !!url)
                 .map(([url, label]) => (
@@ -188,167 +296,68 @@ export default async function Page({
         </div>
       </section>
 
-      {/* About */}
-      {hasBio && (
-        <section className="py-20 md:py-28">
-          <div className="mx-auto max-w-3xl">
-            <SectionHeading eyebrow="About" />
-            <div className="whitespace-pre-line text-base leading-[1.8] text-neutral-700 md:text-lg">
-              {venue.description}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Gallery */}
-      {hasAdditionalImages && (
-        <section className="py-20 md:py-28">
-          <div className="mb-8 md:mb-10">
-            <SectionHeading eyebrow="Gallery" />
-          </div>
-          <div className="-mx-6 md:-mx-10">
-            <MediaGallery
-              items={venue.images.map((img) => ({
-                id: img.id,
-                type: 'image',
-                url: img.imageUrl,
-                alt: img.alt,
-              }))}
-              title={venue.name}
-            />
-          </div>
-        </section>
-      )}
-
-      {/* Events */}
-      {hasEvents && (
-        <section className="py-20 md:py-28">
-          <SectionHeading eyebrow="Events" />
-
-          {upcomingPrograms.length > 0 && (
-            <div className="mb-10">
-              <h3 className="mb-5 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400">
-                Upcoming
-              </h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {upcomingPrograms.map((p) => (
-                  <Link
-                    key={p.id}
-                    href={`/programs/${p.slug}`}
-                    className="group flex gap-4 rounded-xl border border-neutral-200 p-5 transition-colors hover:border-neutral-900"
-                  >
-                    {p.heroUrl && (
-                      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
-                        <Image
-                          src={getImageUrl(p.heroUrl, 'thumbnail')}
-                          alt={p.title}
-                          fill
-                          sizes="96px"
-                          className="object-cover"
-                        />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">
-                        Program
-                      </span>
-                      <h4 className="mt-1 line-clamp-2 text-base font-medium leading-snug transition-colors group-hover:text-neutral-500">
-                        {p.title}
-                      </h4>
-                      <p className="mt-2 flex items-center gap-1.5 text-xs text-neutral-500">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {formatEventDate(p.startAt, p.endAt)}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
+      <div className="mx-auto max-w-6xl px-6 md:px-10">
+        {/* About */}
+        {hasBio && (
+          <section className="py-20 md:py-28">
+            <div className="mx-auto max-w-3xl">
+              <SectionHeading eyebrow="About" />
+              <div className="whitespace-pre-line text-base leading-[1.8] text-neutral-700 md:text-lg">
+                {venue.description}
               </div>
             </div>
-          )}
+          </section>
+        )}
 
-          {drops.length > 0 && (
-            <div className="mb-10">
-              <h3 className="mb-5 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400">
-                Drops
-              </h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {drops.map((d) => (
-                  <Link
-                    key={d.id}
-                    href={`/drops/${d.slug}`}
-                    className="group flex gap-4 rounded-xl border border-neutral-200 p-5 transition-colors hover:border-neutral-900"
-                  >
-                    {d.media[0] && (
-                      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
-                        <Image
-                          src={getImageUrl(d.media[0].url, 'thumbnail')}
-                          alt={d.title}
-                          fill
-                          sizes="96px"
-                          className="object-cover"
-                        />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">
-                        Drop
-                      </span>
-                      <h4 className="mt-1 line-clamp-2 text-base font-medium leading-snug transition-colors group-hover:text-neutral-500">
-                        {d.title}
-                      </h4>
-                      <p className="mt-2 flex items-center gap-1.5 text-xs text-neutral-500">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {formatEventDate(d.eventDate, d.eventEndDate)}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+        {/* Events — 연대기 타임라인 */}
+        {hasEvents && (
+          <section className="py-20 md:py-28">
+            <SectionHeading eyebrow="Events" />
+            <div className="space-y-14 md:space-y-20">
+              {yearEntries.map(([year, items]) => (
+                <div
+                  key={year}
+                  className="grid gap-6 md:grid-cols-[120px_1fr] md:gap-10"
+                >
+                  <div className="md:sticky md:top-24 md:self-start">
+                    <p className="text-2xl font-light tabular-nums text-neutral-900 md:text-3xl">
+                      {year}
+                    </p>
+                    <p className="mt-1 text-[11px] uppercase tracking-[0.2em] text-neutral-400">
+                      {items.length} event{items.length > 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  <div className="border-t border-neutral-200">
+                    {items.map((item) => (
+                      <EventCard key={`${item.kind}-${item.id}`} item={item} />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
+          </section>
+        )}
 
-          {pastPrograms.length > 0 && (
-            <div>
-              <h3 className="mb-5 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400">
-                Past
-              </h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {pastPrograms.map((p) => (
-                  <Link
-                    key={p.id}
-                    href={`/programs/${p.slug}`}
-                    className="group flex gap-4 rounded-xl border border-neutral-200 p-5 transition-colors hover:border-neutral-900"
-                  >
-                    {p.heroUrl && (
-                      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
-                        <Image
-                          src={getImageUrl(p.heroUrl, 'thumbnail')}
-                          alt={p.title}
-                          fill
-                          sizes="96px"
-                          className="object-cover"
-                        />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">
-                        Program
-                      </span>
-                      <h4 className="mt-1 line-clamp-2 text-base font-medium leading-snug transition-colors group-hover:text-neutral-500">
-                        {p.title}
-                      </h4>
-                      <p className="mt-2 flex items-center gap-1.5 text-xs text-neutral-500">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {formatEventDate(p.startAt, p.endAt)}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+        {/* Gallery */}
+        {hasAdditionalImages && (
+          <section className="py-20 md:py-28">
+            <div className="mb-8 md:mb-10">
+              <SectionHeading eyebrow="Gallery" />
             </div>
-          )}
-        </section>
-      )}
+            <div className="-mx-6 md:-mx-10">
+              <MediaGallery
+                items={venue.images.map((img) => ({
+                  id: img.id,
+                  type: 'image',
+                  url: img.imageUrl,
+                  alt: img.alt,
+                }))}
+                title={venue.name}
+              />
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }
