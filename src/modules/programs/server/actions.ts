@@ -260,6 +260,7 @@ export async function createProgram(input: unknown, _userId: string) {
       city: data.city ?? null,
       heroUrl: data.heroUrl ?? null,
       venue: data.venue ?? null,
+      venueId: data.venueId ?? null,
       organizer: data.organizer ?? null,
       userId: auth.userId!,
       images: data.images
@@ -332,6 +333,7 @@ export async function updateProgram(id: string, input: unknown) {
       city: data.city ?? null,
       heroUrl: data.heroUrl ?? null,
       venue: data.venue ?? null,
+      venueId: data.venueId ?? null,
       organizer: data.organizer ?? null,
       images: hasNewImages
         ? {

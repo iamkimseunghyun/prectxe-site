@@ -9,28 +9,83 @@ import { createVenueSchema, updateVenueSchema } from '@/lib/schemas';
 export async function getVenueById(venueId: string) {
   return prisma.venue.findUnique({
     where: { id: venueId },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      address: true,
-      userId: true,
+    include: {
       images: { orderBy: { order: 'asc' } },
     },
   });
 }
 
-export async function getAllVenues(page = 1, pageSize = 9) {
+/**
+ * Venue 상세에 표시할 연관 이벤트 조회.
+ * venueId FK 매칭 + legacy `venue` 문자열(이름) 매칭 — OR.
+ */
+export async function getVenueEvents(venueId: string, venueName: string) {
+  const [programs, drops] = await Promise.all([
+    prisma.program.findMany({
+      where: {
+        OR: [{ venueId }, { venue: venueName }],
+      },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        status: true,
+        startAt: true,
+        endAt: true,
+        heroUrl: true,
+        city: true,
+      },
+      orderBy: { startAt: 'desc' },
+    }),
+    prisma.drop.findMany({
+      where: {
+        OR: [{ venueId }, { venue: venueName }],
+        status: { not: 'draft' },
+        publishedAt: { not: null },
+      },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        status: true,
+        eventDate: true,
+        eventEndDate: true,
+        media: {
+          where: { type: 'image' },
+          orderBy: { order: 'asc' },
+          take: 1,
+          select: { url: true },
+        },
+      },
+      orderBy: { eventDate: 'desc' },
+    }),
+  ]);
+  return { programs, drops };
+}
+
+export async function getAllVenues(page = 1, pageSize = 9, searchQuery = '') {
   try {
+    const where = searchQuery
+      ? {
+          OR: [
+            { name: { contains: searchQuery, mode: 'insensitive' as const } },
+            { city: { contains: searchQuery, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
     const [items, total] = await Promise.all([
       prisma.venue.findMany({
+        where,
         skip: (page - 1) * pageSize,
         take: pageSize,
         select: {
           id: true,
           name: true,
-          description: true,
+          tagline: true,
           address: true,
+          city: true,
+          country: true,
+          tags: true,
           images: {
             select: { id: true, imageUrl: true, alt: true },
             orderBy: { order: 'asc' },
@@ -39,7 +94,7 @@ export async function getAllVenues(page = 1, pageSize = 9) {
         },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.venue.count(),
+      prisma.venue.count({ where }),
     ]);
 
     return { page, pageSize, total, items };
@@ -47,6 +102,16 @@ export async function getAllVenues(page = 1, pageSize = 9) {
     console.error('장소 목록 조회 실패:', error);
     throw new Error('장소 목록을 불러오는데 실패했습니다.');
   }
+}
+
+/**
+ * Drop·Program 폼의 Venue 선택 UI용 — id/name/address 경량 리스트.
+ */
+export async function getVenueOptions() {
+  return prisma.venue.findMany({
+    select: { id: true, name: true, address: true, city: true },
+    orderBy: { name: 'asc' },
+  });
 }
 
 export async function createVenue(
@@ -66,8 +131,14 @@ export async function createVenue(
     const venue = await prisma.venue.create({
       data: {
         name: d.name,
+        tagline: d.tagline,
         description: d.description,
         address: d.address,
+        city: d.city,
+        country: d.country,
+        website: d.website,
+        instagram: d.instagram,
+        tags: d.tags ?? [],
         userId,
         images: d.images?.length
           ? { createMany: { data: d.images } }
@@ -118,8 +189,14 @@ export async function updateVenue(
       where: { id: venueId },
       data: {
         name: d.name,
+        tagline: d.tagline,
         description: d.description,
         address: d.address,
+        city: d.city,
+        country: d.country,
+        website: d.website,
+        instagram: d.instagram,
+        tags: d.tags,
         images: hasNewImages
           ? { deleteMany: {}, createMany: { data: d.images! } }
           : undefined,

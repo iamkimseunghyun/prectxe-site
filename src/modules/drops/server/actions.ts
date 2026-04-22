@@ -34,6 +34,7 @@ export async function createDrop(data: {
   eventEndDate?: string;
   venue?: string;
   venueAddress?: string;
+  venueId?: string;
   notice?: string;
   status?: string;
   media?: DropMediaInput[];
@@ -58,6 +59,7 @@ export async function createDrop(data: {
       eventEndDate: data.eventEndDate ? new Date(data.eventEndDate) : null,
       venue: data.venue || null,
       venueAddress: data.venueAddress || null,
+      venueId: data.venueId || null,
       notice: data.notice || null,
       status: (data.status as any) || 'draft',
       publishedAt: data.status && data.status !== 'draft' ? new Date() : null,
@@ -87,6 +89,7 @@ export async function updateDrop(
     eventEndDate?: string;
     venue?: string;
     venueAddress?: string;
+    venueId?: string | null;
     notice?: string;
     status?: string;
     publishedAt?: string | null;
@@ -156,6 +159,7 @@ export async function updateDrop(
         eventEndDate: data.eventEndDate ? new Date(data.eventEndDate) : null,
       }),
       ...(data.venue !== undefined && { venue: data.venue || null }),
+      ...(data.venueId !== undefined && { venueId: data.venueId || null }),
       ...(data.venueAddress !== undefined && {
         venueAddress: data.venueAddress || null,
       }),

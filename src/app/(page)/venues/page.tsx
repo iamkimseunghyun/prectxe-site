@@ -1,30 +1,25 @@
-import { getAllVenues } from '@/modules/venues/server/actions';
-import VenueListView from '@/modules/venues/ui/views/venue-list-view';
+import type { Metadata } from 'next';
+import { VenueListView } from '@/modules/venues/ui/views/venue-list-view';
 
-const VenuesPage = async ({
-  searchParams,
-}: {
-  searchParams: Promise<{ page?: string }>;
-}) => {
-  const params = await searchParams;
-  const currentPage = Number(params.page) || 1;
-  const initialData = await getAllVenues(currentPage);
-
-  return (
-    <div className="mx-auto max-w-5xl py-8">
-      <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Venues</h1>
-        {/*<Link href="/venues/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add New Venue
-          </Button>
-        </Link>*/}
-      </div>
-
-      <VenueListView initialData={initialData} />
-    </div>
-  );
+export const metadata: Metadata = {
+  title: '장소 | PRECTXE',
+  description:
+    'PRECTXE 행사를 열었던 베뉴들의 아카이브. 프로그램·드롭이 진행된 공간들의 정보와 히스토리.',
+  openGraph: {
+    title: '장소 | PRECTXE',
+    description:
+      'PRECTXE 행사를 열었던 베뉴들의 아카이브. 프로그램·드롭이 진행된 공간들의 정보와 히스토리.',
+  },
 };
 
-export default VenuesPage;
+const Page = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) => {
+  const { search } = await searchParams;
+  const searchQuery = typeof search === 'string' ? search : '';
+  return <VenueListView searchQuery={searchQuery} />;
+};
+
+export default Page;

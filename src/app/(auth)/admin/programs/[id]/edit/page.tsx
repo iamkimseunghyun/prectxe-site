@@ -3,6 +3,7 @@ import getSession from '@/lib/auth/session';
 import { prisma } from '@/lib/db/prisma';
 import { updateProgram } from '@/modules/programs/server/actions';
 import { ProgramFormView } from '@/modules/programs/ui/views/program-form-view';
+import { getVenueOptions } from '@/modules/venues/server/actions';
 
 export default async function Page({
   params,
@@ -10,13 +11,16 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const program = await prisma.program.findUnique({
-    where: { id },
-    include: {
-      images: { orderBy: { order: 'asc' } },
-      credits: { include: { artist: true } },
-    },
-  });
+  const [program, venues] = await Promise.all([
+    prisma.program.findUnique({
+      where: { id },
+      include: {
+        images: { orderBy: { order: 'asc' } },
+        credits: { include: { artist: true } },
+      },
+    }),
+    getVenueOptions(),
+  ]);
   if (!program) redirect('/admin/programs');
 
   async function onSubmit(formData: any) {
@@ -47,6 +51,7 @@ export default async function Page({
       </div>
       <ProgramFormView
         onSubmit={onSubmit}
+        venues={venues}
         initial={{
           id: program.id,
           title: program.title,
@@ -60,6 +65,7 @@ export default async function Page({
           city: program.city ?? undefined,
           heroUrl: program.heroUrl ?? undefined,
           venue: program.venue ?? undefined,
+          venueId: program.venueId ?? null,
           organizer: program.organizer ?? undefined,
           images: program.images.map((i) => ({
             imageUrl: i.imageUrl,

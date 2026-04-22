@@ -1,65 +1,56 @@
-'use client';
+import { getAllVenues } from '@/modules/venues/server/actions';
+import { VenueSearchBar } from '@/modules/venues/ui/components/venue-search-bar';
+import VenueCard from '@/modules/venues/ui/section/venue-card';
 
-import { ImageIcon, MapPin } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
-import { getImageUrl } from '@/lib/utils';
-
-interface VenueItem {
-  id: string;
-  name: string;
-  description: string;
-  address: string;
-  images: { id: string; imageUrl: string; alt: string }[];
+interface VenueListViewProps {
+  searchQuery?: string;
 }
 
-interface VenueListProps {
-  initialData: {
-    items: VenueItem[];
-    total: number;
-    pageSize: number;
-  };
-}
+export const VenueListView = async ({
+  searchQuery = '',
+}: VenueListViewProps) => {
+  const { items } = await getAllVenues(1, 30, searchQuery);
 
-const VenueList = ({ initialData }: VenueListProps) => {
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {initialData.items.map((venue) => (
-        <Link href={`/venues/${venue.id}`} key={venue.id}>
-          <Card className="overflow-hidden transition-shadow hover:shadow-lg">
-            <CardContent className="p-0">
-              {venue.images[0] ? (
-                <div className="relative h-48 w-full overflow-hidden">
-                  <Image
-                    src={getImageUrl(venue.images[0].imageUrl, 'smaller')}
-                    alt={venue.images[0].alt || venue.name}
-                    fill
-                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                    className="rounded-t-lg object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="flex h-48 items-center justify-center rounded-t-lg bg-muted">
-                  <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
-                </div>
-              )}
-              <div className="p-4">
-                <h2 className="mb-2 text-xl font-semibold">{venue.name}</h2>
-                <p className="mb-3 line-clamp-2 text-sm text-muted-foreground">
-                  {venue.description}
-                </p>
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {venue.address}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      ))}
+    <div className="mx-auto max-w-6xl px-6 py-20 md:px-10 md:py-28">
+      <header className="mb-14 md:mb-20">
+        <p className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-neutral-400">
+          Venues
+        </p>
+        <h1 className="text-4xl font-light leading-[1.1] tracking-tight text-neutral-900 md:text-6xl">
+          {searchQuery ? (
+            <>
+              <span className="text-neutral-400">Searching</span>{' '}
+              <span className="italic">"{searchQuery}"</span>
+            </>
+          ) : (
+            '장소'
+          )}
+        </h1>
+        <p className="mt-5 max-w-xl text-base leading-relaxed text-neutral-500">
+          PRECTXE 행사를 열었던 베뉴들의 아카이브 — 거점 씬이 모여 있는 공간
+          정보.
+        </p>
+        <div className="mt-10 max-w-md">
+          <VenueSearchBar initialValue={searchQuery} />
+        </div>
+      </header>
+
+      {items.length === 0 ? (
+        <div className="border-t border-neutral-200 py-24 text-center">
+          <p className="text-sm text-neutral-500">
+            {searchQuery
+              ? `"${searchQuery}"에 해당하는 장소가 없습니다.`
+              : '등록된 장소가 아직 없습니다.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 md:gap-y-16 lg:grid-cols-3">
+          {items.map((venue) => (
+            <VenueCard key={venue.id} venue={venue} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
-
-export default VenueList;

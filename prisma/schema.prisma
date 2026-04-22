@@ -27,6 +27,7 @@ model Program {
   updatedAt   DateTime        @updatedAt
   isFeatured       Boolean         @default(false)
   user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venueLink        Venue?          @relation(fields: [venueId], references: [id], onDelete: SetNull)
   credits          ProgramCredit[]
   images           ProgramImage[]
   articles         Article[]
@@ -242,14 +243,22 @@ model ArtworkImage {
 
 model Venue {
   id          String       @id @default(cuid())
-  address     String
   name        String
-  description String
+  tagline     String?
+  description String?
+  address     String?
+  city        String?
+  country     String?
+  website     String?
+  instagram   String?
+  tags        String[]     @default([])
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   userId      String
   user        User         @relation(fields: [userId], references: [id])
   images      VenueImage[]
+  programs    Program[]
+  drops       Drop[]
 }
 
 model VenueImage {
@@ -463,10 +472,12 @@ model Drop {
   eventEndDate DateTime?
   venue        String?
   venueAddress String?
+  venueId      String?
   notice       String?
   publishedAt  DateTime?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  venueLink   Venue?        @relation(fields: [venueId], references: [id], onDelete: SetNull)
   media       DropMedia[]
   credits     DropCredit[]
   ticketTiers TicketTier[]

@@ -41,6 +41,7 @@ import {
   uploadImage,
 } from '@/lib/utils';
 import ArtistSelect from '@/modules/artists/ui/components/artist-select';
+import { VenueSelect } from '@/modules/venues/ui/components/venue-select';
 
 function Label({
   children,
@@ -50,6 +51,7 @@ function Label({
   required?: boolean;
 }) {
   return (
+    // biome-ignore lint/a11y/noLabelWithoutControl: visual label only — associated input is sibling via wrapper grouping
     <label className="mb-1 block text-sm font-medium">
       {children}
       {required && <span className="ml-0.5 text-red-500">*</span>}
@@ -70,9 +72,16 @@ type Credit = {
 
 export function ProgramFormView({
   initial,
+  venues,
   onSubmit,
 }: {
   initial?: Partial<ProgramCreateInput> & { id?: string };
+  venues: {
+    id: string;
+    name: string;
+    address: string | null;
+    city: string | null;
+  }[];
   onSubmit: (
     data: any
   ) => Promise<
@@ -92,6 +101,7 @@ export function ProgramFormView({
     city: initial?.city ?? '',
     heroUrl: initial?.heroUrl ?? '',
     venue: initial?.venue ?? '',
+    venueId: initial?.venueId ?? null,
     organizer: initial?.organizer ?? '',
   });
 
@@ -392,11 +402,23 @@ export function ProgramFormView({
               onChange={(e) => handleChange('city', e.target.value)}
             />
           </div>
-          <div>
+          <div className="sm:col-span-2">
             <Label>장소</Label>
-            <Input
-              value={form.venue as any}
-              onChange={(e) => handleChange('venue', e.target.value)}
+            <VenueSelect
+              venues={venues}
+              value={{
+                venueId: form.venueId ?? null,
+                venueText: (form.venue as string) ?? '',
+                venueAddress: '',
+              }}
+              onChange={(next) => {
+                setForm((prev) => ({
+                  ...prev,
+                  venueId: next.venueId,
+                  venue: next.venueText,
+                }));
+              }}
+              disabled={isSubmitting}
             />
           </div>
         </CardContent>

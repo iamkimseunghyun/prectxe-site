@@ -33,6 +33,7 @@ import {
   deleteDrop,
   updateDrop,
 } from '@/modules/drops/server/actions';
+import { VenueSelect } from '@/modules/venues/ui/components/venue-select';
 
 type DropMediaInit = {
   id: string;
@@ -67,14 +68,23 @@ type DropData = {
   eventEndDate: Date | null;
   venue: string | null;
   venueAddress: string | null;
+  venueId: string | null;
   notice: string | null;
   publishedAt: Date | null;
   media?: DropMediaInit[];
   credits?: DropCreditInit[];
 };
 
+type VenueOption = {
+  id: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+};
+
 interface DropFormViewProps {
   drop?: DropData;
+  venues: VenueOption[];
 }
 
 /**
@@ -104,7 +114,7 @@ function uploadFileWithProgress(
   });
 }
 
-export function DropFormView({ drop }: DropFormViewProps) {
+export function DropFormView({ drop, venues }: DropFormViewProps) {
   const router = useRouter();
   const { toast } = useToast();
   const isEdit = !!drop;
@@ -115,6 +125,13 @@ export function DropFormView({ drop }: DropFormViewProps) {
   // Select 상태 (controlled — Radix name prop이 React 19 form에서 무한루프 유발)
   const [type, setType] = useState(drop?.type ?? 'ticket');
   const [status, setStatus] = useState(drop?.status ?? 'draft');
+
+  // Venue 상태 — 기존 venueId 있으면 link 모드, 없으면 legacy 문자열 모드
+  const [venue, setVenue] = useState({
+    venueId: drop?.venueId ?? null,
+    venueText: drop?.venue ?? '',
+    venueAddress: drop?.venueAddress ?? '',
+  });
 
   // 통합 미디어 상태 — 이미지/영상 혼합, 드래그 정렬 가능.
   // 이미지 preview는 Cloudflare Images variant(/public) 필요 — raw URL은 404.
@@ -277,8 +294,9 @@ export function DropFormView({ drop }: DropFormViewProps) {
         description: description || undefined,
         eventDate: (fd.get('eventDate') as string) || undefined,
         eventEndDate: (fd.get('eventEndDate') as string) || undefined,
-        venue: (fd.get('venue') as string) || undefined,
-        venueAddress: (fd.get('venueAddress') as string) || undefined,
+        venue: venue.venueText || undefined,
+        venueAddress: venue.venueAddress || undefined,
+        venueId: venue.venueId ?? undefined,
         notice: (fd.get('notice') as string) || undefined,
         status: fd.get('status') as string,
         media,
@@ -452,25 +470,15 @@ export function DropFormView({ drop }: DropFormViewProps) {
                   </div>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="venue">장소</Label>
-                    <Input
-                      id="venue"
-                      name="venue"
-                      defaultValue={drop?.venue ?? ''}
-                      placeholder="예: 홍대 무브홀"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="venueAddress">주소</Label>
-                    <Input
-                      id="venueAddress"
-                      name="venueAddress"
-                      defaultValue={drop?.venueAddress ?? ''}
-                      placeholder="예: 서울시 마포구..."
-                    />
-                  </div>
+                <div>
+                  <Label>장소</Label>
+                  <VenueSelect
+                    venues={venues}
+                    value={venue}
+                    onChange={setVenue}
+                    showAddress
+                    disabled={isSubmitting}
+                  />
                 </div>
 
                 <div>
