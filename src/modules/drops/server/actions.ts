@@ -72,6 +72,7 @@ export async function createDrop(data: {
 
   revalidatePath('/admin/drops');
   revalidatePath('/drops');
+  revalidatePath('/');
   return { success: true, data: drop };
 }
 
@@ -183,6 +184,7 @@ export async function updateDrop(
   revalidatePath('/admin/drops');
   revalidatePath(`/drops/${drop.slug}`);
   revalidatePath('/drops');
+  revalidatePath('/');
   return { success: true, data: drop };
 }
 
@@ -222,6 +224,7 @@ export async function deleteDrop(id: string) {
   await prisma.drop.delete({ where: { id } });
   revalidatePath('/admin/drops');
   revalidatePath('/drops');
+  revalidatePath('/');
   return { success: true };
 }
 
