@@ -48,8 +48,13 @@ interface SortableMediaListProps {
   onReorder: (next: MediaItem[]) => void;
   onRemove: (id: string) => void;
   onAddImages: (files: FileList) => void;
-  onAddVideos: (files: FileList) => void;
+  /** 제공되지 않으면 영상 추가 버튼과 영상 안내가 숨겨짐 (이미지 전용 모드) */
+  onAddVideos?: (files: FileList) => void;
   disabled?: boolean;
+  /** 맨 앞 아이템 안내 문구 커스터마이즈 (기본: 포스터·썸네일·OG) */
+  heroNote?: string;
+  /** 파일 크기 안내 (기본: 이미지 10MB · 영상 200MB) */
+  sizeNote?: string;
 }
 
 export function SortableMediaList({
@@ -59,6 +64,8 @@ export function SortableMediaList({
   onAddImages,
   onAddVideos,
   disabled,
+  heroNote,
+  sizeNote,
 }: SortableMediaListProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -85,6 +92,7 @@ export function SortableMediaList({
   }
 
   function handleVideosChange(e: ChangeEvent<HTMLInputElement>) {
+    if (!onAddVideos) return;
     if (e.target.files && e.target.files.length > 0) {
       onAddVideos(e.target.files);
     }
@@ -121,11 +129,11 @@ export function SortableMediaList({
       {/* 첫 번째 아이템 안내 */}
       {items.length > 0 && items[0]?.type === 'image' && (
         <p className="text-xs text-neutral-500">
-          맨 앞(왼쪽 상단) 이미지가 포스터·썸네일·OG 이미지로 사용됩니다.
-          드래그해 순서를 조정하세요.
+          {heroNote ??
+            '맨 앞(왼쪽 상단) 이미지가 포스터·썸네일·OG 이미지로 사용됩니다. 드래그해 순서를 조정하세요.'}
         </p>
       )}
-      {items.length > 0 && items[0]?.type === 'video' && (
+      {items.length > 0 && items[0]?.type === 'video' && onAddVideos && (
         <p className="text-xs text-amber-600">
           ⚠ 첫 아이템이 영상입니다. 포스터·OG 이미지용으로는 이미지를 맨 앞으로
           이동해 주세요.
@@ -142,15 +150,17 @@ export function SortableMediaList({
         >
           <ImagePlus className="mr-1 h-4 w-4" /> 이미지 추가
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => videoInputRef.current?.click()}
-          disabled={disabled}
-        >
-          <Video className="mr-1 h-4 w-4" /> 영상 추가
-        </Button>
+        {onAddVideos && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => videoInputRef.current?.click()}
+            disabled={disabled}
+          >
+            <Video className="mr-1 h-4 w-4" /> 영상 추가
+          </Button>
+        )}
         <input
           ref={imageInputRef}
           type="file"
@@ -159,17 +169,20 @@ export function SortableMediaList({
           onChange={handleImagesChange}
           className="hidden"
         />
-        <input
-          ref={videoInputRef}
-          type="file"
-          accept="video/*"
-          multiple
-          onChange={handleVideosChange}
-          className="hidden"
-        />
+        {onAddVideos && (
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept="video/*"
+            multiple
+            onChange={handleVideosChange}
+            className="hidden"
+          />
+        )}
       </div>
       <p className="text-xs text-neutral-400">
-        이미지 1장당 10MB, 영상 1개당 200MB 이하. 여러 개 업로드 가능.
+        {sizeNote ??
+          '이미지 1장당 10MB, 영상 1개당 200MB 이하. 여러 개 업로드 가능.'}
       </p>
     </div>
   );

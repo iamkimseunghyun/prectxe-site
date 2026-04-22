@@ -4,8 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import MultiImageBox from '@/components/image/multi-image-box';
 import FormSubmitButton from '@/components/layout/form-submit-button';
+import { SortableMediaList } from '@/components/media/sortable-media-list';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
+import { useSortableImages } from '@/hooks/use-sortable-images';
 import { useToast } from '@/hooks/use-toast';
 import {
   type Artwork,
@@ -72,45 +72,33 @@ const ArtworkFormView = ({
   const form = useForm<Artwork>({
     resolver: zodResolver(createArtworkSchema),
     defaultValues,
-    resetOptions: {
-      keepDirtyValues: true,
-      keepErrors: true,
-    },
+    resetOptions: { keepDirtyValues: true, keepErrors: true },
   });
 
-  const {
-    multiImagePreview,
-    error: fileError,
-    handleMultiImageChange,
-    removeMultiImage,
-    uploadPendingWithProgress,
-  } = useMultiImageUpload({
-    initialImages: initialData?.images,
-  });
+  const { items, setItems, addImages, removeMedia, uploadPending } =
+    useSortableImages(initialData?.images ?? []);
 
   const onSubmit = form.handleSubmit(async (data) => {
     setIsSubmitting(true);
     try {
-      // 갤러리 이미지 업로드 (진행률 추적, 실패 시 중단)
-      const { failCount, images: uploadedImages } =
-        await uploadPendingWithProgress();
-      if (failCount > 0) {
+      const result = await uploadPending();
+      if (!result.ok) {
         toast({
-          title: '일부 이미지 업로드 실패',
-          description: `${failCount}개 실패, 재시도해 주세요.`,
+          title: '이미지 업로드 실패',
+          description: '일부 파일을 다시 시도해 주세요.',
           variant: 'destructive',
         });
         return;
       }
 
-      const payload = { ...data, images: uploadedImages };
-      const result =
+      const payload = { ...data, images: result.images };
+      const saved =
         mode === 'edit'
-          ? await updateArtwork(payload, artworkId!)
-          : await createArtwork(payload, userId!);
+          ? await updateArtwork(payload, artworkId as string)
+          : await createArtwork(payload, userId as string);
 
-      if (!result.success) throw new Error(result.error);
-      router.push(`/artworks/${result.data?.id}`);
+      if (!saved.success) throw new Error(saved.error);
+      router.push(`/artworks/${saved.data?.id}`);
     } catch (error) {
       console.error('Error:', error);
       form.setError('root', {
@@ -125,10 +113,10 @@ const ArtworkFormView = ({
     <div className="mx-auto max-w-4xl px-4 py-10">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">
+          <CardTitle className="text-xl font-medium">
             {mode === 'create' ? '작품 등록' : '작품 수정'}
           </CardTitle>
-          <CardDescription>새로운 작품의 정보를 입력해주세요.</CardDescription>
+          <CardDescription>작품 정보와 이미지를 입력해주세요.</CardDescription>
         </CardHeader>
 
         <Form {...form}>
@@ -139,7 +127,7 @@ const ArtworkFormView = ({
                 name="artists"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>작가 선택</FormLabel>
+                    <FormLabel>작가</FormLabel>
                     <FormControl>
                       <ArtistSelect
                         artists={artists}
@@ -245,25 +233,20 @@ const ArtworkFormView = ({
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="images"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>작품 이미지</FormLabel>
-                    <FormControl>
-                      <MultiImageBox
-                        register={field}
-                        previews={multiImagePreview}
-                        error={fileError}
-                        handleMultiImageChange={handleMultiImageChange}
-                        removeMultiImage={removeMultiImage}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormItem>
+                <FormLabel>작품 이미지</FormLabel>
+                <FormControl>
+                  <SortableMediaList
+                    items={items}
+                    onReorder={setItems}
+                    onRemove={removeMedia}
+                    onAddImages={addImages}
+                    disabled={isSubmitting}
+                    heroNote="맨 앞 이미지가 목록/상세/OG의 대표 이미지로 사용됩니다. 드래그해 순서를 조정하세요."
+                    sizeNote="이미지 1장당 10MB 이하. 여러 개 업로드 가능."
+                  />
+                </FormControl>
+              </FormItem>
 
               <FormField
                 control={form.control}
@@ -275,7 +258,7 @@ const ArtworkFormView = ({
                       <Textarea
                         {...field}
                         placeholder="작품에 대한 간단한 설명을 입력하세요"
-                        rows={15}
+                        rows={10}
                         value={field.value ?? ''}
                       />
                     </FormControl>
@@ -302,6 +285,11 @@ const ArtworkFormView = ({
                 {mode === 'edit' ? '수정하기' : '등록하기'}
               </FormSubmitButton>
             </CardFooter>
+            {form.formState.errors.root && (
+              <p className="px-6 pb-4 text-sm text-red-500">
+                {form.formState.errors.root.message}
+              </p>
+            )}
           </form>
         </Form>
       </Card>

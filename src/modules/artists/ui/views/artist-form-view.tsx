@@ -5,9 +5,9 @@ import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import MultiImageBox from '@/components/image/multi-image-box';
 import SingleImageBox from '@/components/image/single-image-box';
 import FormSubmitButton from '@/components/layout/form-submit-button';
+import { SortableMediaList } from '@/components/media/sortable-media-list';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,8 +28,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
+import { useSortableImages } from '@/hooks/use-sortable-images';
 import { useToast } from '@/hooks/use-toast';
 import {
   type CreateArtistInput,
@@ -98,16 +98,14 @@ const ArtistFormView = ({
     },
   });
 
-  // 갤러리 이미지 훅
+  // 갤러리 이미지 — Drop과 동일한 SortableMediaList 패턴
   const {
-    multiImagePreview,
-    error,
-    handleMultiImageChange,
-    removeMultiImage,
-    uploadPendingWithProgress,
-  } = useMultiImageUpload({
-    initialImages: initialData?.images,
-  });
+    items: galleryItems,
+    setItems: setGalleryItems,
+    addImages: addGalleryImages,
+    removeMedia: removeGalleryImage,
+    uploadPending: uploadGallery,
+  } = useSortableImages(initialData?.images ?? []);
 
   const onSubmit = form.handleSubmit(async (data) => {
     setIsSubmitting(true);
@@ -118,24 +116,23 @@ const ArtistFormView = ({
         finalizeUpload();
       }
 
-      // 2. 갤러리 이미지 업로드 (진행률 추적, 실패 시 중단)
-      const { failCount, images: uploadedImages } =
-        await uploadPendingWithProgress();
-      if (failCount > 0) {
+      // 2. 갤러리 pending 업로드
+      const uploaded = await uploadGallery();
+      if (!uploaded.ok) {
         toast({
-          title: '일부 이미지 업로드 실패',
-          description: `${failCount}개 실패, 재시도해 주세요.`,
+          title: '이미지 업로드 실패',
+          description: '일부 파일을 다시 시도해 주세요.',
           variant: 'destructive',
         });
         return;
       }
 
-      // 3. 서버 액션 호출 (업로드된 이미지 URL 사용)
-      const payload = { ...data, images: uploadedImages };
+      // 3. 서버 액션 호출
+      const payload = { ...data, images: uploaded.images };
       const result =
         mode === 'edit'
-          ? await updateArtist(payload, artistId!)
-          : await createArtist(payload, userId!);
+          ? await updateArtist(payload, artistId as string)
+          : await createArtist(payload, userId as string);
 
       if (!result.success) throw new Error(result.error);
       router.push(`/artists/${result.data?.id}`);
@@ -222,25 +219,20 @@ const ArtistFormView = ({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="images"
-                  render={({ field }) => (
-                    <FormItem className="space-y-2">
-                      <FormLabel>추가 사진</FormLabel>
-                      <FormControl>
-                        <MultiImageBox
-                          register={field}
-                          previews={multiImagePreview}
-                          handleMultiImageChange={handleMultiImageChange}
-                          removeMultiImage={removeMultiImage}
-                          error={error}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormItem className="md:col-span-2">
+                  <FormLabel>추가 사진</FormLabel>
+                  <FormControl>
+                    <SortableMediaList
+                      items={galleryItems}
+                      onReorder={setGalleryItems}
+                      onRemove={removeGalleryImage}
+                      onAddImages={addGalleryImages}
+                      disabled={isSubmitting}
+                      heroNote="드래그해 순서를 조정하세요. 아티스트 상세의 갤러리 섹션에 표시됩니다."
+                      sizeNote="이미지 1장당 10MB 이하. 여러 개 업로드 가능."
+                    />
+                  </FormControl>
+                </FormItem>
 
                 <FormField
                   control={form.control}
