@@ -4,7 +4,7 @@ import { ArrowLeft, Play } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
+import { CloudflareStreamVideo } from '@/components/media/cloudflare-stream-video';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { trackViewItem } from '@/lib/analytics/gtag';
 import { artistInitials, formatArtistName, getImageUrl } from '@/lib/utils';

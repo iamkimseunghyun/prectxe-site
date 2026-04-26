@@ -12,7 +12,7 @@ import {
 } from '@/lib/utils';
 import { listArticlesByProgram } from '@/modules/journal/server/actions';
 import { getProgramBySlug } from '@/modules/programs/server/actions';
-import ProgramGallery from '@/modules/programs/ui/section/program-gallery';
+import ProgramGallery from '@/modules/programs/ui/components/program-gallery';
 
 export async function ProgramDetailView({ slug }: { slug: string }) {
   const program = await getProgramBySlug(slug);

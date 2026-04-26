@@ -12,8 +12,8 @@ import { prisma } from '@/lib/db/prisma';
 import { formatArtistName, getImageUrl } from '@/lib/utils';
 import { getArtistById } from '@/modules/artists/server/actions';
 import type { ArtistProgramCredit } from '@/modules/artists/server/types';
-import { ArtistCv } from '@/modules/artists/ui/section/artist-cv';
-import ArtworkListSection from '@/modules/artworks/ui/section/artwork-list-section';
+import { ArtistCv } from '@/modules/artists/ui/components/artist-cv';
+import ArtworkListSection from '@/modules/artworks/ui/components/artwork-list-section';
 
 export async function generateMetadata({
   params,

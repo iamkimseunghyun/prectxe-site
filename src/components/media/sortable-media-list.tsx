@@ -20,7 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, ImagePlus, Loader2, Video, X } from 'lucide-react';
 import Image from 'next/image';
 import { type ChangeEvent, useRef } from 'react';
-import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
+import { CloudflareStreamVideo } from '@/components/media/cloudflare-stream-video';
 import { Button } from '@/components/ui/button';
 
 export type MediaItem = {

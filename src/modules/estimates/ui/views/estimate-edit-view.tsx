@@ -14,7 +14,7 @@ import {
   computeLineAmount,
   formatKRW,
   numberToKoreanAmount,
-} from '@/lib/estimate/calc';
+} from '@/lib/estimates/calc';
 import type { LineItem, Recipient } from '@/lib/schemas/estimate';
 import {
   deleteEstimate,

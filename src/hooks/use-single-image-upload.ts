@@ -1,6 +1,6 @@
 import { type ChangeEvent, useState } from 'react';
 import { getCloudflareImageUrl } from '@/lib/cdn/cloudflare';
-import validateImageFile, { getImageUrl } from '@/lib/utils';
+import { getImageUrl, validateImageFile } from '@/lib/utils';
 
 type ImageUploadProps = {
   initialImage?: string | null;

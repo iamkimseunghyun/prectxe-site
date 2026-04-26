@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react';
 import type { MediaItem } from '@/components/media/sortable-media-list';
 import { getCloudflareImageUrl } from '@/lib/cdn/cloudflare';
-import validateImageFile, { getImageUrl } from '@/lib/utils';
+import { getImageUrl, validateImageFile } from '@/lib/utils';
 import { uploadFileWithProgress } from '@/lib/utils/media-upload';
 
 export type ImageMediaInput = {

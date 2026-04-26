@@ -7,7 +7,7 @@ import { PAGINATION } from '@/lib/constants/constants';
 import { getMoreArtworks } from '@/modules/artworks/server/actions';
 import ArtworkCard, {
   type ArtworkCardData,
-} from '@/modules/artworks/ui/section/artwork-card';
+} from '@/modules/artworks/ui/components/artwork-card';
 
 interface ArtworkGridSectionProps {
   initialArtworks: ArtworkCardData[];

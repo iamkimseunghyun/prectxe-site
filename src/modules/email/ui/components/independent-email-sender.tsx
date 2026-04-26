@@ -5,7 +5,7 @@ import { Loader2, Send, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { EmailEditor, getEmailHTML } from '@/components/email-editor';
+import { EmailEditor, getEmailHTML } from '@/modules/email/ui/components/email-editor';
 import { Button } from '@/components/ui/button';
 import {
   Card,

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
-import { computeEstimateTotals } from '@/lib/estimate/calc';
+import { computeEstimateTotals } from '@/lib/estimates/calc';
 import type { LineItem, Recipient } from '@/lib/schemas/estimate';
 import {
   getSupplierProfile,

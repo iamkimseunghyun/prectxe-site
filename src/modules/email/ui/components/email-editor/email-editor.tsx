@@ -5,7 +5,7 @@ import { type ChangeEvent, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { getCloudflareImageUrl } from '@/lib/cdn/cloudflare';
-import validateImageFile, { getImageUrl, uploadImage } from '@/lib/utils';
+import { getImageUrl, uploadImage, validateImageFile } from '@/lib/utils';
 import { convertToEmailHTML, getEmailEditorExtensions } from './extensions';
 import { ImageControls } from './image-controls';
 import { Toolbar } from './toolbar';

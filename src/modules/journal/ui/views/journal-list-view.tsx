@@ -4,7 +4,7 @@ import { FilterChip } from '@/components/shared/filter-chip';
 import { Badge } from '@/components/ui/badge';
 import { getImageUrl } from '@/lib/utils';
 import { listArticles } from '@/modules/journal/server/actions';
-import { ArticleCard } from '@/modules/journal/ui/section/article-card';
+import { ArticleCard } from '@/modules/journal/ui/components/article-card';
 
 const TAG_FILTERS = [
   { value: '', label: '전체' },

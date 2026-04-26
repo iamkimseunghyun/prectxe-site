@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo } from 'react';
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
-import { ProgramCard } from '@/modules/programs/ui/section/program-card';
+import { ProgramCard } from '@/modules/programs/ui/components/program-card';
 
 type Item = {
   id: string;

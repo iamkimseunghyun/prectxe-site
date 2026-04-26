@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect } from 'react';
-import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
+import { CloudflareStreamVideo } from '@/components/media/cloudflare-stream-video';
 import { getImageUrl } from '@/lib/utils';
 
 export type LightboxMedia = {

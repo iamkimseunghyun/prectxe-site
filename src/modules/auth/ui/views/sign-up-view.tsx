@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import SignUpFormSection from '@/modules/auth/ui/section/sign-up-form-section';
+import SignUpFormSection from '@/modules/auth/ui/components/sign-up-form-section';
 
 const SignUpView = () => {
   return (

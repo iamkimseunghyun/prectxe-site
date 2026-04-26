@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import SignInFormSection from '@/modules/auth/ui/section/sign-in-form-section';
+import SignInFormSection from '@/modules/auth/ui/components/sign-in-form-section';
 
 const SignInView = () => {
   return (

@@ -6,7 +6,7 @@ import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 import { PAGINATION } from '@/lib/constants/constants';
 import { getMoreArtists } from '@/modules/artists/server/actions';
 import type { ArtistCardData } from '@/modules/artists/server/types';
-import ArtistCard from '@/modules/artists/ui/section/artist-card';
+import ArtistCard from '@/modules/artists/ui/components/artist-card';
 
 interface ArtistGridProps {
   initialArtists: ArtistCardData[];

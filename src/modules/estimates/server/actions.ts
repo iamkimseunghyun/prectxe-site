@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
-import { computeLineAmount } from '@/lib/estimate/calc';
+import { computeLineAmount } from '@/lib/estimates/calc';
 import {
   type CreateEstimateFromSheetInput,
   createEstimateFromSheetSchema,
