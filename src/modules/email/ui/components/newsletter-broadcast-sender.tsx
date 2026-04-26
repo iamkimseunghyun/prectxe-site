@@ -5,7 +5,10 @@ import { Loader2, Megaphone } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { EmailEditor, getEmailHTML } from '@/modules/email/ui/components/email-editor';
+import {
+  EmailEditor,
+  getEmailHTML,
+} from '@/modules/email/ui/components/email-editor';
 import {
   AlertDialog,
   AlertDialogAction,

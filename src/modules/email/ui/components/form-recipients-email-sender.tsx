@@ -5,7 +5,10 @@ import { Loader2, Send, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { EmailEditor, getEmailHTML } from '@/modules/email/ui/components/email-editor';
+import {
+  EmailEditor,
+  getEmailHTML,
+} from '@/modules/email/ui/components/email-editor';
 import { Button } from '@/components/ui/button';
 import {
   Card,

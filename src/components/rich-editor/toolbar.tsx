@@ -17,8 +17,8 @@ import {
   Redo,
   Underline as UnderlineIcon,
   Undo,
-  Youtube,
 } from 'lucide-react';
+import YoutubeIcon from '@/components/icons/youtube';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -311,7 +311,7 @@ export function Toolbar({ editor, onImageUpload, uploading }: ToolbarProps) {
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="ghost" size="sm" title="YouTube 동영상">
-              <Youtube className="h-4 w-4" />
+              <YoutubeIcon className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80">

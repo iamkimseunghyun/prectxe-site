@@ -1,10 +1,7 @@
 import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from '@/lib/constants/constants';
 import type { ImagePreview } from '@/lib/schemas';
 
-export const uploadSingleImage = async (
-  imageFile: File,
-  uploadURL: string
-) => {
+export const uploadSingleImage = async (imageFile: File, uploadURL: string) => {
   if (imageFile) {
     const cloudFlareForm = new FormData();
     cloudFlareForm.append('file', imageFile);
