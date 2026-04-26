@@ -1,5 +1,6 @@
 import {
   Body,
+  Button,
   Container,
   Head,
   Heading,
@@ -23,6 +24,7 @@ interface OrderConfirmationProps {
   dropTitle: string;
   items: OrderItem[];
   totalAmount: number;
+  ticketsUrl?: string;
 }
 
 export default function OrderConfirmation({
@@ -31,6 +33,7 @@ export default function OrderConfirmation({
   dropTitle,
   items,
   totalAmount,
+  ticketsUrl,
 }: OrderConfirmationProps) {
   return (
     <Html>
@@ -74,6 +77,22 @@ export default function OrderConfirmation({
                   : `${totalAmount.toLocaleString()}원`}
               </Text>
             </Section>
+
+            {ticketsUrl && (
+              <>
+                <Hr style={hr} />
+                <Section style={ticketCta}>
+                  <Text style={ticketCtaTitle}>입장권 (QR 코드)</Text>
+                  <Text style={ticketCtaText}>
+                    공연 당일 아래 페이지의 QR 코드를 운영자에게 보여주시면
+                    입장이 가능합니다. 링크를 즐겨찾기하거나 일행과 공유하세요.
+                  </Text>
+                  <Button href={ticketsUrl} style={ticketButton}>
+                    입장권 보기 →
+                  </Button>
+                </Section>
+              </>
+            )}
 
             <Text style={footer}>문의사항이 있으시면 답장해 주세요.</Text>
             <Text style={footerBrand}>PRECTXE</Text>
@@ -204,4 +223,37 @@ const footerBrand = {
   fontSize: '12px',
   textAlign: 'center' as const,
   marginTop: '8px',
+};
+
+const ticketCta = {
+  textAlign: 'center' as const,
+  marginTop: '8px',
+  marginBottom: '8px',
+};
+
+const ticketCtaTitle = {
+  color: '#0a0a0a',
+  fontSize: '14px',
+  fontWeight: '600' as const,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.08em',
+  margin: '0 0 8px',
+};
+
+const ticketCtaText = {
+  color: '#525f7f',
+  fontSize: '13px',
+  lineHeight: '20px',
+  margin: '0 0 16px',
+};
+
+const ticketButton = {
+  backgroundColor: '#0a0a0a',
+  borderRadius: '8px',
+  color: '#ffffff',
+  display: 'inline-block',
+  fontSize: '14px',
+  fontWeight: '600' as const,
+  padding: '12px 28px',
+  textDecoration: 'none',
 };

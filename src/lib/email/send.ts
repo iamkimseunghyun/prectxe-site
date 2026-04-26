@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { createResendClient, getSenderEmail } from './resend';
+import BankTransferPending from './templates/bank-transfer-pending';
 import FormNotification from './templates/form-notification';
 import Newsletter from './templates/newsletter';
 import OrderConfirmation from './templates/order-confirmation';
@@ -8,7 +9,11 @@ import OrderConfirmation from './templates/order-confirmation';
 export interface SendEmailParams {
   to: string | string[];
   subject: string;
-  template: 'form-notification' | 'newsletter' | 'order-confirmation';
+  template:
+    | 'form-notification'
+    | 'newsletter'
+    | 'order-confirmation'
+    | 'bank-transfer-pending';
   data: any;
 }
 
@@ -35,6 +40,8 @@ function getTemplate(template: string, data: any): ReactElement {
       return Newsletter(data);
     case 'order-confirmation':
       return OrderConfirmation(data);
+    case 'bank-transfer-pending':
+      return BankTransferPending(data);
     default:
       return FormNotification(data);
   }

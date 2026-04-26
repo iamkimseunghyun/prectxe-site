@@ -338,6 +338,7 @@ export async function getDropOrders(dropId: string, page = 1, pageSize = 20) {
       include: {
         items: { include: { ticketTier: true, goodsVariant: true } },
         payment: true,
+        bankTransfer: true,
       },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * pageSize,

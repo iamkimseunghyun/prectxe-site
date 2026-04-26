@@ -527,6 +527,7 @@ model TicketTier {
   updatedAt   DateTime         @updatedAt
   drop        Drop?            @relation(fields: [dropId], references: [id], onDelete: Cascade)
   orderItems  OrderItem[]
+  tickets     Ticket[]
 }
 
 model GoodsVariant {
@@ -545,19 +546,22 @@ model GoodsVariant {
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  orderNo     String      @unique
-  dropId      String?
-  buyerName   String
-  buyerEmail  String
-  buyerPhone  String
-  totalAmount Int
-  status      OrderStatus @default(pending)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  drop        Drop?       @relation(fields: [dropId], references: [id], onDelete: Cascade)
-  items       OrderItem[]
-  payment     Payment?
+  id           String        @id @default(cuid())
+  orderNo      String        @unique
+  accessToken  String?       @unique
+  dropId       String?
+  buyerName    String
+  buyerEmail   String
+  buyerPhone   String
+  totalAmount  Int
+  status       OrderStatus   @default(pending)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  drop         Drop?         @relation(fields: [dropId], references: [id], onDelete: Cascade)
+  items        OrderItem[]
+  payment      Payment?
+  bankTransfer BankTransfer?
+  tickets      Ticket[]
 }
 
 model OrderItem {
@@ -572,6 +576,7 @@ model OrderItem {
   order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
   ticketTier     TicketTier?   @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
   goodsVariant   GoodsVariant? @relation(fields: [goodsVariantId], references: [id], onDelete: SetNull)
+  tickets        Ticket[]
 }
 
 model Payment {
@@ -588,6 +593,43 @@ model Payment {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model BankTransfer {
+  id            String             @id @default(cuid())
+  orderId       String             @unique
+  depositorName String
+  amount        Int
+  expiresAt     DateTime
+  status        BankTransferStatus @default(pending)
+  confirmedAt   DateTime?
+  confirmedBy   String?
+  cancelledAt   DateTime?
+  cancelReason  String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  order         Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([status, expiresAt])
+}
+
+model Ticket {
+  id           String       @id @default(cuid())
+  token        String       @unique
+  orderId      String
+  orderItemId  String
+  ticketTierId String?
+  status       TicketStatus @default(active)
+  checkedInAt  DateTime?
+  checkedInBy  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem    OrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  ticketTier   TicketTier?  @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([orderId])
 }
 
 enum DropType {
@@ -629,4 +671,17 @@ enum PaymentStatus {
   failed
   cancelled
   refunded
+}
+
+enum BankTransferStatus {
+  pending
+  confirmed
+  expired
+  cancelled
+}
+
+enum TicketStatus {
+  active
+  checked_in
+  cancelled
 }

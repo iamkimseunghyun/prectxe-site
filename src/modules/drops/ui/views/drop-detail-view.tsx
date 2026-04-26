@@ -8,6 +8,7 @@ import {
   Loader2,
   Package,
   Pencil,
+  QrCode,
   ShoppingCart,
   Ticket,
 } from 'lucide-react';
@@ -226,6 +227,14 @@ export function DropDetailView({ dropId }: { dropId: string }) {
               주문 목록
             </Link>
           </Button>
+          {drop.type === 'ticket' && (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/admin/drops/${drop.id}/scanner`}>
+                <QrCode className="mr-1 h-4 w-4" />
+                입장 스캐너
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 

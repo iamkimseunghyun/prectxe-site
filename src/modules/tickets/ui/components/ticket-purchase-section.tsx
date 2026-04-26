@@ -1,7 +1,6 @@
 'use client';
 
-import PortOne from '@portone/browser-sdk/v2';
-import { CheckCircle2, Minus, Plus, Ticket } from 'lucide-react';
+import { CheckCircle2, Copy, Minus, Plus, Ticket } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,7 +17,12 @@ import {
   trackBeginCheckout,
   trackPurchase,
 } from '@/lib/analytics/gtag';
-import { createOrder, verifyPayment } from '@/modules/tickets/server/actions';
+import { subscribeNewsletter } from '@/modules/email/server/actions';
+import {
+  createBankTransferOrder,
+  createOrder,
+  verifyPayment,
+} from '@/modules/tickets/server/actions';
 
 type AvailableTier = {
   id: string;
@@ -37,10 +41,30 @@ interface TicketPurchaseSectionProps {
   tiers: AvailableTier[];
 }
 
-function randomPaymentId() {
-  return [...crypto.getRandomValues(new Uint32Array(2))]
-    .map((word) => word.toString(16).padStart(8, '0'))
-    .join('');
+type BankTransferSuccess = {
+  type: 'bank_transfer';
+  orderNo: string;
+  totalAmount: number;
+  depositorName: string;
+  expiresAt: Date | string;
+  bankInfo: { bankName: string; accountNumber: string; accountHolder: string };
+};
+
+type FreeSuccess = {
+  type: 'free';
+  orderNo: string;
+};
+
+type OrderCompleteState = BankTransferSuccess | FreeSuccess;
+
+function formatExpiry(expiresAt: Date | string): string {
+  const date = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mi = String(date.getMinutes()).padStart(2, '0');
+  return `${yyyy}.${mm}.${dd} ${hh}:${mi}`;
 }
 
 export function TicketPurchaseSection({
@@ -54,9 +78,13 @@ export function TicketPurchaseSection({
   const [buyerName, setBuyerName] = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
+  const [depositorName, setDepositorName] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [orderComplete, setOrderComplete] = useState<string | null>(null);
+  const [orderComplete, setOrderComplete] = useState<OrderCompleteState | null>(
+    null
+  );
 
   function updateQuantity(tierId: string, delta: number, max: number) {
     setQuantities((prev) => {
@@ -78,6 +106,8 @@ export function TicketPurchaseSection({
     0
   );
 
+  const isFree = totalAmount === 0;
+
   function handleCheckout() {
     if (selectedItems.length === 0) {
       toast({ title: '티켓을 선택해주세요.', variant: 'destructive' });
@@ -95,7 +125,7 @@ export function TicketPurchaseSection({
     quantity: item.quantity,
   }));
 
-  async function handlePayment(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (isProcessing) return;
     setIsProcessing(true);
@@ -103,25 +133,23 @@ export function TicketPurchaseSection({
     trackBeginCheckout(totalAmount, gaItems);
 
     try {
-      const orderResult = await createOrder(dropId, {
-        buyerName,
-        buyerEmail,
-        buyerPhone,
-        items: selectedItems.map((item) => ({
-          ticketTierId: item.tier.id,
-          quantity: item.quantity,
-        })),
-      });
-
-      if (!orderResult.success) {
-        toast({ title: orderResult.error, variant: 'destructive' });
-        setIsProcessing(false);
-        return;
-      }
-
-      const order = orderResult.data!;
-
-      if (totalAmount === 0) {
+      // 무료 티켓 — 카드/무통장 흐름 우회, 즉시 주문 생성 + 무료 검증
+      if (isFree) {
+        const orderResult = await createOrder(dropId, {
+          buyerName,
+          buyerEmail,
+          buyerPhone,
+          items: selectedItems.map((item) => ({
+            ticketTierId: item.tier.id,
+            quantity: item.quantity,
+          })),
+        });
+        if (!orderResult.success) {
+          toast({ title: orderResult.error, variant: 'destructive' });
+          setIsProcessing(false);
+          return;
+        }
+        const order = orderResult.data!;
         const verifyResult = await verifyPayment(order.id, `free-${order.id}`);
         if (verifyResult.success) {
           trackPurchase({
@@ -129,8 +157,18 @@ export function TicketPurchaseSection({
             value: 0,
             items: gaItems,
           });
-          setOrderComplete(verifyResult.data?.orderNo ?? order.orderNo);
+          if (newsletterOptIn) {
+            // best-effort, 실패해도 주문 결과에 영향 없음
+            subscribeNewsletter(buyerEmail).catch((err) =>
+              console.error('newsletter 구독 실패:', err)
+            );
+          }
+          setOrderComplete({
+            type: 'free',
+            orderNo: verifyResult.data?.orderNo ?? order.orderNo,
+          });
           setCheckoutOpen(false);
+          setQuantities({});
         } else {
           toast({ title: verifyResult.error, variant: 'destructive' });
         }
@@ -138,49 +176,49 @@ export function TicketPurchaseSection({
         return;
       }
 
-      const paymentId = randomPaymentId();
-      const payment = await PortOne.requestPayment({
-        storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID!,
-        channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY!,
-        paymentId,
-        orderName: `${title} 티켓`,
-        totalAmount,
-        currency: 'CURRENCY_KRW',
-        payMethod: 'CARD',
-        customData: { orderId: order.id },
-        customer: {
-          fullName: buyerName,
-          email: buyerEmail,
-          phoneNumber: buyerPhone,
-        },
+      // 유료 — 무통장 입금 주문
+      const result = await createBankTransferOrder(dropId, {
+        buyerName,
+        buyerEmail,
+        buyerPhone,
+        depositorName,
+        items: selectedItems.map((item) => ({
+          ticketTierId: item.tier.id,
+          quantity: item.quantity,
+        })),
       });
 
-      if (!payment || payment.code !== undefined) {
-        toast({
-          title: payment?.message ?? '결제가 취소되었습니다.',
-          variant: 'destructive',
-        });
+      if (!result.success) {
+        toast({ title: result.error, variant: 'destructive' });
         setIsProcessing(false);
         return;
       }
 
-      const verifyResult = await verifyPayment(order.id, payment.paymentId);
-      if (verifyResult.success) {
-        trackPurchase({
-          transactionId: payment.paymentId,
-          value: totalAmount,
-          items: gaItems,
-        });
-        setOrderComplete(verifyResult.data?.orderNo ?? order.orderNo);
-        setCheckoutOpen(false);
-        setQuantities({});
-      } else {
-        toast({ title: verifyResult.error, variant: 'destructive' });
+      const data = result.data!;
+      trackPurchase({
+        transactionId: data.orderNo,
+        value: data.totalAmount,
+        items: gaItems,
+      });
+      if (newsletterOptIn) {
+        subscribeNewsletter(buyerEmail).catch((err) =>
+          console.error('newsletter 구독 실패:', err)
+        );
       }
+      setOrderComplete({
+        type: 'bank_transfer',
+        orderNo: data.orderNo,
+        totalAmount: data.totalAmount,
+        depositorName: data.depositorName,
+        expiresAt: data.expiresAt,
+        bankInfo: data.bankInfo,
+      });
+      setCheckoutOpen(false);
+      setQuantities({});
     } catch (err) {
-      console.error('결제 오류:', err);
+      console.error('주문 처리 오류:', err);
       toast({
-        title: '결제 처리 중 오류가 발생했습니다.',
+        title: '주문 처리 중 오류가 발생했습니다.',
         variant: 'destructive',
       });
     }
@@ -188,9 +226,17 @@ export function TicketPurchaseSection({
     setIsProcessing(false);
   }
 
+  function copyToClipboard(value: string, label: string) {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return;
+    navigator.clipboard.writeText(value).then(
+      () => toast({ title: `${label} 복사됨` }),
+      () => toast({ title: '복사 실패', variant: 'destructive' })
+    );
+  }
+
   if (tiers.length === 0) return null;
 
-  if (orderComplete) {
+  if (orderComplete?.type === 'free') {
     return (
       <div className="space-y-6">
         <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
@@ -199,13 +245,116 @@ export function TicketPurchaseSection({
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-10 text-center">
           <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
           <p className="mt-4 text-xl font-semibold text-emerald-900">
-            구매가 완료되었습니다
+            신청이 완료되었습니다
           </p>
           <p className="mt-2 font-mono text-sm text-emerald-700">
-            {orderComplete}
+            {orderComplete.orderNo}
           </p>
           <p className="mt-3 text-sm text-emerald-600">
             확인 이메일이 {buyerEmail}로 발송됩니다.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (orderComplete?.type === 'bank_transfer') {
+    const { bankInfo } = orderComplete;
+    return (
+      <div className="space-y-6">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
+          Tickets
+        </h2>
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-6">
+            <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+              주문 접수 완료 · 입금 대기
+            </p>
+            <p className="mt-2 font-mono text-sm text-amber-900">
+              {orderComplete.orderNo}
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-amber-800">
+              아래 계좌로{' '}
+              <strong>{orderComplete.totalAmount.toLocaleString()}원</strong>{' '}
+              입금해 주세요. 입금 확인 후 주문이 확정되며 이메일로 안내드립니다.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-neutral-200 bg-white p-5">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">
+              입금 계좌
+            </p>
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-neutral-500">은행</dt>
+                <dd className="font-medium text-neutral-900">
+                  {bankInfo.bankName}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-neutral-500">계좌번호</dt>
+                <dd className="flex items-center gap-2">
+                  <span className="font-mono text-base font-semibold text-neutral-900">
+                    {bankInfo.accountNumber}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyToClipboard(bankInfo.accountNumber, '계좌번호')
+                    }
+                    className="rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
+                    aria-label="계좌번호 복사"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-neutral-500">예금주</dt>
+                <dd className="font-medium text-neutral-900">
+                  {bankInfo.accountHolder}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+              입금자명 (반드시 일치)
+            </p>
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <p className="font-mono text-2xl font-bold text-amber-900">
+                {orderComplete.depositorName}
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  copyToClipboard(orderComplete.depositorName, '입금자명')
+                }
+                className="rounded-md p-2 text-amber-700 transition-colors hover:bg-amber-100"
+                aria-label="입금자명 복사"
+              >
+                <Copy className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-amber-700">
+              동명이인 매칭을 위해 위 형태(이름+주문번호 끝 4자리) 그대로 입금해
+              주세요.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+            <p className="text-sm font-semibold text-red-700">
+              입금 마감: {formatExpiry(orderComplete.expiresAt)}
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-red-600">
+              마감 시각까지 미입금 시 주문은 자동 취소되며 좌석이 다른 고객에게
+              풀립니다.
+            </p>
+          </div>
+
+          <p className="text-center text-xs text-neutral-400">
+            안내 이메일이 {buyerEmail}로 발송됩니다.
           </p>
         </div>
       </div>
@@ -318,9 +467,7 @@ export function TicketPurchaseSection({
                     .join(', ')}
                 </p>
                 <p className="text-xl font-bold text-neutral-900">
-                  {totalAmount === 0
-                    ? '무료'
-                    : `${totalAmount.toLocaleString()}원`}
+                  {isFree ? '무료' : `${totalAmount.toLocaleString()}원`}
                 </p>
               </div>
               <Button
@@ -328,7 +475,7 @@ export function TicketPurchaseSection({
                 className="h-12 shrink-0 rounded-xl px-8 text-base font-semibold"
                 onClick={handleCheckout}
               >
-                {totalAmount === 0 ? '신청하기' : '구매하기'}
+                {isFree ? '신청하기' : '주문하기'}
               </Button>
             </div>
           </div>
@@ -345,9 +492,11 @@ export function TicketPurchaseSection({
       >
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg">구매자 정보</DialogTitle>
+            <DialogTitle className="text-lg">
+              {isFree ? '신청자 정보' : '주문자 정보'}
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handlePayment} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="buyerName" className="text-sm font-medium">
                 이름
@@ -388,6 +537,26 @@ export function TicketPurchaseSection({
               />
             </div>
 
+            {!isFree && (
+              <div className="space-y-1.5">
+                <Label htmlFor="depositorName" className="text-sm font-medium">
+                  입금자명
+                </Label>
+                <Input
+                  id="depositorName"
+                  value={depositorName}
+                  onChange={(e) => setDepositorName(e.target.value)}
+                  required
+                  maxLength={20}
+                  placeholder="실제 입금하실 분 이름"
+                  className="h-11"
+                />
+                <p className="text-xs text-neutral-500">
+                  주문번호 끝 4자리가 자동으로 추가됩니다 (예: 홍길동A1B2)
+                </p>
+              </div>
+            )}
+
             {/* Order Summary */}
             <div className="rounded-xl bg-neutral-50 p-4">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">
@@ -411,12 +580,35 @@ export function TicketPurchaseSection({
               <div className="mt-3 flex justify-between border-t border-neutral-200 pt-3 text-base font-bold">
                 <span>합계</span>
                 <span>
-                  {totalAmount === 0
-                    ? '무료'
-                    : `${totalAmount.toLocaleString()}원`}
+                  {isFree ? '무료' : `${totalAmount.toLocaleString()}원`}
                 </span>
               </div>
             </div>
+
+            {/* 결제 방식 안내 */}
+            {!isFree && (
+              <div className="rounded-lg border border-neutral-200 bg-white p-3 text-xs text-neutral-600">
+                결제 방식: <strong>무통장 입금</strong> · 주문 후 안내된 계좌로
+                24시간 이내 입금
+              </div>
+            )}
+
+            {/* 뉴스레터 구독 (선택) */}
+            <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-neutral-200 bg-white p-3 text-xs leading-relaxed text-neutral-600">
+              <input
+                type="checkbox"
+                checked={newsletterOptIn}
+                onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-300 accent-neutral-900"
+              />
+              <span>
+                <span className="font-medium text-neutral-900">
+                  PRECTXE의 다음 공연·기획 소식 받기 (선택)
+                </span>{' '}
+                — 새 라인업이 떴을 때 가장 먼저 알려드립니다. 언제든 메일 하단
+                링크로 구독 해지 가능.
+              </span>
+            </label>
 
             {/* 구매조건 동의 */}
             <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-xs leading-relaxed text-neutral-600">
@@ -454,7 +646,8 @@ export function TicketPurchaseSection({
                 >
                   환불·취소 정책
                 </a>
-                에 동의하며, 위 주문 내용을 확인하고 결제를 진행합니다.
+                에 동의하며, 위 주문 내용을 확인하고{' '}
+                {isFree ? '신청을 진행합니다.' : '주문을 진행합니다.'}
               </span>
             </label>
 
@@ -465,9 +658,9 @@ export function TicketPurchaseSection({
             >
               {isProcessing
                 ? '처리 중...'
-                : totalAmount === 0
+                : isFree
                   ? '무료 신청하기'
-                  : `${totalAmount.toLocaleString()}원 결제하기`}
+                  : `${totalAmount.toLocaleString()}원 주문하기`}
             </Button>
           </form>
         </DialogContent>

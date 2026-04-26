@@ -68,3 +68,30 @@ export const goodsOrderFormSchema = z.object({
 });
 
 export type GoodsOrderFormInput = z.infer<typeof goodsOrderFormSchema>;
+
+// ─── Bank Transfer Order (무통장 입금 — 티켓) ─────────
+
+export const bankTransferOrderFormSchema = z.object({
+  buyerName: z.string().min(1, '이름을 입력해주세요.'),
+  buyerEmail: z.string().email('올바른 이메일을 입력해주세요.'),
+  buyerPhone: z
+    .string()
+    .min(10, '전화번호를 입력해주세요.')
+    .regex(/^01[016789]\d{7,8}$/, '올바른 전화번호 형식이 아닙니다.'),
+  depositorName: z
+    .string()
+    .min(1, '입금자명을 입력해주세요.')
+    .max(20, '입금자명은 20자 이내로 입력해주세요.'),
+  items: z
+    .array(
+      z.object({
+        ticketTierId: z.string(),
+        quantity: z.coerce.number().int().min(1),
+      })
+    )
+    .min(1, '최소 1개 이상의 티켓을 선택해주세요.'),
+});
+
+export type BankTransferOrderFormInput = z.infer<
+  typeof bankTransferOrderFormSchema
+>;

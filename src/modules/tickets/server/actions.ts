@@ -1,11 +1,13 @@
 'use server';
 
+import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
 import { sendEmail } from '@/lib/email/send';
 import portone, { PortOneError } from '@/lib/payment/portone';
 import {
+  bankTransferOrderFormSchema,
   type GoodsVariantInput,
   goodsOrderFormSchema,
   goodsVariantSchema,
@@ -13,7 +15,60 @@ import {
   type TicketTierInput,
   ticketTierSchema,
 } from '@/lib/schemas/ticket';
+import {
+  formatDepositorName,
+  getBankInfo,
+  getBankTransferExpiryDate,
+  getBankTransferExpiryHours,
+} from '@/lib/utils/bank-transfer';
 import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
+import {
+  generateAccessToken,
+  generateTicketToken,
+  getOrderTicketsUrl,
+} from '@/lib/utils/ticket-token';
+
+// ─── 티켓 발급 헬퍼 (paid 처리 시 호출) ──────────────
+
+async function issueTicketsForOrder(
+  tx: Prisma.TransactionClient,
+  order: {
+    id: string;
+    items: { id: string; ticketTierId: string | null; quantity: number }[];
+  }
+): Promise<{ accessToken: string; ticketCount: number }> {
+  const accessToken = generateAccessToken();
+  const ticketRows: {
+    token: string;
+    orderId: string;
+    orderItemId: string;
+    ticketTierId: string | null;
+  }[] = [];
+
+  for (const item of order.items) {
+    // 티켓 등급만 입장권 발급. 굿즈 OrderItem은 skip.
+    if (!item.ticketTierId) continue;
+    for (let i = 0; i < item.quantity; i++) {
+      ticketRows.push({
+        token: generateTicketToken(),
+        orderId: order.id,
+        orderItemId: item.id,
+        ticketTierId: item.ticketTierId,
+      });
+    }
+  }
+
+  await tx.order.update({
+    where: { id: order.id },
+    data: { accessToken },
+  });
+
+  if (ticketRows.length > 0) {
+    await tx.ticket.createMany({ data: ticketRows });
+  }
+
+  return { accessToken, ticketCount: ticketRows.length };
+}
 
 // ─── 주문번호 생성 ───────────────────────────────────
 
@@ -263,6 +318,142 @@ export async function createOrder(
   return { success: true, data: result };
 }
 
+// ─── 무통장 입금 주문 생성 (티켓) ───────────────────
+
+export async function createBankTransferOrder(
+  dropId: string,
+  input: {
+    buyerName: string;
+    buyerEmail: string;
+    buyerPhone: string;
+    depositorName: string;
+    items: { ticketTierId: string; quantity: number }[];
+  }
+) {
+  const parsed = bankTransferOrderFormSchema.safeParse(input);
+  if (!parsed.success)
+    return { success: false, error: parsed.error.errors[0].message } as const;
+
+  const {
+    buyerName,
+    buyerEmail,
+    buyerPhone,
+    depositorName: depositorBaseName,
+    items,
+  } = parsed.data;
+
+  try {
+    const order = await prisma.$transaction(async (tx) => {
+      let totalAmount = 0;
+      const orderItems: {
+        ticketTierId: string;
+        quantity: number;
+        unitPrice: number;
+        subtotal: number;
+      }[] = [];
+
+      for (const item of items) {
+        const tier = await tx.ticketTier.findUnique({
+          where: { id: item.ticketTierId },
+        });
+        if (!tier) throw new Error('티켓 등급을 찾을 수 없습니다.');
+        if (getEffectiveTierStatus(tier) !== 'on_sale')
+          throw new Error(`${tier.name}은(는) 현재 판매 중이 아닙니다.`);
+        if (item.quantity > tier.maxPerOrder)
+          throw new Error(
+            `${tier.name}은(는) 최대 ${tier.maxPerOrder}장까지 구매 가능합니다.`
+          );
+
+        const remaining = tier.quantity - tier.soldCount;
+        if (item.quantity > remaining)
+          throw new Error(`${tier.name} 잔여 수량이 부족합니다.`);
+
+        await tx.ticketTier.update({
+          where: { id: tier.id },
+          data: { soldCount: { increment: item.quantity } },
+        });
+
+        const subtotal = tier.price * item.quantity;
+        totalAmount += subtotal;
+        orderItems.push({
+          ticketTierId: tier.id,
+          quantity: item.quantity,
+          unitPrice: tier.price,
+          subtotal,
+        });
+      }
+
+      const orderNo = generateOrderNo();
+      const expiresAt = getBankTransferExpiryDate();
+      const fullDepositorName = formatDepositorName(depositorBaseName, orderNo);
+
+      return tx.order.create({
+        data: {
+          orderNo,
+          dropId,
+          buyerName,
+          buyerEmail,
+          buyerPhone,
+          totalAmount,
+          items: { create: orderItems },
+          bankTransfer: {
+            create: {
+              depositorName: fullDepositorName,
+              amount: totalAmount,
+              expiresAt,
+            },
+          },
+        },
+        include: { items: true, bankTransfer: true, drop: true },
+      });
+    });
+
+    // 안내 이메일 (실패해도 주문 결과에 영향 없음)
+    try {
+      const dropTitle = order.drop?.title ?? 'PRECTXE';
+      const bank = getBankInfo();
+      await sendEmail({
+        to: order.buyerEmail,
+        subject: `[PRECTXE] 입금 안내 — ${dropTitle}`,
+        template: 'bank-transfer-pending',
+        data: {
+          buyerName: order.buyerName,
+          orderNo: order.orderNo,
+          dropTitle,
+          totalAmount: order.totalAmount,
+          depositorName: order.bankTransfer!.depositorName,
+          expiresAt: order.bankTransfer!.expiresAt,
+          expiryHours: getBankTransferExpiryHours(),
+          bankName: bank.bankName,
+          accountNumber: bank.accountNumber,
+          accountHolder: bank.accountHolder,
+        },
+      });
+    } catch (emailErr) {
+      console.error('무통장 안내 이메일 발송 실패:', emailErr);
+    }
+
+    return {
+      success: true,
+      data: {
+        orderNo: order.orderNo,
+        orderId: order.id,
+        totalAmount: order.totalAmount,
+        depositorName: order.bankTransfer!.depositorName,
+        expiresAt: order.bankTransfer!.expiresAt,
+        expiryHours: getBankTransferExpiryHours(),
+        bankInfo: getBankInfo(),
+      },
+    } as const;
+  } catch (e) {
+    console.error('무통장 주문 생성 실패:', e);
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : '주문 생성에 실패했습니다.',
+    } as const;
+  }
+}
+
 // ─── 굿즈 주문 생성 ─────────────────────────────────
 
 export async function createGoodsOrder(
@@ -360,23 +551,26 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
       return { success: false, error: '결제 금액이 일치하지 않습니다.' };
     }
 
-    await prisma.$transaction([
-      prisma.payment.create({
-        data: {
-          orderId: order.id,
-          portonePaymentId,
-          method: payment.method?.type ? String(payment.method.type) : null,
-          amount: payment.amount.total,
-          status: 'paid',
-          paidAt: new Date(),
-          rawData: JSON.parse(JSON.stringify(payment)),
-        },
-      }),
-      prisma.order.update({
-        where: { id: order.id },
-        data: { status: 'paid' },
-      }),
-    ]);
+    const { accessToken, ticketCount } = await prisma.$transaction(
+      async (tx) => {
+        await tx.payment.create({
+          data: {
+            orderId: order.id,
+            portonePaymentId,
+            method: payment.method?.type ? String(payment.method.type) : null,
+            amount: payment.amount.total,
+            status: 'paid',
+            paidAt: new Date(),
+            rawData: JSON.parse(JSON.stringify(payment)),
+          },
+        });
+        await tx.order.update({
+          where: { id: order.id },
+          data: { status: 'paid' },
+        });
+        return issueTicketsForOrder(tx, order);
+      }
+    );
 
     revalidatePath('/admin/drops');
 
@@ -400,6 +594,8 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
           dropTitle,
           items,
           totalAmount: order.totalAmount,
+          ticketsUrl:
+            ticketCount > 0 ? getOrderTicketsUrl(accessToken) : undefined,
         },
       });
     } catch (emailErr) {
@@ -416,6 +612,143 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
   }
 }
 
+// ─── 무통장 입금 확인 (Admin) ───────────────────────
+
+export async function confirmBankTransfer(orderId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error } as const;
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      drop: { select: { title: true } },
+      items: { include: { ticketTier: true, goodsVariant: true } },
+      bankTransfer: true,
+    },
+  });
+  if (!order)
+    return { success: false, error: '주문을 찾을 수 없습니다.' } as const;
+  if (!order.bankTransfer)
+    return { success: false, error: '무통장 주문이 아닙니다.' } as const;
+  if (order.bankTransfer.status !== 'pending')
+    return {
+      success: false,
+      error: '입금 대기 상태가 아닙니다.',
+    } as const;
+
+  const now = new Date();
+  const { accessToken, ticketCount } = await prisma.$transaction(async (tx) => {
+    await tx.bankTransfer.update({
+      where: { orderId: order.id },
+      data: {
+        status: 'confirmed',
+        confirmedAt: now,
+        confirmedBy: auth.userId,
+      },
+    });
+    await tx.order.update({
+      where: { id: order.id },
+      data: { status: 'paid' },
+    });
+    return issueTicketsForOrder(tx, order);
+  });
+
+  revalidatePath('/admin/drops');
+  revalidatePath('/admin/tickets/orders');
+
+  // 확정 이메일 (기존 order-confirmation 재사용)
+  try {
+    const dropTitle = order.drop?.title ?? 'PRECTXE';
+    const items = order.items.map((item) => ({
+      name: item.ticketTier?.name ?? item.goodsVariant?.name ?? '상품',
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      subtotal: item.subtotal,
+    }));
+
+    await sendEmail({
+      to: order.buyerEmail,
+      subject: `[PRECTXE] 입금 확인 — ${dropTitle}`,
+      template: 'order-confirmation',
+      data: {
+        buyerName: order.buyerName,
+        orderNo: order.orderNo,
+        dropTitle,
+        items,
+        totalAmount: order.totalAmount,
+        ticketsUrl:
+          ticketCount > 0 ? getOrderTicketsUrl(accessToken) : undefined,
+      },
+    });
+  } catch (emailErr) {
+    console.error('입금 확인 이메일 발송 실패:', emailErr);
+  }
+
+  return { success: true } as const;
+}
+
+// ─── 만료된 무통장 주문 일괄 정리 (Admin / lazy) ───
+
+export async function cleanupExpiredBankTransferOrders() {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error } as const;
+
+  const now = new Date();
+  const expired = await prisma.bankTransfer.findMany({
+    where: {
+      status: 'pending',
+      expiresAt: { lt: now },
+    },
+    include: {
+      order: { include: { items: true } },
+    },
+  });
+
+  if (expired.length === 0) return { success: true, expiredCount: 0 } as const;
+
+  await prisma.$transaction([
+    // 재고 복구 (티켓)
+    ...expired.flatMap((bt) =>
+      bt.order.items
+        .filter((item) => item.ticketTierId)
+        .map((item) =>
+          prisma.ticketTier.update({
+            where: { id: item.ticketTierId! },
+            data: { soldCount: { decrement: item.quantity } },
+          })
+        )
+    ),
+    // 재고 복구 (굿즈 — 현재 무통장 미지원이지만 안전망)
+    ...expired.flatMap((bt) =>
+      bt.order.items
+        .filter((item) => item.goodsVariantId)
+        .map((item) =>
+          prisma.goodsVariant.update({
+            where: { id: item.goodsVariantId! },
+            data: { soldCount: { decrement: item.quantity } },
+          })
+        )
+    ),
+    prisma.bankTransfer.updateMany({
+      where: { id: { in: expired.map((bt) => bt.id) } },
+      data: {
+        status: 'expired',
+        cancelledAt: now,
+        cancelReason: 'auto_expired',
+      },
+    }),
+    prisma.order.updateMany({
+      where: { id: { in: expired.map((bt) => bt.orderId) } },
+      data: { status: 'cancelled' },
+    }),
+  ]);
+
+  revalidatePath('/admin/drops');
+  revalidatePath('/admin/tickets/orders');
+
+  return { success: true, expiredCount: expired.length } as const;
+}
+
 // ─── 주문 취소 (Admin) ──────────────────────────────
 
 export async function cancelOrder(orderId: string) {
@@ -424,7 +757,7 @@ export async function cancelOrder(orderId: string) {
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { items: true, payment: true },
+    include: { items: true, payment: true, bankTransfer: true },
   });
   if (!order) return { success: false, error: '주문을 찾을 수 없습니다.' };
   if (order.status === 'cancelled' || order.status === 'refunded')
@@ -442,6 +775,7 @@ export async function cancelOrder(orderId: string) {
     }
   }
 
+  const now = new Date();
   await prisma.$transaction([
     ...order.items
       .filter((item) => item.ticketTierId)
@@ -467,14 +801,138 @@ export async function cancelOrder(orderId: string) {
       ? [
           prisma.payment.update({
             where: { id: order.payment.id },
-            data: { status: 'cancelled', cancelledAt: new Date() },
+            data: { status: 'cancelled', cancelledAt: now },
           }),
         ]
       : []),
+    ...(order.bankTransfer && order.bankTransfer.status === 'pending'
+      ? [
+          prisma.bankTransfer.update({
+            where: { id: order.bankTransfer.id },
+            data: {
+              status: 'cancelled',
+              cancelledAt: now,
+              cancelReason: '관리자 취소',
+            },
+          }),
+        ]
+      : []),
+    prisma.ticket.updateMany({
+      where: { orderId, status: { not: 'cancelled' } },
+      data: { status: 'cancelled' },
+    }),
   ]);
 
   revalidatePath('/admin/drops');
   return { success: true };
+}
+
+// ─── 체크인 (입장 검증) ────────────────────────────
+
+export async function checkInTicket(token: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error } as const;
+
+  const ticket = await prisma.ticket.findUnique({
+    where: { token },
+    include: {
+      order: { select: { id: true, status: true, buyerName: true } },
+      ticketTier: { select: { name: true, dropId: true } },
+    },
+  });
+
+  if (!ticket)
+    return { success: false, error: '유효하지 않은 티켓입니다.' } as const;
+  if (ticket.status === 'cancelled')
+    return { success: false, error: '취소된 티켓입니다.' } as const;
+  if (ticket.order.status !== 'paid')
+    return {
+      success: false,
+      error: '결제가 완료되지 않은 티켓입니다.',
+    } as const;
+
+  if (ticket.status === 'checked_in') {
+    return {
+      success: true,
+      alreadyCheckedIn: true,
+      data: {
+        buyerName: ticket.order.buyerName,
+        tierName: ticket.ticketTier?.name ?? '티켓',
+        dropId: ticket.ticketTier?.dropId ?? null,
+        checkedInAt: ticket.checkedInAt,
+      },
+    } as const;
+  }
+
+  const now = new Date();
+  await prisma.ticket.update({
+    where: { id: ticket.id },
+    data: {
+      status: 'checked_in',
+      checkedInAt: now,
+      checkedInBy: auth.userId,
+    },
+  });
+
+  return {
+    success: true,
+    alreadyCheckedIn: false,
+    data: {
+      buyerName: ticket.order.buyerName,
+      tierName: ticket.ticketTier?.name ?? '티켓',
+      dropId: ticket.ticketTier?.dropId ?? null,
+      checkedInAt: now,
+    },
+  } as const;
+}
+
+export async function undoCheckIn(token: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error } as const;
+
+  const ticket = await prisma.ticket.findUnique({ where: { token } });
+  if (!ticket)
+    return { success: false, error: '유효하지 않은 티켓입니다.' } as const;
+  if (ticket.status !== 'checked_in')
+    return {
+      success: false,
+      error: '체크인된 티켓이 아닙니다.',
+    } as const;
+
+  await prisma.ticket.update({
+    where: { id: ticket.id },
+    data: {
+      status: 'active',
+      checkedInAt: null,
+      checkedInBy: null,
+    },
+  });
+
+  return { success: true } as const;
+}
+
+export async function getCheckInStats(dropId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error } as const;
+
+  const [total, checkedIn] = await Promise.all([
+    prisma.ticket.count({
+      where: {
+        ticketTier: { dropId },
+        status: { in: ['active', 'checked_in'] },
+        order: { status: 'paid' },
+      },
+    }),
+    prisma.ticket.count({
+      where: {
+        ticketTier: { dropId },
+        status: 'checked_in',
+        order: { status: 'paid' },
+      },
+    }),
+  ]);
+
+  return { success: true, data: { total, checkedIn } } as const;
 }
 
 // ─── 주문 목록 조회 (Admin) ─────────────────────────
