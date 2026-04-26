@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import * as XLSX from 'xlsx';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -264,7 +263,8 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
     });
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
+    const XLSX = await import('xlsx');
     const exportData = tableData.map((row) => {
       const { id, ...rest } = row;
       return rest;
@@ -286,7 +286,8 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
     );
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
+    const XLSX = await import('xlsx');
     const exportData = tableData.map((row) => {
       const { id, ...rest } = row;
       return rest;

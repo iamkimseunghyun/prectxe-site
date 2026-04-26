@@ -1,6 +1,12 @@
 'use server';
 
-import { CLOUD_FLARE_UPLOAD_IMAGE_URL } from '@/lib/constants/constants';
+function getCloudflareImageBaseUrl(): string {
+  const hash = process.env.CLOUDFLARE_IMAGE_STREAM_API_ACCOUNT_HASH;
+  if (!hash) {
+    throw new Error('CLOUDFLARE_IMAGE_STREAM_API_ACCOUNT_HASH is not set');
+  }
+  return `https://imagedelivery.net/${hash}`;
+}
 
 export async function getUploadedProductImageURL() {
   try {
@@ -41,7 +47,7 @@ export async function getCloudflareImageUrl() {
 
   return {
     uploadURL: result.uploadURL,
-    imageUrl: `${CLOUD_FLARE_UPLOAD_IMAGE_URL}/${result.id}`,
+    imageUrl: `${getCloudflareImageBaseUrl()}/${result.id}`,
   };
 }
 

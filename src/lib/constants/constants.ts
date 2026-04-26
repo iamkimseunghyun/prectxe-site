@@ -20,10 +20,6 @@ export const ALLOWED_FILE_TYPES = [
   'image/heif',
 ];
 
-// Cloud Flare Upload Image Url
-export const CLOUD_FLARE_UPLOAD_IMAGE_URL =
-  'https://imagedelivery.net/UYdYeWsHCBBURfLH8Q-Ggw';
-
 // Social Icons
 export const socialIcons = [
   {

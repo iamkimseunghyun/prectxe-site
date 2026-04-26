@@ -73,20 +73,34 @@ src/
 - Max file size: 50MB. Allowed types: JPEG, PNG, GIF, WEBP, HEIC
 - HTML body image cleanup: `cleanupRemovedHtmlImages(oldHtml, newHtml)` auto-deletes removed Cloudflare images on content update
 
-### Drops & Payments (PortOne V2)
+### Drops & Payments
 - Drop types: `ticket` (TicketTier) and `goods` (GoodsVariant)
-- Ticket purchase: `createOrder` → PortOne `requestPayment` → `verifyPayment`
-- Goods purchase: `createGoodsOrder` → PortOne `requestPayment` → `verifyPayment`
-- `verifyPayment` sends order confirmation email on success
-- `cancelOrder` restores stock for both ticket tiers and goods variants
+- **현재 결제는 무통장 입금 단독 라이브** (PG 심사 거절 사유, 자세한 컨텍스트는 메모리 참고). PortOne 카드 결제 코드는 `tickets/server/actions.ts`에 dormant 유지.
+- Ticket 무통장: `createBankTransferOrder` → BankTransfer(pending, 24h 만료, depositorName=이름+주문번호4자리) + 재고 즉시 차감 + 안내 메일(`bank-transfer-pending`)
+- 어드민 입금 확인: `confirmBankTransfer` → Order=paid + BankTransfer=confirmed + Ticket 발급 + Order.accessToken 발급 + 확정 메일(`order-confirmation`)
+- Ticket 무료(0원): `createOrder` → `verifyPayment(orderId, 'free-...')`로 즉시 paid 처리 (PortOne 우회). Ticket·accessToken 같이 발급
+- Ticket 카드 (dormant): `createOrder` → PortOne `requestPayment` → `verifyPayment` — UI에서 호출만 차단, 코드는 살아있음
+- Goods 카드 (dormant): `createGoodsOrder` → PortOne `requestPayment` → `verifyPayment`
+- `cancelOrder`: 재고 복구 + Payment cancelled + BankTransfer cancelled + Ticket cancelled (전부 cascade)
+- 만료 처리: `cleanupExpiredBankTransferOrders` — 어드민 주문 페이지 진입 시 lazy 호출, 24h 미입금 자동 취소 + 재고 복구
 - Drop visibility: requires `status !== 'draft'` AND `publishedAt !== null`
 - Status change from draft auto-sets `publishedAt`
 - Drop statuses: `draft` → `upcoming` → `on_sale` → `sold_out` / `closed`
 - **Media**: images and videos unified in `DropMedia` model (`type: image | video`, `order` for DnD sort). No separate `DropImage`/`heroUrl`/`videoUrl` fields — first media by `order` acts as hero. Image `url` = Cloudflare Images URL; video `url` = Cloudflare Stream ID (HLS via `hls.js`).
 
+### Tickets & QR 입장 시스템
+- `Order.accessToken` (paid 시 발급) + `Ticket.token` (1장당 unguessable 토큰, randomBytes 16 → hex 32자)
+- 구매자 마이페이지: `/tickets/order/[accessToken]` — 토큰만으로 접근(인증 X), QR SVG inline 렌더(qrcode lib)
+- QR 페이로드 = URL: `${SITE_URL}/scan/${ticketToken}`
+- 어드민 스캐너: `/admin/drops/[id]/scanner` — html5-qrcode 풀스크린, `fixed inset-0 z-100`로 admin layout 위에 덮음. `extractTicketToken`이 URL/raw 둘 다 인식
+- 1.5초 디바운스로 동일 QR 중복 스캔 방지, sound feedback (Web Audio API)
+- Fallback `/scan/[token]` — 외부 카메라 앱이 인식했을 때 도달, 어드민이면 스캐너 페이지 안내, 일반 사용자에겐 운영자 안내
+
 ### Email Templates
-- Available templates in `src/lib/email/templates/`: `form-notification`, `newsletter`, `order-confirmation`
+- Available templates in `src/lib/email/templates/`: `form-notification`, `newsletter`, `order-confirmation`, `bank-transfer-pending`
 - Sent via Resend API through `src/lib/email/send.ts`
+- `order-confirmation`은 paid 시점에 발송, `ticketsUrl` prop을 받아 "입장권 보기" CTA 자동 노출
+- `bank-transfer-pending`은 무통장 주문 직후 발송 — 계좌 + 정확한 입금자명 + 마감시각 + 자동 취소 안내
 
 ### Newsletter Broadcasts (Resend Segments)
 - 구독자는 Resend에 저장(`subscribeNewsletter` 액션) — 자체 DB에 구독자 모델 없음
@@ -102,8 +116,8 @@ src/
 ## Database
 
 - **Schema**: `prisma/schema.prisma`
-- **Key models**: Program, Article, Artist, Venue, Artwork, Form/FormField/FormSubmission, Drop, TicketTier, GoodsVariant, Order/OrderItem, Payment, User
-- **Migration caveat**: Dev/prod branches may drift — `prisma db push` or direct ALTER TABLE may be needed
+- **Key models**: Program, Article, Artist, Venue, Artwork, Form/FormField/FormSubmission, Drop, TicketTier, GoodsVariant, Order/OrderItem, Payment, BankTransfer, Ticket, User
+- **Migration caveat**: Neon에 `main`(prod) + `program-model-v1`(dev) 2개 브랜치. `bunx prisma db push`는 **dev에서만 안전**. main에는 Neon MCP `run_sql_transaction`으로 부분 마이그레이션. legacy 테이블 정리 후 enum 타입은 별도 `DROP TYPE` 필요 (자동 안 됨). 자세한 패턴은 메모리 `project_db_branches` 참고.
 - **Prisma client**: Singleton pattern in `src/lib/db/prisma.ts` (global ref to prevent multiple instances in dev)
 
 ### Form Data Safety (Critical)
@@ -113,9 +127,12 @@ src/
 ## Auth & Admin
 
 - Iron Session cookie (`prectxe`): `id`, `name`, `isAdmin`
-- Public: `/programs/[slug]`, `/drops/[slug]`, `/journal/[slug]`, `/forms/[slug]`, etc.
-- Private: `/admin/*`, `/*/new`, `/*/[id]/edit`
-- Public-only (redirect to admin if logged in): `/auth/signin`, `/auth/signup`
+- 현재 시스템은 **어드민 전용 인증**. 일반 회원 가입/로그인 기능은 보류 상태 (메모리 `project_member_system_deferred` 참고)
+- Public: `/programs/[slug]`, `/drops/[slug]`, `/journal/[slug]`, `/forms/[slug]` 등
+- **Token 기반 public** (middleware matcher 외): `/tickets/order/[accessToken]` (구매자 마이페이지), `/scan/[token]` (외부 카메라 fallback)
+- Private (`/admin/*`, `/*/new`, `/*/[id]/edit`): 미들웨어가 ADMIN 체크 후 진입 허용. 일반 회원은 / 로 redirect
+- Public-only (로그인 시 /admin redirect): `/auth/signin`, `/auth/signup`
+- 입장 스캐너: `/admin/drops/[id]/scanner` — admin layout 안에 있지만 풀스크린 fixed 컨테이너로 nav 시각적 우회
 - Admin dashboard: 10 tabs + Drops/Orders/Revenue stats
 
 ## Next.js Config Notes
@@ -126,13 +143,15 @@ src/
 
 ## Environment Variables
 
-Required: `DATABASE_URL`, `CLOUDFLARE_IMAGE_STREAM_API_ACCOUNT_ID`, `CLOUDFLARE_IMAGE_STREAM_API_TOKEN`, `COOKIE_PASSWORD` (min 32 chars)
+Required: `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL`, `CLOUDFLARE_IMAGE_STREAM_API_ACCOUNT_ID`, `CLOUDFLARE_IMAGE_STREAM_API_TOKEN`, `CLOUDFLARE_IMAGE_STREAM_API_ACCOUNT_HASH`, `CLOUDFLARE_STREAM_CUSTOMER_CODE`, `COOKIE_PASSWORD` (min 32 chars)
 
-Payment: `PORTONE_API_SECRET`, `NEXT_PUBLIC_PORTONE_STORE_ID`, `NEXT_PUBLIC_PORTONE_CHANNEL_KEY`
+Payment: `PORTONE_API_SECRET`, `PORTONE_WEBHOOK_SECRET`, `PORTONE_STORE_ID`, `PORTONE_CHANNEL_KEY`, `NEXT_PUBLIC_PORTONE_STORE_ID`, `NEXT_PUBLIC_PORTONE_CHANNEL_KEY`
 
-Email: `RESEND_API_KEY`, `RESEND_SENDER_EMAIL`. 뉴스레터 구독/발송은 Resend Segment 기반 — `RESEND_SEGMENT_NAME` (선택, 기본 `Newsletter`)로 기본 세그먼트 자동 생성/재사용. SMS: `SMS_PROVIDER` (`aligo`|`solapi`) + provider-specific keys.
+Bank Transfer: `BANK_NAME`, `BANK_ACCOUNT_NUMBER`, `BANK_ACCOUNT_HOLDER`, `BANK_TRANSFER_EXPIRY_HOURS` (default 24)
 
-Optional: `ENABLE_PROGRAM_REDIRECTS` (legacy URL redirects)
+Email: `RESEND_API_KEY`, `RESEND_SENDER_EMAIL`. 뉴스레터는 Resend Segment 기반 — `RESEND_SEGMENT_NAME` (선택, 기본 `Newsletter`)로 기본 세그먼트 자동 생성/재사용. SMS: `SMS_PROVIDER` (`aligo`|`solapi`) + 해당 provider keys.
+
+Optional: `NEXT_PUBLIC_GA_ID`, `ENABLE_PROGRAM_REDIRECTS`, `TEST_ADMIN_*` (개발용)
 
 ## Development Workflow
 

@@ -1,14 +1,15 @@
 'use client';
 
-import { ArrowLeft, ChevronLeft, ChevronRight, Play, X } from 'lucide-react';
+import { ArrowLeft, Play } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { trackViewItem } from '@/lib/analytics/gtag';
 import { artistInitials, formatArtistName, getImageUrl } from '@/lib/utils';
 import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
+import { MediaLightbox } from '@/modules/drops/ui/components/media-lightbox';
 import { TicketPurchaseSection } from '@/modules/tickets/ui/components/ticket-purchase-section';
 
 type TicketTier = {
@@ -69,11 +70,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
   // 갤러리 카드에서 사운드/컨트롤과 함께 다시 볼 수 있게 포함.
   const galleryMedia = drop.media;
 
-  // 라이트박스는 이미지·영상 모두 지원
-  const lightboxMedia = galleryMedia;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const activeLightboxMedia =
-    lightboxIndex !== null ? lightboxMedia[lightboxIndex] : null;
 
   useEffect(() => {
     const minPrice = drop.ticketTiers.length
@@ -87,38 +84,6 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
     });
   }, [drop.id, drop.title, drop.ticketTiers]);
 
-  const closeLightbox = useCallback(() => setLightboxIndex(null), []);
-  const prevMedia = useCallback(
-    () =>
-      setLightboxIndex((i) =>
-        i !== null
-          ? (i - 1 + lightboxMedia.length) % lightboxMedia.length
-          : null
-      ),
-    [lightboxMedia.length]
-  );
-  const nextMedia = useCallback(
-    () =>
-      setLightboxIndex((i) =>
-        i !== null ? (i + 1) % lightboxMedia.length : null
-      ),
-    [lightboxMedia.length]
-  );
-
-  useEffect(() => {
-    if (lightboxIndex === null) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowLeft') prevMedia();
-      if (e.key === 'ArrowRight') nextMedia();
-    };
-    document.addEventListener('keydown', handler);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', handler);
-      document.body.style.overflow = '';
-    };
-  }, [lightboxIndex, closeLightbox, prevMedia, nextMedia]);
   const availableTiers = drop.ticketTiers
     .filter((t) => getEffectiveTierStatus(t) === 'on_sale')
     .map((t) => ({
@@ -386,86 +351,12 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
         </div>
       </div>
 
-      {/* Lightbox */}
-      {activeLightboxMedia && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
-          onClick={closeLightbox}
-        >
-          {/* Close */}
-          <button
-            type="button"
-            onClick={closeLightbox}
-            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-            aria-label="닫기"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          {/* Prev */}
-          {lightboxMedia.length > 1 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                prevMedia();
-              }}
-              className="absolute left-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-              aria-label="이전"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-          )}
-
-          {/* Media */}
-          <div
-            className="relative flex h-[85vh] w-[90vw] items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {activeLightboxMedia.type === 'image' ? (
-              <Image
-                src={getImageUrl(activeLightboxMedia.url, 'hires')}
-                alt={activeLightboxMedia.alt}
-                width={1200}
-                height={900}
-                className="h-auto max-h-full w-auto max-w-full rounded-lg object-contain"
-              />
-            ) : (
-              // URL 변경 시 컴포넌트가 재마운트되어 이전 영상은 자동 정지됨.
-              // h-full w-full object-contain → 컨테이너를 채우고 원본 비율 유지
-              <CloudflareStreamVideo
-                key={activeLightboxMedia.id}
-                videoUrl={activeLightboxMedia.url}
-                autoPlay
-                controls
-                className="h-full w-full rounded-lg object-contain"
-              />
-            )}
-          </div>
-
-          {/* Counter */}
-          {lightboxMedia.length > 1 && (
-            <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-sm text-white/60">
-              {lightboxIndex! + 1} / {lightboxMedia.length}
-            </p>
-          )}
-
-          {/* Next */}
-          {lightboxMedia.length > 1 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                nextMedia();
-              }}
-              className="absolute right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-              aria-label="다음"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          )}
-        </div>
-      )}
+      <MediaLightbox
+        media={galleryMedia}
+        activeIndex={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onIndexChange={setLightboxIndex}
+      />
     </div>
   );
 }

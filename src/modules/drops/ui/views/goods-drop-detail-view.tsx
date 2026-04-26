@@ -7,17 +7,17 @@ import {
   Minus,
   Play,
   Plus,
-  X,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CloudflareStreamVideo } from '@/components/cloudflare-stream-video';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { trackViewItem } from '@/lib/analytics/gtag';
 import { artistInitials, cn, formatArtistName, getImageUrl } from '@/lib/utils';
 import { GoodsPurchaseSection } from '@/modules/drops/ui/components/goods-purchase-section';
+import { MediaLightbox } from '@/modules/drops/ui/components/media-lightbox';
 
 type GoodsVariant = {
   id: string;
@@ -85,25 +85,6 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
   const totalMedia = allMedia.length;
   const activeMedia = allMedia[activeMediaIndex];
   const showingVideo = activeMedia?.type === 'video';
-
-  const closeLightbox = useCallback(() => setLightboxOpen(false), []);
-
-  useEffect(() => {
-    if (!lightboxOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowLeft')
-        setActiveMediaIndex((i) => (i - 1 + totalMedia) % totalMedia);
-      if (e.key === 'ArrowRight')
-        setActiveMediaIndex((i) => (i + 1) % totalMedia);
-    };
-    document.addEventListener('keydown', handler);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', handler);
-      document.body.style.overflow = '';
-    };
-  }, [lightboxOpen, closeLightbox, totalMedia]);
 
   const selected = drop.variants.find((v) => v.id === selectedVariant);
   const remaining = selected ? selected.stock - selected.soldCount : 0;
@@ -452,80 +433,12 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
         </div>
       </div>
 
-      {/* Lightbox (이미지 전용) */}
-      {lightboxOpen && activeMedia && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
-          onClick={closeLightbox}
-        >
-          <button
-            type="button"
-            onClick={closeLightbox}
-            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-            aria-label="닫기"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          {totalMedia > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveMediaIndex((i) => (i - 1 + totalMedia) % totalMedia);
-                }}
-                className="absolute left-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-                aria-label="이전"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveMediaIndex((i) => (i + 1) % totalMedia);
-                }}
-                className="absolute right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-                aria-label="다음"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            </>
-          )}
-
-          <div
-            className="relative flex h-[85vh] w-[90vw] items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {activeMedia.type === 'image' ? (
-              <Image
-                src={getImageUrl(activeMedia.url, 'hires')}
-                alt={activeMedia.alt}
-                width={1200}
-                height={900}
-                className="h-auto max-h-full w-auto max-w-full rounded-lg object-contain"
-              />
-            ) : (
-              // URL 변경 시 재마운트되어 이전 영상은 자동 정지.
-              // h-full w-full object-contain → 컨테이너를 채우고 원본 비율 유지
-              <CloudflareStreamVideo
-                key={activeMedia.id}
-                videoUrl={activeMedia.url}
-                autoPlay
-                controls
-                className="h-full w-full rounded-lg object-contain"
-              />
-            )}
-          </div>
-
-          {totalMedia > 1 && (
-            <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-sm text-white/60">
-              {activeMediaIndex + 1} / {totalMedia}
-            </p>
-          )}
-        </div>
-      )}
+      <MediaLightbox
+        media={allMedia}
+        activeIndex={lightboxOpen ? activeMediaIndex : null}
+        onClose={() => setLightboxOpen(false)}
+        onIndexChange={setActiveMediaIndex}
+      />
 
       {/* Mobile Sticky Summary */}
       {isSaleActive && selected && (

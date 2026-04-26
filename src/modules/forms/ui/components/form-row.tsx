@@ -4,17 +4,8 @@ import { Copy, Eye, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { CopyUrlButton } from '@/components/shared/copy-url-button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useFormActions } from '@/hooks/use-form-actions';
 import { FormPreviewDialog } from '@/modules/forms/ui/components/form-preview-dialog';
 
@@ -139,23 +130,16 @@ export function FormRow({ form, userId, isAdmin }: FormRowProps) {
         form={form}
       />
 
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>폼 삭제 확인</AlertDialogTitle>
-            <AlertDialogDescription>
-              정말 이 폼을 삭제하시겠어요? 모든 제출 내역도 함께 삭제되며, 이
-              작업은 되돌릴 수 없습니다.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={onDeleteConfirmed}>
-              삭제
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="폼 삭제 확인"
+        description="정말 이 폼을 삭제하시겠어요? 모든 제출 내역도 함께 삭제되며, 이 작업은 되돌릴 수 없습니다."
+        confirmText="삭제"
+        cancelText="취소"
+        variant="destructive"
+        onConfirm={onDeleteConfirmed}
+      />
     </>
   );
 }

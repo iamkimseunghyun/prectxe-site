@@ -562,6 +562,9 @@ model Order {
   payment      Payment?
   bankTransfer BankTransfer?
   tickets      Ticket[]
+
+  @@index([dropId])
+  @@index([status, createdAt])
 }
 
 model OrderItem {

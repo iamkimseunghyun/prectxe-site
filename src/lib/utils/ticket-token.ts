@@ -1,16 +1,23 @@
 /**
- * 티켓 / 마이페이지 접근 토큰 유틸
- * - Ticket.token: QR 페이로드 (스캔 시 입장 검증용)
- * - Order.accessToken: /tickets/order/[accessToken] 마이페이지 접근용
+ * 주문·티켓 관련 식별자 / 토큰 / URL 유틸
  *
- * 둘 다 unguessable. 24자 base36 (≈ 124 bits).
+ * - Order.orderNo: 사람이 읽는 주문번호 (PRXE-YYYYMMDD-XXXXXX, 비유추적이지 않음)
+ * - Order.accessToken: /tickets/order/[accessToken] 마이페이지 접근용 (unguessable)
+ * - Ticket.token: QR 페이로드 (스캔 시 입장 검증용, unguessable)
+ *
+ * accessToken / ticketToken은 randomBytes(16) → hex 32자 (≈128 bits).
  */
 
 import { randomBytes } from 'node:crypto';
 
 function generateRandomToken(byteLength = 16): string {
-  // base36으로 인코딩 → 짧고 URL-safe
   return randomBytes(byteLength).toString('hex');
+}
+
+export function generateOrderNo(): string {
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `PRXE-${date}-${rand}`;
 }
 
 export function generateTicketToken(): string {

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { listAdminDrops } from '@/modules/drops/server/actions';
+import { DropStatusBadge } from '@/modules/drops/ui/components/status-badges';
 
 type Drop = {
   id: string;
@@ -20,20 +21,6 @@ type Drop = {
   ticketTiers: { id: string }[];
   variants: { id: string }[];
   orders: { totalAmount: number }[];
-};
-
-const STATUS_LABELS: Record<
-  string,
-  {
-    label: string;
-    variant: 'default' | 'secondary' | 'destructive' | 'outline';
-  }
-> = {
-  draft: { label: '초안', variant: 'secondary' },
-  upcoming: { label: '예정', variant: 'outline' },
-  on_sale: { label: '판매 중', variant: 'default' },
-  sold_out: { label: '매진', variant: 'destructive' },
-  closed: { label: '종료', variant: 'outline' },
 };
 
 const TYPE_LABELS: Record<string, { label: string; icon: typeof Ticket }> = {
@@ -97,8 +84,6 @@ export function DropsAdminListView({ page }: { page: number }) {
       ) : (
         <div className="space-y-3">
           {drops.map((drop) => {
-            const statusInfo =
-              STATUS_LABELS[drop.status] ?? STATUS_LABELS.draft;
             const typeInfo = TYPE_LABELS[drop.type] ?? TYPE_LABELS.ticket;
             const TypeIcon = typeInfo.icon;
             const revenue = drop.orders.reduce((s, o) => s + o.totalAmount, 0);
@@ -117,9 +102,7 @@ export function DropsAdminListView({ page }: { page: number }) {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{drop.title}</p>
-                        <Badge variant={statusInfo.variant}>
-                          {statusInfo.label}
-                        </Badge>
+                        <DropStatusBadge status={drop.status} />
                         <Badge variant="outline">{typeInfo.label}</Badge>
                       </div>
                       <p className="mt-0.5 text-sm text-muted-foreground">

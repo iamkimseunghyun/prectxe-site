@@ -3,6 +3,7 @@
 import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { parseInput } from '@/lib/auth/server-action-helpers';
 import { prisma } from '@/lib/db/prisma';
 import { sendEmail } from '@/lib/email/send';
 import portone, { PortOneError } from '@/lib/payment/portone';
@@ -24,6 +25,7 @@ import {
 import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
 import {
   generateAccessToken,
+  generateOrderNo,
   generateTicketToken,
   getOrderTicketsUrl,
 } from '@/lib/utils/ticket-token';
@@ -70,23 +72,14 @@ async function issueTicketsForOrder(
   return { accessToken, ticketCount: ticketRows.length };
 }
 
-// ─── 주문번호 생성 ───────────────────────────────────
-
-function generateOrderNo(): string {
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `PRXE-${date}-${rand}`;
-}
-
 // ─── TicketTier CRUD (Admin) ─────────────────────────
 
 export async function createTicketTier(dropId: string, data: TicketTierInput) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error };
 
-  const parsed = ticketTierSchema.safeParse(data);
-  if (!parsed.success)
-    return { success: false, error: parsed.error.errors[0].message };
+  const parsed = parseInput(ticketTierSchema, data);
+  if (!parsed.success) return parsed;
 
   const tier = await prisma.ticketTier.create({
     data: {
@@ -110,9 +103,8 @@ export async function updateTicketTier(tierId: string, data: TicketTierInput) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error };
 
-  const parsed = ticketTierSchema.safeParse(data);
-  if (!parsed.success)
-    return { success: false, error: parsed.error.errors[0].message };
+  const parsed = parseInput(ticketTierSchema, data);
+  if (!parsed.success) return parsed;
 
   await prisma.ticketTier.update({
     where: { id: tierId },
@@ -177,9 +169,8 @@ export async function createGoodsVariant(
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error };
 
-  const parsed = goodsVariantSchema.safeParse(data);
-  if (!parsed.success)
-    return { success: false, error: parsed.error.errors[0].message };
+  const parsed = parseInput(goodsVariantSchema, data);
+  if (!parsed.success) return parsed;
 
   const variant = await prisma.goodsVariant.create({
     data: {
@@ -203,9 +194,8 @@ export async function updateGoodsVariant(
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error };
 
-  const parsed = goodsVariantSchema.safeParse(data);
-  if (!parsed.success)
-    return { success: false, error: parsed.error.errors[0].message };
+  const parsed = parseInput(goodsVariantSchema, data);
+  if (!parsed.success) return parsed;
 
   await prisma.goodsVariant.update({
     where: { id: variantId },
@@ -253,9 +243,8 @@ export async function createOrder(
     items: { ticketTierId: string; quantity: number }[];
   }
 ) {
-  const parsed = orderFormSchema.safeParse(input);
-  if (!parsed.success)
-    return { success: false, error: parsed.error.errors[0].message };
+  const parsed = parseInput(orderFormSchema, input);
+  if (!parsed.success) return parsed;
 
   const { buyerName, buyerEmail, buyerPhone, items } = parsed.data;
 
@@ -315,7 +304,7 @@ export async function createOrder(
     return order;
   });
 
-  return { success: true, data: result };
+  return { success: true as const, data: result };
 }
 
 // ─── 무통장 입금 주문 생성 (티켓) ───────────────────
@@ -330,9 +319,8 @@ export async function createBankTransferOrder(
     items: { ticketTierId: string; quantity: number }[];
   }
 ) {
-  const parsed = bankTransferOrderFormSchema.safeParse(input);
-  if (!parsed.success)
-    return { success: false, error: parsed.error.errors[0].message } as const;
+  const parsed = parseInput(bankTransferOrderFormSchema, input);
+  if (!parsed.success) return parsed;
 
   const {
     buyerName,
@@ -465,9 +453,8 @@ export async function createGoodsOrder(
     items: { goodsVariantId: string; quantity: number }[];
   }
 ) {
-  const parsed = goodsOrderFormSchema.safeParse(input);
-  if (!parsed.success)
-    return { success: false, error: parsed.error.errors[0].message };
+  const parsed = parseInput(goodsOrderFormSchema, input);
+  if (!parsed.success) return parsed;
 
   const { buyerName, buyerEmail, buyerPhone, items } = parsed.data;
 
@@ -521,7 +508,7 @@ export async function createGoodsOrder(
     return order;
   });
 
-  return { success: true, data: result };
+  return { success: true as const, data: result };
 }
 
 // ─── 결제 완료 검증 ─────────────────────────────────
@@ -602,7 +589,7 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
       console.error('주문 확인 이메일 발송 실패:', emailErr);
     }
 
-    return { success: true, data: { orderNo: order.orderNo } };
+    return { success: true as const, data: { orderNo: order.orderNo } };
   } catch (e) {
     console.error('결제 검증 실패:', e);
     if (e instanceof PortOneError) {
@@ -776,52 +763,51 @@ export async function cancelOrder(orderId: string) {
   }
 
   const now = new Date();
-  await prisma.$transaction([
-    ...order.items
-      .filter((item) => item.ticketTierId)
-      .map((item) =>
-        prisma.ticketTier.update({
-          where: { id: item.ticketTierId! },
+  await prisma.$transaction(async (tx) => {
+    // 재고 복구 (티켓·굿즈)
+    for (const item of order.items) {
+      if (item.ticketTierId) {
+        await tx.ticketTier.update({
+          where: { id: item.ticketTierId },
           data: { soldCount: { decrement: item.quantity } },
-        })
-      ),
-    ...order.items
-      .filter((item) => item.goodsVariantId)
-      .map((item) =>
-        prisma.goodsVariant.update({
-          where: { id: item.goodsVariantId! },
+        });
+      } else if (item.goodsVariantId) {
+        await tx.goodsVariant.update({
+          where: { id: item.goodsVariantId },
           data: { soldCount: { decrement: item.quantity } },
-        })
-      ),
-    prisma.order.update({
+        });
+      }
+    }
+
+    // 주문 + 결제 + 무통장 + 발급 티켓 cascade cancel
+    await tx.order.update({
       where: { id: orderId },
       data: { status: 'cancelled' },
-    }),
-    ...(order.payment
-      ? [
-          prisma.payment.update({
-            where: { id: order.payment.id },
-            data: { status: 'cancelled', cancelledAt: now },
-          }),
-        ]
-      : []),
-    ...(order.bankTransfer && order.bankTransfer.status === 'pending'
-      ? [
-          prisma.bankTransfer.update({
-            where: { id: order.bankTransfer.id },
-            data: {
-              status: 'cancelled',
-              cancelledAt: now,
-              cancelReason: '관리자 취소',
-            },
-          }),
-        ]
-      : []),
-    prisma.ticket.updateMany({
+    });
+
+    if (order.payment) {
+      await tx.payment.update({
+        where: { id: order.payment.id },
+        data: { status: 'cancelled', cancelledAt: now },
+      });
+    }
+
+    if (order.bankTransfer && order.bankTransfer.status === 'pending') {
+      await tx.bankTransfer.update({
+        where: { id: order.bankTransfer.id },
+        data: {
+          status: 'cancelled',
+          cancelledAt: now,
+          cancelReason: '관리자 취소',
+        },
+      });
+    }
+
+    await tx.ticket.updateMany({
       where: { orderId, status: { not: 'cancelled' } },
       data: { status: 'cancelled' },
-    }),
-  ]);
+    });
+  });
 
   revalidatePath('/admin/drops');
   return { success: true };

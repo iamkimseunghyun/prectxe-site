@@ -1,42 +1,22 @@
 'use client';
 
-import { AlertCircle, ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { getDropOrders } from '@/modules/drops/server/actions';
+import {
+  OrderStatusBadge,
+  RemainingTimeIndicator,
+} from '@/modules/drops/ui/components/status-badges';
 import {
   cancelOrder,
   cleanupExpiredBankTransferOrders,
   confirmBankTransfer,
 } from '@/modules/tickets/server/actions';
-
-const STATUS_LABELS: Record<
-  string,
-  {
-    label: string;
-    variant: 'default' | 'secondary' | 'destructive' | 'outline';
-  }
-> = {
-  pending: { label: '대기', variant: 'secondary' },
-  paid: { label: '결제완료', variant: 'default' },
-  confirmed: { label: '확정', variant: 'default' },
-  cancelled: { label: '취소', variant: 'destructive' },
-  refunded: { label: '환불', variant: 'outline' },
-};
 
 type Order = {
   id: string;
@@ -68,23 +48,6 @@ type Order = {
     confirmedAt: Date | null;
   } | null;
 };
-
-function formatRemaining(expiresAt: Date | string): {
-  text: string;
-  urgent: boolean;
-  expired: boolean;
-} {
-  const target =
-    typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
-  const diffMs = target.getTime() - Date.now();
-  if (diffMs <= 0) return { text: '만료됨', urgent: true, expired: true };
-  const totalMin = Math.floor(diffMs / 60_000);
-  const hours = Math.floor(totalMin / 60);
-  const mins = totalMin % 60;
-  const text = hours > 0 ? `${hours}시간 ${mins}분 남음` : `${mins}분 남음`;
-  const urgent = totalMin <= 360; // 6시간 이내
-  return { text, urgent, expired: false };
-}
 
 export function DropOrdersView({
   dropId,
@@ -190,11 +153,12 @@ export function DropOrdersView({
                 const isPendingDeposit =
                   order.status === 'pending' &&
                   order.bankTransfer?.status === 'pending';
-                const remaining = isPendingDeposit
-                  ? formatRemaining(order.bankTransfer!.expiresAt)
-                  : null;
-                const statusInfo =
-                  STATUS_LABELS[order.status] ?? STATUS_LABELS.pending;
+                const expiresAt = order.bankTransfer?.expiresAt;
+                const isUrgent =
+                  isPendingDeposit && expiresAt
+                    ? new Date(expiresAt).getTime() - Date.now() <=
+                      6 * 60 * 60 * 1000
+                    : false;
                 const isCancellable =
                   order.status === 'pending' ||
                   order.status === 'paid' ||
@@ -204,9 +168,7 @@ export function DropOrdersView({
                   <div
                     key={order.id}
                     className={`flex items-center justify-between gap-4 px-6 py-4 ${
-                      isPendingDeposit && remaining?.urgent
-                        ? 'bg-amber-50/50'
-                        : ''
+                      isPendingDeposit && isUrgent ? 'bg-amber-50/50' : ''
                     }`}
                   >
                     <div className="min-w-0 flex-1 space-y-1">
@@ -214,33 +176,12 @@ export function DropOrdersView({
                         <span className="text-sm font-medium">
                           {order.orderNo}
                         </span>
-                        {isPendingDeposit ? (
-                          <Badge
-                            variant="outline"
-                            className="border-amber-300 bg-amber-50 text-amber-700"
-                          >
-                            입금대기
-                          </Badge>
-                        ) : (
-                          <Badge variant={statusInfo.variant}>
-                            {statusInfo.label}
-                          </Badge>
-                        )}
-                        {isPendingDeposit && remaining && (
-                          <span
-                            className={`inline-flex items-center gap-1 text-xs ${
-                              remaining.urgent
-                                ? 'text-red-600'
-                                : 'text-muted-foreground'
-                            }`}
-                          >
-                            {remaining.urgent ? (
-                              <AlertCircle className="h-3 w-3" />
-                            ) : (
-                              <Clock className="h-3 w-3" />
-                            )}
-                            {remaining.text}
-                          </span>
+                        <OrderStatusBadge
+                          status={order.status}
+                          bankTransferStatus={order.bankTransfer?.status}
+                        />
+                        {isPendingDeposit && expiresAt && (
+                          <RemainingTimeIndicator expiresAt={expiresAt} />
                         )}
                       </div>
                       <p className="text-sm">
@@ -337,51 +278,40 @@ export function DropOrdersView({
         </div>
       )}
 
-      <AlertDialog
+      <ConfirmDialog
         open={!!cancelTarget}
         onOpenChange={() => setCancelTarget(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>주문 취소</AlertDialogTitle>
-            <AlertDialogDescription>
-              {cancelTarget?.orderNo} 주문을 취소하시겠습니까? 결제가 완료된
-              경우 환불 처리됩니다.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>돌아가기</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancel}>
-              주문 취소
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title="주문 취소"
+        description={
+          <>
+            {cancelTarget?.orderNo} 주문을 취소하시겠습니까? 결제가 완료된 경우
+            환불 처리됩니다.
+          </>
+        }
+        confirmText="주문 취소"
+        variant="destructive"
+        disabled={actionInFlight}
+        onConfirm={handleCancel}
+      />
 
-      <AlertDialog
+      <ConfirmDialog
         open={!!confirmTarget}
         onOpenChange={() => setConfirmTarget(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>입금 확인</AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirmTarget?.orderNo} 주문(
-              <span className="font-mono">
-                {confirmTarget?.bankTransfer?.depositorName}
-              </span>
-              , {confirmTarget?.totalAmount.toLocaleString()}원) 입금을
-              확인하시겠습니까? 확정 메일이 자동 발송됩니다.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>돌아가기</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDeposit}>
-              입금 확인
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title="입금 확인"
+        description={
+          <>
+            {confirmTarget?.orderNo} 주문(
+            <span className="font-mono">
+              {confirmTarget?.bankTransfer?.depositorName}
+            </span>
+            , {confirmTarget?.totalAmount.toLocaleString()}원) 입금을
+            확인하시겠습니까? 확정 메일이 자동 발송됩니다.
+          </>
+        }
+        confirmText="입금 확인"
+        disabled={actionInFlight}
+        onConfirm={handleConfirmDeposit}
+      />
     </div>
   );
 }

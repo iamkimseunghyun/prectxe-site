@@ -2,17 +2,8 @@
 
 import { Edit2, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -164,24 +155,21 @@ export function GoodsVariantList({
         onSuccess={onRefresh}
       />
 
-      <AlertDialog
+      <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={() => setDeleteTarget(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>옵션 삭제</AlertDialogTitle>
-            <AlertDialogDescription>
-              &ldquo;{deleteTarget?.name}&rdquo; 옵션을 삭제하시겠습니까? 이미
-              판매된 상품이 있으면 삭제할 수 없습니다.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>삭제</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title="옵션 삭제"
+        description={
+          <>
+            &ldquo;{deleteTarget?.name}&rdquo; 옵션을 삭제하시겠습니까? 이미
+            판매된 상품이 있으면 삭제할 수 없습니다.
+          </>
+        }
+        confirmText="삭제"
+        cancelText="취소"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
     </>
   );
 }

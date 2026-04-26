@@ -33,6 +33,7 @@ import {
   updateDrop,
 } from '@/modules/drops/server/actions';
 import { GoodsVariantList } from '@/modules/drops/ui/components/goods-variant-list';
+import { DropStatusBadge } from '@/modules/drops/ui/components/status-badges';
 import { TicketTierList } from '@/modules/tickets/ui/components/ticket-tier-list';
 
 type DropData = {
@@ -85,20 +86,6 @@ type Stats = {
   totalCapacity: number;
   salesRate: number;
   orderCount: number;
-};
-
-const STATUS_LABELS: Record<
-  string,
-  {
-    label: string;
-    variant: 'default' | 'secondary' | 'destructive' | 'outline';
-  }
-> = {
-  draft: { label: '초안', variant: 'secondary' },
-  upcoming: { label: '예정', variant: 'outline' },
-  on_sale: { label: '판매 중', variant: 'default' },
-  sold_out: { label: '매진', variant: 'destructive' },
-  closed: { label: '종료', variant: 'outline' },
 };
 
 export function DropDetailView({ dropId }: { dropId: string }) {
@@ -182,7 +169,6 @@ export function DropDetailView({ dropId }: { dropId: string }) {
     );
   }
 
-  const statusInfo = STATUS_LABELS[drop.status] ?? STATUS_LABELS.draft;
   const statusChanged = statusValue !== drop.status;
 
   return (
@@ -198,7 +184,7 @@ export function DropDetailView({ dropId }: { dropId: string }) {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-semibold">{drop.title}</h1>
-              <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+              <DropStatusBadge status={drop.status} />
               <Badge variant="outline">
                 {drop.type === 'ticket' ? '티켓' : '굿즈'}
               </Badge>
