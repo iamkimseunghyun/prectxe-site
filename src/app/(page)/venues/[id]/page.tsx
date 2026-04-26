@@ -36,14 +36,21 @@ export async function generateMetadata({
       title: venue.name,
       description,
       images: venue.images[0]
-        ? [{ url: venue.images[0].imageUrl, alt: venue.images[0].alt }]
+        ? [
+            {
+              url: getImageUrl(venue.images[0].imageUrl, 'public'),
+              alt: venue.images[0].alt,
+            },
+          ]
         : undefined,
     },
     twitter: {
       card: 'summary_large_image',
       title: venue.name,
       description,
-      images: venue.images[0] ? [venue.images[0].imageUrl] : undefined,
+      images: venue.images[0]
+        ? [getImageUrl(venue.images[0].imageUrl, 'public')]
+        : undefined,
     },
   };
 }

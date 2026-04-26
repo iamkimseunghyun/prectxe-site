@@ -58,7 +58,7 @@ export async function generateMetadata({
       title: artwork.title,
       description: description.slice(0, 160),
       images: artwork.images[0]?.imageUrl
-        ? [{ url: artwork.images[0].imageUrl }]
+        ? [{ url: getImageUrl(artwork.images[0].imageUrl, 'public') }]
         : undefined,
       type: 'article',
     },
@@ -67,7 +67,7 @@ export async function generateMetadata({
       title,
       description: description.slice(0, 160),
       images: artwork.images[0]?.imageUrl
-        ? [artwork.images[0].imageUrl]
+        ? [getImageUrl(artwork.images[0].imageUrl, 'public')]
         : undefined,
     },
   };

@@ -45,6 +45,9 @@ export async function generateMetadata({
     artist.tagline ||
     artist.biography?.slice(0, 160) ||
     `${title} - ${[artist.city, artist.country].filter(Boolean).join(', ')}`;
+  const hero = artist.mainImageUrl
+    ? getImageUrl(artist.mainImageUrl, 'public')
+    : undefined;
 
   return {
     title,
@@ -53,13 +56,13 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      images: artist.mainImageUrl ? [{ url: artist.mainImageUrl }] : undefined,
+      images: hero ? [{ url: hero }] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: artist.mainImageUrl ? [artist.mainImageUrl] : undefined,
+      images: hero ? [hero] : undefined,
     },
   };
 }
