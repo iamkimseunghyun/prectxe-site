@@ -20,7 +20,8 @@ import { Plus } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { type Resolver, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
+import type { z } from 'zod';
 import SingleImageBox from '@/components/image/single-image-box';
 import { Button } from '@/components/ui/button';
 import {
@@ -74,9 +75,12 @@ export function FormBuilderView({
     formState: { errors },
     watch,
     setValue,
-  } = useForm<FormInput>({
-    // zod 4: input/output 타입 차이로 인한 type-cast
-    resolver: zodResolver(formSchema) as Resolver<FormInput>,
+  } = useForm<
+    z.input<typeof formSchema>,
+    unknown,
+    z.output<typeof formSchema>
+  >({
+    resolver: zodResolver(formSchema),
     defaultValues: initialData || {
       slug: '',
       title: '',
