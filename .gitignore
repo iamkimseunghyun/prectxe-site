@@ -45,3 +45,6 @@ next-env.d.ts
 
 # temporary screenshots
 *.png
+
+# serena memories (regenerated per machine)
+.serena/

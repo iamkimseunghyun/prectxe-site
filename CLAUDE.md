@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+## Tool Usage
+Always prefer Serena's symbolic tools (find_symbol, get_symbols_overview, replace_symbol_body, etc.) over grep, read_file, and text-based edits for code search and modification.
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Build & Dev Commands

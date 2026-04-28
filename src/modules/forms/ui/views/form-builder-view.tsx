@@ -75,22 +75,20 @@ export function FormBuilderView({
     formState: { errors },
     watch,
     setValue,
-  } = useForm<
-    z.input<typeof formSchema>,
-    unknown,
-    z.output<typeof formSchema>
-  >({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      slug: '',
-      title: '',
-      description: '',
-      body: '',
-      coverImage: '',
-      status: 'draft',
-      fields: [],
-    },
-  });
+  } = useForm<z.input<typeof formSchema>, unknown, z.output<typeof formSchema>>(
+    {
+      resolver: zodResolver(formSchema),
+      defaultValues: initialData || {
+        slug: '',
+        title: '',
+        description: '',
+        body: '',
+        coverImage: '',
+        status: 'draft',
+        fields: [],
+      },
+    }
+  );
 
   const status = watch('status');
   const title = watch('title');
