@@ -52,7 +52,7 @@ export async function UpcomingProgramsSection() {
 
   if (programs.length === 0) return null;
 
-  const eyebrow = isUpcoming ? "What's Next" : 'From the Stage';
+  const eyebrow = isUpcoming ? "What's Next" : 'Unfolding Scenes';
   const title = isUpcoming ? 'Upcoming' : 'Archive';
   const ctaText = isUpcoming ? '전체 프로그램' : '아카이브 보기';
 
