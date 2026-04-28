@@ -174,8 +174,14 @@ const ArtworkFormView = ({
                           type="number"
                           min={2018}
                           max={new Date().getFullYear()}
-                          {...field}
+                          name={field.name}
+                          ref={field.ref}
+                          onBlur={field.onBlur}
                           value={field.value ?? ''}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            field.onChange(v === '' ? undefined : Number(v));
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
