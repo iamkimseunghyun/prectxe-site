@@ -25,12 +25,12 @@ export const isoDateStringSchema = z
 // 이메일 스키마
 export const emailSchema = z.string().email('유효한 이메일 주소를 입력하세요');
 
-// URL 스키마 — 빈 문자열은 undefined로 치환해 optional 동작 보장
-// (입력 폼에서 빈 값으로 두면 검증 통과, 서버 payload에서는 undefined로 전달)
-export const urlSchema = z.preprocess(
-  (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
-  z.string().url('유효한 URL을 입력하세요').optional()
-);
+// URL 스키마 — 빈 문자열 또는 유효한 URL만 허용. optional 키.
+// zod 4: preprocess는 input 타입을 unknown으로 강제해 RHF 폼 타입과 충돌하므로 union+optional 패턴 사용.
+// 빈 문자열을 undefined로 정규화해야 하면 서버 액션 진입점에서 `value || undefined`로 처리.
+export const urlSchema = z
+  .union([z.string().url('유효한 URL을 입력하세요'), z.literal('')])
+  .optional();
 
 // 비어있지 않은 텍스트 스키마
 export const nonEmptyStringSchema = z.string().min(1, '이 필드는 필수입니다');

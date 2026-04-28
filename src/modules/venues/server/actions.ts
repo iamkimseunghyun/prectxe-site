@@ -123,7 +123,7 @@ export async function createVenue(
     if (!parsed.success) {
       return {
         success: false,
-        error: parsed.error.errors[0]?.message ?? '유효성 오류',
+        error: parsed.error.issues[0]?.message ?? '유효성 오류',
       };
     }
     const d = parsed.data;

@@ -64,7 +64,7 @@ export async function signUp(data: z.infer<typeof signUpSchema>) {
     return {
       success: false,
       errors: {
-        _form: flattenedErrors,
+        _form: flattenedErrors.formErrors,
         ...flattenedErrors.fieldErrors,
       },
     };

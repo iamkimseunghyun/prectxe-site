@@ -26,7 +26,7 @@ export function parseInput<T extends z.ZodTypeAny>(
   if (!result.success) {
     return {
       success: false,
-      error: result.error.errors[0]?.message ?? '입력값이 올바르지 않습니다.',
+      error: result.error.issues[0]?.message ?? '입력값이 올바르지 않습니다.',
     };
   }
   return { success: true, data: result.data };

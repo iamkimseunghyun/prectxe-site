@@ -27,7 +27,7 @@ export const formFieldSchema = z.object({
   required: z.boolean().default(false),
   options: z.array(z.string()).default([]),
   order: z.number().default(0),
-  validation: z.record(z.any()).optional(),
+  validation: z.record(z.string(), z.any()).optional(),
 });
 
 // Published 상태에서 사용할 엄격한 필드 검증
@@ -140,7 +140,7 @@ export const createFormResponseSchema = (
     if (field.required) {
       fieldSchema =
         field.type === 'checkbox' || field.type === 'multiselect'
-          ? fieldSchema
+          ? (fieldSchema as z.ZodArray<z.ZodString>)
               .refine((val) => val.length > 0, {
                 message: `${field.label}을(를) 선택해주세요`,
               })

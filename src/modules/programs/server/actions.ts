@@ -242,7 +242,7 @@ export async function createProgram(input: unknown, _userId: string) {
   if (!parsed.success) {
     return {
       success: false,
-      error: parsed.error.errors[0]?.message ?? '유효성 오류',
+      error: parsed.error.issues[0]?.message ?? '유효성 오류',
     };
   }
   const data = parsed.data;
@@ -288,7 +288,7 @@ export async function updateProgram(id: string, input: unknown) {
   if (!parsed.success) {
     return {
       success: false,
-      error: parsed.error.errors[0]?.message ?? '유효성 오류',
+      error: parsed.error.issues[0]?.message ?? '유효성 오류',
     };
   }
   const data = parsed.data;

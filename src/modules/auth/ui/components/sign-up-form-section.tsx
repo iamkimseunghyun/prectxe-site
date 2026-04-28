@@ -44,10 +44,12 @@ const SignUpFormSection = () => {
         router.push(data.redirect);
         toast({ title: '회원가입 성공', description: '로그인해주세요.' });
       } else if (data.errors) {
+        // signUp 액션은 분기마다 다른 errors shape을 반환하므로 union narrowing 후 접근
+        const errors = data.errors as Record<string, string[] | undefined>;
         // Handle _form errors (array of strings)
-        if (data.errors._form && Array.isArray(data.errors._form)) {
+        if (errors._form && Array.isArray(errors._form)) {
           const errorMessage =
-            data.errors._form.join(', ') || '오류가 발생했습니다.';
+            errors._form.join(', ') || '오류가 발생했습니다.';
           form.setError('root.serverError', {
             message: errorMessage,
           });
@@ -60,7 +62,7 @@ const SignUpFormSection = () => {
         }
 
         // Handle field-level errors
-        Object.entries(data.errors).forEach(([key, value]) => {
+        Object.entries(errors).forEach(([key, value]) => {
           if (key !== '_form' && Array.isArray(value) && value.length > 0) {
             form.setError(key as keyof SignUpFormValues, {
               message: value.join(', '),

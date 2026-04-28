@@ -177,7 +177,7 @@ export async function createArticle(input: unknown, authorId?: string | null) {
   if (!parsed.success) {
     return {
       success: false,
-      error: parsed.error.errors[0]?.message ?? '유효성 오류',
+      error: parsed.error.issues[0]?.message ?? '유효성 오류',
     };
   }
   const a = parsed.data;
@@ -209,7 +209,7 @@ export async function updateArticle(slug: string, input: unknown) {
   if (!parsed.success) {
     return {
       success: false,
-      error: parsed.error.errors[0]?.message ?? '유효성 오류',
+      error: parsed.error.issues[0]?.message ?? '유효성 오류',
     };
   }
   const a = parsed.data;

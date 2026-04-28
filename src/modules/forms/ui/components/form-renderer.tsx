@@ -83,10 +83,14 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
     defaultValues,
   });
 
-  const handleFormSubmit = async (data: Record<string, string | string[]>) => {
+  const handleFormSubmit = async (data: Record<string, unknown>) => {
     setIsSubmitting(true);
     try {
-      const result = await onSubmit(formId, data);
+      // 동적 schema는 z.string() / z.array(z.string())의 union이라 RHF가 unknown으로 좁히지 못함
+      const result = await onSubmit(
+        formId,
+        data as Record<string, string | string[]>
+      );
       if (result.success) {
         setIsSubmitted(true);
         toast({
@@ -296,7 +300,7 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
             {(field.type === 'checkbox' || field.type === 'multiselect') && (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {field.options.map((option) => {
-                  const currentValue = watch(field.id!) || [];
+                  const currentValue = (watch(field.id!) as string[]) || [];
                   const isChecked = currentValue.includes(option);
 
                   return (

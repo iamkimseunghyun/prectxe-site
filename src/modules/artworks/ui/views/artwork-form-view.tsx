@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { type Resolver, useForm } from 'react-hook-form';
 import FormSubmitButton from '@/components/layout/form-submit-button';
 import { SortableMediaList } from '@/components/media/sortable-media-list';
 import { Button } from '@/components/ui/button';
@@ -70,7 +70,8 @@ const ArtworkFormView = ({
   };
 
   const form = useForm<Artwork>({
-    resolver: zodResolver(createArtworkSchema),
+    // zod 4: input/output 타입 차이로 인한 type-cast
+    resolver: zodResolver(createArtworkSchema) as Resolver<Artwork>,
     defaultValues,
     resetOptions: { keepDirtyValues: true, keepErrors: true },
   });

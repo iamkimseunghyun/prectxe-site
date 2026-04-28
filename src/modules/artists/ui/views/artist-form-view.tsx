@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { type Resolver, useForm } from 'react-hook-form';
 import SingleImageBox from '@/components/image/single-image-box';
 import FormSubmitButton from '@/components/layout/form-submit-button';
 import { SortableMediaList } from '@/components/media/sortable-media-list';
@@ -78,7 +78,8 @@ const ArtistFormView = ({
   };
 
   const form = useForm<CreateArtistInput>({
-    resolver: zodResolver(createArtistSchema),
+    // zod 4: input/output 타입 차이로 인한 type-cast (transform/default/optional 혼용 schema)
+    resolver: zodResolver(createArtistSchema) as Resolver<CreateArtistInput>,
     defaultValues,
   });
 
