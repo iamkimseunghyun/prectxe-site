@@ -80,7 +80,7 @@
     "react-email": "^5.2.11",
     "react-hook-form": "^7.74.0",
     "resend": "^6.12.2",
-    "solapi": "^5.5.4",
+    "solapi": "^6.0.1",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
     "xlsx": "^0.18.5",
