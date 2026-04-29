@@ -31,7 +31,13 @@ const STATUS_STYLE: Record<
   },
 };
 
-export function ProgramCard({ program }: { program: ProgramCardModel }) {
+export function ProgramCard({
+  program,
+  priority = false,
+}: {
+  program: ProgramCardModel;
+  priority?: boolean;
+}) {
   const start = program.startAt ? new Date(program.startAt) : null;
   const end = program.endAt ? new Date(program.endAt) : start;
   const status = STATUS_STYLE[program.status];
@@ -43,6 +49,7 @@ export function ProgramCard({ program }: { program: ProgramCardModel }) {
           src={getImageUrl(program.heroUrl || null, 'smaller')}
           alt={program.title}
           fill
+          priority={priority}
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />

@@ -15,7 +15,7 @@ export async function JournalDetailView({ slug }: { slug: string }) {
       </div>
     );
 
-  const cover = getImageUrl(article.cover || null, 'public');
+  const cover = getImageUrl(article.cover || null, 'smaller');
   const date = article.publishedAt
     ? new Date(article.publishedAt).toLocaleDateString('ko-KR')
     : undefined;
@@ -34,7 +34,14 @@ export async function JournalDetailView({ slug }: { slug: string }) {
         }}
       />
       <div className="relative mb-6 aspect-[16/9] w-full overflow-hidden rounded-lg">
-        <Image src={cover} alt={article.title} fill className="object-cover" />
+        <Image
+          src={cover}
+          alt={article.title}
+          fill
+          priority
+          sizes="(min-width: 768px) 768px, 100vw"
+          className="object-cover"
+        />
       </div>
       <header className="mb-6">
         <h1 className="text-3xl font-bold">{article.title}</h1>
@@ -46,7 +53,7 @@ export async function JournalDetailView({ slug }: { slug: string }) {
 
       {article.body && (
         <section
-          className="prose prose-neutral dark:prose-invert max-w-none"
+          className="prose prose-neutral dark:prose-invert max-w-none [&_img]:aspect-video [&_img]:w-full [&_img]:rounded-lg [&_img]:bg-neutral-100 [&_img]:object-cover"
           // biome-ignore lint/security/noDangerouslySetInnerHtml: admin-authored rich text from TipTap editor
           dangerouslySetInnerHTML={{ __html: article.body }}
         />
