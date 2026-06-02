@@ -13,7 +13,7 @@ interface DropsListViewProps {
 
 const STATUS_STYLE: Record<string, { label: string; className: string }> = {
   on_sale: {
-    label: 'On Sale',
+    label: 'Now Open',
     className: 'bg-neutral-900 text-white',
   },
   upcoming: {
