@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Play } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Play } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -151,14 +151,16 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
               <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-white/60">
                 {drop.eventDate && (
                   <span>
-                    {new Date(drop.eventDate).toLocaleString('ko-KR', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      weekday: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {new Date(drop.eventDate)
+                      .toLocaleString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        weekday: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                      .replace(/(\d+일)\s+([일월화수목금토])\s+/, '$1 ($2) ')}
                     {drop.eventEndDate &&
                       ` ~ ${new Date(drop.eventEndDate).toLocaleString(
                         'ko-KR',
@@ -240,9 +242,12 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
             )}
 
             {/* Scroll indicator */}
-            <div className="mt-12 flex items-center gap-2 text-xs text-white/30">
+            <div className="mt-12 flex items-center gap-2 text-white/30">
               <div className="h-8 w-px bg-white/20" />
-              <span className="uppercase tracking-widest">Scroll</span>
+              <ChevronDown
+                className="h-4 w-4 animate-bounce"
+                aria-hidden="true"
+              />
             </div>
           </div>
         </div>
