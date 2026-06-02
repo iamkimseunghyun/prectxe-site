@@ -15,7 +15,7 @@ export async function JournalDetailView({ slug }: { slug: string }) {
       </div>
     );
 
-  const cover = getImageUrl(article.cover || null, 'smaller');
+  const cover = getImageUrl(article.cover || null, 'public');
   const date = article.publishedAt
     ? new Date(article.publishedAt).toLocaleDateString('ko-KR')
     : undefined;
