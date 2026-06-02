@@ -28,7 +28,11 @@ export default async function OGImage({
       return match ? fetch(match[1]).then((r) => r.arrayBuffer()) : null;
     });
 
-  if (!drop) {
+  const firstImage = drop?.media.find((m) => m.type === 'image');
+
+  // drop 없거나, 등록된 미디어 중 이미지가 하나도 없으면(영상만 있는 경우 포함)
+  // PRECTXE 디폴트 OG로 fallback — 영상은 OG 미리보기로 부적합
+  if (!drop || !firstImage) {
     return new ImageResponse(
       <div
         style={{
@@ -54,14 +58,7 @@ export default async function OGImage({
     );
   }
 
-  const firstImage = drop.media.find((m) => m.type === 'image');
-  const firstVideo = drop.media.find((m) => m.type === 'video');
-  // 이미지 없으면 영상 썸네일(Cloudflare Stream) fallback
-  const heroSrc = firstImage
-    ? getImageUrl(firstImage.url, 'public')
-    : firstVideo
-      ? `${firstVideo.url}/thumbnails/thumbnail.jpg`
-      : null;
+  const heroSrc = getImageUrl(firstImage.url, 'public');
   const typeLabel = TYPE_LABELS[drop.type] || 'DROP';
 
   // 최저 가격 계산

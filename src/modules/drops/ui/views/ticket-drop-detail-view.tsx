@@ -256,9 +256,9 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
       {/* ── Content ── */}
       <div className="bg-white text-neutral-900">
         <div className="mx-auto max-w-5xl px-6 sm:px-10 lg:px-20">
-          <div className="grid gap-12 py-16 lg:grid-cols-5 lg:py-24">
+          <div className="grid gap-12 py-16 lg:grid-cols-9 lg:py-24">
             {/* Description + Gallery (left: 3/5) */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-5">
               {drop.description && (
                 <div
                   className="prose prose-lg prose-neutral max-w-none leading-[1.9]"
@@ -329,7 +329,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
             </div>
 
             {/* Ticket Purchase (right: 2/5) */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-4">
               <div className="lg:sticky lg:top-8">
                 {isClosed ? (
                   <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-6 py-12 text-center">
