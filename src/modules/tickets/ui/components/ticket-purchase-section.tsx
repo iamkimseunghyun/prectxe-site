@@ -373,7 +373,7 @@ export function TicketPurchaseSection({
           if (!open) setAgreedToTerms(false);
         }}
       >
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto overscroll-contain rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg">
               {isFree ? '신청자 정보' : '주문자 정보'}
