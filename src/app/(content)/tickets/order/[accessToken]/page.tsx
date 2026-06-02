@@ -2,6 +2,7 @@ import { CheckCircle2, XCircle } from 'lucide-react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import QRCode from 'qrcode';
+import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { prisma } from '@/lib/db/prisma';
 import { getTicketScanUrl } from '@/lib/utils/ticket-token';
 
@@ -97,7 +98,9 @@ export default async function OrderTicketsPage({
             </p>
           )}
           <div className="flex items-center justify-between border-t border-white/10 pt-4 text-xs text-white/50">
-            <span>주문번호 · {order.orderNo}</span>
+            <span>
+              {SALES_TERMS.orderNumber} · {order.orderNo}
+            </span>
             <span>
               입장 {checkedInCount} / {totalCount}
             </span>

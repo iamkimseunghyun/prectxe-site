@@ -10,6 +10,7 @@ import {
   Section,
   Text,
 } from 'react-email';
+import { SALES_TERMS } from '@/lib/constants/sales-terms';
 
 interface OrderItem {
   name: string;
@@ -38,17 +39,17 @@ export default function OrderConfirmation({
   return (
     <Html>
       <Head />
-      <Preview>주문 확인: {dropTitle}</Preview>
+      <Preview>{SALES_TERMS.emailPreview(dropTitle)}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={box}>
             <Heading style={heading}>PRECTXE</Heading>
             <Text style={paragraph}>
-              안녕하세요 {buyerName}님, 주문이 완료되었습니다.
+              {SALES_TERMS.completedNotice(buyerName)}
             </Text>
 
             <Section style={orderBox}>
-              <Text style={orderLabel}>주문번호</Text>
+              <Text style={orderLabel}>{SALES_TERMS.orderNumber}</Text>
               <Text style={orderValue}>{orderNo}</Text>
             </Section>
 

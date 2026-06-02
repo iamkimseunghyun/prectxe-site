@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { useToast } from '@/hooks/use-toast';
 import {
   type GAItem,
@@ -212,7 +213,7 @@ export function TicketPurchaseSection({
     } catch (err) {
       console.error('주문 처리 오류:', err);
       toast({
-        title: '주문 처리 중 오류가 발생했습니다.',
+        title: SALES_TERMS.errorProcessing,
         variant: 'destructive',
       });
     }
@@ -358,7 +359,7 @@ export function TicketPurchaseSection({
                 className="h-12 shrink-0 rounded-xl px-8 text-base font-semibold"
                 onClick={handleCheckout}
               >
-                {isFree ? '신청하기' : '주문하기'}
+                {isFree ? '신청하기' : SALES_TERMS.ctaPaid}
               </Button>
             </div>
           </div>
@@ -376,7 +377,7 @@ export function TicketPurchaseSection({
         <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto overscroll-contain rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg">
-              {isFree ? '신청자 정보' : '주문자 정보'}
+              {isFree ? '신청자 정보' : SALES_TERMS.ordererInfo}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -435,7 +436,7 @@ export function TicketPurchaseSection({
                   className="h-11"
                 />
                 <p className="text-xs text-neutral-500">
-                  주문번호 끝 4자리가 자동으로 추가됩니다 (예: 홍길동A1B2)
+                  {SALES_TERMS.orderNumberSuffixTip}
                 </p>
               </div>
             )}
@@ -443,7 +444,7 @@ export function TicketPurchaseSection({
             {/* Order Summary */}
             <div className="rounded-xl bg-neutral-50 p-4">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                주문 내역
+                {SALES_TERMS.orderItems}
               </p>
               <div className="space-y-1.5">
                 {selectedItems.map((item) => (
@@ -471,7 +472,8 @@ export function TicketPurchaseSection({
             {/* 결제 방식 안내 */}
             {!isFree && (
               <div className="rounded-lg border border-neutral-200 bg-white p-3 text-xs text-neutral-600">
-                결제 방식: <strong>무통장 입금</strong> · 주문 후 안내된 계좌로
+                결제 방식: <strong>무통장 입금</strong> ·{' '}
+                {SALES_TERMS.afterOrderTo}
                 24시간 이내 입금
               </div>
             )}
@@ -529,8 +531,8 @@ export function TicketPurchaseSection({
                 >
                   환불·취소 정책
                 </a>
-                에 동의하며, 위 주문 내용을 확인하고{' '}
-                {isFree ? '신청을 진행합니다.' : '주문을 진행합니다.'}
+                에 동의하며, 위 {SALES_TERMS.order} 내용을 확인하고{' '}
+                {isFree ? '신청을 진행합니다.' : SALES_TERMS.proceedSentence}
               </span>
             </label>
 
@@ -543,7 +545,7 @@ export function TicketPurchaseSection({
                 ? '처리 중...'
                 : isFree
                   ? '무료 신청하기'
-                  : `${totalAmount.toLocaleString()}원 주문하기`}
+                  : SALES_TERMS.ctaPaidWithPrice(totalAmount)}
             </Button>
           </form>
         </DialogContent>

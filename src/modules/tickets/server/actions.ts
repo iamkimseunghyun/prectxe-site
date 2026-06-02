@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { parseInput } from '@/lib/auth/server-action-helpers';
+import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { prisma } from '@/lib/db/prisma';
 import { sendEmail } from '@/lib/email/send';
 import portone, { PortOneError } from '@/lib/payment/portone';
@@ -437,7 +438,7 @@ export async function createBankTransferOrder(
     console.error('무통장 주문 생성 실패:', e);
     return {
       success: false,
-      error: e instanceof Error ? e.message : '주문 생성에 실패했습니다.',
+      error: e instanceof Error ? e.message : SALES_TERMS.errorCreateFailed,
     } as const;
   }
 }
@@ -522,9 +523,10 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
         items: { include: { ticketTier: true, goodsVariant: true } },
       },
     });
-    if (!order) return { success: false, error: '주문을 찾을 수 없습니다.' };
+    if (!order)
+      return { success: false, error: SALES_TERMS.errorOrderNotFound };
     if (order.status !== 'pending')
-      return { success: false, error: '이미 처리된 주문입니다.' };
+      return { success: false, error: SALES_TERMS.errorAlreadyProcessed };
 
     const payment = await portone.payment.getPayment({
       paymentId: portonePaymentId,
@@ -573,7 +575,7 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
 
       await sendEmail({
         to: order.buyerEmail,
-        subject: `[PRECTXE] 주문 확인 — ${dropTitle}`,
+        subject: SALES_TERMS.emailSubject(dropTitle),
         template: 'order-confirmation',
         data: {
           buyerName: order.buyerName,
@@ -614,9 +616,12 @@ export async function confirmBankTransfer(orderId: string) {
     },
   });
   if (!order)
-    return { success: false, error: '주문을 찾을 수 없습니다.' } as const;
+    return { success: false, error: SALES_TERMS.errorOrderNotFound } as const;
   if (!order.bankTransfer)
-    return { success: false, error: '무통장 주문이 아닙니다.' } as const;
+    return {
+      success: false,
+      error: SALES_TERMS.errorNotBankTransfer,
+    } as const;
   if (order.bankTransfer.status !== 'pending')
     return {
       success: false,
@@ -746,9 +751,10 @@ export async function cancelOrder(orderId: string) {
     where: { id: orderId },
     include: { items: true, payment: true, bankTransfer: true },
   });
-  if (!order) return { success: false, error: '주문을 찾을 수 없습니다.' };
+  if (!order)
+    return { success: false, error: SALES_TERMS.errorOrderNotFound };
   if (order.status === 'cancelled' || order.status === 'refunded')
-    return { success: false, error: '이미 취소된 주문입니다.' };
+    return { success: false, error: SALES_TERMS.errorAlreadyCanceled };
 
   if (order.payment?.portonePaymentId) {
     try {

@@ -2,6 +2,7 @@
 
 import { CheckCircle2, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { SALES_TERMS } from '@/lib/constants/sales-terms';
 
 function formatExpiry(expiresAt: Date | string): string {
   const date = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
@@ -74,12 +75,12 @@ export function BankTransferOrderSuccess({
       <div className="space-y-4">
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-6">
           <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-            주문 접수 완료 · 입금 대기
+            {SALES_TERMS.receiptHeading} · 입금 대기
           </p>
           <p className="mt-2 font-mono text-sm text-amber-900">{orderNo}</p>
           <p className="mt-3 text-sm leading-relaxed text-amber-800">
             아래 계좌로 <strong>{totalAmount.toLocaleString()}원</strong> 입금해
-            주세요. 입금 확인 후 주문이 확정되며 이메일로 안내드립니다.
+            주세요. {SALES_TERMS.confirmedAfterDeposit}
           </p>
         </div>
 
@@ -139,8 +140,7 @@ export function BankTransferOrderSuccess({
             </button>
           </div>
           <p className="mt-2 text-xs leading-relaxed text-amber-700">
-            동명이인 매칭을 위해 위 형태(이름+주문번호 끝 4자리) 그대로 입금해
-            주세요.
+            {SALES_TERMS.depositorTip}
           </p>
         </div>
 
@@ -149,8 +149,7 @@ export function BankTransferOrderSuccess({
             입금 마감: {formatExpiry(expiresAt)}
           </p>
           <p className="mt-1 text-xs leading-relaxed text-red-600">
-            마감 시각까지 미입금 시 주문은 자동 취소되며 좌석이 다른 고객에게
-            풀립니다.
+            {SALES_TERMS.autoCancelNotice}
           </p>
         </div>
 

@@ -9,6 +9,7 @@ import {
   Section,
   Text,
 } from 'react-email';
+import { SALES_TERMS } from '@/lib/constants/sales-terms';
 
 interface BankTransferPendingProps {
   buyerName: string;
@@ -54,12 +55,12 @@ export default function BankTransferPending({
           <Section style={box}>
             <Heading style={heading}>PRECTXE</Heading>
             <Text style={paragraph}>
-              안녕하세요 {buyerName}님, 주문이 접수되었습니다. 아래 안내에 따라
+              {SALES_TERMS.receivedNotice(buyerName)} 아래 안내에 따라
               <strong> {expiryHours}시간 이내에 입금</strong>해주세요.
             </Text>
 
             <Section style={orderBox}>
-              <Text style={orderLabel}>주문번호</Text>
+              <Text style={orderLabel}>{SALES_TERMS.orderNumber}</Text>
               <Text style={orderValue}>{orderNo}</Text>
             </Section>
 
@@ -101,10 +102,7 @@ export default function BankTransferPending({
               <Text style={warnText}>
                 <strong>입금 마감</strong>: {formatExpiry(expiresAt)}
               </Text>
-              <Text style={warnSub}>
-                마감 시각까지 미입금 시 주문은 자동 취소되며 좌석이 다른
-                고객에게 풀립니다.
-              </Text>
+              <Text style={warnSub}>{SALES_TERMS.autoCancelNotice}</Text>
             </Section>
 
             <Text style={footer}>문의사항이 있으시면 답장해 주세요.</Text>

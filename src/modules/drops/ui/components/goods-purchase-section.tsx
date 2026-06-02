@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { useToast } from '@/hooks/use-toast';
 import {
   type GAItem,
@@ -162,7 +163,7 @@ export function GoodsPurchaseSection({
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-10 text-center">
         <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
         <p className="mt-4 text-xl font-semibold text-emerald-900">
-          구매가 완료되었습니다
+          {SALES_TERMS.purchaseCompletedHeading}
         </p>
         <p className="mt-2 font-mono text-sm text-emerald-700">
           {orderComplete}
@@ -181,7 +182,7 @@ export function GoodsPurchaseSection({
         size="lg"
         onClick={() => setCheckoutOpen(true)}
       >
-        구매하기
+        {SALES_TERMS.ctaPurchase}
       </Button>
 
       <Dialog
@@ -193,7 +194,9 @@ export function GoodsPurchaseSection({
       >
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg">구매자 정보</DialogTitle>
+            <DialogTitle className="text-lg">
+              {SALES_TERMS.purchaserInfo}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handlePayment} className="space-y-4">
             <div className="space-y-1.5">
@@ -238,7 +241,7 @@ export function GoodsPurchaseSection({
 
             <div className="rounded-xl bg-neutral-50 p-4">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                주문 내역
+                {SALES_TERMS.orderItems}
               </p>
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-600">
@@ -294,7 +297,8 @@ export function GoodsPurchaseSection({
                 >
                   환불·취소 정책
                 </a>
-                에 동의하며, 위 주문 내용을 확인하고 결제를 진행합니다.
+                에 동의하며, 위 {SALES_TERMS.order} 내용을 확인하고 결제를
+                진행합니다.
               </span>
             </label>
 

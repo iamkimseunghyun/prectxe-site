@@ -15,6 +15,7 @@ import { CloudflareStreamVideo } from '@/components/media/cloudflare-stream-vide
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { trackViewItem } from '@/lib/analytics/gtag';
+import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { artistInitials, cn, formatArtistName, getImageUrl } from '@/lib/utils';
 import { GoodsPurchaseSection } from '@/modules/drops/ui/components/goods-purchase-section';
 import { MediaLightbox } from '@/modules/drops/ui/components/media-lightbox';
@@ -452,7 +453,9 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                 {(selected.price * quantity).toLocaleString()}원
               </p>
             </div>
-            <p className="text-xs text-neutral-400">↑ 위에서 구매</p>
+            <p className="text-xs text-neutral-400">
+              {SALES_TERMS.scrollToBuyTip}
+            </p>
           </div>
         </div>
       )}
