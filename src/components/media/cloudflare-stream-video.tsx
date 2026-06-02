@@ -99,6 +99,7 @@ function CloudflareHlsPlayer({
     // Safari, Chrome 142+, Edge 142+ — 네이티브 HLS
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = hlsSrc;
+      if (autoPlay) video.play().catch(() => {});
       return;
     }
 
@@ -114,6 +115,11 @@ function CloudflareHlsPlayer({
       hls = new Hls();
       hls.loadSource(hlsSrc);
       hls.attachMedia(video);
+      if (autoPlay) {
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch(() => {});
+        });
+      }
       hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
         if (data.fatal) {
           setFailed(true);
@@ -125,7 +131,7 @@ function CloudflareHlsPlayer({
     return () => {
       if (hls) hls.destroy();
     };
-  }, [hlsSrc, onError]);
+  }, [hlsSrc, autoPlay, onError]);
 
   if (failed) return null;
 
