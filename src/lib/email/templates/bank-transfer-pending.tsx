@@ -9,6 +9,7 @@ import {
   Section,
   Text,
 } from 'react-email';
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { SALES_TERMS } from '@/lib/constants/sales-terms';
 
 interface BankTransferPendingProps {
@@ -105,7 +106,10 @@ export default function BankTransferPending({
               <Text style={warnSub}>{SALES_TERMS.autoCancelNotice}</Text>
             </Section>
 
-            <Text style={footer}>문의사항이 있으시면 답장해 주세요.</Text>
+            <Text style={footer}>
+              이 메일은 발신 전용입니다. 회신은 수신되지 않습니다. 문의는{' '}
+              {BUSINESS_INFO.email}로 보내 주세요.
+            </Text>
             <Text style={footerBrand}>PRECTXE</Text>
           </Section>
         </Container>
