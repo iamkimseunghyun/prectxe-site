@@ -9,6 +9,7 @@ import {
   Plus,
 } from 'lucide-react';
 import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { CloudflareStreamVideo } from '@/components/media/cloudflare-stream-video';
@@ -421,11 +422,9 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                     안내사항
                   </h3>
                   <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-5 text-sm leading-relaxed text-neutral-600">
-                    {drop.notice.split('\n').map((line, i) => (
-                      <p key={i} className={i > 0 ? 'mt-2' : ''}>
-                        {line}
-                      </p>
-                    ))}
+                    <div className="prose prose-sm prose-neutral max-w-none">
+                      <ReactMarkdown>{drop.notice}</ReactMarkdown>
+                    </div>
                   </div>
                 </div>
               )}
