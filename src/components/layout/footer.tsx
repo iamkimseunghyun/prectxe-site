@@ -102,9 +102,6 @@ export function Footer() {
                 대표 {BUSINESS_INFO.representative}
                 <span className="mx-2 text-neutral-300">·</span>
                 사업자등록번호 {BUSINESS_INFO.businessNumber}
-                <span className="mx-2 text-neutral-300">·</span>
-                통신판매업 신고번호{' '}
-                {BUSINESS_INFO.mailOrderNumber ?? '신고 예정'}
               </p>
               <p>
                 {BUSINESS_INFO.address}
