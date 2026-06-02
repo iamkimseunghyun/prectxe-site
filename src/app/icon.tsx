@@ -11,34 +11,20 @@ export default function Icon() {
           width: '100%',
           height: '100%',
           background: '#000',
-          position: 'relative',
           display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
         <div
           style={{
-            position: 'absolute',
-            left: 79,
-            top: 38,
-            width: 46,
-            height: 180,
+            width: 128,
+            height: 128,
             background: '#fff',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            left: 123,
-            top: 38,
-            width: 54,
-            height: 108,
-            background: '#fff',
-            borderTopRightRadius: 54,
-            borderBottomRightRadius: 54,
           }}
         />
       </div>
     ),
-    size,
+    size
   );
 }
