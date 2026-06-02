@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import MultiImageBox from '@/components/image/multi-image-box';
 import SingleImageBox from '@/components/image/single-image-box';
+import { RichEditor } from '@/components/rich-editor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -440,10 +441,10 @@ export function ProgramFormView({
           </div>
           <div>
             <Label>설명</Label>
-            <Textarea
-              value={form.description as any}
-              onChange={(e) => handleChange('description', e.target.value)}
-              rows={6}
+            <RichEditor
+              content={(form.description as string | undefined) ?? ''}
+              onChange={(html) => handleChange('description', html)}
+              placeholder="설명을 입력하세요..."
             />
           </div>
         </CardContent>
