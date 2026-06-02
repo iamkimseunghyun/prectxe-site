@@ -37,13 +37,15 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
     if (!container || isPaused || open || isDragging) return;
 
     const speed = 0.5; // pixels per frame
+    // overflow가 이 값보다 작으면 정지 — 살짝 넘칠 때 좁은 폭을 왕복하며 고장 난 듯 보이는 문제 방지
+    const MIN_OVERFLOW_PX = 240;
     let animationId: number;
 
     const scroll = () => {
-      if (
-        container.scrollLeft >=
-        container.scrollWidth - container.clientWidth
-      ) {
+      const overflow = container.scrollWidth - container.clientWidth;
+      if (overflow < MIN_OVERFLOW_PX) {
+        if (container.scrollLeft !== 0) container.scrollLeft = 0;
+      } else if (container.scrollLeft >= overflow) {
         container.scrollLeft = 0;
       } else {
         container.scrollLeft += speed;
