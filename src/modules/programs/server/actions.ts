@@ -4,8 +4,6 @@ import type { Prisma } from '@prisma/client';
 import { unstable_cache as next_cache, revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import {
-  cleanupRemovedHtmlImages,
-  deleteAllHtmlImages,
   deleteAllImages,
   deleteCloudflareImage,
   deleteRemovedImages,
@@ -312,12 +310,6 @@ export async function updateProgram(id: string, input: unknown) {
     }
   }
 
-  // 본문(HTML)에서 제거된 Cloudflare 이미지 정리
-  await cleanupRemovedHtmlImages(
-    existing.description,
-    data.description ?? null
-  );
-
   // 갤러리 이미지: 제거된 이미지를 Cloudflare에서 삭제
   const hasNewImages = data.images && data.images.length > 0;
   if (hasNewImages) {
@@ -372,11 +364,7 @@ export async function deleteProgram(id: string) {
     // Cloudflare 이미지 정리 (hero + 갤러리)
     const program = await prisma.program.findUnique({
       where: { id },
-      select: {
-        heroUrl: true,
-        description: true,
-        images: { select: { imageUrl: true } },
-      },
+      select: { heroUrl: true, images: { select: { imageUrl: true } } },
     });
 
     if (!program) {
@@ -389,9 +377,6 @@ export async function deleteProgram(id: string) {
     }
     if (program.images.length > 0) {
       await deleteAllImages(program.images);
-    }
-    if (program.description) {
-      await deleteAllHtmlImages(program.description);
     }
 
     await prisma.program.delete({ where: { id } });
