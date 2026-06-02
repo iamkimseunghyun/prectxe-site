@@ -8,7 +8,11 @@ import {
   deleteCloudflareVideo,
 } from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
-import { extractImageId, extractVideoId } from '@/lib/utils';
+import {
+  extractImageId,
+  extractVideoId,
+  parseKstDateInput,
+} from '@/lib/utils';
 
 // ─── Drop CRUD (Admin) ──────────────────────────────
 
@@ -55,8 +59,10 @@ export async function createDrop(data: {
       type: data.type as any,
       summary: data.summary || null,
       description: data.description || null,
-      eventDate: data.eventDate ? new Date(data.eventDate) : null,
-      eventEndDate: data.eventEndDate ? new Date(data.eventEndDate) : null,
+      eventDate: data.eventDate ? parseKstDateInput(data.eventDate) : null,
+      eventEndDate: data.eventEndDate
+        ? parseKstDateInput(data.eventEndDate)
+        : null,
       venue: data.venue || null,
       venueAddress: data.venueAddress || null,
       venueId: data.venueId || null,
@@ -153,10 +159,12 @@ export async function updateDrop(
         description: data.description || null,
       }),
       ...(data.eventDate !== undefined && {
-        eventDate: data.eventDate ? new Date(data.eventDate) : null,
+        eventDate: data.eventDate ? parseKstDateInput(data.eventDate) : null,
       }),
       ...(data.eventEndDate !== undefined && {
-        eventEndDate: data.eventEndDate ? new Date(data.eventEndDate) : null,
+        eventEndDate: data.eventEndDate
+          ? parseKstDateInput(data.eventEndDate)
+          : null,
       }),
       ...(data.venue !== undefined && { venue: data.venue || null }),
       ...(data.venueId !== undefined && { venueId: data.venueId || null }),

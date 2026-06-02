@@ -43,3 +43,20 @@ export const formatEventDate = (startDate: Date, endDate: Date): string => {
   }
   return `${formattedStart} - ${formatDate(endDate)}`;
 };
+
+/**
+ * datetime-local input value('YYYY-MM-DDTHH:mm')를 KST 벽시계 시간으로
+ * 해석해 UTC Date로 변환. 서버 timezone(UTC)에서 new Date()가 잘못
+ * 해석하는 문제 회피.
+ */
+export const parseKstDateInput = (value: string): Date =>
+  new Date(`${value}:00+09:00`);
+
+/**
+ * UTC Date를 KST 벽시계 시간 'YYYY-MM-DDTHH:mm' 문자열로 변환
+ * (datetime-local input의 defaultValue용).
+ */
+export const toKstDateInputValue = (date: Date): string => {
+  const kst = new Date(date.getTime() + 9 * 3600 * 1000);
+  return kst.toISOString().slice(0, 16);
+};

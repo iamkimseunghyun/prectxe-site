@@ -153,6 +153,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                   <span>
                     {new Date(drop.eventDate)
                       .toLocaleString('ko-KR', {
+                        timeZone: 'Asia/Seoul',
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
@@ -165,6 +166,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                       ` ~ ${new Date(drop.eventEndDate).toLocaleString(
                         'ko-KR',
                         {
+                          timeZone: 'Asia/Seoul',
                           month: 'long',
                           day: 'numeric',
                           weekday: 'short',

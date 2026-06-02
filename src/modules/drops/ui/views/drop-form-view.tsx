@@ -27,7 +27,12 @@ import {
   getCloudflareImageUrl,
   getCloudflareVideoUploadUrl,
 } from '@/lib/cdn/cloudflare';
-import { formatArtistName, getImageUrl, validateImageFile } from '@/lib/utils';
+import {
+  formatArtistName,
+  getImageUrl,
+  toKstDateInputValue,
+  validateImageFile,
+} from '@/lib/utils';
 import ArtistSelect from '@/modules/artists/ui/components/artist-select';
 import {
   createDrop,
@@ -451,7 +456,7 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
                       type="datetime-local"
                       defaultValue={
                         drop?.eventDate
-                          ? new Date(drop.eventDate).toISOString().slice(0, 16)
+                          ? toKstDateInputValue(new Date(drop.eventDate))
                           : ''
                       }
                     />
@@ -464,9 +469,7 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
                       type="datetime-local"
                       defaultValue={
                         drop?.eventEndDate
-                          ? new Date(drop.eventEndDate)
-                              .toISOString()
-                              .slice(0, 16)
+                          ? toKstDateInputValue(new Date(drop.eventEndDate))
                           : ''
                       }
                     />
