@@ -691,7 +691,7 @@ export function ProgramFormView({
           <div className="space-y-6">
             {/* 대표 이미지 */}
             {(displayUrl || form.heroUrl) && (
-              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg">
+              <div className="relative aspect-video w-full overflow-hidden rounded-lg">
                 <Image
                   src={
                     displayUrl || getImageUrl(form.heroUrl as string, 'public')

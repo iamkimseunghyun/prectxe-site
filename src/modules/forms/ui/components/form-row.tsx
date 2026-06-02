@@ -56,7 +56,7 @@ export function FormRow({ form, userId, isAdmin }: FormRowProps) {
 
   return (
     <>
-      <div className="flex items-center gap-4 rounded-lg border bg-white px-4 py-3 transition-shadow hover:shadow-sm">
+      <div className="flex items-center gap-4 rounded-lg border bg-white px-4 py-3 transition-shadow hover:shadow-xs">
         <Link href={`/admin/forms/${form.id}`} className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="truncate font-medium">{form.title}</span>

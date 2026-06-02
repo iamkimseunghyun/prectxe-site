@@ -19,7 +19,7 @@ export async function JournalListView({ tag }: { tag?: string }) {
   const [hero, ...rest] = articles;
 
   return (
-    <div className="mx-auto max-w-screen-xl px-4 pb-16 pt-28 md:px-6 lg:px-8">
+    <div className="mx-auto max-w-(--breakpoint-xl) px-4 pb-16 pt-28 md:px-6 lg:px-8">
       <h1 className="mb-8 text-3xl font-bold tracking-tight text-neutral-900 md:text-4xl">
         Journal
       </h1>
@@ -49,7 +49,7 @@ export async function JournalListView({ tag }: { tag?: string }) {
             className="group mb-16 block border-b border-neutral-200 pb-12 md:mb-20 md:pb-16"
           >
             <div className="grid gap-6 md:grid-cols-12 md:gap-10">
-              <div className="relative aspect-[16/10] overflow-hidden rounded-lg bg-neutral-100 md:col-span-7 md:aspect-[4/3]">
+              <div className="relative aspect-16/10 overflow-hidden rounded-lg bg-neutral-100 md:col-span-7 md:aspect-4/3">
                 <Image
                   src={getImageUrl(hero.cover || null, 'public')}
                   alt={hero.title}
@@ -66,7 +66,7 @@ export async function JournalListView({ tag }: { tag?: string }) {
                       <Badge
                         key={t}
                         variant="secondary"
-                        className="px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.1em]"
+                        className="px-2 py-0.5 text-[11px] font-medium uppercase tracking-widest"
                       >
                         {t}
                       </Badge>

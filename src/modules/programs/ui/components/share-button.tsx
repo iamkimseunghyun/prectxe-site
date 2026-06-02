@@ -45,7 +45,7 @@ export default function ShareButton({ title, text, className }: Props) {
     <button
       className={
         className ??
-        'inline-flex items-center gap-1 rounded text-xs underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+        'inline-flex items-center gap-1 rounded text-xs underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
       }
       type="button"
       aria-label="공유하기"

@@ -41,7 +41,7 @@ export function CopyUrlButton({ className, url: providedUrl }: Props) {
     <button
       className={
         className ??
-        'inline-flex items-center text-xs text-neutral-400 transition-colors hover:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+        'inline-flex items-center text-xs text-neutral-400 transition-colors hover:text-neutral-600 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
       }
       type="button"
       aria-label="링크 복사"

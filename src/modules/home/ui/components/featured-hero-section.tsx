@@ -148,7 +148,7 @@ export async function FeaturedHeroSection() {
                 className="object-cover"
               />
               {/* 어두운 그라디언트 오버레이 — 대비 개선 */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
 
               <div className="absolute inset-x-0 bottom-0 p-6 text-white md:p-12 lg:p-20">
                 <div className="mx-auto max-w-6xl space-y-4">

@@ -5,7 +5,7 @@ const CardSkeleton = () => {
   return (
     <Card className="overflow-hidden">
       {/* 이미지 스켈레톤 */}
-      <Skeleton className="aspect-[16/10] w-full" />
+      <Skeleton className="aspect-16/10 w-full" />
 
       <div className="p-5">
         {/* 메타 정보 스켈레톤 */}

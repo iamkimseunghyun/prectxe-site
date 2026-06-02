@@ -364,7 +364,7 @@ export function JournalFormView({
               onChange={(e) =>
                 handleChange('programId', e.target.value || null)
               }
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <option value="">선택 안 함</option>
               {programs.map((p) => (
@@ -476,7 +476,7 @@ export function JournalFormView({
 
           <div className="space-y-6">
             {/* 커버 이미지 */}
-            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg">
+            <div className="relative aspect-video w-full overflow-hidden rounded-lg">
               <Image
                 src={displayUrl || getImageUrl(null, 'public')}
                 alt={form.title || '미리보기'}

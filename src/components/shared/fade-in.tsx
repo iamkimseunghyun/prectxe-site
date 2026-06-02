@@ -54,7 +54,7 @@ export function FadeIn({
       ref={ref}
       style={{ transitionDelay: visible ? `${delay}ms` : '0ms' }}
       className={cn(
-        'transition-all duration-[700ms] ease-out',
+        'transition-all duration-700 ease-out',
         visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0',
         className
       )}

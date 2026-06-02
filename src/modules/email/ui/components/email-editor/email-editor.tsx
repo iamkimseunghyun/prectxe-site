@@ -32,7 +32,7 @@ export function EmailEditor({
     editorProps: {
       attributes: {
         class:
-          'prose prose-sm sm:prose max-w-none focus:outline-none min-h-[400px] px-4 py-3',
+          'prose prose-sm sm:prose max-w-none focus:outline-hidden min-h-[400px] px-4 py-3',
       },
     },
     onUpdate: ({ editor }) => {

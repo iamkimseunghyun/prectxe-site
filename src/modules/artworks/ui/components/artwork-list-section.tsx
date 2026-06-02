@@ -32,7 +32,7 @@ const ArtworkListSection = async ({ artistId }: { artistId: string }) => {
             height={500}
             className="object-cover transition-transform group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
             <div className="absolute bottom-0 p-4 text-white">
               <h3 className="font-medium">{work.title}</h3>
               <p className="text-sm">{work.year}</p>

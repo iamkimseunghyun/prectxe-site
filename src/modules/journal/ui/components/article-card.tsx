@@ -20,7 +20,7 @@ export function ArticleCard({
 
   return (
     <Link href={`/journal/${article.slug}`} className="group block">
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
+      <div className="relative aspect-4/3 w-full overflow-hidden bg-neutral-100">
         <Image
           src={getImageUrl(article.cover || null, 'thumbnail')}
           alt={article.title}

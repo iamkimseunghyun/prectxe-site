@@ -19,7 +19,7 @@ const Header = () => {
 
   return (
     <header className="fixed right-4 top-20 z-50 md:top-24">
-      <div className="flex items-center gap-3 rounded-full bg-neutral-900/90 px-4 py-2 text-sm backdrop-blur-sm">
+      <div className="flex items-center gap-3 rounded-full bg-neutral-900/90 px-4 py-2 text-sm backdrop-blur-xs">
         <Link
           href="/admin"
           className="text-neutral-300 transition-colors hover:text-white"

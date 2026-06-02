@@ -50,7 +50,7 @@ export async function NowOnSaleSection() {
 
   return (
     <section className="bg-neutral-950 py-24 text-white md:py-32">
-      <div className="mx-auto max-w-screen-2xl px-6 md:px-12 lg:px-24">
+      <div className="mx-auto max-w-(--breakpoint-2xl) px-6 md:px-12 lg:px-24">
         <div className="mb-14 flex items-end justify-between gap-6 md:mb-20">
           <div>
             <p className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-neutral-500 md:mb-6">
@@ -84,7 +84,7 @@ export async function NowOnSaleSection() {
                 href={`/drops/${drop.slug}`}
                 className="group block"
               >
-                <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-neutral-900">
+                <div className="relative aspect-4/5 overflow-hidden rounded-xl bg-neutral-900">
                   {img ? (
                     <Image
                       src={getImageUrl(img, 'public')}
@@ -94,12 +94,12 @@ export async function NowOnSaleSection() {
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 to-neutral-900" />
+                    <div className="absolute inset-0 bg-linear-to-br from-neutral-800 to-neutral-900" />
                   )}
                   {status && (
                     <span
                       className={cn(
-                        'absolute left-4 top-4 rounded-full px-3 py-1 text-[11px] font-medium uppercase tracking-[0.15em] backdrop-blur-sm',
+                        'absolute left-4 top-4 rounded-full px-3 py-1 text-[11px] font-medium uppercase tracking-[0.15em] backdrop-blur-xs',
                         status.className
                       )}
                     >

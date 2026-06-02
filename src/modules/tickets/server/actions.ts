@@ -751,8 +751,7 @@ export async function cancelOrder(orderId: string) {
     where: { id: orderId },
     include: { items: true, payment: true, bankTransfer: true },
   });
-  if (!order)
-    return { success: false, error: SALES_TERMS.errorOrderNotFound };
+  if (!order) return { success: false, error: SALES_TERMS.errorOrderNotFound };
   if (order.status === 'cancelled' || order.status === 'refunded')
     return { success: false, error: SALES_TERMS.errorAlreadyCanceled };
 

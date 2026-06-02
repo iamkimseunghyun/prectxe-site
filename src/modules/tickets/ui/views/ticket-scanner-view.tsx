@@ -200,7 +200,7 @@ export function TicketScannerView({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-black text-white">
+    <div className="fixed inset-0 z-100 flex flex-col bg-black text-white">
       {/* Header */}
       <header className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <div className="min-w-0">
@@ -262,7 +262,7 @@ export function TicketScannerView({
       </div>
 
       {/* Result Sheet */}
-      <div className="border-t border-white/10 bg-black/95 backdrop-blur">
+      <div className="border-t border-white/10 bg-black/95 backdrop-blur-sm">
         {result ? (
           <ResultPanel
             result={result}

@@ -95,7 +95,7 @@ export function EstimatePrintView({ estimate }: Props) {
         }
       `}</style>
 
-      <div className="estimate-toolbar sticky top-0 z-20 flex items-center justify-between border-b bg-white px-6 py-3 shadow-sm">
+      <div className="estimate-toolbar sticky top-0 z-20 flex items-center justify-between border-b bg-white px-6 py-3 shadow-xs">
         <p className="text-sm text-muted-foreground">
           미리보기 · 인쇄(또는 PDF로 저장) 시 워터마크가 자동으로 사라집니다
         </p>
@@ -105,7 +105,7 @@ export function EstimatePrintView({ estimate }: Props) {
         </Button>
       </div>
 
-      <div className="estimate-print-page mx-auto my-8 max-w-[840px] bg-white p-12 shadow-sm print:my-0 print:max-w-full print:p-0 print:shadow-none">
+      <div className="estimate-print-page mx-auto my-8 max-w-[840px] bg-white p-12 shadow-xs print:my-0 print:max-w-full print:p-0 print:shadow-none">
         <div className="relative">
           {/* 워터마크 */}
           <div

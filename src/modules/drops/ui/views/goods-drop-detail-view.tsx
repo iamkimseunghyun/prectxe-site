@@ -96,7 +96,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
     <div className="min-h-screen bg-white">
       {/* Navigation */}
       <nav className="border-b">
-        <div className="mx-auto flex max-w-screen-2xl items-center px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-(--breakpoint-2xl) items-center px-4 py-3 sm:px-6">
           <Link
             href="/drops"
             className="inline-flex items-center gap-1.5 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
@@ -107,7 +107,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
         </div>
       </nav>
 
-      <div className="mx-auto max-w-screen-2xl px-4 sm:px-6">
+      <div className="mx-auto max-w-(--breakpoint-2xl) px-4 sm:px-6">
         <div className="lg:flex">
           {/* ── Image Gallery (left: 3/5) ── */}
           <div className="lg:basis-3/5 lg:border-r">
@@ -154,7 +154,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                         <button
                           type="button"
                           aria-label="이전"
-                          className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 text-neutral-600 backdrop-blur-sm transition-all hover:scale-110 hover:border-white hover:bg-white"
+                          className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 text-neutral-600 backdrop-blur-xs transition-all hover:scale-110 hover:border-white hover:bg-white"
                           onClick={(e) => {
                             e.stopPropagation();
                             setActiveMediaIndex(
@@ -167,7 +167,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                         <button
                           type="button"
                           aria-label="다음"
-                          className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 text-neutral-600 backdrop-blur-sm transition-all hover:scale-110 hover:border-white hover:bg-white"
+                          className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 text-neutral-600 backdrop-blur-xs transition-all hover:scale-110 hover:border-white hover:bg-white"
                           onClick={(e) => {
                             e.stopPropagation();
                             setActiveMediaIndex((i) => (i + 1) % totalMedia);
@@ -442,7 +442,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
 
       {/* Mobile Sticky Summary */}
       {isSaleActive && selected && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white/95 px-4 py-3 backdrop-blur-sm lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white/95 px-4 py-3 backdrop-blur-xs lg:hidden">
           <div className="flex items-center justify-between">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-neutral-900">

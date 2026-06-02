@@ -77,7 +77,7 @@ export function ScenarioColumns({ scenarios, rows, onChange }: Props) {
           <input
             value={s}
             onChange={(e) => rename(idx, e.target.value)}
-            className="w-20 bg-transparent text-xs outline-none"
+            className="w-20 bg-transparent text-xs outline-hidden"
           />
           {scenarios.length > 1 && (
             <button

@@ -70,7 +70,7 @@ export function PublicHeader() {
       >
         <div
           className={cn(
-            'mx-auto flex max-w-screen-2xl items-center justify-between px-6 py-5 md:px-12 md:py-6 lg:px-24',
+            'mx-auto flex max-w-(--breakpoint-2xl) items-center justify-between px-6 py-5 md:px-12 md:py-6 lg:px-24',
             isDarkOver ? 'text-white' : 'text-neutral-900'
           )}
         >
@@ -112,7 +112,7 @@ export function PublicHeader() {
       >
         <div
           className={cn(
-            'mx-auto flex h-full w-full max-w-screen-2xl flex-1 flex-col px-6 pt-28 pb-12 transition-transform duration-300 md:px-12 md:pt-36 md:pb-16 lg:px-24',
+            'mx-auto flex h-full w-full max-w-(--breakpoint-2xl) flex-1 flex-col px-6 pt-28 pb-12 transition-transform duration-300 md:px-12 md:pt-36 md:pb-16 lg:px-24',
             open ? 'translate-y-0' : '-translate-y-4'
           )}
         >
@@ -162,7 +162,7 @@ function NavColumn({
             <Link
               href={l.href}
               className={cn(
-                'group flex items-baseline gap-5 text-5xl font-light leading-[1] tracking-tight transition-colors md:text-7xl lg:text-[7.5rem]',
+                'group flex items-baseline gap-5 text-5xl font-light leading-none tracking-tight transition-colors md:text-7xl lg:text-[7.5rem]',
                 active ? 'text-white' : 'text-white/50 hover:text-white'
               )}
             >

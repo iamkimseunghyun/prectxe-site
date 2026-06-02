@@ -217,7 +217,7 @@ export default async function Page({
 
       {/* Hero — 가로 파노라마 full-bleed */}
       <section className="relative">
-        <div className="relative aspect-[16/9] w-full overflow-hidden bg-neutral-100 md:aspect-[21/9]">
+        <div className="relative aspect-video w-full overflow-hidden bg-neutral-100 md:aspect-21/9">
           {heroImage ? (
             <Image
               src={getImageUrl(heroImage.imageUrl, 'hires')}
@@ -233,7 +233,7 @@ export default async function Page({
             </div>
           )}
           {/* 하단 그라디언트 — 제목 가독성 */}
-          <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-2/5 bg-linear-to-t from-black/60 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 px-6 pb-10 md:px-10 md:pb-14">
             <div className="mx-auto max-w-6xl">
               <p className="text-xs font-medium uppercase tracking-[0.25em] text-white/70">

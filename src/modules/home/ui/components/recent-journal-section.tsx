@@ -23,7 +23,7 @@ export async function RecentJournalSection() {
 
   return (
     <section className="bg-white py-24 md:py-32">
-      <div className="mx-auto max-w-screen-2xl px-6 md:px-12 lg:px-24">
+      <div className="mx-auto max-w-(--breakpoint-2xl) px-6 md:px-12 lg:px-24">
         <div className="mb-14 flex items-end justify-between gap-6 md:mb-20">
           <div>
             <p className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-neutral-500 md:mb-6">
@@ -48,7 +48,7 @@ export async function RecentJournalSection() {
               href={`/journal/${article.slug}`}
               className="group block"
             >
-              <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-neutral-100">
+              <div className="relative aspect-4/3 overflow-hidden rounded-lg bg-neutral-100">
                 {article.cover ? (
                   <Image
                     src={getImageUrl(article.cover, 'public')}
@@ -58,7 +58,7 @@ export async function RecentJournalSection() {
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-neutral-200 to-neutral-100" />
+                  <div className="absolute inset-0 bg-linear-to-br from-neutral-200 to-neutral-100" />
                 )}
               </div>
 

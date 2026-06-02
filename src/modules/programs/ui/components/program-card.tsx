@@ -44,7 +44,7 @@ export function ProgramCard({
 
   return (
     <article className="group">
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
+      <div className="relative aspect-4/3 w-full overflow-hidden bg-neutral-100">
         <Image
           src={getImageUrl(program.heroUrl || null, 'smaller')}
           alt={program.title}
@@ -56,7 +56,7 @@ export function ProgramCard({
         {status && (
           <span
             className={cn(
-              'absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] backdrop-blur-sm',
+              'absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] backdrop-blur-xs',
               status.className
             )}
           >

@@ -66,14 +66,8 @@ export const SALES_TERMS = {
     '이미 처리된 주문입니다.',
     '이미 처리된 예약입니다.'
   ),
-  errorAlreadyCanceled: t(
-    '이미 취소된 주문입니다.',
-    '이미 취소된 예약입니다.'
-  ),
-  errorNotBankTransfer: t(
-    '무통장 주문이 아닙니다.',
-    '무통장 예약이 아닙니다.'
-  ),
+  errorAlreadyCanceled: t('이미 취소된 주문입니다.', '이미 취소된 예약입니다.'),
+  errorNotBankTransfer: t('무통장 주문이 아닙니다.', '무통장 예약이 아닙니다.'),
   errorCreateFailed: t(
     '주문 생성에 실패했습니다.',
     '예약 생성에 실패했습니다.'

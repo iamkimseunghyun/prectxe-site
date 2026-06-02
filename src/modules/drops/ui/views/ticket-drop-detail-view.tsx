@@ -119,12 +119,12 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900" />
+          <div className="absolute inset-0 bg-linear-to-br from-neutral-900 via-neutral-800 to-neutral-900" />
         )}
 
         {/* Gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-r from-black/30 to-transparent" />
 
         {/* Back */}
         <Link
@@ -281,7 +281,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                       <button
                         key={m.id}
                         type="button"
-                        className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-100 transition-opacity hover:opacity-90"
+                        className="group relative aspect-4/3 overflow-hidden rounded-xl bg-neutral-100 transition-opacity hover:opacity-90"
                         onClick={() => setLightboxIndex(idx)}
                       >
                         {m.type === 'image' ? (

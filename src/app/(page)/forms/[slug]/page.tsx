@@ -66,7 +66,7 @@ export default async function FormSubmitPage({ params }: PageProps) {
             priority
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-8">
             <div className="mx-auto max-w-3xl">
               <h1 className="mb-2 text-3xl font-bold text-white md:text-4xl">

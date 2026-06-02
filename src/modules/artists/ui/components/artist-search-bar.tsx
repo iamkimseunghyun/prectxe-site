@@ -32,7 +32,7 @@ export function ArtistSearchBar({ initialValue }: { initialValue: string }) {
           onChange={(e) => setValue(e.target.value)}
           placeholder="아티스트 이름 검색"
           aria-label="아티스트 검색"
-          className="h-12 w-full rounded-full border border-neutral-200 bg-transparent pl-11 pr-11 text-sm tracking-tight text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none"
+          className="h-12 w-full rounded-full border border-neutral-200 bg-transparent pl-11 pr-11 text-sm tracking-tight text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-hidden"
         />
         {value && (
           <button

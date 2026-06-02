@@ -48,7 +48,7 @@ export function NewsletterForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="your@email.com"
-        className="min-w-0 flex-1 border-b border-neutral-300 bg-transparent pb-1.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none"
+        className="min-w-0 flex-1 border-b border-neutral-300 bg-transparent pb-1.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-hidden"
         aria-label="이메일 주소"
         required
       />

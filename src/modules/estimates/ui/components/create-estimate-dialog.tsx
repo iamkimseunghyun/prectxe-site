@@ -237,7 +237,7 @@ export function CreateEstimateDialog({
                               toggle(row.id);
                             }
                           }}
-                          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           <Checkbox
                             checked={selectedIds.has(row.id)}

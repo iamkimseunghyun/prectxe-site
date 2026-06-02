@@ -18,7 +18,7 @@ const ArtistCard = ({ artist }: ArtistCardProps) => {
 
   return (
     <Link href={`/artists/${artist.id}`} className="group block">
-      <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-neutral-100">
+      <div className="relative aspect-4/5 overflow-hidden rounded-xl bg-neutral-100">
         {artist.mainImageUrl ? (
           <Image
             src={getImageUrl(artist.mainImageUrl, 'smaller')}

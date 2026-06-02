@@ -406,7 +406,7 @@ export function FormBuilderView({
           <div className="space-y-6">
             {/* Cover Image */}
             {(displayUrl || initialData?.coverImage) && (
-              <div className="relative aspect-[16/5] w-full overflow-hidden rounded-lg">
+              <div className="relative aspect-16/5 w-full overflow-hidden rounded-lg">
                 <Image
                   src={
                     displayUrl ||
@@ -417,7 +417,7 @@ export function FormBuilderView({
                   fill
                   className="object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                   <h1 className="mb-2 text-3xl font-bold">
                     {title || '제목 없음'}

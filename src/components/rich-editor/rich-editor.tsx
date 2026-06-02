@@ -33,7 +33,7 @@ export function RichEditor({
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        class: `prose prose-neutral dark:prose-invert max-w-none focus:outline-none px-4 py-3`,
+        class: `prose prose-neutral dark:prose-invert max-w-none focus:outline-hidden px-4 py-3`,
         style: `min-height: ${minHeight}`,
       },
     },

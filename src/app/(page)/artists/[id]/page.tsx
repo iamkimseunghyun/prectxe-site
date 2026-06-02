@@ -243,7 +243,7 @@ export default async function Page({
 
       {/* Hero — 2분할: 이미지 + 메타 */}
       <section className="mt-8 grid gap-10 md:mt-12 md:grid-cols-[1.05fr_1fr] md:gap-12 lg:gap-16">
-        <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-neutral-100">
+        <div className="relative aspect-3/4 overflow-hidden rounded-2xl bg-neutral-100">
           {artist.mainImageUrl ? (
             <Image
               src={getImageUrl(artist.mainImageUrl, 'public')}

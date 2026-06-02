@@ -33,7 +33,7 @@ export async function JournalDetailView({ slug }: { slug: string }) {
           author: article.author ?? undefined,
         }}
       />
-      <div className="relative mb-6 aspect-[16/9] w-full overflow-hidden rounded-lg">
+      <div className="relative mb-6 aspect-video w-full overflow-hidden rounded-lg">
         <Image
           src={cover}
           alt={article.title}

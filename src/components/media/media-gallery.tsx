@@ -33,9 +33,9 @@ const WIDTH_CLASS: Record<
 };
 
 const ASPECT_CLASS: Record<NonNullable<MediaGalleryProps['aspect']>, string> = {
-  '4/5': 'aspect-[4/5]',
+  '4/5': 'aspect-4/5',
   '1/1': 'aspect-square',
-  '3/4': 'aspect-[3/4]',
+  '3/4': 'aspect-3/4',
   '16/9': 'aspect-video',
 };
 
@@ -110,7 +110,7 @@ export function MediaGallery({
 
       {openIndex !== null && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-6 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-6 backdrop-blur-xs"
           onClick={(e) => {
             if (e.target === e.currentTarget) close();
           }}
@@ -158,7 +158,7 @@ export function MediaGallery({
           )}
           <div className="relative w-full max-w-5xl">
             {items[openIndex].type === 'image' ? (
-              <div className="relative mx-auto aspect-[4/5] max-h-[88vh] w-auto">
+              <div className="relative mx-auto aspect-4/5 max-h-[88vh] w-auto">
                 <Image
                   src={getImageUrl(items[openIndex].url, 'hires')}
                   alt={items[openIndex].alt || title}

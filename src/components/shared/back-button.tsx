@@ -14,7 +14,7 @@ export function BackButton({ className }: { className?: string }) {
       size="icon"
       onClick={() => router.back()}
       className={cn(
-        'sticky left-0 top-12 z-30 mb-4 hidden w-fit rounded-full bg-white/90 shadow-sm backdrop-blur-sm transition-all hover:bg-white hover:shadow-md md:flex',
+        'sticky left-0 top-12 z-30 mb-4 hidden w-fit rounded-full bg-white/90 shadow-xs backdrop-blur-xs transition-all hover:bg-white hover:shadow-md md:flex',
         className
       )}
       aria-label="뒤로 가기"

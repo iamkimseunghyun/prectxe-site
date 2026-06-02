@@ -381,7 +381,7 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
           <div className="overflow-hidden rounded-lg border bg-card">
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader className="sticky top-0 z-10 bg-muted/50 backdrop-blur">
+                <TableHeader className="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
                   <TableRow>
                     <TableHead className="w-12 text-center">#</TableHead>
                     <TableHead

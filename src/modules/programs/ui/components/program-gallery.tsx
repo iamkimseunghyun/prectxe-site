@@ -147,7 +147,7 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
             tabIndex={0}
             onClick={() => handleImageClick(i)}
             onKeyDown={(e) => e.key === 'Enter' && handleImageClick(i)}
-            className="group relative aspect-[4/3] w-64 shrink-0 overflow-hidden sm:w-72"
+            className="group relative aspect-4/3 w-64 shrink-0 overflow-hidden sm:w-72"
           >
             <Image
               src={getImageUrl(img.imageUrl, 'thumbnail')}
@@ -165,7 +165,7 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           showCloseButton={false}
-          className="border-none bg-background/95 p-0 shadow-none backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:max-w-5xl sm:rounded-xl md:max-w-6xl"
+          className="border-none bg-background/95 p-0 shadow-none backdrop-blur-sm supports-backdrop-filter:bg-background/80 sm:max-w-5xl sm:rounded-xl md:max-w-6xl"
         >
           <DialogHeader className="sr-only">
             <DialogTitle>Gallery</DialogTitle>
@@ -179,7 +179,7 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
               <CarouselContent className="ml-0 rounded-none">
                 {images.map((img, i) => (
                   <CarouselItem key={img.id} className="pl-0">
-                    <div className="relative aspect-[16/10.5] w-full overflow-hidden bg-black">
+                    <div className="relative aspect-16/10.5 w-full overflow-hidden bg-black">
                       <Image
                         src={getImageUrl(img.imageUrl, 'public')}
                         alt={img.alt}
@@ -195,7 +195,7 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
               <CarouselPrevious className="left-3 top-1/2 -translate-y-1/2 border-white/20 bg-black/40 text-white hover:bg-black/60" />
               <CarouselNext className="right-3 top-1/2 -translate-y-1/2 border-white/20 bg-black/40 text-white hover:bg-black/60" />
             </Carousel>
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-white">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 to-transparent p-4 text-white">
               <div className="mx-auto flex max-w-5xl items-end justify-between gap-3 text-xs sm:text-sm">
                 <span className="shrink-0 rounded bg-white/10 px-2 py-0.5">
                   {currentSlide + 1} / {images.length}

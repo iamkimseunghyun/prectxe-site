@@ -17,8 +17,8 @@ interface OptimizedImageProps extends HTMLAttributes<HTMLDivElement> {
 const aspectRatioClasses = {
   square: 'aspect-square',
   video: 'aspect-video',
-  portrait: 'aspect-[3/4]',
-  landscape: 'aspect-[4/3]',
+  portrait: 'aspect-3/4',
+  landscape: 'aspect-4/3',
 };
 
 export function OptimizedImage({

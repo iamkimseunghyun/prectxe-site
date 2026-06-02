@@ -1,7 +1,7 @@
 export function BrandStatementSection() {
   return (
     <section className="bg-white py-24 md:py-32 lg:py-40">
-      <div className="mx-auto max-w-screen-2xl px-6 md:px-12 lg:px-24">
+      <div className="mx-auto max-w-(--breakpoint-2xl) px-6 md:px-12 lg:px-24">
         <p className="mb-10 text-xs font-medium uppercase tracking-[0.25em] text-neutral-500 md:mb-14">
           About PRECTXE
         </p>

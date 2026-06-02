@@ -47,7 +47,7 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
         }}
       />
       {program.heroUrl && (
-        <div className="relative mb-6 aspect-[16/9] w-full overflow-hidden rounded-lg">
+        <div className="relative mb-6 aspect-video w-full overflow-hidden rounded-lg">
           <Image
             src={getImageUrl(program.heroUrl, 'public')}
             alt={program.title}

@@ -6,7 +6,7 @@ const SignInView = () => {
   return (
     <div className="relative isolate flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
       {/* Background */}
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-white to-gray-50" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-b from-white to-gray-50" />
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[400px] bg-[radial-gradient(60%_50%_at_50%_0%,rgba(59,130,246,0.08),transparent)]" />
 
       <Card className="w-full max-w-md border-zinc-200/60">

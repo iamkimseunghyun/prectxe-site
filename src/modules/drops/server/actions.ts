@@ -8,11 +8,7 @@ import {
   deleteCloudflareVideo,
 } from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
-import {
-  extractImageId,
-  extractVideoId,
-  parseKstDateInput,
-} from '@/lib/utils';
+import { extractImageId, extractVideoId, parseKstDateInput } from '@/lib/utils';
 
 // ─── Drop CRUD (Admin) ──────────────────────────────
 

@@ -104,7 +104,7 @@ export async function DropsListView({ type, page }: DropsListViewProps) {
                 href={`/drops/${drop.slug}`}
                 className="group block"
               >
-                <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-100">
+                <div className="relative aspect-4/3 overflow-hidden rounded-xl bg-neutral-100">
                   {heroImage ? (
                     <Image
                       src={getImageUrl(heroImage, 'public')}
@@ -127,7 +127,7 @@ export async function DropsListView({ type, page }: DropsListViewProps) {
                   {status && (
                     <span
                       className={cn(
-                        'absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] backdrop-blur-sm',
+                        'absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] backdrop-blur-xs',
                         status.className
                       )}
                     >
@@ -138,7 +138,7 @@ export async function DropsListView({ type, page }: DropsListViewProps) {
                   {/* 타입 뱃지 (우상단) */}
                   <Badge
                     variant="secondary"
-                    className="absolute right-3 top-3 bg-white/85 text-neutral-700 backdrop-blur-sm"
+                    className="absolute right-3 top-3 bg-white/85 text-neutral-700 backdrop-blur-xs"
                   >
                     {drop.type === 'ticket' ? '티켓' : '굿즈'}
                   </Badge>

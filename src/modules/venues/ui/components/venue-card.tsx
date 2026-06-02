@@ -24,7 +24,7 @@ export default function VenueCard({ venue }: VenueCardProps) {
 
   return (
     <Link href={`/venues/${venue.id}`} className="group block">
-      <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-neutral-100">
+      <div className="relative aspect-4/5 overflow-hidden rounded-xl bg-neutral-100">
         {firstImage ? (
           <Image
             src={getImageUrl(firstImage.imageUrl, 'smaller')}

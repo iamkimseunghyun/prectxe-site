@@ -125,7 +125,7 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
 
   if (isSubmitted) {
     return (
-      <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
+      <div className="rounded-lg border bg-white p-12 text-center shadow-xs">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
           <svg
             className="h-8 w-8 text-green-600"
@@ -158,7 +158,7 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
         return (
           <div
             key={field.id}
-            className="space-y-3 rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+            className="space-y-3 rounded-lg border bg-white p-6 shadow-xs transition-shadow hover:shadow-md"
           >
             <Label htmlFor={field.id} className="text-base font-medium">
               {field.label}
@@ -338,7 +338,7 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
         );
       })}
 
-      <div className="rounded-lg border bg-white p-6 shadow-sm">
+      <div className="rounded-lg border bg-white p-6 shadow-xs">
         <Button
           type="submit"
           disabled={isSubmitting}

@@ -110,7 +110,7 @@ export default async function Page({
       {/* Hero — 작품 이미지가 주인공: 중앙 정렬, 원본 비율 유지 */}
       <section className="mt-8 md:mt-12">
         <div className="mx-auto max-w-4xl">
-          <div className="relative flex aspect-[4/5] items-center justify-center overflow-hidden rounded-sm bg-neutral-50">
+          <div className="relative flex aspect-4/5 items-center justify-center overflow-hidden rounded-sm bg-neutral-50">
             {heroImage ? (
               <Image
                 src={getImageUrl(heroImage.imageUrl, 'hires')}

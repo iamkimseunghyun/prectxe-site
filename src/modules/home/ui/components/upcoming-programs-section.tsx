@@ -58,7 +58,7 @@ export async function UpcomingProgramsSection() {
 
   return (
     <section className="bg-white py-24 md:py-32">
-      <div className="mx-auto max-w-screen-2xl px-6 md:px-12 lg:px-24">
+      <div className="mx-auto max-w-(--breakpoint-2xl) px-6 md:px-12 lg:px-24">
         <div className="mb-14 flex items-end justify-between gap-6 md:mb-20">
           <div>
             <p className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-neutral-500 md:mb-6">
@@ -94,7 +94,7 @@ export async function UpcomingProgramsSection() {
                 href={`/programs/${program.slug}`}
                 className="group block"
               >
-                <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-neutral-100">
+                <div className="relative aspect-4/5 overflow-hidden rounded-lg bg-neutral-100">
                   {program.heroUrl ? (
                     <Image
                       src={getImageUrl(program.heroUrl, 'public')}
@@ -104,12 +104,12 @@ export async function UpcomingProgramsSection() {
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-neutral-200 to-neutral-100" />
+                    <div className="absolute inset-0 bg-linear-to-br from-neutral-200 to-neutral-100" />
                   )}
                   {STATUS_STYLE[program.status] && (
                     <span
                       className={cn(
-                        'absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] backdrop-blur-sm',
+                        'absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] backdrop-blur-xs',
                         STATUS_STYLE[program.status].className
                       )}
                     >

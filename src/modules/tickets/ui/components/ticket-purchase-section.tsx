@@ -490,8 +490,8 @@ export function TicketPurchaseSection({
                 <span className="font-medium text-neutral-900">
                   PRECTXE의 다음 공연·기획 소식 받기 (선택)
                 </span>{' '}
-                — 새로운 소식을 가장 먼저 알려드립니다. 언제든 메일 하단
-                링크로 구독 해지 가능.
+                — 새로운 소식을 가장 먼저 알려드립니다. 언제든 메일 하단 링크로
+                구독 해지 가능.
               </span>
             </label>
 

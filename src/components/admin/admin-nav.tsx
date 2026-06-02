@@ -113,7 +113,7 @@ export function AdminNav() {
                 'inline-flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all',
                 'hover:bg-background/50',
                 isActive
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-background text-foreground shadow-xs'
                   : 'text-muted-foreground'
               )}
             >

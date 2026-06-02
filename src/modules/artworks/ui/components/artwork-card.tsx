@@ -30,7 +30,7 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
 
   return (
     <Link href={`/artworks/${artwork.id}`} className="group block">
-      <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-neutral-100">
+      <div className="relative aspect-4/5 overflow-hidden rounded-xl bg-neutral-100">
         {firstImage ? (
           <Image
             src={getImageUrl(firstImage.imageUrl, 'smaller')}
