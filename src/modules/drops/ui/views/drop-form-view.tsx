@@ -11,6 +11,7 @@ import {
 import { RichEditor } from '@/components/rich-editor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -120,6 +121,7 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
   const isEdit = !!drop;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [description, setDescription] = useState(drop?.description ?? '');
 
   // Select 상태 (controlled — Radix name prop이 React 19 form에서 무한루프 유발)
@@ -325,7 +327,8 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
   }
 
   async function handleDelete() {
-    if (!drop || !confirm('이 Drop을 삭제하시겠습니까?')) return;
+    if (!drop) return;
+    setShowDeleteDialog(false);
     setIsDeleting(true);
     const result = await deleteDrop(drop.id);
     if (result.success) {
@@ -677,7 +680,7 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
                     type="button"
                     variant="destructive"
                     className="w-full"
-                    onClick={handleDelete}
+                    onClick={() => setShowDeleteDialog(true)}
                     disabled={isDeleting}
                   >
                     {isDeleting ? '삭제 중...' : '삭제'}
@@ -688,6 +691,16 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
           </div>
         </div>
       </form>
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Drop 삭제"
+        description="이 Drop을 삭제하시겠습니까? 되돌릴 수 없습니다."
+        confirmText="삭제"
+        variant="destructive"
+        onConfirm={handleDelete}
+        disabled={isDeleting}
+      />
     </div>
   );
 }

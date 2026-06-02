@@ -18,6 +18,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
   Select,
   SelectContent,
@@ -96,6 +97,7 @@ export function DropDetailView({ dropId }: { dropId: string }) {
   const [loading, setLoading] = useState(true);
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [statusValue, setStatusValue] = useState('draft');
 
   const loadData = useCallback(async () => {
@@ -129,7 +131,8 @@ export function DropDetailView({ dropId }: { dropId: string }) {
   }
 
   async function handleDelete() {
-    if (!drop || !confirm('이 Drop을 삭제하시겠습니까?')) return;
+    if (!drop) return;
+    setShowDeleteDialog(false);
     setIsDeleting(true);
     const result = await deleteDrop(drop.id);
     if (result.success) {
@@ -353,7 +356,7 @@ export function DropDetailView({ dropId }: { dropId: string }) {
                 type="button"
                 variant="destructive"
                 className="w-full"
-                onClick={handleDelete}
+                onClick={() => setShowDeleteDialog(true)}
                 disabled={isDeleting}
               >
                 {isDeleting ? '삭제 중...' : '삭제'}
@@ -423,6 +426,16 @@ export function DropDetailView({ dropId }: { dropId: string }) {
           </Card>
         </div>
       </div>
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Drop 삭제"
+        description="이 Drop을 삭제하시겠습니까? 되돌릴 수 없습니다."
+        confirmText="삭제"
+        variant="destructive"
+        onConfirm={handleDelete}
+        disabled={isDeleting}
+      />
     </div>
   );
 }
