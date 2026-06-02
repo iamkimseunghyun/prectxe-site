@@ -165,7 +165,7 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           showCloseButton={false}
-          className="border-none bg-background/95 p-0 shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:max-w-5xl sm:rounded-xl md:max-w-6xl"
+          className="border-none bg-background/95 p-0 shadow-none backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:max-w-5xl sm:rounded-xl md:max-w-6xl"
         >
           <DialogHeader className="sr-only">
             <DialogTitle>Gallery</DialogTitle>
