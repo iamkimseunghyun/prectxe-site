@@ -10,7 +10,7 @@ import {
   numberToKoreanAmount,
 } from '@/lib/estimates/calc';
 import type { LineItem, Recipient } from '@/lib/schemas/estimate';
-import { getImageUrl } from '@/lib/utils';
+import { formatKstDate, getImageUrl } from '@/lib/utils';
 
 interface SupplierSnapshot {
   companyName: string;
@@ -37,12 +37,6 @@ interface Props {
     lineItems: LineItem[];
     notes: string | null;
   };
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return '-';
-  const d = new Date(iso);
-  return `${d.getFullYear()}년 ${String(d.getMonth() + 1).padStart(2, '0')}월 ${String(d.getDate()).padStart(2, '0')}일`;
 }
 
 export function EstimatePrintView({ estimate }: Props) {
@@ -132,12 +126,14 @@ export function EstimatePrintView({ estimate }: Props) {
                 </p>
                 <p className="mt-1">
                   <span className="text-muted-foreground">발행일자</span>{' '}
-                  {formatDate(estimate.issueDate)}
+                  {formatKstDate(new Date(estimate.issueDate))}
                 </p>
                 {estimate.validUntil && (
                   <p className="mt-1">
                     <span className="text-muted-foreground">유효기간</span>{' '}
-                    {formatDate(estimate.validUntil)}
+                    {estimate.validUntil
+                      ? formatKstDate(new Date(estimate.validUntil))
+                      : '-'}
                   </p>
                 )}
               </div>

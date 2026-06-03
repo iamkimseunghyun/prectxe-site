@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FilterChip } from '@/components/shared/filter-chip';
 import { Badge } from '@/components/ui/badge';
-import { getImageUrl } from '@/lib/utils';
+import { formatKstDate, getImageUrl } from '@/lib/utils';
 import { listArticles } from '@/modules/journal/server/actions';
 import { ArticleCard } from '@/modules/journal/ui/components/article-card';
 
@@ -83,11 +83,7 @@ export async function JournalListView({ tag }: { tag?: string }) {
                 )}
                 {hero.publishedAt && (
                   <p className="mt-6 text-sm text-neutral-400">
-                    {new Date(hero.publishedAt).toLocaleDateString('ko-KR', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+                    {formatKstDate(new Date(hero.publishedAt))}
                   </p>
                 )}
               </div>

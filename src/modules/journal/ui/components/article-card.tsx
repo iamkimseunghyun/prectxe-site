@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import { getImageUrl } from '@/lib/utils';
+import { formatKstDate, getImageUrl } from '@/lib/utils';
 
 export function ArticleCard({
   article,
@@ -15,7 +15,7 @@ export function ArticleCard({
   };
 }) {
   const date = article.publishedAt
-    ? new Date(article.publishedAt).toLocaleDateString('ko-KR')
+    ? formatKstDate(new Date(article.publishedAt))
     : '';
 
   return (

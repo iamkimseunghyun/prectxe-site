@@ -3,7 +3,7 @@ import Link from 'next/link';
 import ArticleSchema from '@/components/seo/article-schema';
 import { BackButton } from '@/components/shared/back-button';
 import { CopyUrlButton } from '@/components/shared/copy-url-button';
-import { getImageUrl } from '@/lib/utils';
+import { formatKstDate, getImageUrl } from '@/lib/utils';
 import { getArticleBySlug } from '@/modules/journal/server/actions';
 
 export async function JournalDetailView({ slug }: { slug: string }) {
@@ -17,7 +17,7 @@ export async function JournalDetailView({ slug }: { slug: string }) {
 
   const cover = getImageUrl(article.cover || null, 'public');
   const date = article.publishedAt
-    ? new Date(article.publishedAt).toLocaleDateString('ko-KR')
+    ? formatKstDate(new Date(article.publishedAt))
     : undefined;
 
   return (

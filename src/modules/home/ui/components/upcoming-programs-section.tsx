@@ -2,7 +2,7 @@ import { ArrowUpRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { prisma } from '@/lib/db/prisma';
-import { cn, formatEventDate, getImageUrl } from '@/lib/utils';
+import { cn, formatKstDateRange, getImageUrl } from '@/lib/utils';
 
 const PROGRAM_SELECT = {
   slug: true,
@@ -79,7 +79,7 @@ export async function UpcomingProgramsSection() {
         <div className="grid gap-10 md:grid-cols-3 md:gap-8">
           {programs.map((program) => {
             const dateLabel = program.startAt
-              ? formatEventDate(
+              ? formatKstDateRange(
                   program.startAt,
                   program.endAt ?? program.startAt
                 )

@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
+import { formatKstDate } from '@/lib/utils';
 import { toggleArticleFeatured } from '@/modules/journal/server/actions';
 
 type Article = {
@@ -73,7 +74,7 @@ export function ArticleTable({ data }: ArticleTableProps) {
                   </TableCell>
                   <TableCell>
                     {item.publishedAt
-                      ? new Date(item.publishedAt).toLocaleDateString('ko-KR')
+                      ? formatKstDate(new Date(item.publishedAt))
                       : '미발행'}
                   </TableCell>
                   <TableCell>

@@ -8,7 +8,7 @@ import { MediaGallery } from '@/components/media/media-gallery';
 import VenueSchema from '@/components/seo/venue-schema';
 import { Badge } from '@/components/ui/badge';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
-import { getImageUrl } from '@/lib/utils';
+import { formatKstDateRange, getImageUrl } from '@/lib/utils';
 import { getVenueById, getVenueEvents } from '@/modules/venues/server/actions';
 
 export async function generateMetadata({
@@ -55,14 +55,6 @@ export async function generateMetadata({
   };
 }
 
-function formatEventDate(startAt: Date | null, endAt: Date | null) {
-  if (!startAt) return null;
-  const fmt = (d: Date) =>
-    d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-  if (!endAt) return fmt(startAt);
-  return `${fmt(startAt)} — ${fmt(endAt)}`;
-}
-
 function SectionHeading({ eyebrow }: { eyebrow: string }) {
   return (
     <h2 className="mb-8 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400 md:mb-10">
@@ -96,10 +88,14 @@ type TimelineItem =
 function EventCard({ item }: { item: TimelineItem }) {
   const href =
     item.kind === 'program' ? `/programs/${item.slug}` : `/drops/${item.slug}`;
-  const dateStr =
-    item.kind === 'program'
-      ? formatEventDate(item.startAt, item.endAt)
-      : formatEventDate(item.eventDate, item.eventEndDate);
+  const startDate = item.kind === 'program' ? item.startAt : item.eventDate;
+  const endDate = item.kind === 'program' ? item.endAt : item.eventEndDate;
+  const dateStr = startDate
+    ? formatKstDateRange(
+        new Date(startDate),
+        endDate ? new Date(endDate) : null
+      )
+    : null;
   const badgeLabel = item.kind === 'program' ? 'Program' : 'Drop';
 
   return (

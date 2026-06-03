@@ -36,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { formatKstDateTime } from '@/lib/utils';
 
 interface SubmissionsViewProps {
   data: {
@@ -183,13 +184,7 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
     return submissions.map((submission) => {
       const row: Record<string, string> = {
         id: submission.id,
-        제출시간: new Date(submission.submittedAt).toLocaleString('ko-KR', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        제출시간: formatKstDateTime(new Date(submission.submittedAt)),
       };
 
       allFields.forEach((field) => {
@@ -560,8 +555,8 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
                   <div>
                     <p className="text-muted-foreground">제출 시간</p>
                     <p className="font-medium">
-                      {new Date(selectedSubmission.submittedAt).toLocaleString(
-                        'ko-KR'
+                      {formatKstDateTime(
+                        new Date(selectedSubmission.submittedAt)
                       )}
                     </p>
                   </div>

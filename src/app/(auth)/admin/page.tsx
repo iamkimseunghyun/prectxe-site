@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { AdminStatsCard } from '@/components/admin/admin-stats-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { prisma } from '@/lib/db/prisma';
-import { getImageUrl } from '@/lib/utils';
+import { formatKstDate, getImageUrl } from '@/lib/utils';
 
 export default async function Page() {
   // Stats (safe fallbacks when DB empty or unavailable)
@@ -299,7 +299,7 @@ export default async function Page() {
                       <p className="truncate text-sm font-medium">{a.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {a.publishedAt
-                          ? new Date(a.publishedAt).toLocaleDateString('ko-KR')
+                          ? formatKstDate(new Date(a.publishedAt))
                           : '미발행'}
                       </p>
                     </div>

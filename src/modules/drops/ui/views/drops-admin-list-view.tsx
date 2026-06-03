@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { formatKstDate } from '@/lib/utils';
 import { listAdminDrops } from '@/modules/drops/server/actions';
 import { DropStatusBadge } from '@/modules/drops/ui/components/status-badges';
 
@@ -117,7 +118,7 @@ export function DropsAdminListView({ page }: { page: number }) {
                         {revenue.toLocaleString()}원
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(drop.updatedAt).toLocaleDateString('ko-KR')}
+                        {formatKstDate(new Date(drop.updatedAt))}
                       </p>
                     </div>
                   </CardContent>

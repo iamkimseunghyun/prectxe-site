@@ -7,6 +7,7 @@ import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { formatKstDate } from '@/lib/utils';
 import {
   createBlankEstimate,
   deleteEstimate,
@@ -183,12 +184,10 @@ export function EstimateDashboardView({
                     {e.total.toLocaleString('ko-KR')}원
                   </td>
                   <td className="px-3 py-2 text-xs text-muted-foreground">
-                    {new Date(e.issueDate).toLocaleDateString('ko-KR')}
+                    {formatKstDate(new Date(e.issueDate))}
                   </td>
                   <td className="px-3 py-2 text-xs text-muted-foreground">
-                    {e.validUntil
-                      ? new Date(e.validUntil).toLocaleDateString('ko-KR')
-                      : '-'}
+                    {e.validUntil ? formatKstDate(new Date(e.validUntil)) : '-'}
                   </td>
                   <td className="px-3 py-2 text-xs">
                     {e.sourceSheet ? (

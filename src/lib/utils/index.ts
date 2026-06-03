@@ -11,10 +11,10 @@
  */
 export { cn } from './cn';
 export {
-  formatDate,
   formatDateForForm,
   formatDateForInput,
-  formatEventDate,
+  formatKstDate,
+  formatKstDateRange,
   formatKstDateTime,
   formatKstEventRange,
   isSameDay,

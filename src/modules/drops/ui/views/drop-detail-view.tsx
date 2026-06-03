@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { formatKstDateTime } from '@/lib/utils';
 import {
   deleteDrop,
   getDrop,
@@ -408,7 +409,7 @@ export function DropDetailView({ dropId }: { dropId: string }) {
                 <div>
                   <p className="text-xs text-muted-foreground">공개일</p>
                   <p className="mt-0.5">
-                    {new Date(drop.publishedAt).toLocaleString('ko-KR')}
+                    {formatKstDateTime(new Date(drop.publishedAt))}
                   </p>
                 </div>
               )}

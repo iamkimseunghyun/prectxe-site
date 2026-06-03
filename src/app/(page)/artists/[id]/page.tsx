@@ -9,7 +9,7 @@ import ArtistSchema from '@/components/seo/artist-schema';
 import { Badge } from '@/components/ui/badge';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { prisma } from '@/lib/db/prisma';
-import { formatArtistName, getImageUrl } from '@/lib/utils';
+import { formatArtistName, formatKstDateRange, getImageUrl } from '@/lib/utils';
 import { getArtistById } from '@/modules/artists/server/actions';
 import type { ArtistProgramCredit } from '@/modules/artists/server/types';
 import { ArtistCv } from '@/modules/artists/ui/components/artist-cv';
@@ -67,21 +67,14 @@ export async function generateMetadata({
   };
 }
 
-function formatProgramDate(startAt: Date | null, endAt: Date | null) {
-  if (!startAt) return null;
-  const fmt = (d: Date) =>
-    d.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  if (!endAt) return fmt(startAt);
-  return `${fmt(startAt)} — ${fmt(endAt)}`;
-}
-
 function ProgramCard({ credit }: { credit: ArtistProgramCredit }) {
   const { program, role } = credit;
-  const dateStr = formatProgramDate(program.startAt, program.endAt);
+  const dateStr = program.startAt
+    ? formatKstDateRange(
+        new Date(program.startAt),
+        program.endAt ? new Date(program.endAt) : null
+      )
+    : null;
   const location = [program.venue, program.city].filter(Boolean).join(', ');
 
   return (

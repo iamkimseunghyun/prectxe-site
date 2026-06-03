@@ -4,6 +4,7 @@ import { Camera, CheckCircle2, RotateCcw, X, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { formatKstDateTime } from '@/lib/utils';
 import { extractTicketToken } from '@/lib/utils/ticket-token';
 import {
   checkInTicket,
@@ -331,10 +332,7 @@ function ResultPanel({
               ? '입장 완료'
               : `이미 입장됨${
                   result.checkedInAt
-                    ? ` · ${new Date(result.checkedInAt).toLocaleTimeString(
-                        'ko-KR',
-                        { hour: '2-digit', minute: '2-digit' }
-                      )}`
+                    ? ` · ${formatKstDateTime(new Date(result.checkedInAt))}`
                     : ''
                 }`}
           </p>
