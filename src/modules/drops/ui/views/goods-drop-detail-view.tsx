@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { CloudflareStreamVideo } from '@/components/media/cloudflare-stream-video';
+import { ShareButton } from '@/components/shared/share-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { trackViewItem } from '@/lib/analytics/gtag';
@@ -104,6 +105,13 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
             <ArrowLeft className="h-4 w-4" />
             <span>Drops</span>
           </Link>
+          <ShareButton
+            title={drop.title}
+            text={drop.summary}
+            label="공유"
+            iconClassName="h-4 w-4"
+            className="ml-auto inline-flex items-center gap-1.5 rounded text-sm text-neutral-500 transition-colors hover:text-neutral-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
         </div>
       </nav>
 

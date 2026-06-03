@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { CloudflareStreamVideo } from '@/components/media/cloudflare-stream-video';
+import { ShareButton } from '@/components/shared/share-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { trackViewItem } from '@/lib/analytics/gtag';
 import { artistInitials, formatArtistName, getImageUrl } from '@/lib/utils';
@@ -134,6 +135,13 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
+
+        {/* Share */}
+        <ShareButton
+          title={drop.title}
+          text={drop.summary}
+          className="absolute right-5 top-5 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/30 text-white/80 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/50"
+        />
 
         {/* Hero Content */}
         <div className="relative z-10 w-full px-6 pb-16 pt-[60vh] sm:px-10 lg:px-20">
