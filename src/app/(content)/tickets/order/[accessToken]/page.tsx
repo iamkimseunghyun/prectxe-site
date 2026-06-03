@@ -152,7 +152,7 @@ export default async function OrderTicketsPage({
                       {ticket.ticketTier?.name ?? '티켓'}
                     </p>
                     {ticket.ticketTier?.description && (
-                      <div className="prose prose-invert prose-sm mt-1 max-w-none text-white/60 leading-relaxed">
+                      <div className="prose prose-invert prose-sm mt-1 max-w-none text-white/60 leading-relaxed prose-p:my-0">
                         <ReactMarkdown>
                           {ticket.ticketTier.description}
                         </ReactMarkdown>
