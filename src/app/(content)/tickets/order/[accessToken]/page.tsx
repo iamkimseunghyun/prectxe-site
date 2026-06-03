@@ -2,6 +2,7 @@ import { CheckCircle2, XCircle } from 'lucide-react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import QRCode from 'qrcode';
+import ReactMarkdown from 'react-markdown';
 import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { prisma } from '@/lib/db/prisma';
 import { getTicketScanUrl } from '@/lib/utils/ticket-token';
@@ -151,9 +152,11 @@ export default async function OrderTicketsPage({
                       {ticket.ticketTier?.name ?? '티켓'}
                     </p>
                     {ticket.ticketTier?.description && (
-                      <p className="mt-1 text-xs leading-relaxed text-white/60">
-                        {ticket.ticketTier.description}
-                      </p>
+                      <div className="prose prose-invert prose-sm mt-1 max-w-none text-white/60 leading-relaxed">
+                        <ReactMarkdown>
+                          {ticket.ticketTier.description}
+                        </ReactMarkdown>
+                      </div>
                     )}
 
                     <div
