@@ -2,15 +2,19 @@
 
 import { ArrowLeft, ChevronDown, Play } from 'lucide-react';
 import Image from 'next/image';
-import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { CloudflareStreamVideo } from '@/components/media/cloudflare-stream-video';
+import { SaleCountdown } from '@/components/shared/sale-countdown';
 import { ShareButton } from '@/components/shared/share-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { trackViewItem } from '@/lib/analytics/gtag';
 import { artistInitials, formatArtistName, getImageUrl } from '@/lib/utils';
-import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
+import {
+  getDropSaleWindow,
+  getEffectiveTierStatus,
+} from '@/lib/utils/ticket-status';
 import { MediaLightbox } from '@/modules/drops/ui/components/media-lightbox';
 import { TicketPurchaseSection } from '@/modules/tickets/ui/components/ticket-purchase-section';
 
@@ -95,6 +99,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
 
   const isClosed = drop.status === 'closed';
   const isSoldOut = drop.status === 'sold_out';
+  const saleWindow = getDropSaleWindow(drop.ticketTiers);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -150,6 +155,15 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
             <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
               {isClosed ? 'Closed' : isSoldOut ? 'Sold Out' : 'Now Available'}
             </p>
+
+            {!isClosed && !isSoldOut && (
+              <SaleCountdown
+                tone="dark"
+                saleStartIso={saleWindow.saleStart?.toISOString() ?? null}
+                saleEndIso={saleWindow.saleEnd?.toISOString() ?? null}
+                className="mb-5"
+              />
+            )}
 
             <h1 className="max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
               {drop.title}

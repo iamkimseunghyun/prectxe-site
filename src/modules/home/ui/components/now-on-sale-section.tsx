@@ -1,8 +1,10 @@
 import { ArrowUpRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { SaleCountdown } from '@/components/shared/sale-countdown';
 import { prisma } from '@/lib/db/prisma';
 import { cn, getImageUrl } from '@/lib/utils';
+import { getDropSaleWindow } from '@/lib/utils/ticket-status';
 
 const STATUS_LABEL: Record<string, { label: string; className: string }> = {
   on_sale: {
@@ -41,7 +43,9 @@ export async function NowOnSaleSection() {
         take: 1,
         select: { url: true },
       },
-      ticketTiers: { select: { price: true } },
+      ticketTiers: {
+        select: { price: true, saleStart: true, saleEnd: true },
+      },
       variants: { select: { price: true } },
     },
   });
@@ -77,6 +81,7 @@ export async function NowOnSaleSection() {
                 : drop.variants.map((v) => v.price);
             const minPrice = prices.length > 0 ? Math.min(...prices) : null;
             const status = STATUS_LABEL[drop.status];
+            const saleWindow = getDropSaleWindow(drop.ticketTiers);
 
             return (
               <Link
@@ -117,6 +122,12 @@ export async function NowOnSaleSection() {
                       {drop.summary}
                     </p>
                   )}
+                  <SaleCountdown
+                    tone="dark"
+                    saleStartIso={saleWindow.saleStart?.toISOString() ?? null}
+                    saleEndIso={saleWindow.saleEnd?.toISOString() ?? null}
+                    className="pt-1"
+                  />
                   {minPrice !== null && (
                     <p className="pt-1 text-sm font-medium text-white">
                       {minPrice === 0
