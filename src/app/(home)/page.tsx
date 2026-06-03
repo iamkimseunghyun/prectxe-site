@@ -14,10 +14,10 @@ export default function Home() {
         <BrandStatementSection />
       </FadeIn>
       <FadeIn>
-        <UpcomingProgramsSection />
+        <NowOnSaleSection />
       </FadeIn>
       <FadeIn>
-        <NowOnSaleSection />
+        <UpcomingProgramsSection />
       </FadeIn>
       <FadeIn>
         <RecentJournalSection />
