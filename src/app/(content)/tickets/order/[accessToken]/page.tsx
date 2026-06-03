@@ -157,7 +157,7 @@ export default async function OrderTicketsPage({
                     )}
 
                     <div
-                      className={`mx-auto mt-5 aspect-square max-w-[280px] rounded-xl bg-white p-3 ${
+                      className={`mx-auto mt-5 aspect-square max-w-[280px] overflow-hidden rounded-xl bg-white p-3 [&>svg]:h-auto [&>svg]:w-full ${
                         isCancelled || isCheckedIn ? 'grayscale' : ''
                       }`}
                       // biome-ignore lint/security/noDangerouslySetInnerHtml: 서버에서 생성한 신뢰 가능한 SVG
