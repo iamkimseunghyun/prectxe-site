@@ -54,6 +54,7 @@ const WEEKDAYS_KR = ['일', '월', '화', '수', '목', '금', '토'];
  * withYear=false면 연도를 생략.
  */
 export const formatKstDateTime = (date: Date, withYear = true): string => {
+  if (Number.isNaN(date.getTime())) return '';
   const kst = new Date(date.getTime() + 9 * 3600 * 1000);
   const y = kst.getUTCFullYear();
   const mo = kst.getUTCMonth() + 1;
@@ -71,7 +72,10 @@ export const formatKstDateTime = (date: Date, withYear = true): string => {
 /** 시작~종료 KST 이벤트 범위 문자열. 종료가 없으면 시작만 반환. */
 export const formatKstEventRange = (start: Date, end?: Date | null): string => {
   const s = formatKstDateTime(start, true);
-  return end ? `${s} ~ ${formatKstDateTime(end, false)}` : s;
+  if (!s) return '';
+  if (!end) return s;
+  const e = formatKstDateTime(end, false);
+  return e ? `${s} ~ ${e}` : s;
 };
 
 /**
