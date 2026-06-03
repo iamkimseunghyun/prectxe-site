@@ -90,6 +90,11 @@ function CloudflareHlsPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
 
+  // muted를 ref로 추적 → tryPlay가 항상 최신 값을 읽으면서도 muted 토글이
+  // 플레이어 재초기화(HLS 인스턴스 파괴·스트림 재로드)를 유발하지 않게 한다.
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
+
   const hlsSrc = `${videoUrl}/manifest/video.m3u8`;
 
   // iOS Safari / 모바일 Chrome 자동재생: muted가 DOM property로 설정돼 있어야
@@ -103,19 +108,22 @@ function CloudflareHlsPlayer({
     const video = videoRef.current;
     if (!video) return;
 
+    const controller = new AbortController();
+    const { signal } = controller;
+
     // URL 직접 진입(하드 로드)은 user activation이 없어 muted 상태에서만
     // 자동재생이 허용된다. play() 직전에 muted를 동기적으로 다시 보장하고,
     // 첫 시도가 거부되면 미디어가 재생 준비됐을 때(canplay) 한 번 더 시도한다.
     // (목록 클릭 진입은 탭 제스처로 정책이 느슨해 재시도 없이도 재생됐음)
     const tryPlay = () => {
       if (!autoPlay) return;
-      if (muted) video.muted = true;
+      if (mutedRef.current) video.muted = true;
       video.play().catch(() => {
         const retry = () => {
-          if (muted) video.muted = true;
+          if (mutedRef.current) video.muted = true;
           video.play().catch(() => {});
         };
-        video.addEventListener('canplay', retry, { once: true });
+        video.addEventListener('canplay', retry, { once: true, signal });
       });
     };
 
@@ -123,7 +131,7 @@ function CloudflareHlsPlayer({
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = hlsSrc;
       tryPlay();
-      return;
+      return () => controller.abort();
     }
 
     // Firefox 등 — hls.js 동적 import (번들에 포함되지 않음)
@@ -152,9 +160,10 @@ function CloudflareHlsPlayer({
     });
 
     return () => {
+      controller.abort();
       if (hls) hls.destroy();
     };
-  }, [hlsSrc, autoPlay, onError, muted]);
+  }, [hlsSrc, autoPlay, onError]);
 
   if (failed) return null;
 
