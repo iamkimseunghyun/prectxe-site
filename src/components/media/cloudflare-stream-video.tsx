@@ -121,19 +121,31 @@ function CloudflareHlsPlayer({
     // 여도 사용자 제스처 없이는 play()를 거부한다. (목록 클릭 진입은 탭 제스처가
     // 남아 통과됨 — 이게 진입 경로별로 갈리던 원인)
     // 1) 즉시 시도 → 2) 미디어 준비(canplay) 시 재시도 → 3) 첫 사용자 제스처 시 재생.
+    // 어느 하나로 재생에 성공하면 나머지 폴백 리스너는 즉시 일괄 정리한다
+    // (성공 후 스크롤·터치마다 중복 play() 호출 방지). 언마운트 시엔 메인
+    // signal이 폴백 컨트롤러까지 함께 정리한다.
     const tryPlay = () => {
       if (!autoPlay) return;
       play().catch(() => {
-        video.addEventListener('canplay', () => play().catch(() => {}), {
+        const fallback = new AbortController();
+        signal.addEventListener('abort', () => fallback.abort(), {
           once: true,
-          signal,
         });
-        const onGesture = () => play().catch(() => {});
+        const retry = () => {
+          play().then(
+            () => fallback.abort(),
+            () => {}
+          );
+        };
+        video.addEventListener('canplay', retry, {
+          once: true,
+          signal: fallback.signal,
+        });
         for (const ev of ['touchstart', 'pointerdown', 'click', 'scroll']) {
-          document.addEventListener(ev, onGesture, {
+          document.addEventListener(ev, retry, {
             once: true,
             passive: true,
-            signal,
+            signal: fallback.signal,
           });
         }
       });
