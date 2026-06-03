@@ -49,7 +49,14 @@ export function PublicHeader() {
     };
   }, [open]);
 
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/auth')) {
+  // drop 상세(/drops/[slug])는 이머시브 히어로가 자체 상단 컨트롤(back·share)을
+  // 가지므로 전역 헤더를 숨긴다. fixed 헤더가 히어로 모서리 버튼 위를 덮어
+  // 클릭을 가로채는 충돌 방지. (목록 /drops 는 제외)
+  if (
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/auth') ||
+    (pathname ? /^\/drops\/[^/]+/.test(pathname) : false)
+  ) {
     return null;
   }
 
