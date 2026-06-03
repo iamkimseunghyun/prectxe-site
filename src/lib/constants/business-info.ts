@@ -15,3 +15,9 @@ export const BUSINESS_INFO = {
   serviceName: 'PRECTXE',
   serviceUrl: 'https://www.prectxe.com',
 } as const;
+
+/** 새 무통장 주문 발생 시 알림 메일을 받을 운영자 주소 */
+export const ORDER_NOTIFICATION_EMAILS = [
+  'ryu@laaf.kr',
+  'kaka@laaf.kr',
+] as const;

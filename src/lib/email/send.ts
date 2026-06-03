@@ -3,6 +3,7 @@ import { createResendClient, getSenderEmail } from './resend';
 import BankTransferPending from './templates/bank-transfer-pending';
 import FormNotification from './templates/form-notification';
 import Newsletter from './templates/newsletter';
+import OrderAdminNotification from './templates/order-admin-notification';
 import OrderConfirmation from './templates/order-confirmation';
 
 // 이메일 발송 인터페이스
@@ -13,7 +14,8 @@ export interface SendEmailParams {
     | 'form-notification'
     | 'newsletter'
     | 'order-confirmation'
-    | 'bank-transfer-pending';
+    | 'bank-transfer-pending'
+    | 'order-admin-notification';
   data: any;
 }
 
@@ -42,6 +44,8 @@ function getTemplate(template: string, data: any): ReactElement {
       return OrderConfirmation(data);
     case 'bank-transfer-pending':
       return BankTransferPending(data);
+    case 'order-admin-notification':
+      return OrderAdminNotification(data);
     default:
       return FormNotification(data);
   }

@@ -4,6 +4,10 @@ import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { parseInput } from '@/lib/auth/server-action-helpers';
+import {
+  BUSINESS_INFO,
+  ORDER_NOTIFICATION_EMAILS,
+} from '@/lib/constants/business-info';
 import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { prisma } from '@/lib/db/prisma';
 import { sendEmail } from '@/lib/email/send';
@@ -393,7 +397,11 @@ export async function createBankTransferOrder(
             },
           },
         },
-        include: { items: true, bankTransfer: true, drop: true },
+        include: {
+          items: { include: { ticketTier: true } },
+          bankTransfer: true,
+          drop: true,
+        },
       });
     });
 
@@ -420,6 +428,34 @@ export async function createBankTransferOrder(
       });
     } catch (emailErr) {
       console.error('무통장 안내 이메일 발송 실패:', emailErr);
+    }
+
+    // 운영자 알림 메일 (실패해도 주문 결과에 영향 없음)
+    try {
+      const dropTitle = order.drop?.title ?? 'PRECTXE';
+      const itemsSummary =
+        order.items
+          .map((it) => `${it.ticketTier?.name ?? '티켓'} × ${it.quantity}`)
+          .join(', ') || '-';
+      await sendEmail({
+        to: [...ORDER_NOTIFICATION_EMAILS],
+        subject: `[PRECTXE] 새 무통장 주문 — ${dropTitle} / ${order.buyerName}`,
+        template: 'order-admin-notification',
+        data: {
+          dropTitle,
+          orderNo: order.orderNo,
+          buyerName: order.buyerName,
+          buyerPhone: order.buyerPhone,
+          buyerEmail: order.buyerEmail,
+          depositorName: order.bankTransfer!.depositorName,
+          totalAmount: order.totalAmount,
+          itemsSummary,
+          expiresAt: order.bankTransfer!.expiresAt,
+          orderAdminUrl: `${BUSINESS_INFO.serviceUrl}/admin/drops/${dropId}/orders`,
+        },
+      });
+    } catch (adminEmailErr) {
+      console.error('운영자 주문 알림 메일 발송 실패:', adminEmailErr);
     }
 
     return {
