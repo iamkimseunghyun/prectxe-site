@@ -9,6 +9,7 @@
  */
 
 import { randomBytes } from 'node:crypto';
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
 
 function generateRandomToken(byteLength = 16): string {
   return randomBytes(byteLength).toString('hex');
@@ -29,7 +30,16 @@ export function generateAccessToken(): string {
 }
 
 function getSiteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? 'https://prectxe.com';
+  const env = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, '');
+  // prod에서 env가 비었거나 localhost로 잘못 설정되면 canonical 도메인으로 강제.
+  // (이메일 "입장권 보기"·QR 스캔 링크가 localhost를 가리켜 깨지던 문제 방지)
+  if (
+    process.env.NODE_ENV === 'production' &&
+    (!env || env.includes('localhost'))
+  ) {
+    return BUSINESS_INFO.serviceUrl;
+  }
+  return env || BUSINESS_INFO.serviceUrl;
 }
 
 export function getTicketScanUrl(token: string): string {
