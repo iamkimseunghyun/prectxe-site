@@ -1,31 +1,30 @@
 /**
- * OG 이미지(ImageResponse/Satori)용 Noto Sans KR Bold woff2 로더.
+ * OG 이미지(ImageResponse/Satori)용 Noto Sans KR Bold 폰트 로더.
  *
- * Google Fonts CSS API는 요청에 모던 브라우저 User-Agent가 없으면
- * woff2가 아닌 truetype URL을 반환한다. 기존 정규식이 `format('woff2')`만
- * 매칭했기 때문에 UA 없는 서버 fetch에서는 매칭 실패 → 폰트 null →
- * `fonts: []`로 ImageResponse 생성 시 한글 텍스트 렌더 폰트가 없어 500 발생.
- * (카카오톡 OG 미리보기가 흰색으로 깨지던 직접 원인)
+ * Google Fonts CSS API는 응답을 User-Agent에 맞춰 다르게 준다:
+ * - 모던 브라우저 UA → unicode-range로 잘게 쪼갠 woff2 서브셋 124개. 첫 블록은
+ *   CJK 호환/전각 기호 영역이라 일반 한글 음절(U+AC00–D7A3)이 없다 → 첫 url만
+ *   집으면 한글이 전부 tofu로 깨진다.
+ * - UA 없음 → 모든 글리프가 담긴 단일 truetype(.ttf) 전체 폰트 1개.
  *
- * → 모던 브라우저 UA를 보내 woff2를 우선 확보하고, 정규식은 format에
- *   구애받지 않게 첫 url()을 잡는다. 네트워크 실패 시 null 반환(graceful).
+ * 따라서 UA를 보내지 않고 전체 truetype 폰트를 받는다. (기존 정규식은
+ * `format('woff2')`만 매칭해 UA 없는 응답의 truetype을 못 잡고 null →
+ * Satori가 한글 폰트 부재로 throw, OG 라우트가 500 → 카톡 OG 흰 화면이었다.)
+ * 네트워크 실패 시 null 반환(graceful).
  */
 export async function loadNotoSansKrBold(): Promise<ArrayBuffer | null> {
   try {
     const css = await fetch(
-      'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700&display=swap',
-      {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
-      }
+      'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700&display=swap'
     ).then((res) => res.text());
 
-    const match = css.match(/src:\s*url\(([^)]+)\)\s*format\(/);
+    const match = css.match(
+      /src:\s*url\(([^)]+)\)\s*format\(['"]?truetype['"]?\)/
+    );
     if (!match) return null;
 
-    return await fetch(match[1]).then((r) => r.arrayBuffer());
+    const fontUrl = match[1].replace(/['"]/g, '');
+    return await fetch(fontUrl).then((r) => r.arrayBuffer());
   } catch {
     return null;
   }

@@ -92,14 +92,18 @@ function CloudflareHlsPlayer({
 
   const hlsSrc = `${videoUrl}/manifest/video.m3u8`;
 
+  // iOS Safari / 모바일 Chrome 자동재생: muted가 DOM property로 설정돼 있어야
+  // play()가 허용된다. React의 muted 속성은 property로 안정적으로 반영되지 않으므로
+  // 명시적으로 동기화한다. (모바일 히어로 영상 자동재생 안 되던 원인)
+  // HLS 셋업 effect보다 먼저 선언 → mount 시 play() 전에 muted가 적용되고,
+  // muted 토글 시에는 플레이어를 재설정하지 않아 영상이 처음부터 재생되지 않는다.
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = !!muted;
+  }, [muted]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-
-    // iOS Safari / 모바일 Chrome 자동재생: muted가 DOM property로 설정돼 있어야
-    // play()가 허용된다. React의 muted 속성은 property로 안정적으로 반영되지 않으므로
-    // 명시적으로 세팅한다. (모바일 히어로 영상 자동재생 안 되던 원인)
-    video.muted = !!muted;
 
     // Safari, Chrome 142+, Edge 142+ — 네이티브 HLS
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -136,7 +140,7 @@ function CloudflareHlsPlayer({
     return () => {
       if (hls) hls.destroy();
     };
-  }, [hlsSrc, autoPlay, muted, onError]);
+  }, [hlsSrc, autoPlay, onError]);
 
   if (failed) return null;
 
