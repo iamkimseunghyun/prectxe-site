@@ -45,8 +45,9 @@ export function ShareButton({
         description: '현재 페이지 URL을 복사했어요.',
       });
     } catch (err) {
-      // 사용자가 공유 시트를 닫은 경우(AbortError)는 정상 취소 — 에러 아님
-      if (err instanceof DOMException && err.name === 'AbortError') return;
+      // 사용자가 공유 시트를 닫은 경우(AbortError)는 정상 취소 — 에러 아님.
+      // DOMException은 일부 환경에 없을 수 있어 상위 타입 Error로 검사
+      if (err instanceof Error && err.name === 'AbortError') return;
       toast({
         title: '공유 실패',
         description: '공유에 문제가 발생했어요. 다시 시도해주세요.',
