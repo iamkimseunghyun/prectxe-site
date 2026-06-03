@@ -16,8 +16,11 @@ export const BUSINESS_INFO = {
   serviceUrl: 'https://www.prectxe.com',
 } as const;
 
-/** 새 무통장 주문 발생 시 알림 메일을 받을 운영자 주소 */
-export const ORDER_NOTIFICATION_EMAILS = [
-  'ryu@laaf.kr',
-  'kaka@laaf.kr',
-] as const;
+/**
+ * 새 무통장 주문 발생 시 알림 메일을 받을 운영자 주소.
+ * ORDER_NOTIFICATION_EMAILS env(쉼표 구분)로 override 가능, 없으면 기본값 사용.
+ */
+export const ORDER_NOTIFICATION_EMAILS: string[] =
+  process.env.ORDER_NOTIFICATION_EMAILS?.split(',')
+    .map((e) => e.trim())
+    .filter(Boolean) ?? ['ryu@laaf.kr', 'kaka@laaf.kr'];

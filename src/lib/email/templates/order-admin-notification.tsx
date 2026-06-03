@@ -26,11 +26,13 @@ interface OrderAdminNotificationProps {
 
 function formatDateTime(value: Date | string): string {
   const date = typeof value === 'string' ? new Date(value) : value;
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-  const hh = String(date.getHours()).padStart(2, '0');
-  const mi = String(date.getMinutes()).padStart(2, '0');
+  // 서버(UTC)에서도 KST(UTC+9)로 표시 — 프로젝트 KST 변환 관례(+9h offset)와 일관
+  const kst = new Date(date.getTime() + 9 * 3600 * 1000);
+  const yyyy = kst.getUTCFullYear();
+  const mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(kst.getUTCDate()).padStart(2, '0');
+  const hh = String(kst.getUTCHours()).padStart(2, '0');
+  const mi = String(kst.getUTCMinutes()).padStart(2, '0');
   return `${yyyy}.${mm}.${dd} ${hh}:${mi}`;
 }
 

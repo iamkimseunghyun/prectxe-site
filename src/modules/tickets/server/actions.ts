@@ -405,57 +405,54 @@ export async function createBankTransferOrder(
       });
     });
 
-    // 안내 이메일 (실패해도 주문 결과에 영향 없음)
-    try {
+    // 구매자 안내 + 운영자 알림 메일을 병렬 발송 (각각 실패해도 주문엔 영향 없음).
+    // 순차 await 대비 구매자 응답 대기시간 단축.
+    {
       const dropTitle = order.drop?.title ?? 'PRECTXE';
       const bank = getBankInfo();
-      await sendEmail({
-        to: order.buyerEmail,
-        subject: `[PRECTXE] 입금 안내 — ${dropTitle}`,
-        template: 'bank-transfer-pending',
-        data: {
-          buyerName: order.buyerName,
-          orderNo: order.orderNo,
-          dropTitle,
-          totalAmount: order.totalAmount,
-          depositorName: order.bankTransfer!.depositorName,
-          expiresAt: order.bankTransfer!.expiresAt,
-          expiryHours: getBankTransferExpiryHours(),
-          bankName: bank.bankName,
-          accountNumber: bank.accountNumber,
-          accountHolder: bank.accountHolder,
-        },
-      });
-    } catch (emailErr) {
-      console.error('무통장 안내 이메일 발송 실패:', emailErr);
-    }
-
-    // 운영자 알림 메일 (실패해도 주문 결과에 영향 없음)
-    try {
-      const dropTitle = order.drop?.title ?? 'PRECTXE';
       const itemsSummary =
         order.items
           .map((it) => `${it.ticketTier?.name ?? '티켓'} × ${it.quantity}`)
           .join(', ') || '-';
-      await sendEmail({
-        to: [...ORDER_NOTIFICATION_EMAILS],
-        subject: `[PRECTXE] 새 무통장 주문 — ${dropTitle} / ${order.buyerName}`,
-        template: 'order-admin-notification',
-        data: {
-          dropTitle,
-          orderNo: order.orderNo,
-          buyerName: order.buyerName,
-          buyerPhone: order.buyerPhone,
-          buyerEmail: order.buyerEmail,
-          depositorName: order.bankTransfer!.depositorName,
-          totalAmount: order.totalAmount,
-          itemsSummary,
-          expiresAt: order.bankTransfer!.expiresAt,
-          orderAdminUrl: `${BUSINESS_INFO.serviceUrl}/admin/drops/${dropId}/orders`,
-        },
-      });
-    } catch (adminEmailErr) {
-      console.error('운영자 주문 알림 메일 발송 실패:', adminEmailErr);
+
+      await Promise.all([
+        sendEmail({
+          to: order.buyerEmail,
+          subject: `[PRECTXE] 입금 안내 — ${dropTitle}`,
+          template: 'bank-transfer-pending',
+          data: {
+            buyerName: order.buyerName,
+            orderNo: order.orderNo,
+            dropTitle,
+            totalAmount: order.totalAmount,
+            depositorName: order.bankTransfer!.depositorName,
+            expiresAt: order.bankTransfer!.expiresAt,
+            expiryHours: getBankTransferExpiryHours(),
+            bankName: bank.bankName,
+            accountNumber: bank.accountNumber,
+            accountHolder: bank.accountHolder,
+          },
+        }).catch((err) => console.error('무통장 안내 이메일 발송 실패:', err)),
+        sendEmail({
+          to: [...ORDER_NOTIFICATION_EMAILS],
+          subject: `[PRECTXE] 새 무통장 주문 — ${dropTitle} / ${order.buyerName}`,
+          template: 'order-admin-notification',
+          data: {
+            dropTitle,
+            orderNo: order.orderNo,
+            buyerName: order.buyerName,
+            buyerPhone: order.buyerPhone,
+            buyerEmail: order.buyerEmail,
+            depositorName: order.bankTransfer!.depositorName,
+            totalAmount: order.totalAmount,
+            itemsSummary,
+            expiresAt: order.bankTransfer!.expiresAt,
+            orderAdminUrl: `${BUSINESS_INFO.serviceUrl}/admin/drops/${dropId}/orders`,
+          },
+        }).catch((err) =>
+          console.error('운영자 주문 알림 메일 발송 실패:', err)
+        ),
+      ]);
     }
 
     return {
