@@ -6,7 +6,7 @@ import { cn, getImageUrl } from '@/lib/utils';
 
 const STATUS_LABEL: Record<string, { label: string; className: string }> = {
   on_sale: {
-    label: 'On Sale',
+    label: 'Open Now',
     className: 'bg-white text-neutral-950',
   },
   upcoming: {
