@@ -111,19 +111,31 @@ function CloudflareHlsPlayer({
     const controller = new AbortController();
     const { signal } = controller;
 
-    // URL 직접 진입(하드 로드)은 user activation이 없어 muted 상태에서만
-    // 자동재생이 허용된다. play() 직전에 muted를 동기적으로 다시 보장하고,
-    // 첫 시도가 거부되면 미디어가 재생 준비됐을 때(canplay) 한 번 더 시도한다.
-    // (목록 클릭 진입은 탭 제스처로 정책이 느슨해 재시도 없이도 재생됐음)
+    const play = () => {
+      if (mutedRef.current) video.muted = true;
+      return video.play();
+    };
+
+    // URL 직접 진입(하드 로드)은 user activation이 없다. Safari는 muted 영상
+    // 자동재생을 허용하지만, 카카오톡·인스타 등 인앱 웹뷰(WKWebView)는 muted
+    // 여도 사용자 제스처 없이는 play()를 거부한다. (목록 클릭 진입은 탭 제스처가
+    // 남아 통과됨 — 이게 진입 경로별로 갈리던 원인)
+    // 1) 즉시 시도 → 2) 미디어 준비(canplay) 시 재시도 → 3) 첫 사용자 제스처 시 재생.
     const tryPlay = () => {
       if (!autoPlay) return;
-      if (mutedRef.current) video.muted = true;
-      video.play().catch(() => {
-        const retry = () => {
-          if (mutedRef.current) video.muted = true;
-          video.play().catch(() => {});
-        };
-        video.addEventListener('canplay', retry, { once: true, signal });
+      play().catch(() => {
+        video.addEventListener('canplay', () => play().catch(() => {}), {
+          once: true,
+          signal,
+        });
+        const onGesture = () => play().catch(() => {});
+        for (const ev of ['touchstart', 'pointerdown', 'click', 'scroll']) {
+          document.addEventListener(ev, onGesture, {
+            once: true,
+            passive: true,
+            signal,
+          });
+        }
       });
     };
 
