@@ -15,11 +15,16 @@ export {
   formatDateForForm,
   formatDateForInput,
   formatEventDate,
+  isSameDay,
   parseKstDateInput,
   toKstDateInputValue,
-  isSameDay,
 } from './date';
-export { extractImageId, extractVideoId, getImageUrl } from './image-url';
+export {
+  extractImageId,
+  extractVideoId,
+  getImageUrl,
+  getVideoThumbnailUrl,
+} from './image-url';
 export {
   artistInitials,
   containsKorean,

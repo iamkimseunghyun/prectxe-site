@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { loadNotoSansKrBold } from '@/lib/og-font';
 import { getImageUrl } from '@/lib/utils';
 import { getArticleBySlug } from '@/modules/journal/server/actions';
 
@@ -23,14 +24,7 @@ export default async function OGImage({
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
 
-  const notoSansKr = await fetch(
-    'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700&display=swap'
-  )
-    .then((res) => res.text())
-    .then((css) => {
-      const match = css.match(/src: url\(([^)]+)\) format\('woff2'\)/);
-      return match ? fetch(match[1]).then((r) => r.arrayBuffer()) : null;
-    });
+  const notoSansKr = await loadNotoSansKrBold();
 
   if (!article) {
     return new ImageResponse(
