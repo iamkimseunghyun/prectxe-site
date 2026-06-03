@@ -64,7 +64,8 @@ export function SaleCountdown({
 
   let value: string;
   if (remaining > LIVE_THRESHOLD_MS) {
-    value = `D-${Math.ceil(remaining / DAY_MS)}`;
+    // floor: 48h 경계에서 D-N → 라이브 티커 전환 시 하루 건너뛰지 않게
+    value = `D-${Math.floor(remaining / DAY_MS)}`;
   } else {
     const totalSec = Math.max(0, Math.floor(remaining / 1000));
     const h = Math.floor(totalSec / 3600);

@@ -156,14 +156,16 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
               {isClosed ? 'Closed' : isSoldOut ? 'Sold Out' : 'Now Available'}
             </p>
 
-            {!isClosed && !isSoldOut && (
-              <SaleCountdown
-                tone="dark"
-                saleStartIso={saleWindow.saleStart?.toISOString() ?? null}
-                saleEndIso={saleWindow.saleEnd?.toISOString() ?? null}
-                className="mb-5"
-              />
-            )}
+            {!isClosed &&
+              !isSoldOut &&
+              (saleWindow.saleStart || saleWindow.saleEnd) && (
+                <SaleCountdown
+                  tone="dark"
+                  saleStartIso={saleWindow.saleStart?.toISOString() ?? null}
+                  saleEndIso={saleWindow.saleEnd?.toISOString() ?? null}
+                  className="mb-5"
+                />
+              )}
 
             <h1 className="max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
               {drop.title}

@@ -122,12 +122,14 @@ export async function NowOnSaleSection() {
                       {drop.summary}
                     </p>
                   )}
-                  <SaleCountdown
-                    tone="dark"
-                    saleStartIso={saleWindow.saleStart?.toISOString() ?? null}
-                    saleEndIso={saleWindow.saleEnd?.toISOString() ?? null}
-                    className="pt-1"
-                  />
+                  {(saleWindow.saleStart || saleWindow.saleEnd) && (
+                    <SaleCountdown
+                      tone="dark"
+                      saleStartIso={saleWindow.saleStart?.toISOString() ?? null}
+                      saleEndIso={saleWindow.saleEnd?.toISOString() ?? null}
+                      className="pt-1"
+                    />
+                  )}
                   {minPrice !== null && (
                     <p className="pt-1 text-sm font-medium text-white">
                       {minPrice === 0
