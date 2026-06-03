@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
-import { getImageUrl } from '@/lib/utils';
+import { loadNotoSansKrBold } from '@/lib/og-font';
+import { getImageUrl, getVideoThumbnailUrl } from '@/lib/utils';
 import { getDropBySlug } from '@/modules/drops/server/actions';
 
 export const alt = 'PRECTXE Drop';
@@ -19,20 +20,21 @@ export default async function OGImage({
   const { slug } = await params;
   const drop = await getDropBySlug(slug);
 
-  const notoSansKr = await fetch(
-    'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700&display=swap'
-  )
-    .then((res) => res.text())
-    .then((css) => {
-      const match = css.match(/src: url\(([^)]+)\) format\('woff2'\)/);
-      return match ? fetch(match[1]).then((r) => r.arrayBuffer()) : null;
-    });
+  const notoSansKr = await loadNotoSansKrBold();
 
-  const firstImage = drop?.media.find((m) => m.type === 'image');
+  // OG는 상단 히어로(media[0])를 그대로 미러링한다.
+  // - 히어로 이미지 → 그 이미지
+  // - 히어로 영상 → 해당 영상의 Stream/YouTube 썸네일
+  const heroMedia = drop?.media[0] ?? null;
+  const heroSrc =
+    heroMedia?.type === 'image'
+      ? getImageUrl(heroMedia.url, 'public')
+      : heroMedia?.type === 'video'
+        ? getVideoThumbnailUrl(heroMedia.url)
+        : null;
 
-  // drop 없거나, 등록된 미디어 중 이미지가 하나도 없으면(영상만 있는 경우 포함)
-  // PRECTXE 디폴트 OG로 fallback — 영상은 OG 미리보기로 부적합
-  if (!drop || !firstImage) {
+  // drop 없거나, 히어로가 없거나, 영상 썸네일을 만들 수 없으면 PRECTXE 디폴트 OG
+  if (!drop || !heroSrc) {
     return new ImageResponse(
       <div
         style={{
@@ -58,7 +60,6 @@ export default async function OGImage({
     );
   }
 
-  const heroSrc = getImageUrl(firstImage.url, 'public');
   const typeLabel = TYPE_LABELS[drop.type] || 'DROP';
 
   // 최저 가격 계산
