@@ -10,7 +10,12 @@ import { SaleCountdown } from '@/components/shared/sale-countdown';
 import { ShareButton } from '@/components/shared/share-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { trackViewItem } from '@/lib/analytics/gtag';
-import { artistInitials, formatArtistName, getImageUrl } from '@/lib/utils';
+import {
+  artistInitials,
+  formatArtistName,
+  formatKstEventRange,
+  getImageUrl,
+} from '@/lib/utils';
 import {
   getDropSaleWindow,
   getEffectiveTierStatus,
@@ -176,29 +181,10 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
               <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-white/60">
                 {drop.eventDate && (
                   <span>
-                    {new Date(drop.eventDate)
-                      .toLocaleString('ko-KR', {
-                        timeZone: 'Asia/Seoul',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        weekday: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                      .replace(/(\d+일)\s+([일월화수목금토])\s+/, '$1 ($2) ')}
-                    {drop.eventEndDate &&
-                      ` ~ ${new Date(drop.eventEndDate).toLocaleString(
-                        'ko-KR',
-                        {
-                          timeZone: 'Asia/Seoul',
-                          month: 'long',
-                          day: 'numeric',
-                          weekday: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        }
-                      )}`}
+                    {formatKstEventRange(
+                      new Date(drop.eventDate),
+                      drop.eventEndDate ? new Date(drop.eventEndDate) : null
+                    )}
                   </span>
                 )}
                 {drop.venue && (

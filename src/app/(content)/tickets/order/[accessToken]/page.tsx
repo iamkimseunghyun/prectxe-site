@@ -5,6 +5,7 @@ import QRCode from 'qrcode';
 import ReactMarkdown from 'react-markdown';
 import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { prisma } from '@/lib/db/prisma';
+import { formatKstDateTime, formatKstEventRange } from '@/lib/utils';
 import { getTicketScanUrl } from '@/lib/utils/ticket-token';
 
 export const metadata: Metadata = {
@@ -24,26 +25,10 @@ async function generateQrSvg(data: string): Promise<string> {
 
 function formatEventDate(date: Date | null, endDate: Date | null): string {
   if (!date) return '';
-  const start = new Date(date);
-  const opts: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  };
-  let text = start.toLocaleString('ko-KR', opts);
-  if (endDate) {
-    const end = new Date(endDate);
-    text += ` ~ ${end.toLocaleString('ko-KR', {
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })}`;
-  }
-  return text;
+  return formatKstEventRange(
+    new Date(date),
+    endDate ? new Date(endDate) : null
+  );
 }
 
 export default async function OrderTicketsPage({
@@ -173,8 +158,7 @@ export default async function OrderTicketsPage({
 
                     {isCheckedIn && ticket.checkedInAt && (
                       <p className="mt-2 text-center text-xs text-emerald-300/70">
-                        {new Date(ticket.checkedInAt).toLocaleString('ko-KR')}에
-                        입장
+                        {formatKstDateTime(new Date(ticket.checkedInAt))}에 입장
                       </p>
                     )}
                   </div>

@@ -44,6 +44,36 @@ export const formatEventDate = (startDate: Date, endDate: Date): string => {
   return `${formattedStart} - ${formatDate(endDate)}`;
 };
 
+const WEEKDAYS_KR = ['일', '월', '화', '수', '목', '금', '토'];
+
+/**
+ * KST 기준 'YYYY년 M월 D일 (요일) 오전/오후 hh:mm' 결정적 포맷.
+ * toLocaleString의 로케일 문자열은 서버(Node)·브라우저 ICU 버전 차이로 미묘하게
+ * 달라져 hydration mismatch(React #418)를 유발한다. 그래서 +9h 시프트 후
+ * UTC getter만 사용해 서버/클라이언트가 동일한 문자열을 만들도록 한다.
+ * withYear=false면 연도를 생략.
+ */
+export const formatKstDateTime = (date: Date, withYear = true): string => {
+  const kst = new Date(date.getTime() + 9 * 3600 * 1000);
+  const y = kst.getUTCFullYear();
+  const mo = kst.getUTCMonth() + 1;
+  const d = kst.getUTCDate();
+  const wd = WEEKDAYS_KR[kst.getUTCDay()];
+  const h24 = kst.getUTCHours();
+  const ampm = h24 < 12 ? '오전' : '오후';
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  const hh = String(h12).padStart(2, '0');
+  const mm = String(kst.getUTCMinutes()).padStart(2, '0');
+  const datePart = withYear ? `${y}년 ${mo}월 ${d}일` : `${mo}월 ${d}일`;
+  return `${datePart} (${wd}) ${ampm} ${hh}:${mm}`;
+};
+
+/** 시작~종료 KST 이벤트 범위 문자열. 종료가 없으면 시작만 반환. */
+export const formatKstEventRange = (start: Date, end?: Date | null): string => {
+  const s = formatKstDateTime(start, true);
+  return end ? `${s} ~ ${formatKstDateTime(end, false)}` : s;
+};
+
 /**
  * datetime-local input value('YYYY-MM-DDTHH:mm')를 KST 벽시계 시간으로
  * 해석해 UTC Date로 변환. 서버 timezone(UTC)에서 new Date()가 잘못
