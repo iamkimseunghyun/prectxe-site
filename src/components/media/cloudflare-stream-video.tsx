@@ -95,8 +95,6 @@ function CloudflareHlsPlayer({
   // iOS Safari / 모바일 Chrome 자동재생: muted가 DOM property로 설정돼 있어야
   // play()가 허용된다. React의 muted 속성은 property로 안정적으로 반영되지 않으므로
   // 명시적으로 동기화한다. (모바일 히어로 영상 자동재생 안 되던 원인)
-  // HLS 셋업 effect보다 먼저 선언 → mount 시 play() 전에 muted가 적용되고,
-  // muted 토글 시에는 플레이어를 재설정하지 않아 영상이 처음부터 재생되지 않는다.
   useEffect(() => {
     if (videoRef.current) videoRef.current.muted = !!muted;
   }, [muted]);
@@ -105,10 +103,26 @@ function CloudflareHlsPlayer({
     const video = videoRef.current;
     if (!video) return;
 
+    // URL 직접 진입(하드 로드)은 user activation이 없어 muted 상태에서만
+    // 자동재생이 허용된다. play() 직전에 muted를 동기적으로 다시 보장하고,
+    // 첫 시도가 거부되면 미디어가 재생 준비됐을 때(canplay) 한 번 더 시도한다.
+    // (목록 클릭 진입은 탭 제스처로 정책이 느슨해 재시도 없이도 재생됐음)
+    const tryPlay = () => {
+      if (!autoPlay) return;
+      if (muted) video.muted = true;
+      video.play().catch(() => {
+        const retry = () => {
+          if (muted) video.muted = true;
+          video.play().catch(() => {});
+        };
+        video.addEventListener('canplay', retry, { once: true });
+      });
+    };
+
     // Safari, Chrome 142+, Edge 142+ — 네이티브 HLS
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = hlsSrc;
-      if (autoPlay) video.play().catch(() => {});
+      tryPlay();
       return;
     }
 
@@ -126,7 +140,7 @@ function CloudflareHlsPlayer({
       hls.attachMedia(video);
       if (autoPlay) {
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play().catch(() => {});
+          tryPlay();
         });
       }
       hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
@@ -140,7 +154,7 @@ function CloudflareHlsPlayer({
     return () => {
       if (hls) hls.destroy();
     };
-  }, [hlsSrc, autoPlay, onError]);
+  }, [hlsSrc, autoPlay, onError, muted]);
 
   if (failed) return null;
 
