@@ -55,7 +55,7 @@ export function PublicHeader() {
   if (
     pathname?.startsWith('/admin') ||
     pathname?.startsWith('/auth') ||
-    pathname?.startsWith('/drops/')
+    (pathname ? /^\/drops\/[^/]+/.test(pathname) : false)
   ) {
     return null;
   }
