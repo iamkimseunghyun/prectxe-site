@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { formatKstDateTime } from '@/lib/utils';
 import { getDropOrders } from '@/modules/drops/server/actions';
 import {
   OrderStatusBadge,
@@ -209,7 +210,7 @@ export function DropOrdersView({
                           {order.totalAmount.toLocaleString()}원
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(order.createdAt).toLocaleString('ko-KR')}
+                          {formatKstDateTime(new Date(order.createdAt))}
                         </p>
                       </div>
                       <div className="flex flex-col gap-1.5">

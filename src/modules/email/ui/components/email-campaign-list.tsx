@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { formatKstDateTime } from '@/lib/utils';
 import { listEmailCampaigns } from '../../server/actions';
 
 interface EmailCampaignListProps {
@@ -80,16 +81,8 @@ export function EmailCampaignList({ userId, isAdmin }: EmailCampaignListProps) {
     }
   };
 
-  const formatDate = (date: Date | null) => {
-    if (!date) return '-';
-    return new Date(date).toLocaleString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  const formatDate = (date: Date | null) =>
+    date ? formatKstDateTime(new Date(date)) : '-';
 
   if (isLoading) {
     return (

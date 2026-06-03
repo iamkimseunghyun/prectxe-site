@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { cn, formatEventDate, getImageUrl } from '@/lib/utils';
+import { cn, formatKstDateRange, getImageUrl } from '@/lib/utils';
 
 type ProgramStatus = 'upcoming' | 'completed';
 type ProgramType = 'exhibition' | 'live' | 'party' | 'workshop' | 'talk';
@@ -68,7 +68,7 @@ export function ProgramCard({
         <h2 className="font-medium text-neutral-900">{program.title}</h2>
         {start && end && (
           <p className="mt-1 text-sm text-neutral-500">
-            {formatEventDate(start, end)}
+            {formatKstDateRange(start, end)}
           </p>
         )}
       </div>

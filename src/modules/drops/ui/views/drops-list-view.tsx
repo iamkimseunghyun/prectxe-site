@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FilterChip } from '@/components/shared/filter-chip';
 import { Badge } from '@/components/ui/badge';
-import { cn, getImageUrl } from '@/lib/utils';
+import { cn, formatKstDate, getImageUrl } from '@/lib/utils';
 import { listDrops } from '@/modules/drops/server/actions';
 
 interface DropsListViewProps {
@@ -38,12 +38,6 @@ function daysUntil(date: Date | null): number | null {
   const ms = target.setHours(0, 0, 0, 0) - new Date(now).setHours(0, 0, 0, 0);
   const days = Math.round(ms / (1000 * 60 * 60 * 24));
   return days >= 0 ? days : null;
-}
-
-function formatDropDate(date: Date | null): string | null {
-  if (!date) return null;
-  const d = new Date(date);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export async function DropsListView({ type, page }: DropsListViewProps) {
@@ -96,7 +90,9 @@ export async function DropsListView({ type, page }: DropsListViewProps) {
             const dDay =
               drop.type === 'ticket' ? daysUntil(drop.eventDate) : null;
             const eventDateLabel =
-              drop.type === 'ticket' ? formatDropDate(drop.eventDate) : null;
+              drop.type === 'ticket' && drop.eventDate
+                ? formatKstDate(new Date(drop.eventDate))
+                : null;
 
             return (
               <Link

@@ -7,7 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   artistInitials,
   formatArtistName,
-  formatEventDate,
+  formatKstDate,
+  formatKstDateRange,
   getImageUrl,
 } from '@/lib/utils';
 import { listArticlesByProgram } from '@/modules/journal/server/actions';
@@ -62,7 +63,7 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
           <CopyUrlButton className="mt-1.5 shrink-0 text-neutral-400 transition-colors hover:text-neutral-600" />
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-neutral-500">
-          {start && end && <span>{formatEventDate(start, end)}</span>}
+          {start && end && <span>{formatKstDateRange(start, end)}</span>}
           {(program.city || program.venue) && (
             <span>
               {[program.city, program.venue].filter(Boolean).join(' · ')}
@@ -148,7 +149,7 @@ async function RelatedArticles({ programId }: { programId: string }) {
             </Link>
             {a.publishedAt && (
               <span className="ml-2 text-sm text-neutral-400">
-                {new Date(a.publishedAt).toLocaleDateString('ko-KR')}
+                {formatKstDate(new Date(a.publishedAt))}
               </span>
             )}
           </li>

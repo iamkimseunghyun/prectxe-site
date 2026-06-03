@@ -35,7 +35,7 @@ import {
 import {
   containsKorean,
   formatArtistName,
-  formatEventDate,
+  formatKstDateRange,
   getImageUrl,
   slugify,
   uploadImage,
@@ -710,7 +710,7 @@ export function ProgramFormView({
             <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-500">
               {form.startAt && (
                 <span>
-                  {formatEventDate(
+                  {formatKstDateRange(
                     new Date(form.startAt as string),
                     form.endAt
                       ? new Date(form.endAt as string)

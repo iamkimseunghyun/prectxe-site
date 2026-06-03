@@ -27,6 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { formatKstDate } from '@/lib/utils';
 import { getSMSStats } from '../../server/stats';
 import type { CampaignStats } from '../../server/stats.types';
 
@@ -242,9 +243,7 @@ function StatsView({ stats, label }: { stats: CampaignStats; label: string }) {
                               {c.title}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {(c.sentAt ?? c.createdAt).toLocaleDateString(
-                                'ko-KR'
-                              )}
+                              {formatKstDate(new Date(c.sentAt ?? c.createdAt))}
                             </div>
                           </TableCell>
                           <TableCell className="text-right tabular-nums">

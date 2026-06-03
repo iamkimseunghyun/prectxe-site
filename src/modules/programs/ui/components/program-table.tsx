@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
+import { formatKstDate } from '@/lib/utils';
 import { toggleProgramFeatured } from '@/modules/programs/server/actions';
 
 type Program = {
@@ -79,9 +80,7 @@ export function ProgramTable({ data }: ProgramTableProps) {
                   </TableCell>
                   <TableCell>{item.type}</TableCell>
                   <TableCell>{item.status}</TableCell>
-                  <TableCell>
-                    {new Date(item.startAt).toLocaleDateString('ko-KR')}
-                  </TableCell>
+                  <TableCell>{formatKstDate(new Date(item.startAt))}</TableCell>
                   <TableCell>{item.city ?? '-'}</TableCell>
                   <TableCell>
                     <Switch

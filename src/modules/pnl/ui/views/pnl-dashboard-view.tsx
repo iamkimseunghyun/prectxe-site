@@ -17,6 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { formatKstDate } from '@/lib/utils';
 import {
   createDefaultPnLTemplate,
   createPnLSheet,
@@ -200,7 +201,7 @@ export function PnLDashboardView({ sheets, templates }: Props) {
                     {s.template ? `템플릿: ${s.template.name}` : '빈 시트'}
                   </p>
                   <p className="mt-1 text-[11px] text-muted-foreground">
-                    {new Date(s.updatedAt).toLocaleDateString('ko-KR')}
+                    {formatKstDate(new Date(s.updatedAt))}
                   </p>
                 </Link>
               ))}
@@ -256,7 +257,7 @@ export function PnLDashboardView({ sheets, templates }: Props) {
                     )}
                     <p className="mt-1 text-[11px] text-muted-foreground">
                       사용 시트 {t._count.sheets}개 ·{' '}
-                      {new Date(t.updatedAt).toLocaleDateString('ko-KR')}
+                      {formatKstDate(new Date(t.updatedAt))}
                     </p>
                   </Link>
                   <div className="flex shrink-0 items-center gap-1">

@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { formatKstDateTime } from '@/lib/utils';
 import {
   createAndSendSMSCampaign,
   listSMSCampaigns,
@@ -294,13 +295,7 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
                     <TableCell>
                       {campaign.sentAt ? (
                         <div className="text-sm">
-                          {new Date(campaign.sentAt).toLocaleString('ko-KR', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {formatKstDateTime(new Date(campaign.sentAt))}
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">-</span>
@@ -405,17 +400,7 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
                   </span>
                   <p className="text-sm mt-1">
                     {selectedCampaign.sentAt
-                      ? new Date(selectedCampaign.sentAt).toLocaleString(
-                          'ko-KR',
-                          {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit',
-                          }
-                        )
+                      ? formatKstDateTime(new Date(selectedCampaign.sentAt))
                       : '발송 전'}
                   </p>
                 </div>
