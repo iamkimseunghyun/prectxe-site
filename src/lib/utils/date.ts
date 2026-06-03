@@ -26,7 +26,7 @@ export const formatKstDateTime = (date: Date, withYear = true): string => {
   const h24 = kst.getUTCHours();
   const ampm = h24 < 12 ? '오전' : '오후';
   const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-  const hh = String(h12).padStart(2, '0');
+  const hh = String(h12);
   const mm = String(kst.getUTCMinutes()).padStart(2, '0');
   return `${formatKstDate(date, withYear)} (${wd}) ${ampm} ${hh}:${mm}`;
 };
@@ -47,7 +47,8 @@ export const formatKstDateRange = (start: Date, end?: Date | null): string => {
   const s = formatKstDate(start, true);
   if (!s) return '';
   if (!end || isSameDay(start, end)) return s;
-  return `${s} ~ ${formatKstDate(end, false)}`;
+  const e = formatKstDate(end, false);
+  return e ? `${s} ~ ${e}` : s;
 };
 
 /** KST 이벤트 범위(시간 포함). 종료가 없으면 시작만. */
@@ -63,7 +64,7 @@ export const formatKstEventRange = (start: Date, end?: Date | null): string => {
 export const formatDateForInput = (
   isoString: string | null | undefined
 ): string => {
-  if (!isoString) return new Date().toISOString().split('T')[0];
+  if (!isoString) return toKst(new Date()).toISOString().split('T')[0];
   return isoString.split('T')[0];
 };
 
@@ -72,14 +73,14 @@ export function formatDateForForm(
 ): string {
   try {
     if (!dateString) {
-      return new Date().toISOString().split('T')[0];
+      return toKst(new Date()).toISOString().split('T')[0];
     }
     const date =
       typeof dateString === 'string' ? new Date(dateString) : dateString;
-    return date.toISOString().split('T')[0];
+    return toKst(date).toISOString().split('T')[0];
   } catch (e) {
     console.error('날짜 변환 오류:', e);
-    return new Date().toISOString().split('T')[0];
+    return toKst(new Date()).toISOString().split('T')[0];
   }
 }
 
