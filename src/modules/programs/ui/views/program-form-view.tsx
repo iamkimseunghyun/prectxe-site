@@ -35,6 +35,7 @@ import {
 import {
   containsKorean,
   formatArtistName,
+  formatDateForForm,
   formatKstDateRange,
   getImageUrl,
   slugify,
@@ -96,8 +97,8 @@ export function ProgramFormView({
     description: initial?.description ?? '',
     type: (initial?.type as any) ?? 'exhibition',
     status: (initial?.status as any) ?? 'upcoming',
-    startAt: (initial?.startAt as any) ?? '',
-    endAt: (initial?.endAt as any) ?? '',
+    startAt: initial?.startAt ? formatDateForForm(initial.startAt) : '',
+    endAt: initial?.endAt ? formatDateForForm(initial.endAt) : '',
     city: initial?.city ?? '',
     heroUrl: initial?.heroUrl ?? '',
     venue: initial?.venue ?? '',

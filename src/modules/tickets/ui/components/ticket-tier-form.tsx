@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { TicketTierInput } from '@/lib/schemas/ticket';
+import { toKstDateInputValue } from '@/lib/utils/date';
 import {
   createTicketTier,
   updateTicketTier,
@@ -37,10 +38,10 @@ interface TicketTierFormProps {
   onSuccess: () => void;
 }
 
-const formatDateForInput = (date: Date | null) => {
-  if (!date) return '';
-  return new Date(date).toISOString().slice(0, 16);
-};
+// 저장된 UTC instant를 KST 벽시계 'YYYY-MM-DDTHH:mm'로 변환해 picker에 표시.
+// toISOString()을 쓰면 UTC 벽시계가 노출돼 9h 어긋난 값이 저장된다.
+const formatDateForInput = (date: Date | null) =>
+  date ? toKstDateInputValue(new Date(date)) : '';
 
 export function TicketTierForm({
   dropId,
