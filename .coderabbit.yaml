@@ -17,6 +17,10 @@ reviews:
     drafts: false
     base_branches:
       - main
+  # 정적 JSX/콘텐츠 페이지엔 함수가 없어 docstring 0% 경고가 매번 떠 노이즈가 됨 → 해제
+  pre_merge_checks:
+    docstrings:
+      mode: 'off'
   path_filters:
     - '!**/bun.lock'
     - '!**/*.lock'

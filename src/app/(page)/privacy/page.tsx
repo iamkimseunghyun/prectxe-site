@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { LegalPageLayout } from '@/components/layout/legal-page-layout';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
+import { SALES_TERMS } from '@/lib/constants/sales-terms';
 
 export const metadata: Metadata = {
   title: '개인정보처리방침 | PRECTXE',
@@ -26,8 +27,8 @@ export default function PrivacyPage() {
       <p>회사는 서비스 제공을 위해 다음의 최소 정보를 수집합니다.</p>
       <h3>티켓·굿즈 구매 시</h3>
       <ul>
-        <li>이름, 이메일, 전화번호 (주문 확인 및 배송·발권 목적)</li>
-        <li>결제 정보(카드사·승인번호 등 결제대행사 전달 정보)</li>
+        <li>이름, 이메일, 전화번호 ({SALES_TERMS.order} 확인 및 배송·발권 목적)</li>
+        <li>결제 확인 정보(입금자명, 입금 내역 등)</li>
         <li>배송 주소 (굿즈 구매 시에 한함)</li>
       </ul>
       <h3>참가 신청·설문 제출 시</h3>
@@ -42,8 +43,8 @@ export default function PrivacyPage() {
 
       <h2>2. 수집 및 이용 목적</h2>
       <ul>
-        <li>주문 처리, 결제 확인, 티켓 발권 및 상품 배송</li>
-        <li>주문 관련 안내 및 고객 문의 응대</li>
+        <li>{SALES_TERMS.order} 처리, 결제 확인, 티켓 발권 및 상품 배송</li>
+        <li>{SALES_TERMS.order} 관련 안내 및 고객 문의 응대</li>
         <li>서비스 개선 및 통계 분석</li>
         <li>법령에 따른 의무 이행(전자상거래법상 기록 보관 등)</li>
       </ul>
@@ -203,7 +204,9 @@ export default function PrivacyPage() {
       <ul>
         <li>전송 구간 HTTPS(SSL/TLS) 암호화</li>
         <li>데이터베이스 접근 권한 최소화 및 관리자 인증</li>
-        <li>카드 정보는 회사가 직접 저장하지 않으며 결제대행사에서 토큰화</li>
+        <li>
+          무통장 입금 방식으로 카드번호 등 민감 결제정보는 수집·저장하지 않음
+        </li>
         <li>접근 로그의 정기 모니터링</li>
       </ul>
 
