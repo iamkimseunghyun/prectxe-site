@@ -102,17 +102,21 @@ export function DropDetailView({ dropId }: { dropId: string }) {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const result = await getDropWithStats(dropId);
-    if (result.success && result.data) {
-      setDrop(result.data.drop as DropData);
-      setStatusValue(result.data.drop.status);
-      setStats(result.data.stats);
-    } else {
-      setDrop(null);
-      setStats(null);
+    try {
+      const result = await getDropWithStats(dropId);
+      if (result.success) {
+        setDrop(result.data.drop as DropData);
+        setStatusValue(result.data.drop.status);
+        setStats(result.data.stats);
+      } else {
+        setDrop(null);
+        setStats(null);
+        toast({ title: result.error ?? '불러오지 못했습니다.' });
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [dropId]);
+  }, [dropId, toast]);
 
   useEffect(() => {
     loadData();

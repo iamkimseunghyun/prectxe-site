@@ -13,7 +13,12 @@ const ArtworkHero = ({ artwork, className }: ArtworkHeroProps) => {
   if (!mainImage) return null;
 
   return (
-    <div className={cn('relative mx-auto w-full max-w-(--breakpoint-xl)', className)}>
+    <div
+      className={cn(
+        'relative mx-auto w-full max-w-(--breakpoint-xl)',
+        className
+      )}
+    >
       <OptimizedImage
         src={getImageUrl(mainImage.imageUrl, 'public')}
         alt={mainImage.alt}

@@ -309,7 +309,7 @@ export async function getDropWithStats(dropId: string) {
     prisma.drop.findUnique({
       where: { id: dropId },
       include: {
-        media: { orderBy: { order: 'asc' } },
+        // media는 상세 뷰에서 사용하지 않으므로 제외
         credits: { include: { artist: true } },
         ticketTiers: { orderBy: { order: 'asc' } },
         variants: { orderBy: { order: 'asc' } },
@@ -326,8 +326,15 @@ export async function getDropWithStats(dropId: string) {
     return { success: false, error: 'Drop을 찾을 수 없습니다.' } as const;
   }
 
-  const totalSold = drop.ticketTiers.reduce((s, t) => s + t.soldCount, 0);
-  const totalCapacity = drop.ticketTiers.reduce((s, t) => s + t.quantity, 0);
+  // 티켓은 tier(quantity/soldCount), 굿즈는 variant(stock/soldCount) 기준.
+  // stock은 총량(remaining = stock - soldCount)
+  const isGoods = drop.type === 'goods';
+  const totalSold = isGoods
+    ? drop.variants.reduce((s, v) => s + v.soldCount, 0)
+    : drop.ticketTiers.reduce((s, t) => s + t.soldCount, 0);
+  const totalCapacity = isGoods
+    ? drop.variants.reduce((s, v) => s + v.stock, 0)
+    : drop.ticketTiers.reduce((s, t) => s + t.quantity, 0);
 
   return {
     success: true,
