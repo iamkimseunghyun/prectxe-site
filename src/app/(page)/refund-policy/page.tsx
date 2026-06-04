@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { LegalPageLayout } from '@/components/layout/legal-page-layout';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
+import { SALES_TERMS } from '@/lib/constants/sales-terms';
 
 export const metadata: Metadata = {
   title: '환불·취소 정책 | PRECTXE',
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-const EFFECTIVE_DATE = '2026년 4월 20일';
+const EFFECTIVE_DATE = '2026년 6월 4일';
 
 export default function RefundPolicyPage() {
   return (
@@ -39,15 +40,15 @@ export default function RefundPolicyPage() {
           </tr>
           <tr>
             <td>공연일 9일 전 ~ 7일 전</td>
-            <td>구매가의 90% 환불</td>
+            <td>결제 금액의 90% 환불</td>
           </tr>
           <tr>
             <td>공연일 6일 전 ~ 3일 전</td>
-            <td>구매가의 80% 환불</td>
+            <td>결제 금액의 80% 환불</td>
           </tr>
           <tr>
             <td>공연일 2일 전 ~ 1일 전</td>
-            <td>구매가의 70% 환불</td>
+            <td>결제 금액의 70% 환불</td>
           </tr>
           <tr>
             <td>공연 당일 및 이후</td>
@@ -61,32 +62,34 @@ export default function RefundPolicyPage() {
         연장")이 있을 경우 해당 공연 안내 페이지에 별도 공지합니다.
       </p>
 
-      <h3>예매 후 7일 이내 단순 변심</h3>
+      <h3>{SALES_TERMS.order} 후 7일 이내 단순 변심</h3>
       <p>
-        공연일이 10일 이상 남아있고, 구매일로부터 7일 이내라면 단순 변심에 의한
+        공연일이 10일 이상 남아있고, 결제일로부터 7일 이내라면 단순 변심에 의한
         전액 환불이 가능합니다. 이는 전자상거래법상 소비자의 청약철회권 보호
         기간입니다.
       </p>
 
       <h3>무통장 입금 미완료에 따른 자동 취소</h3>
       <p>
-        무통장 입금으로 주문하신 경우, 안내된 계좌로{' '}
-        <strong>주문 후 24시간 이내</strong>에 정확한 입금자명(이름+주문번호 끝
-        4자리)으로 입금해 주셔야 합니다. 마감 시각까지 입금이 확인되지 않으면
-        주문은 자동 취소되며, 좌석은 다른 고객에게 다시 풀립니다. 자동 취소된
-        주문은 별도 환불 절차가 발생하지 않습니다(미입금 상태).
+        무통장 입금으로 {SALES_TERMS.order}하신 경우, 안내된 계좌로{' '}
+        <strong>{SALES_TERMS.order} 후 24시간 이내</strong>에 정확한
+        입금자명(이름+{SALES_TERMS.orderNumber} 끝 4자리)으로 입금해 주셔야
+        합니다. 마감 시각까지 입금이 확인되지 않으면 {SALES_TERMS.order}은 자동
+        취소되며, 좌석은 다른 고객에게 다시 풀립니다. 자동 취소된{' '}
+        {SALES_TERMS.order}은 별도 환불 절차가 발생하지 않습니다(미입금 상태).
       </p>
       <p>
         입금자명이 안내와 다를 경우 자동 매칭이 되지 않으니, 반드시 안내된 형태
         그대로 입금해 주세요. 매칭이 어려운 입금이 발생한 경우{' '}
         <a href={`mailto:${BUSINESS_INFO.email}`}>{BUSINESS_INFO.email}</a>로
-        입금 영수증과 주문번호를 함께 보내 주시면 수동으로 처리해 드립니다.
+        입금 영수증과 {SALES_TERMS.orderNumber}를 함께 보내 주시면 수동으로
+        처리해 드립니다.
       </p>
 
       <h3>회사 사정에 의한 취소</h3>
       <p>
         공연 취소·연기, 출연자 변경 등 회사 또는 주최 측 사정으로 인한 변경
-        시에는 구매일·시점과 관계없이 <strong>전액 환불</strong> 해드립니다.
+        시에는 결제일·시점과 관계없이 <strong>전액 환불</strong> 해드립니다.
         상황에 따라 보상이 추가될 수 있습니다.
       </p>
 
@@ -95,7 +98,7 @@ export default function RefundPolicyPage() {
       <ul>
         <li>
           <strong>상품 수령 후 7일 이내 단순 변심</strong> — 미개봉·미사용
-          상태에 한해 환불 가능. 왕복 배송비는 구매자 부담
+          상태에 한해 환불 가능. 왕복 배송비는 고객 부담
         </li>
         <li>
           <strong>상품 하자 또는 오배송</strong> — 수령 후 3개월 이내 또는
@@ -105,8 +108,8 @@ export default function RefundPolicyPage() {
         <li>
           <strong>환불 불가</strong> — 아래 경우는 청약철회가 제한됩니다.
           <ul>
-            <li>구매자의 책임으로 상품이 훼손된 경우</li>
-            <li>구매자의 사용 또는 일부 소비로 상품 가치가 훼손된 경우</li>
+            <li>소비자의 책임으로 상품이 훼손된 경우</li>
+            <li>소비자의 사용 또는 일부 소비로 상품 가치가 훼손된 경우</li>
             <li>시간 경과로 재판매가 곤란할 정도로 상품 가치가 감소한 경우</li>
             <li>
               복제가 가능한 상품의 포장을 훼손한 경우(복제품 특성상 환불 불가)
@@ -124,27 +127,32 @@ export default function RefundPolicyPage() {
       </p>
 
       <h2>4. 환불 절차</h2>
+      <p>
+        현재 PRECTXE는 <strong>무통장 입금</strong>으로만 결제되므로, 환불은
+        고객님이 알려주신 계좌로 입금해 드립니다.
+      </p>
       <ol>
         <li>
           이메일{' '}
-          <a href={`mailto:${BUSINESS_INFO.email}`}>{BUSINESS_INFO.email}</a>로
-          주문번호와 함께 환불 요청을 보내주세요.
+          <a href={`mailto:${BUSINESS_INFO.email}`}>{BUSINESS_INFO.email}</a>로{' '}
+          {SALES_TERMS.orderNumber}와 함께 환불 요청을 보내주세요.
         </li>
         <li>회사 확인 후 1~2영업일 내에 승인 여부를 회신해 드립니다.</li>
         <li>
-          승인 시 결제대행사를 통해 환불이 진행되며, 카드 취소는 결제 수단과
-          카드사 정책에 따라 <strong>3~7영업일</strong>이 소요될 수 있습니다.
+          승인 시 환불 계좌 정보를 회신해 주시면, 승인일로부터{' '}
+          <strong>3~7영업일</strong> 내에 입금 처리해 드립니다.
         </li>
         <li>
-          계좌이체·가상계좌 등 현금성 결제의 경우, 환불 계좌 정보를 회신해
-          주시면 동일 기간 내 입금 처리해 드립니다.
+          향후 카드 결제가 도입된 경우, 결제대행사를 통한 카드 취소는 결제
+          수단과 카드사 정책에 따라 <strong>3~7영업일</strong>이 소요될 수
+          있습니다.
         </li>
       </ol>
 
       <h2>5. 환불 계산 예시</h2>
       <p>
         공연일이 4월 30일인 70,000원 티켓을 4월 23일(공연 7일 전)에 취소하는
-        경우 — 구매가의 90%인 63,000원이 환불됩니다. 해당 날짜 계산은 공연
+        경우 — 결제 금액의 90%인 63,000원이 환불됩니다. 해당 날짜 계산은 공연
         당일을 제외한 역산을 기준으로 합니다.
       </p>
 
