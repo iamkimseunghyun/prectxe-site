@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-const EFFECTIVE_DATE = '2026년 4월 20일';
+const EFFECTIVE_DATE = '2026년 6월 4일';
 
 export default function PrivacyPage() {
   return (
@@ -110,41 +110,74 @@ export default function PrivacyPage() {
         </thead>
         <tbody>
           <tr>
-            <td>PortOne (아임포트)</td>
-            <td>결제 처리 및 결제 검증</td>
+            <td>Neon, Inc.</td>
+            <td>데이터베이스 호스팅 — 이용자 정보 저장·보관</td>
           </tr>
           <tr>
-            <td>토스페이먼츠 등 결제대행사</td>
-            <td>카드·간편결제 승인 및 정산</td>
-          </tr>
-          <tr>
-            <td>Resend</td>
-            <td>주문 확인·안내 이메일 발송</td>
-          </tr>
-          <tr>
-            <td>Aligo / Solapi</td>
-            <td>SMS 알림 발송 (선택적)</td>
+            <td>Resend (Plus Five Five, Inc.)</td>
+            <td>안내·확인 이메일 발송</td>
           </tr>
           <tr>
             <td>{BUSINESS_INFO.hostingService}</td>
             <td>웹사이트 호스팅 및 서버 운영</td>
           </tr>
-          <tr>
-            <td>Neon Database</td>
-            <td>데이터베이스 호스팅</td>
-          </tr>
-          <tr>
-            <td>Cloudflare</td>
-            <td>이미지·동영상 저장 및 전송</td>
-          </tr>
-          <tr>
-            <td>Google Analytics</td>
-            <td>이용 통계 분석(익명 집계)</td>
-          </tr>
         </tbody>
       </table>
 
-      <h2>6. 이용자의 권리</h2>
+      <h2>6. 개인정보의 국외 이전</h2>
+      <p>
+        회사가 위탁한 일부 업체는 서버를 국외에 두고 있어, 서비스 제공 과정에서
+        아래와 같이 개인정보가 국외로 이전됩니다. 회사는 개인정보보호법
+        제28조의8에 따라 그 내용을 아래와 같이 공개합니다.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>이전받는 자</th>
+            <th>이전 국가</th>
+            <th>이전 항목</th>
+            <th>이전 목적</th>
+            <th>이용·보유 기간</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Neon, Inc.</td>
+            <td>미국</td>
+            <td>이름, 이메일, 전화번호, 거래 내역</td>
+            <td>데이터베이스 호스팅·보관</td>
+            <td>3번 항목의 보유기간 동안</td>
+          </tr>
+          <tr>
+            <td>Resend (Plus Five Five, Inc.)</td>
+            <td>미국</td>
+            <td>이름, 이메일</td>
+            <td>안내·확인 이메일 발송</td>
+            <td>발송 목적 달성 시 지체 없이 파기</td>
+          </tr>
+          <tr>
+            <td>{BUSINESS_INFO.hostingService}</td>
+            <td>미국</td>
+            <td>서비스 이용 과정에서 처리되는 개인정보</td>
+            <td>웹사이트 호스팅 및 서버 운영</td>
+            <td>위탁 계약 종료 시까지</td>
+          </tr>
+          <tr>
+            <td>Google LLC (Google Analytics)</td>
+            <td>미국</td>
+            <td>쿠키, IP 주소, 서비스 이용 기록(식별 불가 집계)</td>
+            <td>이용 통계 분석</td>
+            <td>Google 보존 정책에 따름</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        이전 일시 및 방법: 서비스 이용 시점에 정보통신망을 통해 전송됩니다.
+        이용자는 국외 이전을 거부할 수 있으나, 이 경우 서비스 이용이 제한될 수
+        있습니다.
+      </p>
+
+      <h2>7. 이용자의 권리</h2>
       <p>
         이용자는 언제든 자신의 개인정보에 대해 다음 권리를 행사할 수 있습니다.
       </p>
@@ -158,14 +191,14 @@ export default function PrivacyPage() {
         접수해 주시면, 관련 법령이 정한 기간 내에 지체 없이 조치합니다.
       </p>
 
-      <h2>7. 쿠키의 운영</h2>
+      <h2>8. 쿠키의 운영</h2>
       <p>
         회사는 서비스 개선과 통계 분석을 위해 쿠키(Cookie)를 사용합니다.
         이용자는 브라우저 설정을 통해 쿠키 저장을 거부할 수 있으나, 일부 서비스
         이용에 제한이 있을 수 있습니다.
       </p>
 
-      <h2>8. 개인정보의 안전성 확보</h2>
+      <h2>9. 개인정보의 안전성 확보</h2>
       <p>회사는 개인정보 보호를 위해 기술적·관리적 조치를 취하고 있습니다.</p>
       <ul>
         <li>전송 구간 HTTPS(SSL/TLS) 암호화</li>
@@ -174,7 +207,7 @@ export default function PrivacyPage() {
         <li>접근 로그의 정기 모니터링</li>
       </ul>
 
-      <h2>9. 개인정보보호 책임자</h2>
+      <h2>10. 개인정보보호 책임자</h2>
       <p>
         회사는 개인정보 처리에 관한 업무를 총괄하는 개인정보보호 책임자를
         지정하고 있습니다.
@@ -187,7 +220,7 @@ export default function PrivacyPage() {
         </li>
       </ul>
 
-      <h2>10. 변경 고지</h2>
+      <h2>11. 변경 고지</h2>
       <p>
         본 방침이 변경될 경우 사이트 공지사항을 통해 최소 7일 전에 고지합니다.
         중요한 내용이 변경되는 경우에는 30일 전에 고지합니다.
