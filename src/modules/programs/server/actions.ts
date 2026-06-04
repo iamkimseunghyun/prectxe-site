@@ -329,7 +329,7 @@ export async function updateProgram(id: string, input: unknown) {
       type: data.type as any,
       status: (data.status ?? 'upcoming') as any,
       startAt: data.startAt ? parseKstDateInput(data.startAt) : undefined,
-      endAt: data.endAt ? parseKstDateInput(data.endAt) : undefined,
+      endAt: data.endAt ? parseKstDateInput(data.endAt) : null,
       city: data.city ?? null,
       heroUrl: data.heroUrl ?? null,
       venue: data.venue ?? null,

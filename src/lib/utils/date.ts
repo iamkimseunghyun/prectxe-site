@@ -92,7 +92,9 @@ export function formatDateForForm(
  */
 export const parseKstDateInput = (value: string): Date => {
   const normalized = value.includes('T') ? value : `${value}T00:00`;
-  return new Date(`${normalized}:00+09:00`);
+  // 이미 초(HH:mm:ss)가 있으면 :00을 또 붙이지 않는다.
+  const hasSeconds = normalized.split('T')[1]?.split(':').length > 2;
+  return new Date(`${normalized}${hasSeconds ? '' : ':00'}+09:00`);
 };
 
 /**
