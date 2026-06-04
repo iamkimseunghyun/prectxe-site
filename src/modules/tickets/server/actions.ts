@@ -27,6 +27,7 @@ import {
   getBankTransferExpiryDate,
   getBankTransferExpiryHours,
 } from '@/lib/utils/bank-transfer';
+import { parseKstDateInput } from '@/lib/utils/date';
 import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
 import {
   generateAccessToken,
@@ -94,8 +95,12 @@ export async function createTicketTier(dropId: string, data: TicketTierInput) {
       price: parsed.data.price,
       quantity: parsed.data.quantity,
       maxPerOrder: parsed.data.maxPerOrder,
-      saleStart: parsed.data.saleStart ? new Date(parsed.data.saleStart) : null,
-      saleEnd: parsed.data.saleEnd ? new Date(parsed.data.saleEnd) : null,
+      saleStart: parsed.data.saleStart
+        ? parseKstDateInput(parsed.data.saleStart)
+        : null,
+      saleEnd: parsed.data.saleEnd
+        ? parseKstDateInput(parsed.data.saleEnd)
+        : null,
       order: parsed.data.order,
     },
   });
@@ -119,8 +124,12 @@ export async function updateTicketTier(tierId: string, data: TicketTierInput) {
       price: parsed.data.price,
       quantity: parsed.data.quantity,
       maxPerOrder: parsed.data.maxPerOrder,
-      saleStart: parsed.data.saleStart ? new Date(parsed.data.saleStart) : null,
-      saleEnd: parsed.data.saleEnd ? new Date(parsed.data.saleEnd) : null,
+      saleStart: parsed.data.saleStart
+        ? parseKstDateInput(parsed.data.saleStart)
+        : null,
+      saleEnd: parsed.data.saleEnd
+        ? parseKstDateInput(parsed.data.saleEnd)
+        : null,
       order: parsed.data.order,
     },
   });

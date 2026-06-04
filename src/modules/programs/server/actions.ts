@@ -14,7 +14,7 @@ import {
   programCreateSchema,
   programUpdateSchema,
 } from '@/lib/schemas/program';
-import { extractImageId } from '@/lib/utils';
+import { extractImageId, parseKstDateInput } from '@/lib/utils';
 
 export type ProgramStatusFilter =
   | 'all'
@@ -255,8 +255,8 @@ export async function createProgram(input: unknown, _userId: string) {
       description: data.description ?? null,
       type: data.type as any,
       status: (data.status ?? 'upcoming') as any,
-      startAt: new Date(data.startAt),
-      endAt: data.endAt ? new Date(data.endAt) : null,
+      startAt: parseKstDateInput(data.startAt),
+      endAt: data.endAt ? parseKstDateInput(data.endAt) : null,
       city: data.city ?? null,
       heroUrl: data.heroUrl ?? null,
       venue: data.venue ?? null,
@@ -328,8 +328,8 @@ export async function updateProgram(id: string, input: unknown) {
       description: data.description ?? null,
       type: data.type as any,
       status: (data.status ?? 'upcoming') as any,
-      startAt: data.startAt ? new Date(data.startAt) : undefined,
-      endAt: data.endAt ? new Date(data.endAt) : undefined,
+      startAt: data.startAt ? parseKstDateInput(data.startAt) : undefined,
+      endAt: data.endAt ? parseKstDateInput(data.endAt) : undefined,
       city: data.city ?? null,
       heroUrl: data.heroUrl ?? null,
       venue: data.venue ?? null,

@@ -85,12 +85,15 @@ export function formatDateForForm(
 }
 
 /**
- * datetime-local input value('YYYY-MM-DDTHH:mm')를 KST 벽시계 시간으로
- * 해석해 UTC Date로 변환. 서버 timezone(UTC)에서 new Date()가 잘못
- * 해석하는 문제 회피.
+ * date/datetime-local input value를 KST 벽시계 시간으로 해석해 UTC Date로 변환.
+ * 서버 timezone(UTC)에서 new Date()가 잘못 해석하는 문제 회피.
+ * - 'YYYY-MM-DDTHH:mm' (datetime-local) → 해당 KST 시각
+ * - 'YYYY-MM-DD' (date) → 그 날 KST 자정
  */
-export const parseKstDateInput = (value: string): Date =>
-  new Date(`${value}:00+09:00`);
+export const parseKstDateInput = (value: string): Date => {
+  const normalized = value.includes('T') ? value : `${value}T00:00`;
+  return new Date(`${normalized}:00+09:00`);
+};
 
 /**
  * UTC Date를 KST 벽시계 시간 'YYYY-MM-DDTHH:mm' 문자열로 변환
