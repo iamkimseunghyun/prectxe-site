@@ -283,14 +283,16 @@ export async function createOrder(
           `${tier.name}은(는) 최대 ${tier.maxPerOrder}장까지 구매 가능합니다.`
         );
 
-      const remaining = tier.quantity - tier.soldCount;
-      if (item.quantity > remaining)
-        throw new Error(`${tier.name} 잔여 수량이 부족합니다.`);
-
-      await tx.ticketTier.update({
-        where: { id: tier.id },
+      // 원자적 재고 차감 — 동시 주문 초과판매 방지(검사+증가를 한 쿼리로)
+      const updated = await tx.ticketTier.updateMany({
+        where: {
+          id: tier.id,
+          soldCount: { lte: tier.quantity - item.quantity },
+        },
         data: { soldCount: { increment: item.quantity } },
       });
+      if (updated.count === 0)
+        throw new Error(`${tier.name} 잔여 수량이 부족합니다.`);
 
       const subtotal = tier.price * item.quantity;
       totalAmount += subtotal;
@@ -366,14 +368,16 @@ export async function createBankTransferOrder(
             `${tier.name}은(는) 최대 ${tier.maxPerOrder}장까지 구매 가능합니다.`
           );
 
-        const remaining = tier.quantity - tier.soldCount;
-        if (item.quantity > remaining)
-          throw new Error(`${tier.name} 잔여 수량이 부족합니다.`);
-
-        await tx.ticketTier.update({
-          where: { id: tier.id },
+        // 원자적 재고 차감 — 동시 주문 초과판매 방지(검사+증가를 한 쿼리로)
+        const updated = await tx.ticketTier.updateMany({
+          where: {
+            id: tier.id,
+            soldCount: { lte: tier.quantity - item.quantity },
+          },
           data: { soldCount: { increment: item.quantity } },
         });
+        if (updated.count === 0)
+          throw new Error(`${tier.name} 잔여 수량이 부족합니다.`);
 
         const subtotal = tier.price * item.quantity;
         totalAmount += subtotal;
@@ -516,14 +520,16 @@ export async function createGoodsOrder(
       });
       if (!variant) throw new Error('옵션을 찾을 수 없습니다.');
 
-      const remaining = variant.stock - variant.soldCount;
-      if (item.quantity > remaining)
-        throw new Error(`${variant.name} 재고가 부족합니다.`);
-
-      await tx.goodsVariant.update({
-        where: { id: variant.id },
+      // 원자적 재고 차감 — 동시 주문 초과판매 방지(검사+증가를 한 쿼리로)
+      const updated = await tx.goodsVariant.updateMany({
+        where: {
+          id: variant.id,
+          soldCount: { lte: variant.stock - item.quantity },
+        },
         data: { soldCount: { increment: item.quantity } },
       });
+      if (updated.count === 0)
+        throw new Error(`${variant.name} 재고가 부족합니다.`);
 
       const subtotal = variant.price * item.quantity;
       totalAmount += subtotal;
