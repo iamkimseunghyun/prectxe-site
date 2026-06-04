@@ -271,7 +271,11 @@ export async function createOrder(
       subtotal: number;
     }[] = [];
 
-    for (const item of items) {
+    // 일관된 락 순서로 동시 주문 간 데드락 방지
+    const sortedItems = [...items].sort((a, b) =>
+      a.ticketTierId.localeCompare(b.ticketTierId)
+    );
+    for (const item of sortedItems) {
       const tier = await tx.ticketTier.findUnique({
         where: { id: item.ticketTierId },
       });
@@ -356,7 +360,11 @@ export async function createBankTransferOrder(
         subtotal: number;
       }[] = [];
 
-      for (const item of items) {
+      // 일관된 락 순서로 동시 주문 간 데드락 방지
+      const sortedItems = [...items].sort((a, b) =>
+        a.ticketTierId.localeCompare(b.ticketTierId)
+      );
+      for (const item of sortedItems) {
         const tier = await tx.ticketTier.findUnique({
           where: { id: item.ticketTierId },
         });
@@ -514,7 +522,11 @@ export async function createGoodsOrder(
       subtotal: number;
     }[] = [];
 
-    for (const item of items) {
+    // 일관된 락 순서로 동시 주문 간 데드락 방지
+    const sortedItems = [...items].sort((a, b) =>
+      a.goodsVariantId.localeCompare(b.goodsVariantId)
+    );
+    for (const item of sortedItems) {
       const variant = await tx.goodsVariant.findUnique({
         where: { id: item.goodsVariantId },
       });
