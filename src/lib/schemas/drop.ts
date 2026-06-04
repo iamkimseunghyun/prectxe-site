@@ -11,6 +11,14 @@ export const dropStatusSchema = z.enum([
   'closed',
 ]);
 
+// 날짜 입력 문자열 — 빈 문자열(미입력)은 허용하되 파싱 불가한 값은 거부.
+// new Date()/parseKstDateInput()에서 Invalid Date가 저장되는 것 방지.
+const dateInputSchema = z
+  .string()
+  .refine((v) => v === '' || !Number.isNaN(new Date(v).getTime()), {
+    message: '올바른 날짜 형식이 아닙니다.',
+  });
+
 export const dropMediaSchema = z.object({
   type: z.enum(['image', 'video']),
   url: z.string().min(1, '미디어 URL이 비어 있습니다.'),
@@ -29,8 +37,8 @@ export const dropCreateSchema = z.object({
   type: z.enum(['ticket', 'goods']),
   summary: z.string().optional(),
   description: z.string().optional(),
-  eventDate: z.string().optional(),
-  eventEndDate: z.string().optional(),
+  eventDate: dateInputSchema.optional(),
+  eventEndDate: dateInputSchema.optional(),
   venue: z.string().optional(),
   venueAddress: z.string().optional(),
   venueId: z.string().optional(),
@@ -47,14 +55,14 @@ export const dropUpdateSchema = z.object({
   slug: z.string().min(1, 'slug를 입력해주세요.').optional(),
   summary: z.string().optional(),
   description: z.string().optional(),
-  eventDate: z.string().optional(),
-  eventEndDate: z.string().optional(),
+  eventDate: dateInputSchema.optional(),
+  eventEndDate: dateInputSchema.optional(),
   venue: z.string().optional(),
   venueAddress: z.string().optional(),
   venueId: z.string().nullable().optional(),
   notice: z.string().optional(),
   status: dropStatusSchema.optional(),
-  publishedAt: z.string().nullable().optional(),
+  publishedAt: dateInputSchema.nullable().optional(),
   media: z.array(dropMediaSchema).optional(),
   credits: z.array(dropCreditSchema).optional(),
 });
