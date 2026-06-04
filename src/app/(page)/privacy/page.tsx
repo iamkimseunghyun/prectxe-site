@@ -27,7 +27,9 @@ export default function PrivacyPage() {
       <p>회사는 서비스 제공을 위해 다음의 최소 정보를 수집합니다.</p>
       <h3>티켓·굿즈 구매 시</h3>
       <ul>
-        <li>이름, 이메일, 전화번호 ({SALES_TERMS.order} 확인 및 배송·발권 목적)</li>
+        <li>
+          이름, 이메일, 전화번호 ({SALES_TERMS.order} 확인 및 배송·발권 목적)
+        </li>
         <li>결제 확인 정보(입금자명, 입금 내역 등)</li>
         <li>배송 주소 (굿즈 구매 시에 한함)</li>
       </ul>
