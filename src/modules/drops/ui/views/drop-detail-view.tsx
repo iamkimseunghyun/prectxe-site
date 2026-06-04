@@ -30,8 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatKstDateTime } from '@/lib/utils';
 import {
   deleteDrop,
-  getDrop,
-  getDropStats,
+  getDropWithStats,
   updateDrop,
 } from '@/modules/drops/server/actions';
 import { GoodsVariantList } from '@/modules/drops/ui/components/goods-variant-list';
@@ -103,13 +102,15 @@ export function DropDetailView({ dropId }: { dropId: string }) {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [dropData, statsData] = await Promise.all([
-      getDrop(dropId),
-      getDropStats(dropId),
-    ]);
-    setDrop(dropData as DropData | null);
-    if (dropData) setStatusValue(dropData.status);
-    setStats(statsData);
+    const result = await getDropWithStats(dropId);
+    if (result.success && result.data) {
+      setDrop(result.data.drop as DropData);
+      setStatusValue(result.data.drop.status);
+      setStats(result.data.stats);
+    } else {
+      setDrop(null);
+      setStats(null);
+    }
     setLoading(false);
   }, [dropId]);
 
