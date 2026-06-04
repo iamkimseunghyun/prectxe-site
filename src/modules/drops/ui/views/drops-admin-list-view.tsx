@@ -10,7 +10,7 @@ import { formatKstDate } from '@/lib/utils';
 import { listAdminDrops } from '@/modules/drops/server/actions';
 import { DropStatusBadge } from '@/modules/drops/ui/components/status-badges';
 
-type Drop = {
+interface Drop {
   id: string;
   title: string;
   slug: string;
@@ -23,7 +23,7 @@ type Drop = {
   variantCount: number;
   revenue: number;
   orderCount: number;
-};
+}
 
 const TYPE_LABELS: Record<string, { label: string; icon: typeof Ticket }> = {
   ticket: { label: '티켓', icon: Ticket },
