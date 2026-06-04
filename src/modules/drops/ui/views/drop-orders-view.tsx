@@ -1,11 +1,17 @@
 'use client';
 
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { formatKstDateTime } from '@/lib/utils';
 import { getDropOrders } from '@/modules/drops/server/actions';
@@ -126,16 +132,44 @@ export function DropOrdersView({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={`/admin/drops/${dropId}`}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-xl font-semibold">주문 목록</h1>
-          <p className="text-sm text-muted-foreground">총 {total}건</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href={`/admin/drops/${dropId}`}>
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-xl font-semibold">주문 목록</h1>
+            <p className="text-sm text-muted-foreground">총 {total}건</p>
+          </div>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="outline" disabled={total === 0}>
+              <Download className="mr-1 h-4 w-4" />
+              내보내기
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <a
+                href={`/api/admin/drops/${dropId}/orders/export?format=xlsx`}
+                download
+              >
+                Excel (.xlsx)
+              </a>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a
+                href={`/api/admin/drops/${dropId}/orders/export?format=csv`}
+                download
+              >
+                CSV (.csv)
+              </a>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <Card>
