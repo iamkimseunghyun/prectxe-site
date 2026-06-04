@@ -3,12 +3,14 @@
 import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { parseInput } from '@/lib/auth/server-action-helpers';
 import {
   cleanupRemovedHtmlImages,
   deleteCloudflareImage,
   deleteCloudflareVideo,
 } from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
+import { dropCreateSchema, dropUpdateSchema } from '@/lib/schemas/drop';
 import { extractImageId, extractVideoId, parseKstDateInput } from '@/lib/utils';
 
 // ─── Drop CRUD (Admin) ──────────────────────────────
@@ -43,6 +45,9 @@ export async function createDrop(data: {
 }) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error };
+
+  const parsed = parseInput(dropCreateSchema, data);
+  if (!parsed.success) return parsed;
 
   const existing = await prisma.drop.findUnique({
     where: { slug: data.slug },
@@ -102,6 +107,9 @@ export async function updateDrop(
 ) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error };
+
+  const parsed = parseInput(dropUpdateSchema, data);
+  if (!parsed.success) return parsed;
 
   if (data.slug) {
     const existing = await prisma.drop.findFirst({
