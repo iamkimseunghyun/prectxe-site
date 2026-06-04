@@ -3,12 +3,14 @@
 import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { parseInput } from '@/lib/auth/server-action-helpers';
 import {
   cleanupRemovedHtmlImages,
   deleteCloudflareImage,
   deleteCloudflareVideo,
 } from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
+import { dropCreateSchema, dropUpdateSchema } from '@/lib/schemas/drop';
 import { extractImageId, extractVideoId, parseKstDateInput } from '@/lib/utils';
 
 // ─── Drop CRUD (Admin) ──────────────────────────────
@@ -25,7 +27,7 @@ export type DropCreditInput = {
   role: string;
 };
 
-export async function createDrop(data: {
+export async function createDrop(input: {
   title: string;
   slug: string;
   type: 'ticket' | 'goods';
@@ -43,6 +45,11 @@ export async function createDrop(data: {
 }) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error };
+
+  const parsed = parseInput(dropCreateSchema, input);
+  if (!parsed.success) return parsed;
+  // 검증·강제변환·정제된 값 사용 (media.order coerce 등)
+  const data = parsed.data;
 
   const existing = await prisma.drop.findUnique({
     where: { slug: data.slug },
@@ -83,7 +90,7 @@ export async function createDrop(data: {
 
 export async function updateDrop(
   id: string,
-  data: {
+  input: {
     title?: string;
     slug?: string;
     summary?: string;
@@ -102,6 +109,11 @@ export async function updateDrop(
 ) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error };
+
+  const parsed = parseInput(dropUpdateSchema, input);
+  if (!parsed.success) return parsed;
+  // 검증·강제변환·정제된 값 사용
+  const data = parsed.data;
 
   if (data.slug) {
     const existing = await prisma.drop.findFirst({
