@@ -979,8 +979,18 @@ export async function getOrders(page = 1, pageSize = 20) {
     prisma.order.findMany({
       include: {
         drop: { select: { title: true, slug: true, type: true } },
-        items: { include: { ticketTier: true, goodsVariant: true } },
-        payment: true,
+        items: {
+          select: {
+            id: true,
+            quantity: true,
+            unitPrice: true,
+            subtotal: true,
+            ticketTier: { select: { name: true } },
+            goodsVariant: { select: { name: true } },
+          },
+        },
+        // payment.rawData(PortOne 응답 JSON 통째) 제외
+        payment: { select: { method: true, paidAt: true } },
       },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * pageSize,

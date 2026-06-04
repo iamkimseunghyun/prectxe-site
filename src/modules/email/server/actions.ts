@@ -411,37 +411,36 @@ export async function getEmailCampaign(
  */
 export async function getFormsWithEmailFields(userId: string, isAdmin = false) {
   try {
+    // 이메일 필드가 있는 폼만 DB에서 필터(where some) + 제출 수는 _count로
+    // (전체 submission row 적재·JS 필터 제거)
     const forms = await prisma.form.findMany({
-      where: isAdmin ? {} : { userId },
-      include: {
+      where: {
+        ...(isAdmin ? {} : { userId }),
+        fields: { some: { type: 'email', archived: false } },
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
         fields: {
-          where: {
-            type: 'email',
-            archived: false,
-          },
+          where: { type: 'email', archived: false },
+          select: { id: true },
         },
-        submissions: {
-          select: {
-            id: true,
-          },
-        },
+        _count: { select: { submissions: true } },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
 
-    // 이메일 필드가 있는 폼만 필터링
-    const formsWithEmail = forms.filter((f) => f.fields.length > 0);
-
     return {
       success: true,
-      data: formsWithEmail.map((f) => ({
+      data: forms.map((f) => ({
         id: f.id,
         title: f.title,
         slug: f.slug,
         emailFieldCount: f.fields.length,
-        submissionCount: f.submissions.length,
+        submissionCount: f._count.submissions,
       })),
     };
   } catch (error) {

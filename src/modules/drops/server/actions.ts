@@ -298,15 +298,22 @@ export async function listDrops(
   return { page, pageSize, total, items };
 }
 
-export async function getDropStats(dropId: string) {
+// 상세 페이지용: drop 단건과 통계를 한 번에 반환.
+// 기존 getDrop + getDropStats 병렬 호출 시 drop.findUnique가 중복됐던 것을
+// 단일 findUnique + order 집계로 통합. 반환은 서버 액션 컨벤션({success,data}).
+export async function getDropWithStats(dropId: string) {
   const auth = await requireAdmin();
-  if (!auth.success) return null;
+  if (!auth.success) return { success: false, error: auth.error } as const;
 
-  // 주문 relation을 통째로 로드하지 않고 DB 집계로 매출·건수 계산
   const [drop, agg] = await Promise.all([
     prisma.drop.findUnique({
       where: { id: dropId },
-      select: { ticketTiers: { select: { soldCount: true, quantity: true } } },
+      include: {
+        // media는 상세 뷰에서 사용하지 않으므로 제외
+        credits: { include: { artist: true } },
+        ticketTiers: { orderBy: { order: 'asc' } },
+        variants: { orderBy: { order: 'asc' } },
+      },
     }),
     prisma.order.aggregate({
       where: { dropId, status: { in: ['paid', 'confirmed'] } },
@@ -315,19 +322,34 @@ export async function getDropStats(dropId: string) {
     }),
   ]);
 
-  if (!drop) return null;
+  if (!drop) {
+    return { success: false, error: 'Drop을 찾을 수 없습니다.' } as const;
+  }
 
-  const totalSold = drop.ticketTiers.reduce((s, t) => s + t.soldCount, 0);
-  const totalCapacity = drop.ticketTiers.reduce((s, t) => s + t.quantity, 0);
+  // 티켓은 tier(quantity/soldCount), 굿즈는 variant(stock/soldCount) 기준.
+  // stock은 총량(remaining = stock - soldCount)
+  const isGoods = drop.type === 'goods';
+  const totalSold = isGoods
+    ? drop.variants.reduce((s, v) => s + v.soldCount, 0)
+    : drop.ticketTiers.reduce((s, t) => s + t.soldCount, 0);
+  const totalCapacity = isGoods
+    ? drop.variants.reduce((s, v) => s + v.stock, 0)
+    : drop.ticketTiers.reduce((s, t) => s + t.quantity, 0);
 
   return {
-    totalRevenue: agg._sum.totalAmount ?? 0,
-    totalSold,
-    totalCapacity,
-    salesRate:
-      totalCapacity > 0 ? Math.round((totalSold / totalCapacity) * 100) : 0,
-    orderCount: agg._count,
-  };
+    success: true,
+    data: {
+      drop,
+      stats: {
+        totalRevenue: agg._sum.totalAmount ?? 0,
+        totalSold,
+        totalCapacity,
+        salesRate:
+          totalCapacity > 0 ? Math.round((totalSold / totalCapacity) * 100) : 0,
+        orderCount: agg._count,
+      },
+    },
+  } as const;
 }
 
 export async function getDropOrders(dropId: string, page = 1, pageSize = 20) {
@@ -340,8 +362,19 @@ export async function getDropOrders(dropId: string, page = 1, pageSize = 20) {
     prisma.order.findMany({
       where,
       include: {
-        items: { include: { ticketTier: true, goodsVariant: true } },
-        payment: true,
+        // 뷰가 쓰는 필드만 — payment.rawData(PortOne 응답 JSON 통째),
+        // tier/variant 전체 row 적재 방지
+        items: {
+          select: {
+            id: true,
+            quantity: true,
+            unitPrice: true,
+            subtotal: true,
+            ticketTier: { select: { name: true } },
+            goodsVariant: { select: { name: true } },
+          },
+        },
+        payment: { select: { method: true, paidAt: true } },
         bankTransfer: true,
       },
       orderBy: { createdAt: 'desc' },
