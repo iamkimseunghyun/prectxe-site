@@ -19,9 +19,10 @@ type Drop = {
   publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
-  ticketTiers: { id: string }[];
-  variants: { id: string }[];
-  orders: { totalAmount: number }[];
+  ticketTierCount: number;
+  variantCount: number;
+  revenue: number;
+  orderCount: number;
 };
 
 const TYPE_LABELS: Record<string, { label: string; icon: typeof Ticket }> = {
@@ -87,11 +88,9 @@ export function DropsAdminListView({ page }: { page: number }) {
           {drops.map((drop) => {
             const typeInfo = TYPE_LABELS[drop.type] ?? TYPE_LABELS.ticket;
             const TypeIcon = typeInfo.icon;
-            const revenue = drop.orders.reduce((s, o) => s + o.totalAmount, 0);
+            const revenue = drop.revenue;
             const itemCount =
-              drop.type === 'ticket'
-                ? drop.ticketTiers.length
-                : drop.variants.length;
+              drop.type === 'ticket' ? drop.ticketTierCount : drop.variantCount;
 
             return (
               <Link key={drop.id} href={`/admin/drops/${drop.id}`}>
@@ -109,7 +108,7 @@ export function DropsAdminListView({ page }: { page: number }) {
                       <p className="mt-0.5 text-sm text-muted-foreground">
                         /{drop.slug} · {itemCount}개{' '}
                         {drop.type === 'ticket' ? '등급' : '옵션'} ·{' '}
-                        {drop.orders.length}건 주문
+                        {drop.orderCount}건 주문
                       </p>
                     </div>
                     <div className="text-right">
