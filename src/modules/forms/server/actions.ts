@@ -384,8 +384,12 @@ export async function getFormSubmissions(
       where: { formId },
       include: {
         responses: {
+          // field 전체(options/validation 등)를 응답마다 중복 로드하지 않도록
+          // 뷰가 실제로 쓰는 필드만 select
           include: {
-            field: true,
+            field: {
+              select: { id: true, label: true, type: true, archived: true },
+            },
           },
           orderBy: { createdAt: 'asc' },
         },

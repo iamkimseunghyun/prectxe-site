@@ -82,14 +82,11 @@ export async function getFormRespondentsEmails(formId: string) {
   try {
     const form = await prisma.form.findUnique({
       where: { id: formId },
-      include: {
+      select: {
+        title: true,
         fields: {
-          where: { archived: false },
-        },
-        submissions: {
-          include: {
-            responses: true,
-          },
+          where: { archived: false, type: 'email' },
+          select: { id: true },
         },
       },
     });
@@ -98,39 +95,32 @@ export async function getFormRespondentsEmails(formId: string) {
       return { success: false, error: '폼을 찾을 수 없습니다' };
     }
 
-    // 이메일 필드 찾기
-    const emailFields = form.fields.filter((f) => f.type === 'email');
-
-    if (emailFields.length === 0) {
+    const emailFieldIds = form.fields.map((f) => f.id);
+    if (emailFieldIds.length === 0) {
       return {
         success: false,
         error: '이 폼에는 이메일 필드가 없습니다',
       };
     }
 
-    // 모든 응답에서 이메일 추출
-    const emails: string[] = [];
-    for (const submission of form.submissions) {
-      for (const response of submission.responses) {
-        // 이메일 필드의 응답만 추출
-        if (
-          emailFields.some((f) => f.id === response.fieldId) &&
-          response.value
-        ) {
-          emails.push(response.value);
-        }
-      }
-    }
+    // 이메일 필드의 응답만 DB에서 직접 조회 (전체 submission·response 적재 방지)
+    const [responses, totalSubmissions] = await Promise.all([
+      prisma.formResponse.findMany({
+        where: { fieldId: { in: emailFieldIds }, submission: { formId } },
+        select: { value: true },
+      }),
+      prisma.formSubmission.count({ where: { formId } }),
+    ]);
 
     // 유효한 이메일만 필터링
-    const validEmails = filterValidEmails(emails);
+    const validEmails = filterValidEmails(responses.map((r) => r.value));
 
     return {
       success: true,
       data: {
         formTitle: form.title,
-        totalSubmissions: form.submissions.length,
-        emailFieldCount: emailFields.length,
+        totalSubmissions,
+        emailFieldCount: emailFieldIds.length,
         validEmailCount: validEmails.length,
         emails: validEmails,
       },
@@ -349,13 +339,8 @@ export async function listEmailCampaigns(userId: string, isAdmin = false) {
             slug: true,
           },
         },
-        recipients: {
-          select: {
-            id: true,
-            email: true,
-            success: true,
-          },
-        },
+        // recipients는 목록에서 사용하지 않으므로 include하지 않음
+        // (sentCount/failedCount는 캠페인 컬럼에 비정규화돼 있음)
       },
       orderBy: {
         createdAt: 'desc',

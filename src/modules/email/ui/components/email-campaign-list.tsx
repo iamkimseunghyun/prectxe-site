@@ -43,11 +43,6 @@ type Campaign = {
     title: string;
     slug: string;
   } | null;
-  recipients: Array<{
-    id: string;
-    email: string;
-    success: boolean;
-  }>;
 };
 
 export function EmailCampaignList({ userId, isAdmin }: EmailCampaignListProps) {

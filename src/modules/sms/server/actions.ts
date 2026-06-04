@@ -15,14 +15,11 @@ export async function getFormRespondentsPhones(formId: string) {
   try {
     const form = await prisma.form.findUnique({
       where: { id: formId },
-      include: {
+      select: {
+        title: true,
         fields: {
-          where: { archived: false },
-        },
-        submissions: {
-          include: {
-            responses: true,
-          },
+          where: { archived: false, type: 'phone' },
+          select: { id: true },
         },
       },
     });
@@ -31,39 +28,32 @@ export async function getFormRespondentsPhones(formId: string) {
       return { success: false, error: '폼을 찾을 수 없습니다' };
     }
 
-    // 전화번호 필드 찾기
-    const phoneFields = form.fields.filter((f) => f.type === 'phone');
-
-    if (phoneFields.length === 0) {
+    const phoneFieldIds = form.fields.map((f) => f.id);
+    if (phoneFieldIds.length === 0) {
       return {
         success: false,
         error: '이 폼에는 전화번호 필드가 없습니다',
       };
     }
 
-    // 모든 응답에서 전화번호 추출
-    const phones: string[] = [];
-    for (const submission of form.submissions) {
-      for (const response of submission.responses) {
-        // 전화번호 필드의 응답만 추출
-        if (
-          phoneFields.some((f) => f.id === response.fieldId) &&
-          response.value
-        ) {
-          phones.push(response.value);
-        }
-      }
-    }
+    // 전화번호 필드의 응답만 DB에서 직접 조회 (전체 submission·response 적재 방지)
+    const [responses, totalSubmissions] = await Promise.all([
+      prisma.formResponse.findMany({
+        where: { fieldId: { in: phoneFieldIds }, submission: { formId } },
+        select: { value: true },
+      }),
+      prisma.formSubmission.count({ where: { formId } }),
+    ]);
 
     // 유효한 전화번호만 필터링 및 정규화
-    const validPhones = filterValidPhoneNumbers(phones);
+    const validPhones = filterValidPhoneNumbers(responses.map((r) => r.value));
 
     return {
       success: true,
       data: {
         formTitle: form.title,
-        totalSubmissions: form.submissions.length,
-        phoneFieldCount: phoneFields.length,
+        totalSubmissions,
+        phoneFieldCount: phoneFieldIds.length,
         validPhoneCount: validPhones.length,
         phones: validPhones,
       },

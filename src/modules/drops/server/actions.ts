@@ -302,31 +302,31 @@ export async function getDropStats(dropId: string) {
   const auth = await requireAdmin();
   if (!auth.success) return null;
 
-  const drop = await prisma.drop.findUnique({
-    where: { id: dropId },
-    include: {
-      ticketTiers: { orderBy: { order: 'asc' } },
-      variants: { orderBy: { order: 'asc' } },
-      orders: {
-        where: { status: { in: ['paid', 'confirmed'] } },
-        select: { totalAmount: true },
-      },
-    },
-  });
+  // 주문 relation을 통째로 로드하지 않고 DB 집계로 매출·건수 계산
+  const [drop, agg] = await Promise.all([
+    prisma.drop.findUnique({
+      where: { id: dropId },
+      select: { ticketTiers: { select: { soldCount: true, quantity: true } } },
+    }),
+    prisma.order.aggregate({
+      where: { dropId, status: { in: ['paid', 'confirmed'] } },
+      _sum: { totalAmount: true },
+      _count: true,
+    }),
+  ]);
 
   if (!drop) return null;
 
-  const totalRevenue = drop.orders.reduce((s, o) => s + o.totalAmount, 0);
   const totalSold = drop.ticketTiers.reduce((s, t) => s + t.soldCount, 0);
   const totalCapacity = drop.ticketTiers.reduce((s, t) => s + t.quantity, 0);
 
   return {
-    totalRevenue,
+    totalRevenue: agg._sum.totalAmount ?? 0,
     totalSold,
     totalCapacity,
     salesRate:
       totalCapacity > 0 ? Math.round((totalSold / totalCapacity) * 100) : 0,
-    orderCount: drop.orders.length,
+    orderCount: agg._count,
   };
 }
 
@@ -360,22 +360,61 @@ export async function listAdminDrops(page = 1, pageSize = 20) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;
 
-  const [total, items] = await Promise.all([
+  const [total, drops] = await Promise.all([
     prisma.drop.count(),
     prisma.drop.findMany({
-      include: {
-        ticketTiers: { select: { id: true } },
-        variants: { select: { id: true } },
-        orders: {
-          where: { status: { in: ['paid', 'confirmed'] } },
-          select: { totalAmount: true },
-        },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        type: true,
+        status: true,
+        publishedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: { select: { ticketTiers: true, variants: true } },
       },
       orderBy: { updatedAt: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
   ]);
+
+  // 페이지 내 drop들의 매출·주문건수를 groupBy 한 번으로 집계
+  // (drop별 orders relation 통째 로드 → JS reduce 패턴 제거)
+  const dropIds = drops.map((d) => d.id);
+  const grouped = dropIds.length
+    ? await prisma.order.groupBy({
+        by: ['dropId'],
+        where: {
+          dropId: { in: dropIds },
+          status: { in: ['paid', 'confirmed'] },
+        },
+        _sum: { totalAmount: true },
+        _count: true,
+      })
+    : [];
+  const statById = new Map(
+    grouped.map((g) => [
+      g.dropId,
+      { revenue: g._sum.totalAmount ?? 0, orderCount: g._count },
+    ])
+  );
+
+  const items = drops.map((d) => ({
+    id: d.id,
+    title: d.title,
+    slug: d.slug,
+    type: d.type,
+    status: d.status,
+    publishedAt: d.publishedAt,
+    createdAt: d.createdAt,
+    updatedAt: d.updatedAt,
+    ticketTierCount: d._count.ticketTiers,
+    variantCount: d._count.variants,
+    revenue: statById.get(d.id)?.revenue ?? 0,
+    orderCount: statById.get(d.id)?.orderCount ?? 0,
+  }));
 
   return {
     success: true,
