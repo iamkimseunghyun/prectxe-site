@@ -1,5 +1,6 @@
 'use server';
 
+import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import {
@@ -352,11 +353,37 @@ export async function getDropWithStats(dropId: string) {
   } as const;
 }
 
-export async function getDropOrders(dropId: string, page = 1, pageSize = 20) {
+export async function getDropOrders(
+  dropId: string,
+  page = 1,
+  pageSize = 20,
+  filters: { status?: string; q?: string } = {}
+) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;
 
-  const where = { dropId };
+  const where: Prisma.OrderWhereInput = { dropId };
+  const VALID_STATUSES = [
+    'pending',
+    'paid',
+    'confirmed',
+    'cancelled',
+    'refunded',
+  ];
+  // 허용된 status만 적용 — 잘못된 URL 값으로 인한 Prisma 런타임 에러(500) 방지
+  if (filters.status && VALID_STATUSES.includes(filters.status)) {
+    where.status = filters.status as Prisma.OrderWhereInput['status'];
+  }
+  const q = filters.q?.trim();
+  if (q) {
+    // 이름·주문번호·이메일·연락처 부분일치 검색
+    where.OR = [
+      { orderNo: { contains: q, mode: 'insensitive' } },
+      { buyerName: { contains: q, mode: 'insensitive' } },
+      { buyerEmail: { contains: q, mode: 'insensitive' } },
+      { buyerPhone: { contains: q } },
+    ];
+  }
   const [total, items] = await Promise.all([
     prisma.order.count({ where }),
     prisma.order.findMany({

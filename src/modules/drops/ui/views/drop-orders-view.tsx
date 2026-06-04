@@ -1,8 +1,9 @@
 'use client';
 
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, Search } from 'lucide-react';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -12,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { formatKstDateTime } from '@/lib/utils';
 import { getDropOrders } from '@/modules/drops/server/actions';
@@ -56,42 +58,85 @@ type Order = {
   } | null;
 };
 
+const STATUS_FILTERS: { value: string; label: string }[] = [
+  { value: '', label: '전체' },
+  { value: 'pending', label: '대기' },
+  { value: 'paid', label: '결제완료' },
+  { value: 'confirmed', label: '확정' },
+  { value: 'cancelled', label: '취소' },
+  { value: 'refunded', label: '환불' },
+];
+
 export function DropOrdersView({
   dropId,
   page,
+  status,
+  q,
 }: {
   dropId: string;
   page: number;
+  status?: string;
+  q?: string;
 }) {
   const { toast } = useToast();
+  const router = useRouter();
+  const pathname = `/admin/drops/${dropId}/orders`;
   const [orders, setOrders] = useState<Order[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [cancelTarget, setCancelTarget] = useState<Order | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<Order | null>(null);
   const [actionInFlight, setActionInFlight] = useState(false);
+  const [search, setSearch] = useState(q ?? '');
+  const cleanedRef = useRef(false);
   const pageSize = 20;
+
+  // URL의 q가 바뀌면(뒤로/앞으로 가기 등) 검색 입력창도 동기화
+  useEffect(() => {
+    setSearch(q ?? '');
+  }, [q]);
+
+  // status·q·page를 URL 쿼리로 직렬화 (페이지네이션·필터 링크 공통)
+  const buildHref = useCallback(
+    (overrides: { status?: string; q?: string; page?: number }) => {
+      const params = new URLSearchParams();
+      const nextStatus = overrides.status ?? status ?? '';
+      const nextQ = overrides.q ?? q ?? '';
+      if (nextStatus) params.set('status', nextStatus);
+      if (nextQ) params.set('q', nextQ);
+      if (overrides.page && overrides.page > 1) {
+        params.set('page', String(overrides.page));
+      }
+      const qs = params.toString();
+      return qs ? `${pathname}?${qs}` : pathname;
+    },
+    [pathname, status, q]
+  );
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
-    const result = await getDropOrders(dropId, page, pageSize);
+    const result = await getDropOrders(dropId, page, pageSize, { status, q });
     if (result.success && result.data) {
       setOrders(result.data.items as Order[]);
       setTotal(result.data.total);
     }
     setLoading(false);
-  }, [dropId, page]);
+  }, [dropId, page, status, q]);
 
-  // 페이지 진입 시 만료된 무통장 주문 lazy 정리 → 목록 로드
+  // 만료된 무통장 주문 정리는 최초 1회만(필터/페이지 변경 시 재호출 방지),
+  // 그 후 목록 로드. 이후엔 loadOrders 변경(필터·페이지)마다 목록만 재로드.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const cleanup = await cleanupExpiredBankTransferOrders();
-      if (cancelled) return;
-      if (cleanup.success && cleanup.expiredCount > 0) {
-        toast({
-          title: `만료된 무통장 주문 ${cleanup.expiredCount}건 자동 취소`,
-        });
+      if (!cleanedRef.current) {
+        cleanedRef.current = true;
+        const cleanup = await cleanupExpiredBankTransferOrders();
+        if (cancelled) return;
+        if (cleanup.success && cleanup.expiredCount > 0) {
+          toast({
+            title: `만료된 무통장 주문 ${cleanup.expiredCount}건 자동 취소`,
+          });
+        }
       }
       loadOrders();
     })();
@@ -170,6 +215,40 @@ export function DropOrdersView({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {STATUS_FILTERS.map((f) => (
+            <Button
+              key={f.value || 'all'}
+              type="button"
+              size="sm"
+              variant={(status ?? '') === f.value ? 'default' : 'outline'}
+              onClick={() => router.replace(buildHref({ status: f.value }))}
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
+        <form
+          className="flex w-full gap-2 sm:w-auto"
+          onSubmit={(e) => {
+            e.preventDefault();
+            router.replace(buildHref({ q: search.trim() }));
+          }}
+        >
+          <Input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="이름·주문번호·연락처·이메일"
+            className="h-9 w-full sm:w-64"
+          />
+          <Button type="submit" size="sm" variant="outline">
+            <Search className="h-4 w-4" />
+          </Button>
+        </form>
       </div>
 
       <Card>
@@ -286,9 +365,7 @@ export function DropOrdersView({
             asChild={page > 1}
           >
             {page > 1 ? (
-              <Link href={`/admin/drops/${dropId}/orders?page=${page - 1}`}>
-                이전
-              </Link>
+              <Link href={buildHref({ page: page - 1 })}>이전</Link>
             ) : (
               '이전'
             )}
@@ -303,9 +380,7 @@ export function DropOrdersView({
             asChild={page < totalPages}
           >
             {page < totalPages ? (
-              <Link href={`/admin/drops/${dropId}/orders?page=${page + 1}`}>
-                다음
-              </Link>
+              <Link href={buildHref({ page: page + 1 })}>다음</Link>
             ) : (
               '다음'
             )}
