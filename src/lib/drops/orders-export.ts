@@ -66,7 +66,7 @@ export function buildOrdersAoa(orders: ExportOrder[]): AOA {
       o.payment?.paidAt ?? o.bankTransfer?.confirmedAt ?? null;
     aoa.push([
       o.orderNo,
-      formatKstDateTime(new Date(o.createdAt)),
+      formatKstDateTime(o.createdAt),
       o.buyerName,
       o.buyerPhone,
       o.buyerEmail,
@@ -75,7 +75,7 @@ export function buildOrdersAoa(orders: ExportOrder[]): AOA {
       ORDER_STATUS_LABEL[o.status] ?? o.status,
       method,
       o.bankTransfer?.depositorName ?? '',
-      confirmedAt ? formatKstDateTime(new Date(confirmedAt)) : '',
+      confirmedAt ? formatKstDateTime(confirmedAt) : '',
     ]);
   }
   return aoa;
@@ -85,13 +85,16 @@ export function buildOrdersAoa(orders: ExportOrder[]): AOA {
 
 export function toCsv(aoa: AOA): string {
   const escapeCell = (cell: Cell): string => {
-    const s = String(cell ?? '');
+    if (typeof cell === 'number') return String(cell);
+    let s = String(cell ?? '');
+    // CSV 수식 인젝션 방어 — 수식 시작 문자로 시작하는 사용자 입력은 ' 프리픽스
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
     return s;
   };
   const body = aoa.map((row) => row.map(escapeCell).join(',')).join('\r\n');
-  // BOM — Excel에서 한글 깨짐 방지
-  return `﻿${body}`;
+  // BOM(\ufeff) — Excel에서 한글 깨짐 방지
+  return `\ufeff${body}`;
 }
 
 // ───────── XLSX ─────────
@@ -139,11 +142,21 @@ export async function toXlsx(aoa: AOA, sheetName: string): Promise<Buffer> {
   return Buffer.from(buf as ArrayBuffer);
 }
 
+/** KST 기준 'YYYY-MM-DD' (UTC toISOString은 오전 9시 전 전날로 밀림) */
+function kstDateStamp(): string {
+  return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+/** 표시용 파일명(한글 포함). Content-Disposition의 filename* 에 사용 */
 export function safeFilename(base: string, ext: 'csv' | 'xlsx'): string {
   const cleaned = base
     .replace(/[\\/?*"<>|:]/g, '_')
     .replace(/\s+/g, '_')
     .slice(0, 80);
-  const stamp = new Date().toISOString().slice(0, 10);
-  return `${cleaned || 'orders'}_${stamp}.${ext}`;
+  return `${cleaned || 'orders'}_${kstDateStamp()}.${ext}`;
+}
+
+/** 비ASCII 미지원 환경용 폴백 파일명. Content-Disposition의 filename= 에 사용 */
+export function asciiFilename(ext: 'csv' | 'xlsx'): string {
+  return `drop-orders_${kstDateStamp()}.${ext}`;
 }
