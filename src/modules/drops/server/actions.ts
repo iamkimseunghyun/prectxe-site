@@ -363,7 +363,15 @@ export async function getDropOrders(
   if (!auth.success) return { success: false, error: auth.error } as const;
 
   const where: Prisma.OrderWhereInput = { dropId };
-  if (filters.status) {
+  const VALID_STATUSES = [
+    'pending',
+    'paid',
+    'confirmed',
+    'cancelled',
+    'refunded',
+  ];
+  // 허용된 status만 적용 — 잘못된 URL 값으로 인한 Prisma 런타임 에러(500) 방지
+  if (filters.status && VALID_STATUSES.includes(filters.status)) {
     where.status = filters.status as Prisma.OrderWhereInput['status'];
   }
   const q = filters.q?.trim();

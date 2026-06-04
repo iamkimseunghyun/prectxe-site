@@ -3,7 +3,7 @@
 import { ArrowLeft, Download, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -88,7 +88,13 @@ export function DropOrdersView({
   const [confirmTarget, setConfirmTarget] = useState<Order | null>(null);
   const [actionInFlight, setActionInFlight] = useState(false);
   const [search, setSearch] = useState(q ?? '');
+  const cleanedRef = useRef(false);
   const pageSize = 20;
+
+  // URL의 q가 바뀌면(뒤로/앞으로 가기 등) 검색 입력창도 동기화
+  useEffect(() => {
+    setSearch(q ?? '');
+  }, [q]);
 
   // status·q·page를 URL 쿼리로 직렬화 (페이지네이션·필터 링크 공통)
   const buildHref = useCallback(
@@ -117,16 +123,20 @@ export function DropOrdersView({
     setLoading(false);
   }, [dropId, page, status, q]);
 
-  // 페이지 진입 시 만료된 무통장 주문 lazy 정리 → 목록 로드
+  // 만료된 무통장 주문 정리는 최초 1회만(필터/페이지 변경 시 재호출 방지),
+  // 그 후 목록 로드. 이후엔 loadOrders 변경(필터·페이지)마다 목록만 재로드.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const cleanup = await cleanupExpiredBankTransferOrders();
-      if (cancelled) return;
-      if (cleanup.success && cleanup.expiredCount > 0) {
-        toast({
-          title: `만료된 무통장 주문 ${cleanup.expiredCount}건 자동 취소`,
-        });
+      if (!cleanedRef.current) {
+        cleanedRef.current = true;
+        const cleanup = await cleanupExpiredBankTransferOrders();
+        if (cancelled) return;
+        if (cleanup.success && cleanup.expiredCount > 0) {
+          toast({
+            title: `만료된 무통장 주문 ${cleanup.expiredCount}건 자동 취소`,
+          });
+        }
       }
       loadOrders();
     })();
