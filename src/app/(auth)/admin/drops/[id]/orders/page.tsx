@@ -2,12 +2,12 @@ import { DropOrdersView } from '@/modules/drops/ui/views/drop-orders-view';
 
 interface PageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; q?: string }>;
 }
 
 export default async function Page({ params, searchParams }: PageProps) {
   const { id } = await params;
   const sp = await searchParams;
   const page = Number(sp.page) || 1;
-  return <DropOrdersView dropId={id} page={page} />;
+  return <DropOrdersView dropId={id} page={page} status={sp.status} q={sp.q} />;
 }
