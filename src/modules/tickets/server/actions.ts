@@ -263,6 +263,8 @@ export async function createOrder(
   if (!parsed.success) return parsed;
 
   const { buyerName, buyerEmail, buyerPhone, items } = parsed.data;
+  // 구매자 로케일 저장 — 이후 어드민이 보내는 확인 메일도 구매자 언어로
+  const locale = (await getLocale()) as Locale;
 
   const result = await prisma.$transaction(async (tx) => {
     let totalAmount = 0;
@@ -318,6 +320,7 @@ export async function createOrder(
         buyerEmail,
         buyerPhone,
         totalAmount,
+        locale,
         items: { create: orderItems },
       },
       include: { items: true },
@@ -414,6 +417,7 @@ export async function createBankTransferOrder(
           buyerEmail,
           buyerPhone,
           totalAmount,
+          locale,
           items: { create: orderItems },
           bankTransfer: {
             create: {
@@ -521,6 +525,7 @@ export async function createGoodsOrder(
   if (!parsed.success) return parsed;
 
   const { buyerName, buyerEmail, buyerPhone, items } = parsed.data;
+  const locale = (await getLocale()) as Locale;
 
   const result = await prisma.$transaction(async (tx) => {
     let totalAmount = 0;
@@ -570,6 +575,7 @@ export async function createGoodsOrder(
         buyerEmail,
         buyerPhone,
         totalAmount,
+        locale,
         items: { create: orderItems },
       },
       include: { items: true },
@@ -736,8 +742,11 @@ export async function confirmBankTransfer(orderId: string) {
   revalidatePath('/admin/drops');
   revalidatePath('/admin/tickets/orders');
 
-  // 확정 이메일 (기존 order-confirmation 재사용)
+  // 확정 이메일 (기존 order-confirmation 재사용).
+  // 어드민 컨텍스트라 getLocale() 대신 주문 시 저장한 구매자 로케일 사용.
   try {
+    // DB에는 임의 string이 들어올 수 있으므로 'en' 외엔 모두 'ko'로 명시 폴백
+    const locale: Locale = order.locale === 'en' ? 'en' : 'ko';
     const dropTitle = order.drop?.title ?? 'PRECTXE';
     const items = order.items.map((item) => ({
       name: item.ticketTier?.name ?? item.goodsVariant?.name ?? '상품',
@@ -748,7 +757,10 @@ export async function confirmBankTransfer(orderId: string) {
 
     await sendEmail({
       to: order.buyerEmail,
-      subject: `[PRECTXE] 입금 확인 — ${dropTitle}`,
+      subject:
+        locale === 'en'
+          ? `[PRECTXE] Payment confirmed — ${dropTitle}`
+          : `[PRECTXE] 입금 확인 — ${dropTitle}`,
       template: 'order-confirmation',
       data: {
         buyerName: order.buyerName,
@@ -756,6 +768,7 @@ export async function confirmBankTransfer(orderId: string) {
         dropTitle,
         items,
         totalAmount: order.totalAmount,
+        locale,
         ticketsUrl:
           ticketCount > 0 ? getOrderTicketsUrl(accessToken) : undefined,
       },
