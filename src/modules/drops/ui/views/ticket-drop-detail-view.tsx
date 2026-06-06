@@ -3,12 +3,14 @@
 import { ArrowLeft, ChevronDown, Play } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { CloudflareStreamVideo } from '@/components/media/cloudflare-stream-video';
 import { SaleCountdown } from '@/components/shared/sale-countdown';
 import { ShareButton } from '@/components/shared/share-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import type { Locale } from '@/i18n/config';
 import { trackViewItem } from '@/lib/analytics/gtag';
 import {
   artistInitials,
@@ -74,6 +76,10 @@ type TicketDrop = {
 };
 
 export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
+  const t = useTranslations('drops');
+  const locale = useLocale() as Locale;
+  const fmtPrice = (n: number) =>
+    locale === 'en' ? `₩${n.toLocaleString()}` : `${n.toLocaleString()}원`;
   // 히어로(포스터): 첫 미디어(이미지/영상). 영상이면 autoplay muted loop 배경 재생.
   // 없으면 gradient fallback.
   const heroMedia = drop.media[0] ?? null;
@@ -141,7 +147,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
         <Link
           href="/drops"
           className="absolute left-5 top-5 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/30 text-white/80 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white"
-          aria-label="Drops 목록"
+          aria-label={t('dropsList')}
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
@@ -243,13 +249,13 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
             {availableTiers.length > 0 && !isClosed && !isSoldOut && (
               <div className="mt-8 flex items-center gap-4">
                 <span className="text-2xl font-bold tabular-nums sm:text-3xl">
-                  {Math.min(
-                    ...availableTiers.map((t) => t.price)
-                  ).toLocaleString()}
-                  원{availableTiers.length > 1 ? ' ~' : ''}
+                  {fmtPrice(
+                    Math.min(...availableTiers.map((tier) => tier.price))
+                  )}
+                  {availableTiers.length > 1 ? ' ~' : ''}
                 </span>
                 <span className="rounded-full border border-white/20 px-4 py-1.5 text-sm text-white/60">
-                  {availableTiers.length}개 티켓
+                  {t('ticketCount', { count: availableTiers.length })}
                 </span>
               </div>
             )}
@@ -308,7 +314,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                             {/** biome-ignore lint/performance/noImgElement: Cloudflare Stream 썸네일은 next/image 원격 패턴 외부 */}
                             <img
                               src={`${m.url}/thumbnails/thumbnail.jpg?time=2s&height=600`}
-                              alt={m.alt || '영상 썸네일'}
+                              alt={m.alt || t('videoThumb')}
                               className="absolute inset-0 h-full w-full object-cover"
                             />
                             <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors group-hover:bg-black/30">
@@ -328,7 +334,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
               {drop.notice && (
                 <div className="mt-16 space-y-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
-                    안내사항
+                    {t('notice')}
                   </p>
                   <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-5 text-sm leading-relaxed text-neutral-600">
                     <div className="prose prose-sm prose-neutral max-w-none">
@@ -346,13 +352,15 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                   <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-6 py-12 text-center">
                     <p className="text-xl font-bold text-neutral-400">Closed</p>
                     <p className="mt-2 text-sm text-neutral-400">
-                      판매가 종료되었습니다.
+                      {t('salesEnded')}
                     </p>
                   </div>
                 ) : isSoldOut ? (
                   <div className="rounded-2xl border border-red-100 bg-red-50 px-6 py-12 text-center">
                     <p className="text-xl font-bold text-red-500">Sold Out</p>
-                    <p className="mt-2 text-sm text-red-400">매진되었습니다.</p>
+                    <p className="mt-2 text-sm text-red-400">
+                      {t('soldOutMsg')}
+                    </p>
                   </div>
                 ) : (
                   <TicketPurchaseSection

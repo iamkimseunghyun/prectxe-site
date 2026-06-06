@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -35,6 +36,7 @@ export function SaleCountdown({
   tone = 'dark',
   className,
 }: SaleCountdownProps) {
+  const t = useTranslations('drops');
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
@@ -51,10 +53,10 @@ export function SaleCountdown({
   let label: string;
   let target: number;
   if (start !== null && now < start) {
-    label = '판매 시작';
+    label = t('saleStarts');
     target = start;
   } else if (end !== null && now < end) {
-    label = '판매 마감';
+    label = t('saleEnds');
     target = end;
   } else {
     return null;

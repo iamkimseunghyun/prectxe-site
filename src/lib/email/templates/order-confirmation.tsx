@@ -10,8 +10,9 @@ import {
   Section,
   Text,
 } from 'react-email';
+import type { Locale } from '@/i18n/config';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
-import { SALES_TERMS } from '@/lib/constants/sales-terms';
+import { getSalesTerms } from '@/lib/constants/sales-terms';
 
 interface OrderItem {
   name: string;
@@ -27,6 +28,7 @@ interface OrderConfirmationProps {
   items: OrderItem[];
   totalAmount: number;
   ticketsUrl?: string;
+  locale?: Locale;
 }
 
 export default function OrderConfirmation({
@@ -36,21 +38,25 @@ export default function OrderConfirmation({
   items,
   totalAmount,
   ticketsUrl,
+  locale = 'ko',
 }: OrderConfirmationProps) {
+  const en = locale === 'en';
+  const ST = getSalesTerms(locale);
+  const L = (ko: string, eng: string) => (en ? eng : ko);
+  const fmtPrice = (n: number) =>
+    en ? `₩${n.toLocaleString()}` : `${n.toLocaleString()}원`;
   return (
     <Html>
       <Head />
-      <Preview>{SALES_TERMS.emailPreview(dropTitle)}</Preview>
+      <Preview>{ST.emailPreview(dropTitle)}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={box}>
             <Heading style={heading}>PRECTXE</Heading>
-            <Text style={paragraph}>
-              {SALES_TERMS.completedNotice(buyerName)}
-            </Text>
+            <Text style={paragraph}>{ST.completedNotice(buyerName)}</Text>
 
             <Section style={orderBox}>
-              <Text style={orderLabel}>{SALES_TERMS.orderNumber}</Text>
+              <Text style={orderLabel}>{ST.orderNumber}</Text>
               <Text style={orderValue}>{orderNo}</Text>
             </Section>
 
@@ -63,20 +69,16 @@ export default function OrderConfirmation({
                 <Text style={itemName}>
                   {item.name} × {item.quantity}
                 </Text>
-                <Text style={itemPrice}>
-                  {item.subtotal.toLocaleString()}원
-                </Text>
+                <Text style={itemPrice}>{fmtPrice(item.subtotal)}</Text>
               </Section>
             ))}
 
             <Hr style={hr} />
 
             <Section style={totalRow}>
-              <Text style={totalLabel}>합계</Text>
+              <Text style={totalLabel}>{L('합계', 'Total')}</Text>
               <Text style={totalValue}>
-                {totalAmount === 0
-                  ? '무료'
-                  : `${totalAmount.toLocaleString()}원`}
+                {totalAmount === 0 ? L('무료', 'Free') : fmtPrice(totalAmount)}
               </Text>
             </Section>
 
@@ -84,21 +86,27 @@ export default function OrderConfirmation({
               <>
                 <Hr style={hr} />
                 <Section style={ticketCta}>
-                  <Text style={ticketCtaTitle}>입장권 (QR 코드)</Text>
+                  <Text style={ticketCtaTitle}>
+                    {L('입장권 (QR 코드)', 'Tickets (QR code)')}
+                  </Text>
                   <Text style={ticketCtaText}>
-                    공연 당일 아래 페이지의 QR 코드를 운영자에게 보여주시면
-                    입장이 가능합니다. 링크를 즐겨찾기하거나 일행과 공유하세요.
+                    {L(
+                      '공연 당일 아래 페이지의 QR 코드를 운영자에게 보여주시면 입장이 가능합니다. 링크를 즐겨찾기하거나 일행과 공유하세요.',
+                      'On the event day, show the QR code on the page below to staff to enter. Bookmark the link or share it with your group.'
+                    )}
                   </Text>
                   <Button href={ticketsUrl} style={ticketButton}>
-                    입장권 보기 →
+                    {L('입장권 보기 →', 'View tickets →')}
                   </Button>
                 </Section>
               </>
             )}
 
             <Text style={footer}>
-              이 메일은 발신 전용입니다. 회신은 수신되지 않습니다. 문의는{' '}
-              {BUSINESS_INFO.email}로 보내 주세요.
+              {L(
+                `이 메일은 발신 전용입니다. 회신은 수신되지 않습니다. 문의는 ${BUSINESS_INFO.email}로 보내 주세요.`,
+                `This is a send-only email; replies are not received. For inquiries, contact ${BUSINESS_INFO.email}.`
+              )}
             </Text>
             <Text style={footerBrand}>PRECTXE</Text>
           </Section>

@@ -2,13 +2,15 @@
 
 import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { getLocale } from 'next-intl/server';
+import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { parseInput } from '@/lib/auth/server-action-helpers';
 import {
   BUSINESS_INFO,
   ORDER_NOTIFICATION_EMAILS,
 } from '@/lib/constants/business-info';
-import { SALES_TERMS } from '@/lib/constants/sales-terms';
+import { getSalesTerms, SALES_TERMS } from '@/lib/constants/sales-terms';
 import { prisma } from '@/lib/db/prisma';
 import { sendEmail } from '@/lib/email/send';
 import portone, { PortOneError } from '@/lib/payment/portone';
@@ -429,6 +431,8 @@ export async function createBankTransferOrder(
     // 구매자 안내 + 운영자 알림 메일을 병렬 발송 (각각 실패해도 주문엔 영향 없음).
     // 순차 await 대비 구매자 응답 대기시간 단축.
     {
+      // 구매자 요청 컨텍스트의 로케일 — 안내 메일 언어 결정
+      const locale = (await getLocale()) as Locale;
       const dropTitle = order.drop?.title ?? 'PRECTXE';
       const bank = getBankInfo();
       const itemsSummary =
@@ -439,7 +443,10 @@ export async function createBankTransferOrder(
       await Promise.all([
         sendEmail({
           to: order.buyerEmail,
-          subject: `[PRECTXE] 입금 안내 — ${dropTitle}`,
+          subject:
+            locale === 'en'
+              ? `[PRECTXE] Payment instructions — ${dropTitle}`
+              : `[PRECTXE] 입금 안내 — ${dropTitle}`,
           template: 'bank-transfer-pending',
           data: {
             buyerName: order.buyerName,
@@ -452,6 +459,7 @@ export async function createBankTransferOrder(
             bankName: bank.bankName,
             accountNumber: bank.accountNumber,
             accountHolder: bank.accountHolder,
+            locale,
           },
         }).catch((err) => console.error('무통장 안내 이메일 발송 실패:', err)),
         sendEmail({
@@ -625,6 +633,8 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
 
     // 주문 확인 이메일 발송 (실패해도 결제 결과에 영향 없음)
     try {
+      // 구매자 요청 컨텍스트(무료/카드 즉시 결제)의 로케일
+      const locale = (await getLocale()) as Locale;
       const dropTitle = order.drop?.title ?? 'PRECTXE';
       const items = order.items.map((item) => ({
         name: item.ticketTier?.name ?? item.goodsVariant?.name ?? '상품',
@@ -635,7 +645,7 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
 
       await sendEmail({
         to: order.buyerEmail,
-        subject: SALES_TERMS.emailSubject(dropTitle),
+        subject: getSalesTerms(locale).emailSubject(dropTitle),
         template: 'order-confirmation',
         data: {
           buyerName: order.buyerName,
@@ -643,6 +653,7 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
           dropTitle,
           items,
           totalAmount: order.totalAmount,
+          locale,
           ticketsUrl:
             ticketCount > 0 ? getOrderTicketsUrl(accessToken) : undefined,
         },

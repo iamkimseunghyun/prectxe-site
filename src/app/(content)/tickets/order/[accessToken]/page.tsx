@@ -1,17 +1,22 @@
 import { CheckCircle2, XCircle } from 'lucide-react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { getLocale, getTranslations } from 'next-intl/server';
 import QRCode from 'qrcode';
 import ReactMarkdown from 'react-markdown';
-import { SALES_TERMS } from '@/lib/constants/sales-terms';
+import type { Locale } from '@/i18n/config';
+import { getSalesTerms } from '@/lib/constants/sales-terms';
 import { prisma } from '@/lib/db/prisma';
 import { formatKstDateTime, formatKstEventRange } from '@/lib/utils';
 import { getTicketScanUrl } from '@/lib/utils/ticket-token';
 
-export const metadata: Metadata = {
-  title: '입장권',
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('ticketPage');
+  return {
+    title: t('title'),
+    robots: { index: false, follow: false },
+  };
+}
 
 async function generateQrSvg(data: string): Promise<string> {
   return QRCode.toString(data, {
@@ -37,6 +42,9 @@ export default async function OrderTicketsPage({
   params: Promise<{ accessToken: string }>;
 }) {
   const { accessToken } = await params;
+  const t = await getTranslations('ticketPage');
+  const locale = (await getLocale()) as Locale;
+  const ST = getSalesTerms(locale);
 
   const order = await prisma.order.findUnique({
     where: { accessToken },
@@ -70,7 +78,7 @@ export default async function OrderTicketsPage({
             PRECTXE Tickets
           </p>
           <h1 className="text-2xl font-bold leading-tight sm:text-3xl">
-            {order.drop?.title ?? '입장권'}
+            {order.drop?.title ?? t('title')}
           </h1>
           {order.drop?.eventDate && (
             <p className="text-sm text-white/60">
@@ -85,17 +93,20 @@ export default async function OrderTicketsPage({
           )}
           <div className="flex items-center justify-between border-t border-white/10 pt-4 text-xs text-white/50">
             <span>
-              {SALES_TERMS.orderNumber} · {order.orderNo}
+              {ST.orderNumber} · {order.orderNo}
             </span>
             <span>
-              입장 {checkedInCount} / {totalCount}
+              {t('admittedCount', {
+                checked: checkedInCount,
+                total: totalCount,
+              })}
             </span>
           </div>
         </header>
 
         {tickets.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-sm text-white/60">
-            발급된 입장권이 없습니다.
+            {t('noTickets')}
           </div>
         ) : (
           <ul className="space-y-5">
@@ -120,21 +131,21 @@ export default async function OrderTicketsPage({
                     {isCancelled ? (
                       <span className="inline-flex items-center gap-1 text-red-400">
                         <XCircle className="h-3.5 w-3.5" />
-                        취소됨
+                        {t('cancelled')}
                       </span>
                     ) : isCheckedIn ? (
                       <span className="inline-flex items-center gap-1 text-emerald-400">
                         <CheckCircle2 className="h-3.5 w-3.5" />
-                        입장 완료
+                        {t('admitted')}
                       </span>
                     ) : (
-                      <span className="text-white/50">입장 대기</span>
+                      <span className="text-white/50">{t('waiting')}</span>
                     )}
                   </div>
 
                   <div className="px-5 py-6">
                     <p className="text-base font-semibold text-white">
-                      {ticket.ticketTier?.name ?? '티켓'}
+                      {ticket.ticketTier?.name ?? t('tierFallback')}
                     </p>
                     {ticket.ticketTier?.description && (
                       <div className="prose prose-invert prose-sm mt-1 max-w-none text-white/60 leading-relaxed prose-p:my-0">
@@ -158,7 +169,9 @@ export default async function OrderTicketsPage({
 
                     {isCheckedIn && ticket.checkedInAt && (
                       <p className="mt-2 text-center text-xs text-emerald-300/70">
-                        {formatKstDateTime(new Date(ticket.checkedInAt))}에 입장
+                        {t('admittedAt', {
+                          time: formatKstDateTime(new Date(ticket.checkedInAt)),
+                        })}
                       </p>
                     )}
                   </div>
@@ -171,7 +184,7 @@ export default async function OrderTicketsPage({
         {order.drop?.notice && (
           <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
-              안내사항
+              {t('notice')}
             </p>
             <div className="space-y-2 text-sm leading-relaxed text-white/70">
               {order.drop.notice.split('\n').map((line, i) => (
@@ -182,8 +195,8 @@ export default async function OrderTicketsPage({
         )}
 
         <footer className="mt-10 space-y-2 text-center text-xs text-white/30">
-          <p>입장 시 위 QR 코드를 운영자에게 보여주세요.</p>
-          <p>이 페이지는 일행과 공유 가능합니다.</p>
+          <p>{t('footerShowQr')}</p>
+          <p>{t('footerShare')}</p>
         </footer>
       </div>
     </main>
