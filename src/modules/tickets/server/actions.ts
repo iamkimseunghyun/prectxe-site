@@ -341,6 +341,9 @@ export async function createBankTransferOrder(
     items: { ticketTierId: string; quantity: number }[];
   }
 ) {
+  // 구매자 요청 컨텍스트의 로케일 — 에러 응답·안내 메일 언어 결정
+  const locale = (await getLocale()) as Locale;
+  const ST = getSalesTerms(locale);
   const parsed = parseInput(bankTransferOrderFormSchema, input);
   if (!parsed.success) return parsed;
 
@@ -431,8 +434,6 @@ export async function createBankTransferOrder(
     // 구매자 안내 + 운영자 알림 메일을 병렬 발송 (각각 실패해도 주문엔 영향 없음).
     // 순차 await 대비 구매자 응답 대기시간 단축.
     {
-      // 구매자 요청 컨텍스트의 로케일 — 안내 메일 언어 결정
-      const locale = (await getLocale()) as Locale;
       const dropTitle = order.drop?.title ?? 'PRECTXE';
       const bank = getBankInfo();
       const itemsSummary =
@@ -500,7 +501,7 @@ export async function createBankTransferOrder(
     console.error('무통장 주문 생성 실패:', e);
     return {
       success: false,
-      error: e instanceof Error ? e.message : SALES_TERMS.errorCreateFailed,
+      error: e instanceof Error ? e.message : ST.errorCreateFailed,
     } as const;
   }
 }
@@ -583,6 +584,10 @@ export async function createGoodsOrder(
 // ─── 결제 완료 검증 ─────────────────────────────────
 
 export async function verifyPayment(orderId: string, portonePaymentId: string) {
+  // 구매자 요청 컨텍스트(무료/카드 즉시 결제)의 로케일
+  const locale = (await getLocale()) as Locale;
+  const ST = getSalesTerms(locale);
+  const L = (ko: string, en: string) => (locale === 'en' ? en : ko);
   try {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
@@ -591,21 +596,29 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
         items: { include: { ticketTier: true, goodsVariant: true } },
       },
     });
-    if (!order)
-      return { success: false, error: SALES_TERMS.errorOrderNotFound };
+    if (!order) return { success: false, error: ST.errorOrderNotFound };
     if (order.status !== 'pending')
-      return { success: false, error: SALES_TERMS.errorAlreadyProcessed };
+      return { success: false, error: ST.errorAlreadyProcessed };
 
     const payment = await portone.payment.getPayment({
       paymentId: portonePaymentId,
     });
 
     if (payment.status !== 'PAID') {
-      return { success: false, error: '결제가 완료되지 않았습니다.' };
+      return {
+        success: false,
+        error: L('결제가 완료되지 않았습니다.', 'Payment was not completed.'),
+      };
     }
 
     if (payment.amount.total !== order.totalAmount) {
-      return { success: false, error: '결제 금액이 일치하지 않습니다.' };
+      return {
+        success: false,
+        error: L(
+          '결제 금액이 일치하지 않습니다.',
+          'Payment amount does not match.'
+        ),
+      };
     }
 
     const { accessToken, ticketCount } = await prisma.$transaction(
@@ -633,8 +646,6 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
 
     // 주문 확인 이메일 발송 (실패해도 결제 결과에 영향 없음)
     try {
-      // 구매자 요청 컨텍스트(무료/카드 즉시 결제)의 로케일
-      const locale = (await getLocale()) as Locale;
       const dropTitle = order.drop?.title ?? 'PRECTXE';
       const items = order.items.map((item) => ({
         name: item.ticketTier?.name ?? item.goodsVariant?.name ?? '상품',
@@ -645,7 +656,7 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
 
       await sendEmail({
         to: order.buyerEmail,
-        subject: getSalesTerms(locale).emailSubject(dropTitle),
+        subject: ST.emailSubject(dropTitle),
         template: 'order-confirmation',
         data: {
           buyerName: order.buyerName,
@@ -666,9 +677,15 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
   } catch (e) {
     console.error('결제 검증 실패:', e);
     if (e instanceof PortOneError) {
-      return { success: false, error: '포트원 결제 조회에 실패했습니다.' };
+      return {
+        success: false,
+        error: L(
+          '포트원 결제 조회에 실패했습니다.',
+          'Failed to look up the payment.'
+        ),
+      };
     }
-    return { success: false, error: '결제 검증 중 오류가 발생했습니다.' };
+    return { success: false, error: ST.errorProcessing };
   }
 }
 
