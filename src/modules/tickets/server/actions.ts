@@ -745,7 +745,8 @@ export async function confirmBankTransfer(orderId: string) {
   // 확정 이메일 (기존 order-confirmation 재사용).
   // 어드민 컨텍스트라 getLocale() 대신 주문 시 저장한 구매자 로케일 사용.
   try {
-    const locale = (order.locale as Locale) ?? 'ko';
+    // DB에는 임의 string이 들어올 수 있으므로 'en' 외엔 모두 'ko'로 명시 폴백
+    const locale: Locale = order.locale === 'en' ? 'en' : 'ko';
     const dropTitle = order.drop?.title ?? 'PRECTXE';
     const items = order.items.map((item) => ({
       name: item.ticketTier?.name ?? item.goodsVariant?.name ?? '상품',
