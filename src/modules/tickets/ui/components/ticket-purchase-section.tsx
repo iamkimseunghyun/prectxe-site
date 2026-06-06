@@ -1,6 +1,7 @@
 'use client';
 
 import { Minus, Plus, Ticket } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,13 +12,14 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { useToast } from '@/hooks/use-toast';
+import type { Locale } from '@/i18n/config';
 import {
   type GAItem,
   trackBeginCheckout,
   trackPurchase,
 } from '@/lib/analytics/gtag';
+import { getSalesTerms } from '@/lib/constants/sales-terms';
 import { subscribeNewsletter } from '@/modules/email/server/actions';
 import {
   createBankTransferOrder,
@@ -68,6 +70,11 @@ export function TicketPurchaseSection({
   tiers,
 }: TicketPurchaseSectionProps) {
   const { toast } = useToast();
+  const t = useTranslations();
+  const locale = useLocale() as Locale;
+  const ST = getSalesTerms(locale);
+  const fmtPrice = (n: number) =>
+    locale === 'en' ? `₩${n.toLocaleString()}` : `${n.toLocaleString()}원`;
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [buyerName, setBuyerName] = useState('');
@@ -105,7 +112,7 @@ export function TicketPurchaseSection({
 
   function handleCheckout() {
     if (selectedItems.length === 0) {
-      toast({ title: '티켓을 선택해주세요.', variant: 'destructive' });
+      toast({ title: t('checkout.selectTicketFirst'), variant: 'destructive' });
       return;
     }
     setCheckoutOpen(true);
@@ -213,7 +220,7 @@ export function TicketPurchaseSection({
     } catch (err) {
       console.error('주문 처리 오류:', err);
       toast({
-        title: SALES_TERMS.errorProcessing,
+        title: ST.errorProcessing,
         variant: 'destructive',
       });
     }
@@ -256,8 +263,8 @@ export function TicketPurchaseSection({
           </h2>
           <p className="mt-1 text-2xl font-bold text-neutral-900">
             {lowestPrice === 0
-              ? '무료'
-              : `${lowestPrice.toLocaleString()}원부터`}
+              ? t('common.free')
+              : t('drops.fromPrice', { price: lowestPrice.toLocaleString() })}
           </p>
         </div>
         <Ticket className="h-6 w-6 text-neutral-300" />
@@ -300,13 +307,11 @@ export function TicketPurchaseSection({
                     </p>
                   )}
                   <p className="mt-2 text-lg font-bold text-neutral-900">
-                    {tier.price === 0
-                      ? '무료'
-                      : `${tier.price.toLocaleString()}원`}
+                    {tier.price === 0 ? t('common.free') : fmtPrice(tier.price)}
                   </p>
                   {!isSoldOut && (
                     <p className="mt-0.5 text-xs text-neutral-400">
-                      잔여 {tier.remaining}장
+                      {t('drops.remaining', { count: tier.remaining })}
                     </p>
                   )}
                 </div>
@@ -351,7 +356,7 @@ export function TicketPurchaseSection({
                     .join(', ')}
                 </p>
                 <p className="text-xl font-bold text-neutral-900">
-                  {isFree ? '무료' : `${totalAmount.toLocaleString()}원`}
+                  {isFree ? t('common.free') : fmtPrice(totalAmount)}
                 </p>
               </div>
               <Button
@@ -359,7 +364,7 @@ export function TicketPurchaseSection({
                 className="h-12 shrink-0 rounded-xl px-8 text-base font-semibold"
                 onClick={handleCheckout}
               >
-                {isFree ? '신청하기' : SALES_TERMS.ctaPaid}
+                {isFree ? t('checkout.applyCta') : ST.ctaPaid}
               </Button>
             </div>
           </div>
@@ -377,13 +382,13 @@ export function TicketPurchaseSection({
         <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto overscroll-contain rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg">
-              {isFree ? '신청자 정보' : SALES_TERMS.ordererInfo}
+              {isFree ? t('checkout.applicantInfo') : ST.ordererInfo}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="buyerName" className="text-sm font-medium">
-                이름
+                {t('checkout.name')}
               </Label>
               <Input
                 id="buyerName"
@@ -395,7 +400,7 @@ export function TicketPurchaseSection({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="buyerEmail" className="text-sm font-medium">
-                이메일
+                {t('checkout.email')}
               </Label>
               <Input
                 id="buyerEmail"
@@ -408,7 +413,7 @@ export function TicketPurchaseSection({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="buyerPhone" className="text-sm font-medium">
-                전화번호
+                {t('checkout.phone')}
               </Label>
               <Input
                 id="buyerPhone"
@@ -424,7 +429,7 @@ export function TicketPurchaseSection({
             {!isFree && (
               <div className="space-y-1.5">
                 <Label htmlFor="depositorName" className="text-sm font-medium">
-                  입금자명
+                  {t('checkout.depositorName')}
                 </Label>
                 <Input
                   id="depositorName"
@@ -432,11 +437,11 @@ export function TicketPurchaseSection({
                   onChange={(e) => setDepositorName(e.target.value)}
                   required
                   maxLength={20}
-                  placeholder="실제 입금하실 분 이름"
+                  placeholder={t('checkout.depositorPlaceholder')}
                   className="h-11"
                 />
                 <p className="text-xs text-neutral-500">
-                  {SALES_TERMS.orderNumberSuffixTip}
+                  {ST.orderNumberSuffixTip}
                 </p>
               </div>
             )}
@@ -444,7 +449,7 @@ export function TicketPurchaseSection({
             {/* Order Summary */}
             <div className="rounded-xl bg-neutral-50 p-4">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                {SALES_TERMS.orderItems}
+                {ST.orderItems}
               </p>
               <div className="space-y-1.5">
                 {selectedItems.map((item) => (
@@ -456,25 +461,23 @@ export function TicketPurchaseSection({
                       {item.tier.name} × {item.quantity}
                     </span>
                     <span className="font-medium text-neutral-900">
-                      {(item.tier.price * item.quantity).toLocaleString()}원
+                      {fmtPrice(item.tier.price * item.quantity)}
                     </span>
                   </div>
                 ))}
               </div>
               <div className="mt-3 flex justify-between border-t border-neutral-200 pt-3 text-base font-bold">
-                <span>합계</span>
-                <span>
-                  {isFree ? '무료' : `${totalAmount.toLocaleString()}원`}
-                </span>
+                <span>{t('checkout.total')}</span>
+                <span>{isFree ? t('common.free') : fmtPrice(totalAmount)}</span>
               </div>
             </div>
 
             {/* 결제 방식 안내 */}
             {!isFree && (
               <div className="rounded-lg border border-neutral-200 bg-white p-3 text-xs text-neutral-600">
-                결제 방식: <strong>무통장 입금</strong> ·{' '}
-                {SALES_TERMS.afterOrderTo}
-                24시간 이내 입금
+                {t('checkout.paymentMethodLabel')}:{' '}
+                <strong>{t('checkout.bankTransfer')}</strong> ·{' '}
+                {ST.afterOrderTo} {t('checkout.payWithin24h')}
               </div>
             )}
 
@@ -488,10 +491,9 @@ export function TicketPurchaseSection({
               />
               <span>
                 <span className="font-medium text-neutral-900">
-                  PRECTXE의 다음 공연·기획 소식 받기 (선택)
+                  {t('checkout.newsletterTitle')}
                 </span>{' '}
-                — 새로운 소식을 가장 먼저 알려드립니다. 언제든 메일 하단 링크로
-                구독 해지 가능.
+                {t('checkout.newsletterDesc')}
               </span>
             </label>
 
@@ -505,34 +507,42 @@ export function TicketPurchaseSection({
                 required
               />
               <span>
-                <a
-                  href="/terms"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-medium text-neutral-900 underline underline-offset-2"
-                >
-                  이용약관
-                </a>
-                ,{' '}
-                <a
-                  href="/privacy"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-medium text-neutral-900 underline underline-offset-2"
-                >
-                  개인정보처리방침
-                </a>
-                ,{' '}
-                <a
-                  href="/refund-policy"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-medium text-neutral-900 underline underline-offset-2"
-                >
-                  환불·취소 정책
-                </a>
-                에 동의하며, 위 {SALES_TERMS.order} 내용을 확인하고{' '}
-                {isFree ? '신청을 진행합니다.' : SALES_TERMS.proceedSentence}
+                {t.rich('checkout.consent', {
+                  order: ST.order,
+                  proceed: isFree
+                    ? t('checkout.proceedFree')
+                    : ST.proceedSentence,
+                  terms: (chunks) => (
+                    <a
+                      href="/terms"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-neutral-900 underline underline-offset-2"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                  privacy: (chunks) => (
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-neutral-900 underline underline-offset-2"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                  refund: (chunks) => (
+                    <a
+                      href="/refund-policy"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-neutral-900 underline underline-offset-2"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                })}
               </span>
             </label>
 
@@ -542,10 +552,10 @@ export function TicketPurchaseSection({
               disabled={isProcessing || !agreedToTerms}
             >
               {isProcessing
-                ? '처리 중...'
+                ? t('checkout.processing')
                 : isFree
-                  ? '무료 신청하기'
-                  : SALES_TERMS.ctaPaidWithPrice(totalAmount)}
+                  ? t('checkout.applyFree')
+                  : ST.ctaPaidWithPrice(totalAmount)}
             </Button>
           </form>
         </DialogContent>

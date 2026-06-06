@@ -9,8 +9,9 @@ import {
   Section,
   Text,
 } from 'react-email';
+import type { Locale } from '@/i18n/config';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
-import { SALES_TERMS } from '@/lib/constants/sales-terms';
+import { getSalesTerms } from '@/lib/constants/sales-terms';
 
 interface BankTransferPendingProps {
   buyerName: string;
@@ -23,6 +24,7 @@ interface BankTransferPendingProps {
   bankName: string;
   accountNumber: string;
   accountHolder: string;
+  locale?: Locale;
 }
 
 function formatExpiry(expiresAt: Date | string): string {
@@ -46,22 +48,41 @@ export default function BankTransferPending({
   bankName,
   accountNumber,
   accountHolder,
+  locale = 'ko',
 }: BankTransferPendingProps) {
+  const en = locale === 'en';
+  const ST = getSalesTerms(locale);
+  const L = (ko: string, eng: string) => (en ? eng : ko);
+  const fmtPrice = (n: number) =>
+    en ? `₩${n.toLocaleString()}` : `${n.toLocaleString()}원`;
   return (
     <Html>
       <Head />
-      <Preview>입금 안내: {dropTitle}</Preview>
+      <Preview>
+        {L(`입금 안내: ${dropTitle}`, `Payment instructions: ${dropTitle}`)}
+      </Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={box}>
             <Heading style={heading}>PRECTXE</Heading>
             <Text style={paragraph}>
-              {SALES_TERMS.receivedNotice(buyerName)} 아래 안내에 따라
-              <strong> {expiryHours}시간 이내에 입금</strong>해주세요.
+              {ST.receivedNotice(buyerName)}{' '}
+              {L(
+                '아래 안내에 따라',
+                'Please follow the instructions below and'
+              )}
+              <strong>
+                {' '}
+                {L(
+                  `${expiryHours}시간 이내에 입금`,
+                  `complete payment within ${expiryHours} hours`
+                )}
+              </strong>
+              {L('해주세요.', '.')}
             </Text>
 
             <Section style={orderBox}>
-              <Text style={orderLabel}>{SALES_TERMS.orderNumber}</Text>
+              <Text style={orderLabel}>{ST.orderNumber}</Text>
               <Text style={orderValue}>{orderNo}</Text>
             </Section>
 
@@ -69,46 +90,54 @@ export default function BankTransferPending({
 
             <Text style={sectionTitle}>{dropTitle}</Text>
             <Section style={amountRow}>
-              <Text style={totalLabel}>결제 금액</Text>
-              <Text style={totalValue}>{totalAmount.toLocaleString()}원</Text>
+              <Text style={totalLabel}>{L('결제 금액', 'Amount')}</Text>
+              <Text style={totalValue}>{fmtPrice(totalAmount)}</Text>
             </Section>
 
             <Hr style={hr} />
 
-            <Text style={sectionTitle}>입금 계좌</Text>
+            <Text style={sectionTitle}>{L('입금 계좌', 'Bank account')}</Text>
             <Section style={infoBox}>
               <Section style={infoRow}>
-                <Text style={infoLabel}>은행</Text>
+                <Text style={infoLabel}>{L('은행', 'Bank')}</Text>
                 <Text style={infoValue}>{bankName}</Text>
               </Section>
               <Section style={infoRow}>
-                <Text style={infoLabel}>계좌번호</Text>
+                <Text style={infoLabel}>{L('계좌번호', 'Account no.')}</Text>
                 <Text style={infoValueMono}>{accountNumber}</Text>
               </Section>
               <Section style={infoRow}>
-                <Text style={infoLabel}>예금주</Text>
+                <Text style={infoLabel}>{L('예금주', 'Account holder')}</Text>
                 <Text style={infoValue}>{accountHolder}</Text>
               </Section>
             </Section>
 
             <Section style={highlightBox}>
-              <Text style={highlightLabel}>입금자명 (반드시 일치)</Text>
+              <Text style={highlightLabel}>
+                {L('입금자명 (반드시 일치)', 'Depositor name (must match)')}
+              </Text>
               <Text style={highlightValue}>{depositorName}</Text>
               <Text style={highlightHint}>
-                동명이인 매칭을 위해 위 형태 그대로 입금해 주세요.
+                {L(
+                  '동명이인 매칭을 위해 위 형태 그대로 입금해 주세요.',
+                  'To distinguish identical names, please transfer using the exact format above.'
+                )}
               </Text>
             </Section>
 
             <Section style={warnBox}>
               <Text style={warnText}>
-                <strong>입금 마감</strong>: {formatExpiry(expiresAt)}
+                <strong>{L('입금 마감', 'Payment deadline')}</strong>:{' '}
+                {formatExpiry(expiresAt)}
               </Text>
-              <Text style={warnSub}>{SALES_TERMS.autoCancelNotice}</Text>
+              <Text style={warnSub}>{ST.autoCancelNotice}</Text>
             </Section>
 
             <Text style={footer}>
-              이 메일은 발신 전용입니다. 회신은 수신되지 않습니다. 문의는{' '}
-              {BUSINESS_INFO.email}로 보내 주세요.
+              {L(
+                `이 메일은 발신 전용입니다. 회신은 수신되지 않습니다. 문의는 ${BUSINESS_INFO.email}로 보내 주세요.`,
+                `This is a send-only email; replies are not received. For inquiries, contact ${BUSINESS_INFO.email}.`
+              )}
             </Text>
             <Text style={footerBrand}>PRECTXE</Text>
           </Section>

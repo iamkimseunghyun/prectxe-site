@@ -5,6 +5,8 @@ import { GoogleAnalytics } from '@next/third-parties/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata } from 'next';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale } from 'next-intl/server';
 import type React from 'react';
 import { Footer } from '@/components/layout/footer';
 import Header from '@/components/layout/header';
@@ -106,27 +108,31 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+
   return (
-    <html lang="ko" className="overflow-y-scroll">
+    <html lang={locale} className="overflow-y-scroll">
       <body
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
       >
-        <Providers>
-          <PublicHeader />
-          <Header />
-          <main className="flex-1">
-            {children}
-            <Analytics />
-            <SpeedInsights />
-            <Toaster />
-          </main>
-          <Footer />
-        </Providers>
+        <NextIntlClientProvider>
+          <Providers>
+            <PublicHeader />
+            <Header />
+            <main className="flex-1">
+              {children}
+              <Analytics />
+              <SpeedInsights />
+              <Toaster />
+            </main>
+            <Footer />
+          </Providers>
+        </NextIntlClientProvider>
         {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
       </body>
     </html>

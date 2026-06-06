@@ -2,13 +2,15 @@
 
 import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { getLocale } from 'next-intl/server';
+import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { parseInput } from '@/lib/auth/server-action-helpers';
 import {
   BUSINESS_INFO,
   ORDER_NOTIFICATION_EMAILS,
 } from '@/lib/constants/business-info';
-import { SALES_TERMS } from '@/lib/constants/sales-terms';
+import { getSalesTerms, SALES_TERMS } from '@/lib/constants/sales-terms';
 import { prisma } from '@/lib/db/prisma';
 import { sendEmail } from '@/lib/email/send';
 import portone, { PortOneError } from '@/lib/payment/portone';
@@ -339,6 +341,9 @@ export async function createBankTransferOrder(
     items: { ticketTierId: string; quantity: number }[];
   }
 ) {
+  // 구매자 요청 컨텍스트의 로케일 — 에러 응답·안내 메일 언어 결정
+  const locale = (await getLocale()) as Locale;
+  const ST = getSalesTerms(locale);
   const parsed = parseInput(bankTransferOrderFormSchema, input);
   if (!parsed.success) return parsed;
 
@@ -439,7 +444,10 @@ export async function createBankTransferOrder(
       await Promise.all([
         sendEmail({
           to: order.buyerEmail,
-          subject: `[PRECTXE] 입금 안내 — ${dropTitle}`,
+          subject:
+            locale === 'en'
+              ? `[PRECTXE] Payment instructions — ${dropTitle}`
+              : `[PRECTXE] 입금 안내 — ${dropTitle}`,
           template: 'bank-transfer-pending',
           data: {
             buyerName: order.buyerName,
@@ -452,6 +460,7 @@ export async function createBankTransferOrder(
             bankName: bank.bankName,
             accountNumber: bank.accountNumber,
             accountHolder: bank.accountHolder,
+            locale,
           },
         }).catch((err) => console.error('무통장 안내 이메일 발송 실패:', err)),
         sendEmail({
@@ -492,7 +501,7 @@ export async function createBankTransferOrder(
     console.error('무통장 주문 생성 실패:', e);
     return {
       success: false,
-      error: e instanceof Error ? e.message : SALES_TERMS.errorCreateFailed,
+      error: e instanceof Error ? e.message : ST.errorCreateFailed,
     } as const;
   }
 }
@@ -575,6 +584,10 @@ export async function createGoodsOrder(
 // ─── 결제 완료 검증 ─────────────────────────────────
 
 export async function verifyPayment(orderId: string, portonePaymentId: string) {
+  // 구매자 요청 컨텍스트(무료/카드 즉시 결제)의 로케일
+  const locale = (await getLocale()) as Locale;
+  const ST = getSalesTerms(locale);
+  const L = (ko: string, en: string) => (locale === 'en' ? en : ko);
   try {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
@@ -583,21 +596,29 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
         items: { include: { ticketTier: true, goodsVariant: true } },
       },
     });
-    if (!order)
-      return { success: false, error: SALES_TERMS.errorOrderNotFound };
+    if (!order) return { success: false, error: ST.errorOrderNotFound };
     if (order.status !== 'pending')
-      return { success: false, error: SALES_TERMS.errorAlreadyProcessed };
+      return { success: false, error: ST.errorAlreadyProcessed };
 
     const payment = await portone.payment.getPayment({
       paymentId: portonePaymentId,
     });
 
     if (payment.status !== 'PAID') {
-      return { success: false, error: '결제가 완료되지 않았습니다.' };
+      return {
+        success: false,
+        error: L('결제가 완료되지 않았습니다.', 'Payment was not completed.'),
+      };
     }
 
     if (payment.amount.total !== order.totalAmount) {
-      return { success: false, error: '결제 금액이 일치하지 않습니다.' };
+      return {
+        success: false,
+        error: L(
+          '결제 금액이 일치하지 않습니다.',
+          'Payment amount does not match.'
+        ),
+      };
     }
 
     const { accessToken, ticketCount } = await prisma.$transaction(
@@ -635,7 +656,7 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
 
       await sendEmail({
         to: order.buyerEmail,
-        subject: SALES_TERMS.emailSubject(dropTitle),
+        subject: ST.emailSubject(dropTitle),
         template: 'order-confirmation',
         data: {
           buyerName: order.buyerName,
@@ -643,6 +664,7 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
           dropTitle,
           items,
           totalAmount: order.totalAmount,
+          locale,
           ticketsUrl:
             ticketCount > 0 ? getOrderTicketsUrl(accessToken) : undefined,
         },
@@ -655,9 +677,15 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
   } catch (e) {
     console.error('결제 검증 실패:', e);
     if (e instanceof PortOneError) {
-      return { success: false, error: '포트원 결제 조회에 실패했습니다.' };
+      return {
+        success: false,
+        error: L(
+          '포트원 결제 조회에 실패했습니다.',
+          'Failed to look up the payment.'
+        ),
+      };
     }
-    return { success: false, error: '결제 검증 중 오류가 발생했습니다.' };
+    return { success: false, error: ST.errorProcessing };
   }
 }
 

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { LocaleSwitcher } from '@/components/shared/locale-switcher';
 import { cn } from '@/lib/utils';
 
 /**
@@ -130,18 +131,21 @@ export function PublicHeader() {
             </div>
 
             <div className="mt-10 flex items-end justify-between border-t border-white/10 pt-8 md:mt-14">
-              <ul className="flex flex-wrap gap-x-6 gap-y-2">
-                {META.map((l) => (
-                  <li key={l.href}>
-                    <Link
-                      href={l.href}
-                      className="text-sm text-white/60 transition-colors hover:text-white"
-                    >
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                <ul className="flex flex-wrap gap-x-6 gap-y-2">
+                  {META.map((l) => (
+                    <li key={l.href}>
+                      <Link
+                        href={l.href}
+                        className="text-sm text-white/60 transition-colors hover:text-white"
+                      >
+                        {l.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <LocaleSwitcher className="text-white/60" />
+              </div>
               <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">
                 Music and Art, curated.
               </p>

@@ -1,5 +1,18 @@
 import { z } from 'zod';
 
+// 전화번호 — 국내(010…) + 해외(+국가코드, 공백·하이픈·괄호 허용) 모두 수용.
+// 숫자만 추출해 7~15자리(E.164) 검증.
+const phoneSchema = z
+  .string()
+  .trim()
+  .min(7, '전화번호를 입력해주세요.')
+  .refine((v) => {
+    const digits = v.replace(/\D/g, '');
+    return (
+      /^\+?[\d\s().-]+$/.test(v) && digits.length >= 7 && digits.length <= 15
+    );
+  }, '올바른 전화번호 형식이 아닙니다.');
+
 // ─── TicketTier ───────────────────────────────────────
 
 export const ticketTierSchema = z.object({
@@ -32,10 +45,7 @@ export type GoodsVariantInput = z.infer<typeof goodsVariantSchema>;
 export const orderFormSchema = z.object({
   buyerName: z.string().min(1, '이름을 입력해주세요.'),
   buyerEmail: z.string().email('올바른 이메일을 입력해주세요.'),
-  buyerPhone: z
-    .string()
-    .min(10, '전화번호를 입력해주세요.')
-    .regex(/^01[016789]\d{7,8}$/, '올바른 전화번호 형식이 아닙니다.'),
+  buyerPhone: phoneSchema,
   items: z
     .array(
       z.object({
@@ -53,10 +63,7 @@ export type OrderFormInput = z.infer<typeof orderFormSchema>;
 export const goodsOrderFormSchema = z.object({
   buyerName: z.string().min(1, '이름을 입력해주세요.'),
   buyerEmail: z.string().email('올바른 이메일을 입력해주세요.'),
-  buyerPhone: z
-    .string()
-    .min(10, '전화번호를 입력해주세요.')
-    .regex(/^01[016789]\d{7,8}$/, '올바른 전화번호 형식이 아닙니다.'),
+  buyerPhone: phoneSchema,
   items: z
     .array(
       z.object({
@@ -74,10 +81,7 @@ export type GoodsOrderFormInput = z.infer<typeof goodsOrderFormSchema>;
 export const bankTransferOrderFormSchema = z.object({
   buyerName: z.string().min(1, '이름을 입력해주세요.'),
   buyerEmail: z.string().email('올바른 이메일을 입력해주세요.'),
-  buyerPhone: z
-    .string()
-    .min(10, '전화번호를 입력해주세요.')
-    .regex(/^01[016789]\d{7,8}$/, '올바른 전화번호 형식이 아닙니다.'),
+  buyerPhone: phoneSchema,
   depositorName: z
     .string()
     .min(1, '입금자명을 입력해주세요.')
