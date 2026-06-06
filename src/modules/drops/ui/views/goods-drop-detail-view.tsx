@@ -123,75 +123,68 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
             <div className="relative py-6 lg:pr-8 lg:py-12">
               {totalMedia > 0 ? (
                 <>
-                  {/* Main Media — 확대 라이트박스 트리거. 내부에 prev/next <button>이
-                      중첩돼 있어 <button> 대신 role=button 패턴으로 키보드 접근성 확보 */}
-                  {/* biome-ignore lint/a11y/useSemanticElements: 내부 prev/next <button> 중첩 불가로 role=button 사용 */}
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    aria-label="이미지 확대"
-                    className="relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl bg-neutral-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    onClick={() => setLightboxOpen(true)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setLightboxOpen(true);
-                      }
-                    }}
-                  >
-                    {showingVideo && activeMedia ? (
-                      <>
-                        <CloudflareStreamVideo
-                          key={activeMedia.id}
-                          videoUrl={activeMedia.url}
-                          autoPlay
-                          muted
-                          loop
-                          controls={false}
-                          className="h-full w-full object-contain"
-                        />
-                        {/* 재생 오버레이 — 클릭 시 라이트박스에서 풀 재생 */}
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/10">
-                          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 text-neutral-900 shadow-lg">
-                            <Play className="ml-0.5 h-6 w-6 fill-current" />
+                  {/* Main Media */}
+                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-neutral-100">
+                    {/* 이미지/비디오를 감싸는 시맨틱 버튼 — 라이트박스 트리거.
+                        prev/next 버튼과 형제로 분리해 대화형 요소 중첩을 피한다. */}
+                    <button
+                      type="button"
+                      aria-label="이미지 확대"
+                      className="absolute inset-0 h-full w-full cursor-zoom-in rounded-2xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      onClick={() => setLightboxOpen(true)}
+                    >
+                      {showingVideo && activeMedia ? (
+                        <>
+                          <CloudflareStreamVideo
+                            key={activeMedia.id}
+                            videoUrl={activeMedia.url}
+                            autoPlay
+                            muted
+                            loop
+                            controls={false}
+                            className="h-full w-full object-contain"
+                          />
+                          {/* 재생 오버레이 — 클릭 시 라이트박스에서 풀 재생 */}
+                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/10">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 text-neutral-900 shadow-lg">
+                              <Play className="ml-0.5 h-6 w-6 fill-current" />
+                            </div>
                           </div>
-                        </div>
-                      </>
-                    ) : activeMedia ? (
-                      <Image
-                        src={getImageUrl(activeMedia.url, 'hires')}
-                        alt={activeMedia.alt}
-                        fill
-                        priority
-                        sizes="(min-width: 1024px) 60vw, 100vw"
-                        className="object-contain"
-                      />
-                    ) : null}
+                        </>
+                      ) : activeMedia ? (
+                        <Image
+                          src={getImageUrl(activeMedia.url, 'hires')}
+                          alt={activeMedia.alt}
+                          fill
+                          priority
+                          sizes="(min-width: 1024px) 60vw, 100vw"
+                          className="object-contain"
+                        />
+                      ) : null}
+                    </button>
 
-                    {/* Prev / Next Arrows */}
+                    {/* Prev / Next Arrows — 트리거 버튼과 형제(중첩 해소), z-10으로 위에 */}
                     {totalMedia > 1 && (
                       <>
                         <button
                           type="button"
                           aria-label="이전"
-                          className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 text-neutral-600 backdrop-blur-xs transition-all hover:scale-110 hover:border-white hover:bg-white"
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 text-neutral-600 backdrop-blur-xs transition-all hover:scale-110 hover:border-white hover:bg-white"
+                          onClick={() =>
                             setActiveMediaIndex(
                               (i) => (i - 1 + totalMedia) % totalMedia
-                            );
-                          }}
+                            )
+                          }
                         >
                           <ChevronLeft className="h-5 w-5" />
                         </button>
                         <button
                           type="button"
                           aria-label="다음"
-                          className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 text-neutral-600 backdrop-blur-xs transition-all hover:scale-110 hover:border-white hover:bg-white"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveMediaIndex((i) => (i + 1) % totalMedia);
-                          }}
+                          className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-white/80 text-neutral-600 backdrop-blur-xs transition-all hover:scale-110 hover:border-white hover:bg-white"
+                          onClick={() =>
+                            setActiveMediaIndex((i) => (i + 1) % totalMedia)
+                          }
                         >
                           <ChevronRight className="h-5 w-5" />
                         </button>
