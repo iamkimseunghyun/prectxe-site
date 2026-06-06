@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { CloudflareStreamVideo } from '@/components/media/cloudflare-stream-video';
+import { LocaleSwitcher } from '@/components/shared/locale-switcher';
 import { SaleCountdown } from '@/components/shared/sale-countdown';
 import { ShareButton } from '@/components/shared/share-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -152,12 +153,15 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
           <ArrowLeft className="h-5 w-5" />
         </Link>
 
-        {/* Share */}
-        <ShareButton
-          title={drop.title}
-          text={drop.summary}
-          className="absolute right-5 top-5 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/30 text-white/80 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/50"
-        />
+        {/* Top-right controls — 드랍 상세는 전역 헤더가 숨겨지므로 여기에 로케일 토글을 둔다 */}
+        <div className="absolute right-5 top-5 z-20 flex items-center gap-2">
+          <LocaleSwitcher className="flex h-11 items-center rounded-full border border-white/20 bg-black/50 px-4 text-white/80 backdrop-blur-md" />
+          <ShareButton
+            title={drop.title}
+            text={drop.summary}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/50"
+          />
+        </div>
 
         {/* Hero Content */}
         <div className="relative z-10 w-full px-6 pb-16 pt-[60vh] sm:px-10 lg:px-20">
