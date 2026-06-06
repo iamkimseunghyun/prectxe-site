@@ -12,6 +12,7 @@ import {
 import type { Locale } from '@/i18n/config';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { getSalesTerms } from '@/lib/constants/sales-terms';
+import { formatKstExpiry } from '@/lib/utils';
 
 interface BankTransferPendingProps {
   buyerName: string;
@@ -25,20 +26,6 @@ interface BankTransferPendingProps {
   accountNumber: string;
   accountHolder: string;
   locale?: Locale;
-}
-
-function formatExpiry(expiresAt: Date | string): string {
-  const date = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
-  if (Number.isNaN(date.getTime())) return '';
-  // KST(+9h) 시프트 후 UTC getter로 읽어 서버 TZ(예: Vercel UTC)와 무관하게 KST 표기.
-  // 로컬 getter(getFullYear 등)는 UTC 서버에서 9시간 어긋난 마감시각을 보여주는 버그.
-  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
-  const yyyy = kst.getUTCFullYear();
-  const mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(kst.getUTCDate()).padStart(2, '0');
-  const hh = String(kst.getUTCHours()).padStart(2, '0');
-  const mi = String(kst.getUTCMinutes()).padStart(2, '0');
-  return `${yyyy}.${mm}.${dd} ${hh}:${mi}`;
 }
 
 export default function BankTransferPending({
@@ -132,7 +119,7 @@ export default function BankTransferPending({
             <Section style={warnBox}>
               <Text style={warnText}>
                 <strong>{L('입금 마감', 'Payment deadline')}</strong>:{' '}
-                {formatExpiry(expiresAt)}
+                {formatKstExpiry(expiresAt)}
               </Text>
               <Text style={warnSub}>{ST.autoCancelNotice}</Text>
             </Section>

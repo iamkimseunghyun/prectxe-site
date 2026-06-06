@@ -105,3 +105,19 @@ export const toKstDateInputValue = (date: Date): string => {
   const kst = new Date(date.getTime() + 9 * 3600 * 1000);
   return kst.toISOString().slice(0, 16);
 };
+
+/**
+ * KST 기준 'YYYY.MM.DD HH:mm' (24시간·숫자·언어중립). 입금 마감 등 만료 표기용.
+ * 로컬 getter는 UTC 서버(예: Vercel)에서 9시간 어긋나므로 +9h 시프트 후 UTC getter 사용.
+ */
+export const formatKstExpiry = (expiresAt: Date | string): string => {
+  const date = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
+  if (Number.isNaN(date.getTime())) return '';
+  const kst = toKst(date);
+  const yyyy = kst.getUTCFullYear();
+  const mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(kst.getUTCDate()).padStart(2, '0');
+  const hh = String(kst.getUTCHours()).padStart(2, '0');
+  const mi = String(kst.getUTCMinutes()).padStart(2, '0');
+  return `${yyyy}.${mm}.${dd} ${hh}:${mi}`;
+};
