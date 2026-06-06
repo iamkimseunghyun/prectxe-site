@@ -554,6 +554,7 @@ model Order {
   buyerPhone   String
   totalAmount  Int
   status       OrderStatus   @default(pending)
+  locale       String        @default("ko")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   drop         Drop?         @relation(fields: [dropId], references: [id], onDelete: Cascade)
