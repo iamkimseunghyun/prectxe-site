@@ -9,13 +9,13 @@ import {
   Plus,
 } from 'lucide-react';
 import Image from 'next/image';
-import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { CloudflareStreamVideo } from '@/components/media/cloudflare-stream-video';
+import { LocaleSwitcher } from '@/components/shared/locale-switcher';
 import { ShareButton } from '@/components/shared/share-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { trackViewItem } from '@/lib/analytics/gtag';
 import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { artistInitials, cn, formatArtistName, getImageUrl } from '@/lib/utils';
@@ -105,12 +105,13 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
             <ArrowLeft className="h-4 w-4" />
             <span>Drops</span>
           </Link>
+          <LocaleSwitcher className="ml-auto text-neutral-500" />
           <ShareButton
             title={drop.title}
             text={drop.summary}
             label="공유"
             iconClassName="h-4 w-4"
-            className="ml-auto inline-flex items-center gap-1.5 rounded text-sm text-neutral-500 transition-colors hover:text-neutral-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="ml-4 inline-flex items-center gap-1.5 rounded text-sm text-neutral-500 transition-colors hover:text-neutral-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         </div>
       </nav>
@@ -122,10 +123,21 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
             <div className="relative py-6 lg:pr-8 lg:py-12">
               {totalMedia > 0 ? (
                 <>
-                  {/* Main Media */}
+                  {/* Main Media — 확대 라이트박스 트리거. 내부에 prev/next <button>이
+                      중첩돼 있어 <button> 대신 role=button 패턴으로 키보드 접근성 확보 */}
+                  {/* biome-ignore lint/a11y/useSemanticElements: 내부 prev/next <button> 중첩 불가로 role=button 사용 */}
                   <div
-                    className="relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl bg-neutral-100"
+                    role="button"
+                    tabIndex={0}
+                    aria-label="이미지 확대"
+                    className="relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl bg-neutral-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     onClick={() => setLightboxOpen(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setLightboxOpen(true);
+                      }
+                    }}
                   >
                     {showingVideo && activeMedia ? (
                       <>
