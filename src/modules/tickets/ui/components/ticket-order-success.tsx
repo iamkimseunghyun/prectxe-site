@@ -5,20 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import type { Locale } from '@/i18n/config';
 import { getSalesTerms } from '@/lib/constants/sales-terms';
-
-function formatExpiry(expiresAt: Date | string): string {
-  const date = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
-  if (Number.isNaN(date.getTime())) return '';
-  // KST(+9h) 시프트 후 UTC getter로 읽어 서버 TZ(예: Vercel UTC)와 무관하게 KST 표기.
-  // 로컬 getter(getFullYear 등)는 UTC 서버에서 9시간 어긋난 마감시각을 보여주는 버그.
-  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
-  const yyyy = kst.getUTCFullYear();
-  const mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(kst.getUTCDate()).padStart(2, '0');
-  const hh = String(kst.getUTCHours()).padStart(2, '0');
-  const mi = String(kst.getUTCMinutes()).padStart(2, '0');
-  return `${yyyy}.${mm}.${dd} ${hh}:${mi}`;
-}
+import { formatKstExpiry } from '@/lib/utils';
 
 export function FreeOrderSuccess({
   orderNo,
@@ -166,7 +153,7 @@ export function BankTransferOrderSuccess({
 
         <div className="rounded-xl border border-red-200 bg-red-50 p-4">
           <p className="text-sm font-semibold text-red-700">
-            {t('depositDeadline', { time: formatExpiry(expiresAt) })}
+            {t('depositDeadline', { time: formatKstExpiry(expiresAt) })}
           </p>
           <p className="mt-1 text-xs leading-relaxed text-red-600">
             {ST.autoCancelNotice}

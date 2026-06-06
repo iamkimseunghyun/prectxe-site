@@ -17,6 +17,7 @@ export {
   formatKstDateRange,
   formatKstDateTime,
   formatKstEventRange,
+  formatKstExpiry,
   isSameDay,
   parseKstDateInput,
   toKstDateInputValue,
