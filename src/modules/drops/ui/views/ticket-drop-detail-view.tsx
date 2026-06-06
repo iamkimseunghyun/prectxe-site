@@ -155,11 +155,11 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
 
         {/* Top-right controls — 드랍 상세는 전역 헤더가 숨겨지므로 여기에 로케일 토글을 둔다 */}
         <div className="absolute right-5 top-5 z-20 flex items-center gap-2">
-          <LocaleSwitcher className="flex h-11 items-center rounded-full border border-white/20 bg-black/30 px-4 text-white/80 backdrop-blur-md" />
+          <LocaleSwitcher className="flex h-11 items-center rounded-full border border-white/20 bg-black/50 px-4 text-white/80 backdrop-blur-md" />
           <ShareButton
             title={drop.title}
             text={drop.summary}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/30 text-white/80 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/50"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/50"
           />
         </div>
 
