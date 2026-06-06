@@ -111,6 +111,7 @@ export const toKstDateInputValue = (date: Date): string => {
  * 로컬 getter는 UTC 서버(예: Vercel)에서 9시간 어긋나므로 +9h 시프트 후 UTC getter 사용.
  */
 export const formatKstExpiry = (expiresAt: Date | string): string => {
+  if (!expiresAt) return '';
   const date = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
   if (Number.isNaN(date.getTime())) return '';
   const kst = toKst(date);
