@@ -103,6 +103,8 @@ export async function toggleArticleFeatured(slug: string) {
 
   const newValue = !article.isFeatured;
 
+  // 켤 때 program/다른 article/drop 해제와 대상 article 설정을 한 트랜잭션으로 묶어
+  // 부분 실패 시 featured 0개로 남는 일관성 깨짐을 방지한다.
   if (newValue) {
     await prisma.$transaction([
       prisma.program.updateMany({
@@ -113,13 +115,21 @@ export async function toggleArticleFeatured(slug: string) {
         where: { isFeatured: true, slug: { not: slug } },
         data: { isFeatured: false },
       }),
+      prisma.drop.updateMany({
+        where: { isFeatured: true },
+        data: { isFeatured: false },
+      }),
+      prisma.article.update({
+        where: { slug },
+        data: { isFeatured: true },
+      }),
     ]);
+  } else {
+    await prisma.article.update({
+      where: { slug },
+      data: { isFeatured: false },
+    });
   }
-
-  await prisma.article.update({
-    where: { slug },
-    data: { isFeatured: newValue },
-  });
 
   revalidatePath('/admin/journal');
   revalidatePath('/journal');

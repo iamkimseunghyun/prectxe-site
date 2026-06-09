@@ -6,8 +6,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
 import { formatKstDate } from '@/lib/utils';
-import { listAdminDrops } from '@/modules/drops/server/actions';
+import {
+  listAdminDrops,
+  toggleDropFeatured,
+} from '@/modules/drops/server/actions';
 import { DropStatusBadge } from '@/modules/drops/ui/components/status-badges';
 
 interface Drop {
@@ -16,6 +21,7 @@ interface Drop {
   slug: string;
   type: string;
   status: string;
+  isFeatured: boolean;
   publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -34,6 +40,8 @@ export function DropsAdminListView({ page }: { page: number }) {
   const [drops, setDrops] = useState<Drop[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const { toast } = useToast();
   const pageSize = 20;
 
   const loadData = useCallback(async () => {
@@ -49,6 +57,28 @@ export function DropsAdminListView({ page }: { page: number }) {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // 메인 히어로 노출 토글. featured는 program/article/drop 통틀어 1개만 가능하므로
+  // 성공 후 목록을 다시 불러 다른 drop의 토글 해제까지 반영한다.
+  // in-flight 중복 클릭 방지를 위해 pendingId로 가드 + 해당 Switch disabled.
+  const handleToggleFeatured = async (id: string) => {
+    if (pendingId) return;
+    setPendingId(id);
+    try {
+      const res = await toggleDropFeatured(id);
+      if (res.success) {
+        await loadData();
+      } else {
+        toast({
+          title: '메인 노출 설정 실패',
+          description: res.error,
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      setPendingId(null);
+    }
+  };
 
   const totalPages = Math.ceil(total / pageSize);
 
@@ -119,6 +149,20 @@ export function DropsAdminListView({ page }: { page: number }) {
                       <p className="text-xs text-muted-foreground">
                         {formatKstDate(new Date(drop.updatedAt))}
                       </p>
+                    </div>
+                    {/* 메인 히어로 노출 토글 — Card 전체가 Link라 Switch에서 전파 차단 */}
+                    <div className="flex shrink-0 flex-col items-center gap-1">
+                      <span className="text-[11px] text-muted-foreground">
+                        메인
+                      </span>
+                      <Switch
+                        checked={drop.isFeatured}
+                        disabled={pendingId === drop.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                        onCheckedChange={() => handleToggleFeatured(drop.id)}
+                      />
                     </div>
                   </CardContent>
                 </Card>
