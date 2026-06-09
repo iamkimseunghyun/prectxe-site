@@ -441,6 +441,7 @@ export async function listAdminDrops(page = 1, pageSize = 20) {
         slug: true,
         type: true,
         status: true,
+        isFeatured: true,
         publishedAt: true,
         createdAt: true,
         updatedAt: true,
@@ -479,6 +480,7 @@ export async function listAdminDrops(page = 1, pageSize = 20) {
     slug: d.slug,
     type: d.type,
     status: d.status,
+    isFeatured: d.isFeatured,
     publishedAt: d.publishedAt,
     createdAt: d.createdAt,
     updatedAt: d.updatedAt,
@@ -492,4 +494,46 @@ export async function listAdminDrops(page = 1, pageSize = 20) {
     success: true,
     data: { page, pageSize, total, items },
   } as const;
+}
+
+// 메인 히어로 노출 토글. program/article/drop 통틀어 1개만 featured 가능하므로
+// 켤 때 다른 모든 featured를 해제한다 (toggleProgramFeatured / toggleArticleFeatured와 대칭).
+export async function toggleDropFeatured(id: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error } as const;
+
+  const drop = await prisma.drop.findUnique({
+    where: { id },
+    select: { isFeatured: true },
+  });
+  if (!drop) return { success: false, error: 'Drop을 찾을 수 없습니다.' };
+
+  const newValue = !drop.isFeatured;
+
+  if (newValue) {
+    await prisma.$transaction([
+      prisma.program.updateMany({
+        where: { isFeatured: true },
+        data: { isFeatured: false },
+      }),
+      prisma.article.updateMany({
+        where: { isFeatured: true },
+        data: { isFeatured: false },
+      }),
+      prisma.drop.updateMany({
+        where: { isFeatured: true, id: { not: id } },
+        data: { isFeatured: false },
+      }),
+    ]);
+  }
+
+  await prisma.drop.update({
+    where: { id },
+    data: { isFeatured: newValue },
+  });
+
+  revalidatePath('/admin/drops');
+  revalidatePath('/drops');
+  revalidatePath('/');
+  return { success: true, data: { isFeatured: newValue } };
 }

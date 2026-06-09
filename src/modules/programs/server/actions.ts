@@ -221,6 +221,10 @@ export async function toggleProgramFeatured(id: string) {
         where: { isFeatured: true },
         data: { isFeatured: false },
       }),
+      prisma.drop.updateMany({
+        where: { isFeatured: true },
+        data: { isFeatured: false },
+      }),
     ]);
   }
 

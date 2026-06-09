@@ -113,6 +113,10 @@ export async function toggleArticleFeatured(slug: string) {
         where: { isFeatured: true, slug: { not: slug } },
         data: { isFeatured: false },
       }),
+      prisma.drop.updateMany({
+        where: { isFeatured: true },
+        data: { isFeatured: false },
+      }),
     ]);
   }
 
