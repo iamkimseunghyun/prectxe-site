@@ -26,7 +26,6 @@ type Tier = {
   maxPerOrder: number;
   saleStart: Date | null;
   saleEnd: Date | null;
-  status: string;
   order: number;
 };
 

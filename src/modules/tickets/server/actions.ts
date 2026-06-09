@@ -160,22 +160,6 @@ export async function deleteTicketTier(tierId: string) {
   return { success: true };
 }
 
-export async function updateTicketTierStatus(
-  tierId: string,
-  status: 'scheduled' | 'on_sale' | 'sold_out' | 'closed'
-) {
-  const auth = await requireAdmin();
-  if (!auth.success) return { success: false, error: auth.error };
-
-  await prisma.ticketTier.update({
-    where: { id: tierId },
-    data: { status },
-  });
-
-  revalidatePath('/admin/drops');
-  return { success: true };
-}
-
 // ─── GoodsVariant CRUD (Admin) ──────────────────────
 
 export async function createGoodsVariant(

@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { SaleCountdown } from '@/components/shared/sale-countdown';
 import { prisma } from '@/lib/db/prisma';
 import { cn, getImageUrl } from '@/lib/utils';
-import { getDropSaleWindow } from '@/lib/utils/ticket-status';
+import {
+  getDropSaleWindow,
+  getEffectiveDropStatus,
+} from '@/lib/utils/ticket-status';
 
 const STATUS_LABEL: Record<string, { label: string; className: string }> = {
   on_sale: {
@@ -22,12 +25,11 @@ const STATUS_LABEL: Record<string, { label: string; className: string }> = {
 };
 
 export async function NowOnSaleSection() {
-  const drops = await prisma.drop.findMany({
-    where: {
-      status: { in: ['on_sale', 'upcoming'] },
-      publishedAt: { not: null },
-    },
-    take: 3,
+  // 공개된 drop을 가져와 파생 상태(getEffectiveDropStatus)가 on_sale/upcoming인
+  // 것만 노출. 파생 필터는 쿼리로 못 하므로 넉넉히 받아 계산 후 상위 3개로 슬라이스.
+  const published = await prisma.drop.findMany({
+    where: { publishedAt: { not: null } },
+    take: 12,
     orderBy: [{ eventDate: 'asc' }, { publishedAt: 'desc' }],
     select: {
       id: true,
@@ -35,7 +37,6 @@ export async function NowOnSaleSection() {
       title: true,
       summary: true,
       type: true,
-      status: true,
       eventDate: true,
       media: {
         where: { type: 'image' },
@@ -44,11 +45,24 @@ export async function NowOnSaleSection() {
         select: { url: true },
       },
       ticketTiers: {
-        select: { price: true, saleStart: true, saleEnd: true },
+        select: {
+          price: true,
+          saleStart: true,
+          saleEnd: true,
+          soldCount: true,
+          quantity: true,
+        },
       },
-      variants: { select: { price: true } },
+      variants: { select: { price: true, stock: true, soldCount: true } },
     },
   });
+
+  const drops = published
+    .map((d) => ({ ...d, effectiveStatus: getEffectiveDropStatus(d) }))
+    .filter(
+      (d) => d.effectiveStatus === 'on_sale' || d.effectiveStatus === 'upcoming'
+    )
+    .slice(0, 3);
 
   if (drops.length === 0) return null;
 
@@ -80,7 +94,7 @@ export async function NowOnSaleSection() {
                 ? drop.ticketTiers.map((t) => t.price)
                 : drop.variants.map((v) => v.price);
             const minPrice = prices.length > 0 ? Math.min(...prices) : null;
-            const status = STATUS_LABEL[drop.status];
+            const status = STATUS_LABEL[drop.effectiveStatus];
             const saleWindow = getDropSaleWindow(drop.ticketTiers);
 
             return (

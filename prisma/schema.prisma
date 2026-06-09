@@ -466,7 +466,6 @@ model Drop {
   summary     String?
   description String?
   type        DropType
-  status      DropStatus   @default(draft)
   eventDate    DateTime?
   eventEndDate DateTime?
   venue        String?
@@ -521,7 +520,6 @@ model TicketTier {
   maxPerOrder Int              @default(4)
   saleStart   DateTime?
   saleEnd     DateTime?
-  status      TicketTierStatus @default(scheduled)
   order       Int              @default(0)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
@@ -646,20 +644,7 @@ enum DropMediaType {
   video
 }
 
-enum DropStatus {
-  draft
-  upcoming
-  on_sale
-  sold_out
-  closed
-}
 
-enum TicketTierStatus {
-  scheduled
-  on_sale
-  sold_out
-  closed
-}
 
 enum OrderStatus {
   pending

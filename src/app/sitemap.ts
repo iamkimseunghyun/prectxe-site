@@ -29,7 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   });
 
   const drops = await prisma.drop.findMany({
-    where: { status: { not: 'draft' }, publishedAt: { not: null } },
+    where: { publishedAt: { not: null } },
     select: { slug: true, updatedAt: true },
   });
 

@@ -40,14 +40,12 @@ export async function getVenueEvents(venueId: string, venueName: string) {
     prisma.drop.findMany({
       where: {
         OR: [{ venueId }, { venue: venueName }],
-        status: { not: 'draft' },
         publishedAt: { not: null },
       },
       select: {
         id: true,
         slug: true,
         title: true,
-        status: true,
         eventDate: true,
         eventEndDate: true,
         media: {

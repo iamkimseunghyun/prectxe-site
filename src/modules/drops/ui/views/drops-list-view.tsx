@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FilterChip } from '@/components/shared/filter-chip';
 import { Badge } from '@/components/ui/badge';
 import { cn, formatKstDate, getImageUrl } from '@/lib/utils';
+import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
 import { listDrops } from '@/modules/drops/server/actions';
 
 interface DropsListViewProps {
@@ -86,7 +87,7 @@ export async function DropsListView({ type, page }: DropsListViewProps) {
                   );
             const hasPrice = minPrice !== Number.MAX_SAFE_INTEGER;
 
-            const status = STATUS_STYLE[drop.status];
+            const status = STATUS_STYLE[getEffectiveDropStatus(drop)];
             const dDay =
               drop.type === 'ticket' ? daysUntil(drop.eventDate) : null;
             const eventDateLabel =

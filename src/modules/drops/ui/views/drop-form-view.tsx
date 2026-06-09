@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -67,7 +68,6 @@ type DropData = {
   title: string;
   slug: string;
   type: string;
-  status: string;
   summary: string | null;
   description: string | null;
   eventDate: Date | null;
@@ -131,7 +131,7 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
 
   // Select 상태 (controlled — Radix name prop이 React 19 form에서 무한루프 유발)
   const [type, setType] = useState(drop?.type ?? 'ticket');
-  const [status, setStatus] = useState(drop?.status ?? 'draft');
+  const [published, setPublished] = useState(!!drop?.publishedAt);
 
   // Venue 상태 — 기존 venueId 있으면 link 모드, 없으면 legacy 문자열 모드
   const [venue, setVenue] = useState({
@@ -305,7 +305,7 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
         venueAddress: venue.venueAddress || undefined,
         venueId: venue.venueId ?? undefined,
         notice: (fd.get('notice') as string) || undefined,
-        status: fd.get('status') as string,
+        published,
         media,
         credits: credits.map((c) => ({ artistId: c.artistId, role: c.role })),
       };
@@ -342,21 +342,6 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
     } else {
       toast({ title: result.error, variant: 'destructive' });
       setIsDeleting(false);
-    }
-  }
-
-  async function handlePublish() {
-    if (!drop) return;
-    const now = new Date().toISOString();
-    const result = await updateDrop(drop.id, {
-      status: 'on_sale',
-      publishedAt: now,
-    });
-    if (result.success) {
-      toast({ title: '공개되었습니다.' });
-      router.refresh();
-    } else {
-      toast({ title: result.error, variant: 'destructive' });
     }
   }
 
@@ -639,33 +624,20 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>상태</CardTitle>
+                <CardTitle>공개</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <input type="hidden" name="status" value={status} />
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">초안</SelectItem>
-                    <SelectItem value="upcoming">예정</SelectItem>
-                    <SelectItem value="on_sale">판매 중</SelectItem>
-                    <SelectItem value="sold_out">매진</SelectItem>
-                    <SelectItem value="closed">종료</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {isEdit && drop.status === 'draft' && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={handlePublish}
-                  >
-                    공개하기
-                  </Button>
-                )}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium">
+                      {published ? '공개됨' : '비공개(초안)'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      판매중·매진 등 표시는 등급/재고에서 자동 계산됩니다.
+                    </p>
+                  </div>
+                  <Switch checked={published} onCheckedChange={setPublished} />
+                </div>
 
                 <Button
                   type="submit"

@@ -20,7 +20,6 @@ export default async function Page({ params }: PageProps) {
         title: drop.title,
         slug: drop.slug,
         type: drop.type,
-        status: drop.status,
         summary: drop.summary,
         description: drop.description,
         eventDate: drop.eventDate,

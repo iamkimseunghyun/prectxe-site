@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { loadNotoSansKrBold } from '@/lib/og-font';
 import { getImageUrl, getVideoThumbnailUrl } from '@/lib/utils';
+import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
 import { getDropBySlug } from '@/modules/drops/server/actions';
 
 export const alt = 'PRECTXE Drop';
@@ -61,6 +62,7 @@ export default async function OGImage({
   }
 
   const typeLabel = TYPE_LABELS[drop.type] || 'DROP';
+  const effectiveStatus = getEffectiveDropStatus(drop);
 
   // 최저 가격 계산
   const prices =
@@ -218,11 +220,11 @@ export default async function OGImage({
               fontSize: 18,
             }}
           >
-            {drop.status === 'on_sale'
+            {effectiveStatus === 'on_sale'
               ? 'NOW AVAILABLE'
-              : drop.status === 'sold_out'
+              : effectiveStatus === 'sold_out'
                 ? 'SOLD OUT'
-                : drop.status === 'upcoming'
+                : effectiveStatus === 'upcoming'
                   ? 'COMING SOON'
                   : 'CLOSED'}
           </span>

@@ -5,7 +5,6 @@ import {
   Banknote,
   BarChart3,
   ExternalLink,
-  Loader2,
   Package,
   Pencil,
   QrCode,
@@ -19,15 +18,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { formatKstDateTime } from '@/lib/utils';
+import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
 import {
   deleteDrop,
   getDropWithStats,
@@ -42,7 +36,6 @@ type DropData = {
   title: string;
   slug: string;
   type: string;
-  status: string;
   summary: string | null;
   description: string | null;
   publishedAt: Date | null;
@@ -67,7 +60,6 @@ type DropData = {
     maxPerOrder: number;
     saleStart: Date | null;
     saleEnd: Date | null;
-    status: string;
     order: number;
   }[];
   variants: {
@@ -95,10 +87,9 @@ export function DropDetailView({ dropId }: { dropId: string }) {
   const [drop, setDrop] = useState<DropData | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSavingStatus, setIsSavingStatus] = useState(false);
+  const [isSavingPublish, setIsSavingPublish] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [statusValue, setStatusValue] = useState('draft');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -106,7 +97,6 @@ export function DropDetailView({ dropId }: { dropId: string }) {
       const result = await getDropWithStats(dropId);
       if (result.success) {
         setDrop(result.data.drop as DropData);
-        setStatusValue(result.data.drop.status);
         setStats(result.data.stats);
       } else {
         setDrop(null);
@@ -122,14 +112,14 @@ export function DropDetailView({ dropId }: { dropId: string }) {
     loadData();
   }, [loadData]);
 
-  async function handleSaveStatus() {
+  async function handleTogglePublished(next: boolean) {
     if (!drop) return;
-    setIsSavingStatus(true);
-    const result = await updateDrop(drop.id, { status: statusValue });
-    setIsSavingStatus(false);
+    setIsSavingPublish(true);
+    const result = await updateDrop(drop.id, { published: next });
+    setIsSavingPublish(false);
 
     if (result.success) {
-      toast({ title: '상태가 변경되었습니다.' });
+      toast({ title: next ? '공개되었습니다.' : '비공개로 전환했습니다.' });
       loadData();
     } else {
       toast({ title: result.error, variant: 'destructive' });
@@ -150,20 +140,6 @@ export function DropDetailView({ dropId }: { dropId: string }) {
     }
   }
 
-  async function handlePublish() {
-    if (!drop) return;
-    const result = await updateDrop(drop.id, {
-      status: 'on_sale',
-      publishedAt: new Date().toISOString(),
-    });
-    if (result.success) {
-      toast({ title: '공개되었습니다.' });
-      loadData();
-    } else {
-      toast({ title: result.error, variant: 'destructive' });
-    }
-  }
-
   if (loading) {
     return (
       <div className="py-20 text-center text-muted-foreground">로딩 중...</div>
@@ -178,7 +154,11 @@ export function DropDetailView({ dropId }: { dropId: string }) {
     );
   }
 
-  const statusChanged = statusValue !== drop.status;
+  const effectiveStatus = getEffectiveDropStatus({
+    type: drop.type as 'ticket' | 'goods',
+    ticketTiers: drop.ticketTiers,
+    variants: drop.variants,
+  });
 
   return (
     <div className="space-y-6">
@@ -193,7 +173,7 @@ export function DropDetailView({ dropId }: { dropId: string }) {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-semibold">{drop.title}</h1>
-              <DropStatusBadge status={drop.status} />
+              <DropStatusBadge status={effectiveStatus} />
               <Badge variant="outline">
                 {drop.type === 'ticket' ? '티켓' : '굿즈'}
               </Badge>
@@ -208,7 +188,7 @@ export function DropDetailView({ dropId }: { dropId: string }) {
               수정
             </Link>
           </Button>
-          {drop.status !== 'draft' && (
+          {drop.publishedAt && (
             <Button variant="outline" size="sm" asChild>
               <Link href={`/drops/${drop.slug}`} target="_blank">
                 <ExternalLink className="mr-1 h-4 w-4" />
@@ -315,48 +295,28 @@ export function DropDetailView({ dropId }: { dropId: string }) {
           )}
         </div>
 
-        {/* Sidebar: 상태 + 삭제 */}
+        {/* Sidebar: 공개 + 삭제 */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>상태</CardTitle>
+              <CardTitle>공개</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Select value={statusValue} onValueChange={setStatusValue}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">초안</SelectItem>
-                  <SelectItem value="upcoming">예정</SelectItem>
-                  <SelectItem value="on_sale">판매 중</SelectItem>
-                  <SelectItem value="sold_out">매진</SelectItem>
-                  <SelectItem value="closed">종료</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {drop.status === 'draft' && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={handlePublish}
-                >
-                  공개하기
-                </Button>
-              )}
-
-              <Button
-                type="button"
-                className="w-full"
-                onClick={handleSaveStatus}
-                disabled={isSavingStatus || !statusChanged}
-              >
-                {isSavingStatus && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                상태 저장
-              </Button>
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">
+                    {drop.publishedAt ? '공개됨' : '비공개(초안)'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    판매중·매진 등 표시는 등급/재고에서 자동 계산됩니다.
+                  </p>
+                </div>
+                <Switch
+                  checked={!!drop.publishedAt}
+                  disabled={isSavingPublish}
+                  onCheckedChange={handleTogglePublished}
+                />
+              </div>
 
               <Button
                 type="button"

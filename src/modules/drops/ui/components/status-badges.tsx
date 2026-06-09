@@ -9,7 +9,6 @@ interface LabelInfo {
 }
 
 const DROP_STATUS_LABELS: Record<string, LabelInfo> = {
-  draft: { label: '초안', variant: 'secondary' },
   upcoming: { label: '예정', variant: 'outline' },
   on_sale: { label: '판매 중', variant: 'default' },
   sold_out: { label: '매진', variant: 'destructive' },
@@ -25,7 +24,7 @@ const ORDER_STATUS_LABELS: Record<string, LabelInfo> = {
 };
 
 export function DropStatusBadge({ status }: { status: string }) {
-  const info = DROP_STATUS_LABELS[status] ?? DROP_STATUS_LABELS.draft;
+  const info = DROP_STATUS_LABELS[status] ?? DROP_STATUS_LABELS.upcoming;
   return <Badge variant={info.variant}>{info.label}</Badge>;
 }
 
