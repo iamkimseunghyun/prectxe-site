@@ -91,10 +91,14 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
 
   const selected = drop.variants.find((v) => v.id === selectedVariant);
   const remaining = selected ? selected.stock - selected.soldCount : 0;
-  const isSoldOut =
-    getEffectiveDropStatus({ type: 'goods', variants: drop.variants }) ===
-    'sold_out';
-  const isSaleActive = !isSoldOut;
+  // 옵션이 없으면 effectiveStatus='upcoming' → 구매 섹션 비활성(오동작 방지).
+  // on_sale일 때만 구매 가능, 재고 소진 시 sold_out.
+  const effectiveStatus = getEffectiveDropStatus({
+    type: 'goods',
+    variants: drop.variants,
+  });
+  const isSoldOut = effectiveStatus === 'sold_out';
+  const isSaleActive = effectiveStatus === 'on_sale';
 
   return (
     <div className="min-h-screen bg-white">
@@ -312,7 +316,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                     )}
                   >
                     <p className="text-lg font-semibold">
-                      {isSoldOut ? 'Sold Out' : '판매 종료'}
+                      {isSoldOut ? 'Sold Out' : '준비 중'}
                     </p>
                   </div>
                 ) : (

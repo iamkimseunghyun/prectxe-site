@@ -27,8 +27,18 @@ const STATUS_LABEL: Record<string, { label: string; className: string }> = {
 export async function NowOnSaleSection() {
   // 공개된 drop을 가져와 파생 상태(getEffectiveDropStatus)가 on_sale/upcoming인
   // 것만 노출. 파생 필터는 쿼리로 못 하므로 넉넉히 받아 계산 후 상위 3개로 슬라이스.
+  // 이미 끝난 과거 이벤트는 쿼리에서 제외 — 안 그러면 과거 drop이 take 슬롯을
+  // 채워 현재 판매중 drop이 0개로 가려질 수 있다(굿즈 등 무날짜 drop은 포함).
+  const now = new Date();
   const published = await prisma.drop.findMany({
-    where: { publishedAt: { not: null } },
+    where: {
+      publishedAt: { not: null },
+      OR: [
+        { eventEndDate: { gte: now } },
+        { eventEndDate: null, eventDate: { gte: now } },
+        { eventDate: null, eventEndDate: null },
+      ],
+    },
     take: 12,
     orderBy: [{ eventDate: 'asc' }, { publishedAt: 'desc' }],
     select: {
