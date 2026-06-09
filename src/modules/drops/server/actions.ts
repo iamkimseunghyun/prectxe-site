@@ -510,6 +510,8 @@ export async function toggleDropFeatured(id: string) {
 
   const newValue = !drop.isFeatured;
 
+  // 켤 때 program/article/다른 drop 해제와 대상 drop 설정을 한 트랜잭션으로 묶어
+  // 부분 실패 시 featured 0개로 남는 일관성 깨짐을 방지한다.
   if (newValue) {
     await prisma.$transaction([
       prisma.program.updateMany({
@@ -524,13 +526,17 @@ export async function toggleDropFeatured(id: string) {
         where: { isFeatured: true, id: { not: id } },
         data: { isFeatured: false },
       }),
+      prisma.drop.update({
+        where: { id },
+        data: { isFeatured: true },
+      }),
     ]);
+  } else {
+    await prisma.drop.update({
+      where: { id },
+      data: { isFeatured: false },
+    });
   }
-
-  await prisma.drop.update({
-    where: { id },
-    data: { isFeatured: newValue },
-  });
 
   revalidatePath('/admin/drops');
   revalidatePath('/drops');

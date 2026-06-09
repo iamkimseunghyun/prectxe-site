@@ -80,8 +80,6 @@ export async function FeaturedHeroSection() {
           },
         },
       },
-      ticketTiers: { select: { price: true } },
-      variants: { select: { price: true } },
     },
   });
 

@@ -40,6 +40,7 @@ export function DropsAdminListView({ page }: { page: number }) {
   const [drops, setDrops] = useState<Drop[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const { toast } = useToast();
   const pageSize = 20;
 
@@ -59,16 +60,23 @@ export function DropsAdminListView({ page }: { page: number }) {
 
   // 메인 히어로 노출 토글. featured는 program/article/drop 통틀어 1개만 가능하므로
   // 성공 후 목록을 다시 불러 다른 drop의 토글 해제까지 반영한다.
+  // in-flight 중복 클릭 방지를 위해 pendingId로 가드 + 해당 Switch disabled.
   const handleToggleFeatured = async (id: string) => {
-    const res = await toggleDropFeatured(id);
-    if (res.success) {
-      loadData();
-    } else {
-      toast({
-        title: '메인 노출 설정 실패',
-        description: res.error,
-        variant: 'destructive',
-      });
+    if (pendingId) return;
+    setPendingId(id);
+    try {
+      const res = await toggleDropFeatured(id);
+      if (res.success) {
+        await loadData();
+      } else {
+        toast({
+          title: '메인 노출 설정 실패',
+          description: res.error,
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      setPendingId(null);
     }
   };
 
@@ -149,8 +157,8 @@ export function DropsAdminListView({ page }: { page: number }) {
                       </span>
                       <Switch
                         checked={drop.isFeatured}
+                        disabled={pendingId === drop.id}
                         onClick={(e) => {
-                          e.preventDefault();
                           e.stopPropagation();
                         }}
                         onCheckedChange={() => handleToggleFeatured(drop.id)}
