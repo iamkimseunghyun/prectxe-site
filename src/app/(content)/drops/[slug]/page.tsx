@@ -43,7 +43,7 @@ export default async function Page({ params }: PageProps) {
   const { slug } = await params;
   const drop = await getDropBySlug(slug);
 
-  if (!drop || drop.status === 'draft') {
+  if (!drop?.publishedAt) {
     notFound();
   }
 

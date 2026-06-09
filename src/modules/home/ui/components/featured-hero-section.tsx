@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { prisma } from '@/lib/db/prisma';
 import { cn, getImageUrl } from '@/lib/utils';
+import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
 
 // Drop 상태별 CTA 라벨/활성 여부.
 // active=true → 흰색 실 버튼(전환 유도), false → 안내성 라벨.
@@ -61,7 +62,6 @@ export async function FeaturedHeroSection() {
     select: {
       slug: true,
       title: true,
-      status: true,
       type: true,
       updatedAt: true,
       media: {
@@ -80,6 +80,15 @@ export async function FeaturedHeroSection() {
           },
         },
       },
+      ticketTiers: {
+        select: {
+          saleStart: true,
+          saleEnd: true,
+          soldCount: true,
+          quantity: true,
+        },
+      },
+      variants: { select: { stock: true, soldCount: true } },
     },
   });
 
@@ -185,7 +194,13 @@ export async function FeaturedHeroSection() {
     hero = img ? getImageUrl(img, 'public') : '/images/placeholder.png';
     href = `/drops/${slug}`;
     artists = creditsOf(featured.data.credits);
-    cta = dropCta(featured.data.status);
+    cta = dropCta(
+      getEffectiveDropStatus({
+        type: featured.data.type as 'ticket' | 'goods',
+        ticketTiers: featured.data.ticketTiers,
+        variants: featured.data.variants,
+      })
+    );
   }
 
   return (

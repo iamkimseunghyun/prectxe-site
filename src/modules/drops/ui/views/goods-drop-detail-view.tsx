@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { trackViewItem } from '@/lib/analytics/gtag';
 import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { artistInitials, cn, formatArtistName, getImageUrl } from '@/lib/utils';
+import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
 import { GoodsPurchaseSection } from '@/modules/drops/ui/components/goods-purchase-section';
 import { MediaLightbox } from '@/modules/drops/ui/components/media-lightbox';
 
@@ -59,7 +60,6 @@ type GoodsDrop = {
   summary: string | null;
   description: string | null;
   notice: string | null;
-  status: string;
   media: DropMedia[];
   credits: DropCredit[];
   variants: GoodsVariant[];
@@ -91,7 +91,14 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
 
   const selected = drop.variants.find((v) => v.id === selectedVariant);
   const remaining = selected ? selected.stock - selected.soldCount : 0;
-  const isSaleActive = drop.status !== 'closed' && drop.status !== 'sold_out';
+  // 옵션이 없으면 effectiveStatus='upcoming' → 구매 섹션 비활성(오동작 방지).
+  // on_sale일 때만 구매 가능, 재고 소진 시 sold_out.
+  const effectiveStatus = getEffectiveDropStatus({
+    type: 'goods',
+    variants: drop.variants,
+  });
+  const isSoldOut = effectiveStatus === 'sold_out';
+  const isSaleActive = effectiveStatus === 'on_sale';
 
   return (
     <div className="min-h-screen bg-white">
@@ -303,13 +310,13 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                   <div
                     className={cn(
                       'rounded-xl px-6 py-8 text-center',
-                      drop.status === 'sold_out'
+                      isSoldOut
                         ? 'bg-red-50 text-red-600'
                         : 'bg-neutral-50 text-neutral-500'
                     )}
                   >
                     <p className="text-lg font-semibold">
-                      {drop.status === 'sold_out' ? 'Sold Out' : '판매 종료'}
+                      {isSoldOut ? 'Sold Out' : '준비 중'}
                     </p>
                   </div>
                 ) : (

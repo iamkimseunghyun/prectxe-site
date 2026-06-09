@@ -21,6 +21,7 @@ import {
 } from '@/lib/utils';
 import {
   getDropSaleWindow,
+  getEffectiveDropStatus,
   getEffectiveTierStatus,
 } from '@/lib/utils/ticket-status';
 import { MediaLightbox } from '@/modules/drops/ui/components/media-lightbox';
@@ -36,7 +37,6 @@ type TicketTier = {
   maxPerOrder: number;
   saleStart: Date | null;
   saleEnd: Date | null;
-  status: string;
 };
 
 type DropMedia = {
@@ -70,7 +70,6 @@ type TicketDrop = {
   venue: string | null;
   venueAddress: string | null;
   notice: string | null;
-  status: string;
   media: DropMedia[];
   credits: DropCredit[];
   ticketTiers: TicketTier[];
@@ -109,8 +108,12 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
       remaining: t.quantity - t.soldCount,
     }));
 
-  const isClosed = drop.status === 'closed';
-  const isSoldOut = drop.status === 'sold_out';
+  const effectiveStatus = getEffectiveDropStatus({
+    type: 'ticket',
+    ticketTiers: drop.ticketTiers,
+  });
+  const isClosed = effectiveStatus === 'closed';
+  const isSoldOut = effectiveStatus === 'sold_out';
   const saleWindow = getDropSaleWindow(drop.ticketTiers);
 
   return (

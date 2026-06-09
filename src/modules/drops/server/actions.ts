@@ -12,6 +12,7 @@ import {
 import { prisma } from '@/lib/db/prisma';
 import { dropCreateSchema, dropUpdateSchema } from '@/lib/schemas/drop';
 import { extractImageId, extractVideoId, parseKstDateInput } from '@/lib/utils';
+import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
 
 // ─── Drop CRUD (Admin) ──────────────────────────────
 
@@ -39,7 +40,7 @@ export async function createDrop(input: {
   venueAddress?: string;
   venueId?: string;
   notice?: string;
-  status?: string;
+  published?: boolean;
   media?: DropMediaInput[];
   credits?: DropCreditInput[];
 }) {
@@ -71,8 +72,7 @@ export async function createDrop(input: {
       venueAddress: data.venueAddress || null,
       venueId: data.venueId || null,
       notice: data.notice || null,
-      status: (data.status as any) || 'draft',
-      publishedAt: data.status && data.status !== 'draft' ? new Date() : null,
+      publishedAt: data.published ? new Date() : null,
       media: data.media?.length
         ? { createMany: { data: data.media } }
         : undefined,
@@ -101,8 +101,7 @@ export async function updateDrop(
     venueAddress?: string;
     venueId?: string | null;
     notice?: string;
-    status?: string;
-    publishedAt?: string | null;
+    published?: boolean;
     media?: DropMediaInput[];
     credits?: DropCreditInput[];
   }
@@ -151,12 +150,13 @@ export async function updateDrop(
     await cleanupRemovedHtmlImages(prev.description, data.description || null);
   }
 
-  // draft → 공개 상태 전환 시 publishedAt 자동 설정
-  const isPublishing =
-    data.status &&
-    data.status !== 'draft' &&
-    prev.status === 'draft' &&
-    !prev.publishedAt;
+  // 공개 토글 → publishedAt 설정/해제. 이미 공개된 건 최초 공개 시각 유지.
+  const publishedAtUpdate =
+    data.published === undefined
+      ? {}
+      : {
+          publishedAt: data.published ? (prev.publishedAt ?? new Date()) : null,
+        };
 
   const drop = await prisma.drop.update({
     where: { id },
@@ -181,12 +181,7 @@ export async function updateDrop(
         venueAddress: data.venueAddress || null,
       }),
       ...(data.notice !== undefined && { notice: data.notice || null }),
-      ...(data.status !== undefined && { status: data.status as any }),
-      ...(data.publishedAt !== undefined
-        ? { publishedAt: data.publishedAt ? new Date(data.publishedAt) : null }
-        : isPublishing
-          ? { publishedAt: new Date() }
-          : {}),
+      ...publishedAtUpdate,
       ...(hasNewMedia && {
         media: {
           deleteMany: {},
@@ -285,7 +280,6 @@ export async function listDrops(
 ) {
   const where = {
     ...(type && { type: type as any }),
-    status: { not: 'draft' as any },
     publishedAt: { not: null },
   };
 
@@ -299,7 +293,15 @@ export async function listDrops(
           orderBy: { order: 'asc' },
           take: 1,
         },
-        ticketTiers: { select: { price: true, status: true } },
+        ticketTiers: {
+          select: {
+            price: true,
+            saleStart: true,
+            saleEnd: true,
+            soldCount: true,
+            quantity: true,
+          },
+        },
         variants: { select: { price: true, stock: true, soldCount: true } },
       },
       orderBy: { publishedAt: 'desc' },
@@ -440,11 +442,19 @@ export async function listAdminDrops(page = 1, pageSize = 20) {
         title: true,
         slug: true,
         type: true,
-        status: true,
         isFeatured: true,
         publishedAt: true,
         createdAt: true,
         updatedAt: true,
+        ticketTiers: {
+          select: {
+            saleStart: true,
+            saleEnd: true,
+            soldCount: true,
+            quantity: true,
+          },
+        },
+        variants: { select: { stock: true, soldCount: true } },
         _count: { select: { ticketTiers: true, variants: true } },
       },
       orderBy: { updatedAt: 'desc' },
@@ -479,7 +489,7 @@ export async function listAdminDrops(page = 1, pageSize = 20) {
     title: d.title,
     slug: d.slug,
     type: d.type,
-    status: d.status,
+    status: getEffectiveDropStatus(d),
     isFeatured: d.isFeatured,
     publishedAt: d.publishedAt,
     createdAt: d.createdAt,
