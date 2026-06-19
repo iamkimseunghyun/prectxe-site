@@ -250,37 +250,44 @@ async function reclaimStaleOrphanOrders() {
       bankTransfer: { is: null }, // 무통장 흐름은 24h 만료/cleanup이 담당
     },
     include: { items: true },
+    orderBy: { id: 'asc' }, // 데드락 방지: 일관된 주문 처리 순서
   });
   if (stale.length === 0) return 0;
 
-  const ids = stale.map((o) => o.id);
-  await prisma.$transaction([
-    ...stale.flatMap((o) =>
-      o.items
+  // 레이스 안전: pending→cancelled 전환에 성공한(=경합에서 이긴) 주문만 재고 복구.
+  // 회수 직전 결제 완료된 주문은 claimed.count===0으로 건너뛰어 초과판매를 방지.
+  let reclaimed = 0;
+  await prisma.$transaction(async (tx) => {
+    for (const order of stale) {
+      const claimed = await tx.order.updateMany({
+        where: { id: order.id, status: 'pending' },
+        data: { status: 'cancelled' },
+      });
+      if (claimed.count === 0) continue;
+      reclaimed++;
+
+      const ticketItems = order.items
         .filter((i) => i.ticketTierId)
-        .map((i) =>
-          prisma.ticketTier.update({
-            where: { id: i.ticketTierId! },
-            data: { soldCount: { decrement: i.quantity } },
-          })
-        )
-    ),
-    ...stale.flatMap((o) =>
-      o.items
+        .sort((a, b) => a.ticketTierId!.localeCompare(b.ticketTierId!));
+      for (const item of ticketItems) {
+        await tx.ticketTier.update({
+          where: { id: item.ticketTierId! },
+          data: { soldCount: { decrement: item.quantity } },
+        });
+      }
+
+      const goodsItems = order.items
         .filter((i) => i.goodsVariantId)
-        .map((i) =>
-          prisma.goodsVariant.update({
-            where: { id: i.goodsVariantId! },
-            data: { soldCount: { decrement: i.quantity } },
-          })
-        )
-    ),
-    prisma.order.updateMany({
-      where: { id: { in: ids }, status: 'pending' },
-      data: { status: 'cancelled' },
-    }),
-  ]);
-  return stale.length;
+        .sort((a, b) => a.goodsVariantId!.localeCompare(b.goodsVariantId!));
+      for (const item of goodsItems) {
+        await tx.goodsVariant.update({
+          where: { id: item.goodsVariantId! },
+          data: { soldCount: { decrement: item.quantity } },
+        });
+      }
+    }
+  });
+  return reclaimed;
 }
 
 // 같은 키의 중복 라인아이템을 합산 — maxPerOrder/재고 차감 우회 방지
@@ -314,8 +321,10 @@ export async function createOrder(
   // 구매자 로케일 저장 — 이후 어드민이 보내는 확인 메일도 구매자 언어로
   const locale = (await getLocale()) as Locale;
 
-  // 만료된 orphan pending 주문 재고 회수 — 실패해도 구매는 계속 진행
-  await reclaimStaleOrphanOrders().catch(() => {});
+  // 만료된 orphan pending 주문 재고 회수 — 실패해도(로그 후) 구매는 계속 진행
+  await reclaimStaleOrphanOrders().catch((e) =>
+    console.error('[reclaimStaleOrphanOrders] 재고 회수 실패:', e)
+  );
 
   const result = await prisma.$transaction(async (tx) => {
     let totalAmount = 0;
@@ -579,8 +588,10 @@ export async function createGoodsOrder(
   const { buyerName, buyerEmail, buyerPhone, items } = parsed.data;
   const locale = (await getLocale()) as Locale;
 
-  // 만료된 orphan pending 주문 재고 회수 — 실패해도 구매는 계속 진행
-  await reclaimStaleOrphanOrders().catch(() => {});
+  // 만료된 orphan pending 주문 재고 회수 — 실패해도(로그 후) 구매는 계속 진행
+  await reclaimStaleOrphanOrders().catch((e) =>
+    console.error('[reclaimStaleOrphanOrders] 재고 회수 실패:', e)
+  );
 
   const result = await prisma.$transaction(async (tx) => {
     let totalAmount = 0;
@@ -843,7 +854,10 @@ export async function cleanupExpiredBankTransferOrders() {
   if (!auth.success) return { success: false, error: auth.error } as const;
 
   // 무통장 외 orphan pending 주문(결제 없는 재고 점유)도 함께 회수
-  const orphanCount = await reclaimStaleOrphanOrders().catch(() => 0);
+  const orphanCount = await reclaimStaleOrphanOrders().catch((e) => {
+    console.error('[reclaimStaleOrphanOrders] 재고 회수 실패:', e);
+    return 0;
+  });
 
   const now = new Date();
   const expired = await prisma.bankTransfer.findMany({
