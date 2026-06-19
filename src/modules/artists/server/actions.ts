@@ -105,12 +105,31 @@ async function fetchArtistById(artistId: string) {
   }
 }
 
-// 공개 상세용 — 캐시 + 편집 시 updateTag('artists')로 즉시 무효화
-export const getArtistByIdWithCache = next_cache(
-  fetchArtistById,
-  ['artist-detail'],
-  { revalidate: CACHE_TIMES.ARTIST_DETAIL, tags: ['artists'] }
-);
+const getArtistByIdCachedRaw = next_cache(fetchArtistById, ['artist-detail'], {
+  revalidate: CACHE_TIMES.ARTIST_DETAIL,
+  tags: ['artists'],
+});
+
+// 공개 상세용 — 캐시 + 편집 시 updateTag('artists')로 즉시 무효화.
+// unstable_cache는 Date를 문자열로 직렬화하므로, 소비되는 program 날짜를
+// Date로 복원해 타입(Date)과 런타임을 일치시킨다(소비처: ProgramCard).
+export async function getArtistByIdWithCache(artistId: string) {
+  const artist = await getArtistByIdCachedRaw(artistId);
+  if (!artist) return null;
+  return {
+    ...artist,
+    programCredits: artist.programCredits.map((credit) => ({
+      ...credit,
+      program: {
+        ...credit.program,
+        startAt: credit.program.startAt
+          ? new Date(credit.program.startAt)
+          : null,
+        endAt: credit.program.endAt ? new Date(credit.program.endAt) : null,
+      },
+    })),
+  };
+}
 
 // 어드민 편집 등 최신 데이터가 필요한 경우 — 캐시 미사용
 export async function getArtistById(artistId: string) {
