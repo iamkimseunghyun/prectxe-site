@@ -62,6 +62,8 @@ export const CACHE_TIMES = {
   PROJECT_DETAIL: 7200, // 프로젝트 상세 (2시간)
   PROGRAMS_LIST: 1800, // 프로그램 목록 (30분)
   PROGRAM_DETAIL: 3600, // 프로그램 상세 (1시간)
+  ARTICLE_LIST: 1800, // 저널 목록 (30분)
+  ARTICLE_DETAIL: 3600, // 저널 상세 (1시간)
 };
 
 // 공통 선택 필드 (Prisma select)

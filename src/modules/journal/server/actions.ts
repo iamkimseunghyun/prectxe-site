@@ -1,32 +1,28 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import {
+  unstable_cache as next_cache,
+  revalidatePath,
+  updateTag,
+} from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import {
   cleanupRemovedHtmlImages,
   deleteAllHtmlImages,
 } from '@/lib/cdn/cloudflare';
+import { CACHE_TIMES } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 import { articleCreateSchema, articleUpdateSchema } from '@/lib/schemas';
 
-export async function listArticles(options?: {
-  includeUnpublished?: boolean;
-  tag?: string;
-}) {
-  try {
-    const where: any = options?.includeUnpublished
-      ? {}
+// 공개 저널 목록 — 발행글만, publishedAt 내림차순. 날짜는 ISO로 변환(캐시 직렬화 안전).
+const listPublishedArticlesCached = next_cache(
+  async (tag?: string) => {
+    const where = tag
+      ? { publishedAt: { not: null }, tags: { has: tag } }
       : { publishedAt: { not: null } };
-    if (options?.tag) {
-      where.tags = { has: options.tag };
-    }
     const articles = await prisma.article.findMany({
       where,
-      // Admin list (includeUnpublished): newest first by createdAt
-      // Public list: newest first by publishedAt
-      orderBy: options?.includeUnpublished
-        ? { createdAt: 'desc' }
-        : { publishedAt: 'desc' },
+      orderBy: { publishedAt: 'desc' },
       select: {
         slug: true,
         title: true,
@@ -37,7 +33,51 @@ export async function listArticles(options?: {
         createdAt: true,
       },
     });
-    return { success: true, data: articles };
+    return articles.map((a) => ({
+      ...a,
+      publishedAt: a.publishedAt?.toISOString() ?? null,
+      createdAt: a.createdAt.toISOString(),
+    }));
+  },
+  ['articles-published-list'],
+  { revalidate: CACHE_TIMES.ARTICLE_LIST, tags: ['journal'] }
+);
+
+export async function listArticles(options?: {
+  includeUnpublished?: boolean;
+  tag?: string;
+}) {
+  try {
+    // 어드민(초안 포함) 경로 — 관리자 전용 + 캐시 미사용(최신 상태 필요)
+    if (options?.includeUnpublished) {
+      const auth = await requireAdmin();
+      if (!auth.success) return { success: false, error: auth.error } as const;
+      const where: any = {};
+      if (options.tag) where.tags = { has: options.tag };
+      const articles = await prisma.article.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          slug: true,
+          title: true,
+          excerpt: true,
+          cover: true,
+          tags: true,
+          publishedAt: true,
+          createdAt: true,
+        },
+      });
+      return {
+        success: true,
+        data: articles.map((a) => ({
+          ...a,
+          publishedAt: a.publishedAt?.toISOString() ?? null,
+          createdAt: a.createdAt.toISOString(),
+        })),
+      };
+    }
+    const data = await listPublishedArticlesCached(options?.tag);
+    return { success: true, data };
   } catch (e) {
     // Return empty list on error to avoid crashing admin screens when DB isn't ready
     if (process.env.NODE_ENV === 'development') {
@@ -131,14 +171,15 @@ export async function toggleArticleFeatured(slug: string) {
     });
   }
 
+  updateTag('journal');
   revalidatePath('/admin/journal');
   revalidatePath('/journal');
   revalidatePath('/');
   return { success: true, data: { isFeatured: newValue } };
 }
 
-export async function getArticleBySlug(slug: string) {
-  try {
+const getArticleBySlugCached = next_cache(
+  async (slug: string) => {
     const article = await prisma.article.findUnique({
       where: { slug },
       select: {
@@ -154,15 +195,27 @@ export async function getArticleBySlug(slug: string) {
         author: { select: { username: true } },
       },
     });
-    return article;
+    if (!article) return null;
+    return {
+      ...article,
+      publishedAt: article.publishedAt?.toISOString() ?? null,
+    };
+  },
+  ['article-detail'],
+  { revalidate: CACHE_TIMES.ARTICLE_DETAIL, tags: ['journal'] }
+);
+
+export async function getArticleBySlug(slug: string) {
+  try {
+    return await getArticleBySlugCached(slug);
   } catch (e) {
     console.error('Failed to get article', e);
     return null;
   }
 }
 
-export async function listArticlesByProgram(programId: string) {
-  try {
+const listArticlesByProgramCached = next_cache(
+  async (programId: string) => {
     const articles = await prisma.article.findMany({
       where: { programId, publishedAt: { not: null } },
       orderBy: { publishedAt: 'desc' },
@@ -174,7 +227,18 @@ export async function listArticlesByProgram(programId: string) {
         publishedAt: true,
       },
     });
-    return articles;
+    return articles.map((a) => ({
+      ...a,
+      publishedAt: a.publishedAt?.toISOString() ?? null,
+    }));
+  },
+  ['articles-by-program'],
+  { revalidate: CACHE_TIMES.ARTICLE_LIST, tags: ['journal'] }
+);
+
+export async function listArticlesByProgram(programId: string) {
+  try {
+    return await listArticlesByProgramCached(programId);
   } catch {
     return [];
   }
@@ -206,6 +270,7 @@ export async function createArticle(input: unknown, authorId?: string | null) {
     },
     select: { slug: true },
   });
+  updateTag('journal');
   revalidatePath('/journal');
   revalidatePath(`/journal/${created.slug}`);
   revalidatePath('/');
@@ -247,6 +312,7 @@ export async function updateArticle(slug: string, input: unknown) {
     },
     select: { slug: true },
   });
+  updateTag('journal');
   revalidatePath('/journal');
   revalidatePath(`/journal/${updated.slug}`);
   revalidatePath('/');
@@ -267,6 +333,7 @@ export async function deleteArticle(slug: string) {
   }
 
   await prisma.article.delete({ where: { slug } });
+  updateTag('journal');
   revalidatePath('/journal');
   return { success: true };
 }
