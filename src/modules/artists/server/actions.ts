@@ -1,10 +1,6 @@
 'use server';
 
-import {
-  unstable_cache as next_cache,
-  revalidatePath,
-  unstable_cacheTag,
-} from 'next/cache';
+import { unstable_cache as next_cache, revalidatePath } from 'next/cache';
 import type { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import {
@@ -214,13 +210,8 @@ export async function createSimpleArtist(data: SimpleArtist) {
       },
     });
 
-    // 캐시 무효화 개선
+    // 캐시 무효화
     revalidatePath('/artists');
-    revalidatePath('/artists');
-
-    // 명시적인 캐시 키 무효화 추가
-    unstable_cacheTag('artists-list');
-    unstable_cacheTag('simple-artists-list');
 
     return { success: true, data: artist };
   } catch (error) {
