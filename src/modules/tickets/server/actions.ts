@@ -10,6 +10,7 @@ import {
   BUSINESS_INFO,
   ORDER_NOTIFICATION_EMAILS,
 } from '@/lib/constants/business-info';
+import { ORDERS } from '@/lib/constants/constants';
 import { getSalesTerms, SALES_TERMS } from '@/lib/constants/sales-terms';
 import { prisma } from '@/lib/db/prisma';
 import { sendEmail } from '@/lib/email/send';
@@ -234,6 +235,69 @@ export async function deleteGoodsVariant(variantId: string) {
 
 // ─── 주문 생성 + 결제 ───────────────────────────────
 
+// ─── orphan pending 주문 재고 회수 (self-heal) ──────
+// 무통장(BankTransfer) 없이 생성된 pending 주문은 자체 만료/cleanup이 없어
+// 결제 없이 재고를 영구 점유할 수 있음(재고 잠금 DoS). TTL 경과분의 재고를 복구하고
+// 주문을 취소 처리한다. 주문 생성 경로에서 호출되어 어드민 방문에 의존하지 않음.
+async function reclaimStaleOrphanOrders() {
+  const cutoff = new Date(
+    Date.now() - ORDERS.ORPHAN_PENDING_TTL_MINUTES * 60 * 1000
+  );
+  const stale = await prisma.order.findMany({
+    where: {
+      status: 'pending',
+      createdAt: { lt: cutoff },
+      bankTransfer: { is: null }, // 무통장 흐름은 24h 만료/cleanup이 담당
+    },
+    include: { items: true },
+  });
+  if (stale.length === 0) return 0;
+
+  const ids = stale.map((o) => o.id);
+  await prisma.$transaction([
+    ...stale.flatMap((o) =>
+      o.items
+        .filter((i) => i.ticketTierId)
+        .map((i) =>
+          prisma.ticketTier.update({
+            where: { id: i.ticketTierId! },
+            data: { soldCount: { decrement: i.quantity } },
+          })
+        )
+    ),
+    ...stale.flatMap((o) =>
+      o.items
+        .filter((i) => i.goodsVariantId)
+        .map((i) =>
+          prisma.goodsVariant.update({
+            where: { id: i.goodsVariantId! },
+            data: { soldCount: { decrement: i.quantity } },
+          })
+        )
+    ),
+    prisma.order.updateMany({
+      where: { id: { in: ids }, status: 'pending' },
+      data: { status: 'cancelled' },
+    }),
+  ]);
+  return stale.length;
+}
+
+// 같은 키의 중복 라인아이템을 합산 — maxPerOrder/재고 차감 우회 방지
+function mergeByKey<T extends { quantity: number }>(
+  items: T[],
+  key: keyof T
+): { id: string; quantity: number }[] {
+  const merged = new Map<string, number>();
+  for (const it of items) {
+    const id = it[key] as string;
+    merged.set(id, (merged.get(id) ?? 0) + it.quantity);
+  }
+  return [...merged.entries()]
+    .map(([id, quantity]) => ({ id, quantity }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+
 export async function createOrder(
   dropId: string,
   input: {
@@ -250,6 +314,9 @@ export async function createOrder(
   // 구매자 로케일 저장 — 이후 어드민이 보내는 확인 메일도 구매자 언어로
   const locale = (await getLocale()) as Locale;
 
+  // 만료된 orphan pending 주문 재고 회수 — 실패해도 구매는 계속 진행
+  await reclaimStaleOrphanOrders().catch(() => {});
+
   const result = await prisma.$transaction(async (tx) => {
     let totalAmount = 0;
     const orderItems: {
@@ -259,10 +326,11 @@ export async function createOrder(
       subtotal: number;
     }[] = [];
 
-    // 일관된 락 순서로 동시 주문 간 데드락 방지
-    const sortedItems = [...items].sort((a, b) =>
-      a.ticketTierId.localeCompare(b.ticketTierId)
-    );
+    // 중복 라인아이템 합산(maxPerOrder 우회 방지) + 일관된 락 순서로 데드락 방지
+    const sortedItems = mergeByKey(items, 'ticketTierId').map((m) => ({
+      ticketTierId: m.id,
+      quantity: m.quantity,
+    }));
     for (const item of sortedItems) {
       const tier = await tx.ticketTier.findUnique({
         where: { id: item.ticketTierId },
@@ -511,6 +579,9 @@ export async function createGoodsOrder(
   const { buyerName, buyerEmail, buyerPhone, items } = parsed.data;
   const locale = (await getLocale()) as Locale;
 
+  // 만료된 orphan pending 주문 재고 회수 — 실패해도 구매는 계속 진행
+  await reclaimStaleOrphanOrders().catch(() => {});
+
   const result = await prisma.$transaction(async (tx) => {
     let totalAmount = 0;
     const orderItems: {
@@ -520,10 +591,11 @@ export async function createGoodsOrder(
       subtotal: number;
     }[] = [];
 
-    // 일관된 락 순서로 동시 주문 간 데드락 방지
-    const sortedItems = [...items].sort((a, b) =>
-      a.goodsVariantId.localeCompare(b.goodsVariantId)
-    );
+    // 중복 라인아이템 합산(재고 차감 우회 방지) + 일관된 락 순서로 데드락 방지
+    const sortedItems = mergeByKey(items, 'goodsVariantId').map((m) => ({
+      goodsVariantId: m.id,
+      quantity: m.quantity,
+    }));
     for (const item of sortedItems) {
       const variant = await tx.goodsVariant.findUnique({
         where: { id: item.goodsVariantId },
@@ -770,6 +842,9 @@ export async function cleanupExpiredBankTransferOrders() {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;
 
+  // 무통장 외 orphan pending 주문(결제 없는 재고 점유)도 함께 회수
+  const orphanCount = await reclaimStaleOrphanOrders().catch(() => 0);
+
   const now = new Date();
   const expired = await prisma.bankTransfer.findMany({
     where: {
@@ -781,7 +856,8 @@ export async function cleanupExpiredBankTransferOrders() {
     },
   });
 
-  if (expired.length === 0) return { success: true, expiredCount: 0 } as const;
+  if (expired.length === 0)
+    return { success: true, expiredCount: 0, orphanCount } as const;
 
   await prisma.$transaction([
     // 재고 복구 (티켓)
@@ -823,7 +899,11 @@ export async function cleanupExpiredBankTransferOrders() {
   revalidatePath('/admin/drops');
   revalidatePath('/admin/tickets/orders');
 
-  return { success: true, expiredCount: expired.length } as const;
+  return {
+    success: true,
+    expiredCount: expired.length,
+    orphanCount,
+  } as const;
 }
 
 // ─── 주문 취소 (Admin) ──────────────────────────────

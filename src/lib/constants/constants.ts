@@ -79,6 +79,13 @@ export const SELECT_FIELDS = {
   },
 };
 
+// 주문 관련 상수
+export const ORDERS = {
+  // 무통장(BankTransfer) 없이 생성된 pending 주문의 재고 점유 만료(분).
+  // 무료티켓·카드 흐름은 결제가 즉시/수분 내라 짧게 — 결제 없는 재고 잠금(DoS) 방지.
+  ORPHAN_PENDING_TTL_MINUTES: 15,
+};
+
 // API 관련 상수
 export const API = {
   REVALIDATE_ON_FOCUS: false, // 포커스 시 재검증 여부
