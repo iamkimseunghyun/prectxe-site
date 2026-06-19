@@ -1,4 +1,5 @@
 import { ArrowUpRight } from 'lucide-react';
+import { unstable_cache as next_cache } from 'next/cache';
 import Image from 'next/image';
 import Link from 'next/link';
 import { prisma } from '@/lib/db/prisma';
@@ -28,27 +29,50 @@ const STATUS_STYLE: Record<string, { label: string; className: string }> = {
 };
 
 /**
- * 홈페이지 프로그램 섹션.
- * - upcoming 3개 우선 노출 (startAt 오름차순)
+ * 홈페이지 프로그램 섹션 데이터.
+ * - upcoming 3개 우선 (startAt 오름차순)
  * - 없으면 최근 completed 3개로 폴백 (startAt 내림차순) + 라벨 교체
+ * 날짜 라벨은 캐시 내부에서 문자열로 미리 계산(직렬화 안전).
  */
-export async function UpcomingProgramsSection() {
-  const upcoming = await prisma.program.findMany({
-    where: { status: 'upcoming' },
-    take: 3,
-    orderBy: { startAt: 'asc' },
-    select: PROGRAM_SELECT,
-  });
+const getHomePrograms = next_cache(
+  async () => {
+    const upcoming = await prisma.program.findMany({
+      where: { status: 'upcoming' },
+      take: 3,
+      orderBy: { startAt: 'asc' },
+      select: PROGRAM_SELECT,
+    });
 
-  const isUpcoming = upcoming.length > 0;
-  const programs = isUpcoming
-    ? upcoming
-    : await prisma.program.findMany({
-        where: { status: 'completed' },
-        take: 3,
-        orderBy: { startAt: 'desc' },
-        select: PROGRAM_SELECT,
-      });
+    const isUpcoming = upcoming.length > 0;
+    const rows = isUpcoming
+      ? upcoming
+      : await prisma.program.findMany({
+          where: { status: 'completed' },
+          take: 3,
+          orderBy: { startAt: 'desc' },
+          select: PROGRAM_SELECT,
+        });
+
+    const programs = rows.map((p) => ({
+      slug: p.slug,
+      title: p.title,
+      summary: p.summary,
+      heroUrl: p.heroUrl,
+      status: p.status,
+      dateLabel: p.startAt
+        ? formatKstDateRange(p.startAt, p.endAt ?? p.startAt)
+        : null,
+      location: [p.venue, p.city].filter(Boolean).join(' · '),
+    }));
+
+    return { isUpcoming, programs };
+  },
+  ['home-upcoming-programs'],
+  { revalidate: 300 }
+);
+
+export async function UpcomingProgramsSection() {
+  const { isUpcoming, programs } = await getHomePrograms();
 
   if (programs.length === 0) return null;
 
@@ -78,15 +102,8 @@ export async function UpcomingProgramsSection() {
 
         <div className="grid gap-10 md:grid-cols-3 md:gap-8">
           {programs.map((program) => {
-            const dateLabel = program.startAt
-              ? formatKstDateRange(
-                  program.startAt,
-                  program.endAt ?? program.startAt
-                )
-              : null;
-            const location = [program.venue, program.city]
-              .filter(Boolean)
-              .join(' · ');
+            const dateLabel = program.dateLabel;
+            const location = program.location;
 
             return (
               <Link

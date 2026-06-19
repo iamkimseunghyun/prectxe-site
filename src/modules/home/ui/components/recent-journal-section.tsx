@@ -1,23 +1,31 @@
 import { ArrowUpRight } from 'lucide-react';
+import { unstable_cache as next_cache } from 'next/cache';
 import Image from 'next/image';
 import Link from 'next/link';
 import { prisma } from '@/lib/db/prisma';
 import { getImageUrl } from '@/lib/utils';
 
+// 홈 read-path 캐시(초). 발행 변경은 최대 이 시간 후 반영.
+const getRecentArticles = next_cache(
+  async () =>
+    prisma.article.findMany({
+      where: { publishedAt: { not: null } },
+      take: 3,
+      orderBy: { publishedAt: 'desc' },
+      select: {
+        slug: true,
+        title: true,
+        excerpt: true,
+        cover: true,
+        tags: true,
+      },
+    }),
+  ['home-recent-journal'],
+  { revalidate: 300 }
+);
+
 export async function RecentJournalSection() {
-  const articles = await prisma.article.findMany({
-    where: { publishedAt: { not: null } },
-    take: 3,
-    orderBy: { publishedAt: 'desc' },
-    select: {
-      slug: true,
-      title: true,
-      excerpt: true,
-      cover: true,
-      tags: true,
-      publishedAt: true,
-    },
-  });
+  const articles = await getRecentArticles();
 
   if (articles.length === 0) return null;
 
