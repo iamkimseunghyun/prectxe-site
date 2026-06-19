@@ -21,7 +21,7 @@ const getRecentArticles = next_cache(
       },
     }),
   ['home-recent-journal'],
-  { revalidate: 300 }
+  { revalidate: 300, tags: ['journal'] }
 );
 
 export async function RecentJournalSection() {

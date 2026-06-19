@@ -96,7 +96,7 @@ const getNowOnSaleDrops = next_cache(
       .slice(0, 3);
   },
   ['home-now-on-sale'],
-  { revalidate: 300 }
+  { revalidate: 300, tags: ['drops'] }
 );
 
 export async function NowOnSaleSection() {

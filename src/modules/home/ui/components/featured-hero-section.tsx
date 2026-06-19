@@ -190,7 +190,8 @@ const getFeaturedHero = next_cache(
     };
   },
   ['home-featured-hero'],
-  { revalidate: HOME_REVALIDATE }
+  // featured는 program/article/drop 중 하나 → 세 도메인 태그 모두로 무효화
+  { revalidate: HOME_REVALIDATE, tags: ['programs', 'journal', 'drops'] }
 );
 
 export async function FeaturedHeroSection() {

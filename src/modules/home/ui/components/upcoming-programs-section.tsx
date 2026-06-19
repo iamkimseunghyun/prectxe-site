@@ -67,7 +67,7 @@ const getHomePrograms = next_cache(
     return { isUpcoming, programs };
   },
   ['home-upcoming-programs'],
-  { revalidate: 300 }
+  { revalidate: 300, tags: ['programs'] }
 );
 
 export async function UpcomingProgramsSection() {

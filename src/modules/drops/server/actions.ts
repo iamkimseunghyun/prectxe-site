@@ -1,7 +1,7 @@
 'use server';
 
 import type { Prisma } from '@prisma/client';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { parseInput } from '@/lib/auth/server-action-helpers';
 import {
@@ -82,6 +82,7 @@ export async function createDrop(input: {
     },
   });
 
+  updateTag('drops');
   revalidatePath('/admin/drops');
   revalidatePath('/drops');
   revalidatePath('/');
@@ -197,6 +198,7 @@ export async function updateDrop(
     },
   });
 
+  updateTag('drops');
   revalidatePath('/admin/drops');
   revalidatePath(`/drops/${drop.slug}`);
   revalidatePath('/drops');
@@ -238,6 +240,7 @@ export async function deleteDrop(id: string) {
   }
 
   await prisma.drop.delete({ where: { id } });
+  updateTag('drops');
   revalidatePath('/admin/drops');
   revalidatePath('/drops');
   revalidatePath('/');
@@ -548,6 +551,7 @@ export async function toggleDropFeatured(id: string) {
     });
   }
 
+  updateTag('drops');
   revalidatePath('/admin/drops');
   revalidatePath('/drops');
   revalidatePath('/');
