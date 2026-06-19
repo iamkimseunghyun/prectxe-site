@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import getSession from '@/lib/auth/session';
 import ArtistFormView from '@/modules/artists/ui/views/artist-form-view';
 
 export const metadata: Metadata = {
@@ -8,9 +7,7 @@ export const metadata: Metadata = {
 };
 
 const Page = async () => {
-  const session = await getSession();
-  if (!session) return null;
-  return <ArtistFormView mode={'create'} userId={session.id} />;
+  return <ArtistFormView mode={'create'} />;
 };
 
 export default Page;

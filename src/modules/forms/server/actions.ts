@@ -1,12 +1,15 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
 import type { FormInput } from '@/lib/schemas/form';
 import { createFormResponseSchema, formSchema } from '@/lib/schemas/form';
 
 // Create Form
-export async function createForm(userId: string, data: FormInput) {
+export async function createForm(data: FormInput) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
     const validated = formSchema.parse(data);
 
@@ -18,7 +21,7 @@ export async function createForm(userId: string, data: FormInput) {
         body: validated.body,
         coverImage: validated.coverImage,
         status: validated.status,
-        userId,
+        userId: auth.userId,
         fields: {
           create: validated.fields.map((field, index) => ({
             type: field.type,
@@ -49,16 +52,12 @@ export async function createForm(userId: string, data: FormInput) {
 }
 
 // Update Form
-export async function updateForm(
-  formId: string,
-  userId: string,
-  data: FormInput,
-  isAdmin = false
-) {
+export async function updateForm(formId: string, data: FormInput) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
     const validated = formSchema.parse(data);
 
-    // Check ownership
     const existing = await prisma.form.findUnique({
       where: { id: formId },
       select: { userId: true },
@@ -66,10 +65,6 @@ export async function updateForm(
 
     if (!existing) {
       return { success: false, error: '폼을 찾을 수 없습니다' };
-    }
-
-    if (!isAdmin && existing.userId !== userId) {
-      return { success: false, error: '권한이 없습니다' };
     }
 
     // 🚨 버그 수정: FormField를 삭제하지 않고 upsert로 업데이트
@@ -189,11 +184,9 @@ export async function updateForm(
 }
 
 // Delete Form
-export async function deleteForm(
-  formId: string,
-  userId: string,
-  isAdmin = false
-) {
+export async function deleteForm(formId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
     const existing = await prisma.form.findUnique({
       where: { id: formId },
@@ -202,10 +195,6 @@ export async function deleteForm(
 
     if (!existing) {
       return { success: false, error: '폼을 찾을 수 없습니다' };
-    }
-
-    if (!isAdmin && existing.userId !== userId) {
-      return { success: false, error: '권한이 없습니다' };
     }
 
     await prisma.form.delete({
@@ -355,11 +344,9 @@ export async function submitFormResponse(
 }
 
 // Get Form Submissions (Admin only)
-export async function getFormSubmissions(
-  formId: string,
-  userId: string,
-  isAdmin = false
-) {
+export async function getFormSubmissions(formId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
     const form = await prisma.form.findUnique({
       where: { id: formId },
@@ -374,10 +361,6 @@ export async function getFormSubmissions(
 
     if (!form) {
       return { success: false, error: '폼을 찾을 수 없습니다' };
-    }
-
-    if (!isAdmin && form.userId !== userId) {
-      return { success: false, error: '권한이 없습니다' };
     }
 
     const submissions = await prisma.formSubmission.findMany({
@@ -417,7 +400,9 @@ export async function getFormSubmissions(
 }
 
 // Get Form (Admin)
-export async function getForm(formId: string, userId: string, isAdmin = false) {
+export async function getForm(formId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
     const form = await prisma.form.findUnique({
       where: { id: formId },
@@ -438,10 +423,6 @@ export async function getForm(formId: string, userId: string, isAdmin = false) {
       return { success: false, error: '폼을 찾을 수 없습니다' };
     }
 
-    if (!isAdmin && form.userId !== userId) {
-      return { success: false, error: '권한이 없습니다' };
-    }
-
     return { success: true, data: form };
   } catch (error) {
     console.error('Form fetch error:', error);
@@ -453,17 +434,14 @@ export async function getForm(formId: string, userId: string, isAdmin = false) {
 }
 
 // List Forms (Admin)
-export async function listForms(
-  userId: string,
-  isAdmin = false,
-  filters?: {
-    status?: 'draft' | 'published' | 'closed';
-  }
-) {
+export async function listForms(filters?: {
+  status?: 'draft' | 'published' | 'closed';
+}) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
     const forms = await prisma.form.findMany({
       where: {
-        ...(isAdmin ? {} : { userId }),
         ...(filters?.status ? { status: filters.status } : {}),
       },
       include: {
@@ -491,11 +469,9 @@ export async function listForms(
 }
 
 // Copy Form (Admin)
-export async function copyForm(
-  formId: string,
-  userId: string,
-  isAdmin = false
-) {
+export async function copyForm(formId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
     // Get original form
     const original = await prisma.form.findUnique({
@@ -510,10 +486,6 @@ export async function copyForm(
 
     if (!original) {
       return { success: false, error: '폼을 찾을 수 없습니다' };
-    }
-
-    if (!isAdmin && original.userId !== userId) {
-      return { success: false, error: '권한이 없습니다' };
     }
 
     // Generate new slug (avoid duplicates)
@@ -541,7 +513,7 @@ export async function copyForm(
         body: original.body,
         coverImage: original.coverImage,
         status: 'draft', // Always draft for copied forms
-        userId, // Current user becomes owner
+        userId: auth.userId, // Current user becomes owner
         fields: {
           create: original.fields.map((field) => ({
             type: field.type,

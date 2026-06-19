@@ -7,26 +7,21 @@ import type { CampaignStats } from '@/modules/sms/server/stats.types';
 import { StatsView } from '@/modules/sms/ui/components/sms-stats';
 import { getEmailStats } from '../../server/stats';
 
-interface EmailStatsProps {
-  userId: string;
-  isAdmin: boolean;
-}
-
-export function EmailStats({ userId, isAdmin }: EmailStatsProps) {
+export function EmailStats() {
   const [stats, setStats] = useState<CampaignStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       setIsLoading(true);
-      const result = await getEmailStats(userId, isAdmin);
+      const result = await getEmailStats();
       if (result.success && result.data) {
         setStats(result.data);
       }
       setIsLoading(false);
     }
     load();
-  }, [userId, isAdmin]);
+  }, []);
 
   if (isLoading) {
     return (

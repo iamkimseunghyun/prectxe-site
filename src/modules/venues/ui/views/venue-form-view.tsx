@@ -55,15 +55,9 @@ type VenueFormProps = {
   mode: 'create' | 'edit';
   initialData?: VenueInitial;
   venueId?: string;
-  userId?: string;
 };
 
-const VenueFormView = ({
-  mode,
-  initialData,
-  venueId,
-  userId,
-}: VenueFormProps) => {
+const VenueFormView = ({ mode, initialData, venueId }: VenueFormProps) => {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,7 +106,7 @@ const VenueFormView = ({
       const saved =
         mode === 'edit'
           ? await updateVenue(payload, venueId as string)
-          : await createVenue(payload, userId as string);
+          : await createVenue(payload);
 
       if (!saved.success) throw new Error(saved.error);
       router.push(`/venues/${saved.data?.id}`);

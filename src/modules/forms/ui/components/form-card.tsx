@@ -39,17 +39,13 @@ interface FormCardProps {
       submissions: number;
     };
   };
-  userId: string;
-  isAdmin: boolean;
 }
 
-export function FormCard({ form, userId, isAdmin }: FormCardProps) {
+export function FormCard({ form }: FormCardProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { handleCopy, handleDelete, isCopying, isDeleting } = useFormActions(
-    form.id,
-    userId,
-    isAdmin
+    form.id
   );
   const formUrl =
     typeof window !== 'undefined'

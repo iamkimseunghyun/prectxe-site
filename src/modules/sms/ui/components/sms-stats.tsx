@@ -31,26 +31,21 @@ import { formatKstDate } from '@/lib/utils';
 import { getSMSStats } from '../../server/stats';
 import type { CampaignStats } from '../../server/stats.types';
 
-interface SMSStatsProps {
-  userId: string;
-  isAdmin: boolean;
-}
-
-export function SMSStats({ userId, isAdmin }: SMSStatsProps) {
+export function SMSStats() {
   const [stats, setStats] = useState<CampaignStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       setIsLoading(true);
-      const result = await getSMSStats(userId, isAdmin);
+      const result = await getSMSStats();
       if (result.success && result.data) {
         setStats(result.data);
       }
       setIsLoading(false);
     }
     load();
-  }, [userId, isAdmin]);
+  }, []);
 
   if (isLoading) {
     return (

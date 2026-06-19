@@ -47,15 +47,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface FormRecipientsSenderProps {
-  userId: string;
-  isAdmin: boolean;
-}
-
-export function FormRecipientsSender({
-  userId,
-  isAdmin,
-}: FormRecipientsSenderProps) {
+export function FormRecipientsSender() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [forms, setForms] = useState<
@@ -83,13 +75,13 @@ export function FormRecipientsSender({
   // Form 목록 로드
   useEffect(() => {
     async function loadForms() {
-      const result = await getFormsWithPhoneFields(userId, isAdmin);
+      const result = await getFormsWithPhoneFields();
       if (result.success && result.data) {
         setForms(result.data);
       }
     }
     loadForms();
-  }, [userId, isAdmin]);
+  }, []);
 
   // Form 선택 시 응답자 수 확인
   const handleFormChange = async (formId: string) => {
@@ -130,7 +122,6 @@ export function FormRecipientsSender({
         message: data.message,
         phones: phoneResult.data.phones,
         formId: data.formId,
-        userId,
       });
 
       if (result.success && result.data) {

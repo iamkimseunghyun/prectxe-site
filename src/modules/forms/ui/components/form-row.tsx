@@ -32,17 +32,13 @@ interface FormRowProps {
       submissions: number;
     };
   };
-  userId: string;
-  isAdmin: boolean;
 }
 
-export function FormRow({ form, userId, isAdmin }: FormRowProps) {
+export function FormRow({ form }: FormRowProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { handleCopy, handleDelete, isCopying, isDeleting } = useFormActions(
-    form.id,
-    userId,
-    isAdmin
+    form.id
   );
   const formUrl =
     typeof window !== 'undefined'

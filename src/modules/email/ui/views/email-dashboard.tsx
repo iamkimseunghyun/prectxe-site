@@ -8,12 +8,7 @@ import { FormRecipientsEmailSender } from '../components/form-recipients-email-s
 import { IndependentEmailSender } from '../components/independent-email-sender';
 import { NewsletterBroadcastSender } from '../components/newsletter-broadcast-sender';
 
-interface EmailDashboardProps {
-  userId: string;
-  isAdmin: boolean;
-}
-
-export function EmailDashboard({ userId, isAdmin }: EmailDashboardProps) {
+export function EmailDashboard() {
   const [activeTab, setActiveTab] = useState('stats');
 
   return (
@@ -27,7 +22,7 @@ export function EmailDashboard({ userId, isAdmin }: EmailDashboardProps) {
       </TabsList>
 
       <TabsContent value="stats" className="space-y-4">
-        <EmailStats userId={userId} isAdmin={isAdmin} />
+        <EmailStats />
       </TabsContent>
 
       <TabsContent value="newsletter" className="space-y-4">
@@ -35,15 +30,15 @@ export function EmailDashboard({ userId, isAdmin }: EmailDashboardProps) {
       </TabsContent>
 
       <TabsContent value="form" className="space-y-4">
-        <FormRecipientsEmailSender userId={userId} isAdmin={isAdmin} />
+        <FormRecipientsEmailSender />
       </TabsContent>
 
       <TabsContent value="independent" className="space-y-4">
-        <IndependentEmailSender userId={userId} isAdmin={isAdmin} />
+        <IndependentEmailSender />
       </TabsContent>
 
       <TabsContent value="history" className="space-y-4">
-        <EmailCampaignList userId={userId} isAdmin={isAdmin} />
+        <EmailCampaignList />
       </TabsContent>
     </Tabs>
   );

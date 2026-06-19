@@ -6,6 +6,7 @@ import {
   unstable_cacheTag,
 } from 'next/cache';
 import type { z } from 'zod';
+import { requireAdmin } from '@/lib/auth/require-admin';
 import {
   deleteAllImages,
   deleteCloudflareImage,
@@ -183,8 +184,11 @@ export const getSimpleArtistsList = next_cache(
   { revalidate: CACHE_TIMES.ARTISTS_LIST }
 );
 
-export async function createSimpleArtist(data: SimpleArtist, userId: string) {
+export async function createSimpleArtist(data: SimpleArtist) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     const validatedData = simpleArtistSchema.safeParse(data);
 
     if (!validatedData.success) {
@@ -202,7 +206,7 @@ export async function createSimpleArtist(data: SimpleArtist, userId: string) {
         mainImageUrl: validatedData.data.mainImageUrl,
         city: validatedData.data.city,
         country: validatedData.data.country,
-        userId,
+        userId: auth.userId,
       },
       select: {
         id: true,
@@ -231,11 +235,11 @@ export async function createSimpleArtist(data: SimpleArtist, userId: string) {
   }
 }
 
-export async function createArtist(
-  data: z.infer<typeof artistSchema>,
-  userId: string
-) {
+export async function createArtist(data: z.infer<typeof artistSchema>) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     // Zod 검증 실패 시 구체적인 에러 반환
     const validatedData = artistSchema.safeParse(data);
 
@@ -265,7 +269,7 @@ export async function createArtist(
         tags: d.tags ?? [],
         biography: d.biography,
         cv: d.cv,
-        userId,
+        userId: auth.userId,
         images: d.images?.length
           ? { createMany: { data: d.images } }
           : undefined,
@@ -297,6 +301,9 @@ export async function updateArtist(
   artistId: string
 ) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     const parsed = updateArtistSchema.safeParse(data);
     if (!parsed.success) {
       return { success: false, error: '입력 값이 올바르지 않습니다.' };
@@ -381,6 +388,9 @@ export async function updateArtist(
 
 export async function deleteArtist(artistId: string) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     // Cloudflare 이미지 정리 (메인 + 갤러리)
     const artist = await prisma.artist.findUnique({
       where: { id: artistId },

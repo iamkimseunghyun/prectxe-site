@@ -3,6 +3,7 @@
 import { unstable_cache as next_cache, revalidatePath } from 'next/cache';
 import { notFound } from 'next/navigation';
 import type { z } from 'zod';
+import { requireAdmin } from '@/lib/auth/require-admin';
 import { deleteAllImages, deleteRemovedImages } from '@/lib/cdn/cloudflare';
 import { CACHE_TIMES, PAGINATION } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
@@ -124,11 +125,11 @@ export async function getMoreArtworks(page = 0, searchQuery = '') {
   return getArtworksPage(page, PAGINATION.ARTWORKS_PAGE_SIZE, searchQuery);
 }
 
-export async function createArtwork(
-  data: z.infer<typeof createArtworkSchema>,
-  userId: string
-) {
+export async function createArtwork(data: z.infer<typeof createArtworkSchema>) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     const parsed = createArtworkSchema.safeParse(data);
     if (!parsed.success) {
       return {
@@ -146,7 +147,7 @@ export async function createArtwork(
         year: d.year ?? null,
         description: d.description ?? null,
         style: d.style ?? null,
-        userId,
+        userId: auth.userId,
         images: d.images?.length
           ? { createMany: { data: d.images } }
           : undefined,
@@ -181,6 +182,9 @@ export async function updateArtwork(
   artworkId: string
 ) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     const parsed = updateArtworkSchema.safeParse(data);
     if (!parsed.success) {
       return { success: false, error: '입력 값이 올바르지 않습니다.' };
@@ -249,6 +253,9 @@ export async function updateArtwork(
 
 export async function deleteArtwork(id: string) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     const artwork = await prisma.artwork.findUnique({
       where: { id },
       select: {

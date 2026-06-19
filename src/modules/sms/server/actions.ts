@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
 import {
   filterValidPhoneNumbers,
@@ -13,6 +14,9 @@ import {
  */
 export async function getFormRespondentsPhones(formId: string) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     const form = await prisma.form.findUnique({
       where: { id: formId },
       select: {
@@ -76,10 +80,13 @@ export async function createAndSendSMSCampaign(params: {
   message: string;
   phones: string[];
   formId?: string;
-  userId: string;
 }) {
   try {
-    const { title, message, phones, formId, userId } = params;
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+    const userId = auth.userId;
+
+    const { title, message, phones, formId } = params;
 
     // 전화번호 검증 및 정규화
     const validPhones = filterValidPhoneNumbers(phones);
@@ -163,16 +170,12 @@ export async function createAndSendSMSCampaign(params: {
 /**
  * SMS 캠페인 목록 조회
  */
-export async function listSMSCampaigns(userId: string, isAdmin = false) {
+export async function listSMSCampaigns() {
   try {
-    console.log(
-      '[listSMSCampaigns] Querying for userId:',
-      userId,
-      'isAdmin:',
-      isAdmin
-    );
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     const campaigns = await prisma.sMSCampaign.findMany({
-      where: isAdmin ? {} : { userId },
       include: {
         form: {
           select: {
@@ -195,7 +198,6 @@ export async function listSMSCampaigns(userId: string, isAdmin = false) {
       },
     });
 
-    console.log('[listSMSCampaigns] Found campaigns:', campaigns.length);
     return { success: true, data: campaigns };
   } catch (error) {
     console.error('캠페인 목록 조회 오류:', error);
@@ -212,12 +214,11 @@ export async function listSMSCampaigns(userId: string, isAdmin = false) {
 /**
  * SMS 캠페인 상세 조회
  */
-export async function getSMSCampaign(
-  campaignId: string,
-  userId: string,
-  isAdmin = false
-) {
+export async function getSMSCampaign(campaignId: string) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     const campaign = await prisma.sMSCampaign.findUnique({
       where: { id: campaignId },
       include: {
@@ -239,11 +240,6 @@ export async function getSMSCampaign(
       return { success: false, error: '캠페인을 찾을 수 없습니다' };
     }
 
-    // 권한 확인
-    if (!isAdmin && campaign.userId !== userId) {
-      return { success: false, error: '권한이 없습니다' };
-    }
-
     return { success: true, data: campaign };
   } catch (error) {
     console.error('캠페인 조회 오류:', error);
@@ -258,13 +254,15 @@ export async function getSMSCampaign(
 /**
  * 모든 Form 목록 조회 (전화번호 필드가 있는 Form만)
  */
-export async function getFormsWithPhoneFields(userId: string, isAdmin = false) {
+export async function getFormsWithPhoneFields() {
   try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     // 전화번호 필드가 있는 폼만 DB에서 필터(where some) + 제출 수는 _count로
     // (전체 submission row 적재·JS 필터 제거)
     const forms = await prisma.form.findMany({
       where: {
-        ...(isAdmin ? {} : { userId }),
         fields: { some: { type: 'phone', archived: false } },
       },
       select: {
@@ -313,10 +311,13 @@ export async function sendPersonalizedSMS(params: {
   }>;
   template: string;
   title: string;
-  userId: string;
 }) {
   try {
-    const { recipients, template, title, userId } = params;
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+    const userId = auth.userId;
+
+    const { recipients, template, title } = params;
 
     if (recipients.length === 0) {
       return { success: false, error: '수신자가 없습니다' };
@@ -331,13 +332,6 @@ export async function sendPersonalizedSMS(params: {
         status: 'sending',
       },
     });
-
-    console.log(
-      '[sendPersonalizedSMS] Campaign created:',
-      campaign.id,
-      'for userId:',
-      userId
-    );
 
     // 각 수신자에게 개별 메시지 생성 및 발송
     const results: Array<{
@@ -434,15 +428,6 @@ export async function sendPersonalizedSMS(params: {
         sentAt: new Date(),
       },
     });
-
-    console.log(
-      '[sendPersonalizedSMS] Campaign updated:',
-      campaign.id,
-      'sentCount:',
-      sentCount,
-      'failedCount:',
-      failedCount
-    );
 
     revalidatePath('/admin/sms');
 

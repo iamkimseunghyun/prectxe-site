@@ -44,15 +44,9 @@ type ArtistFormProps = {
   mode: 'create' | 'edit';
   initialData?: CreateArtistInput | UpdateArtistInput;
   artistId?: string;
-  userId?: string;
 };
 
-const ArtistFormView = ({
-  mode,
-  initialData,
-  artistId,
-  userId,
-}: ArtistFormProps) => {
+const ArtistFormView = ({ mode, initialData, artistId }: ArtistFormProps) => {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,7 +131,7 @@ const ArtistFormView = ({
       const result =
         mode === 'edit'
           ? await updateArtist(payload, artistId as string)
-          : await createArtist(payload, userId as string);
+          : await createArtist(payload);
 
       if (!result.success) throw new Error(result.error);
       router.push(`/artists/${result.data?.id}`);
