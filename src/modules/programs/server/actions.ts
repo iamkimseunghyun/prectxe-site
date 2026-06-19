@@ -1,7 +1,11 @@
 'use server';
 
 import type { Prisma } from '@prisma/client';
-import { unstable_cache as next_cache, revalidatePath } from 'next/cache';
+import {
+  unstable_cache as next_cache,
+  revalidatePath,
+  updateTag,
+} from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import {
   deleteAllImages,
@@ -104,7 +108,7 @@ export const listProgramsWithCache = next_cache(
     }
   },
   ['programs-list'],
-  { revalidate: CACHE_TIMES.PROGRAMS_LIST }
+  { revalidate: CACHE_TIMES.PROGRAMS_LIST, tags: ['programs'] }
 );
 
 export async function listPrograms(params: ListProgramsParams = {}) {
@@ -239,6 +243,7 @@ export async function toggleProgramFeatured(id: string) {
     });
   }
 
+  updateTag('programs');
   revalidatePath('/admin/programs');
   revalidatePath('/programs');
   revalidatePath('/');
@@ -286,6 +291,7 @@ export async function createProgram(input: unknown, _userId: string) {
     },
     select: { id: true, slug: true },
   });
+  updateTag('programs');
   revalidatePath('/programs');
   revalidatePath('/');
   return { success: true, data: program };
@@ -360,6 +366,7 @@ export async function updateProgram(id: string, input: unknown) {
     },
     select: { id: true, slug: true },
   });
+  updateTag('programs');
   revalidatePath('/programs');
   revalidatePath(`/programs/${updated.slug}`);
   revalidatePath('/');
@@ -390,6 +397,7 @@ export async function deleteProgram(id: string) {
     }
 
     await prisma.program.delete({ where: { id } });
+    updateTag('programs');
     revalidatePath('/programs');
     revalidatePath('/');
     return { success: true };
@@ -424,7 +432,7 @@ export const getProgramBySlugWithCache = next_cache(
     };
   },
   ['program-detail'],
-  { revalidate: CACHE_TIMES.PROGRAM_DETAIL }
+  { revalidate: CACHE_TIMES.PROGRAM_DETAIL, tags: ['programs'] }
 );
 
 export async function getProgramBySlug(slug: string) {

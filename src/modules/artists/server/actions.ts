@@ -1,6 +1,10 @@
 'use server';
 
-import { unstable_cache as next_cache, revalidatePath } from 'next/cache';
+import {
+  unstable_cache as next_cache,
+  revalidatePath,
+  updateTag,
+} from 'next/cache';
 import type { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import {
@@ -152,8 +156,8 @@ export const getArtistsPage = next_cache(
   },
   // 캐시 키 그룹 - 이 키를 사용하여 특정 캐시 항목을 무효화할 수 있습니다
   ['artists-list'],
-  // 캐시 옵션: 60초 동안 캐시 유지
-  { revalidate: CACHE_TIMES.ARTISTS_LIST }
+  // 캐시 옵션: 60초 동안 캐시 유지 + 편집 시 즉시 무효화(updateTag)
+  { revalidate: CACHE_TIMES.ARTISTS_LIST, tags: ['artists'] }
 );
 
 // 이 함수는 기존 getMoreArtists를 대체합니다
@@ -177,7 +181,7 @@ export const getSimpleArtistsList = next_cache(
     }
   },
   ['simple-artists-list'],
-  { revalidate: CACHE_TIMES.ARTISTS_LIST }
+  { revalidate: CACHE_TIMES.ARTISTS_LIST, tags: ['artists'] }
 );
 
 export async function createSimpleArtist(data: SimpleArtist) {
@@ -211,6 +215,7 @@ export async function createSimpleArtist(data: SimpleArtist) {
     });
 
     // 캐시 무효화
+    updateTag('artists');
     revalidatePath('/artists');
 
     return { success: true, data: artist };
@@ -269,6 +274,7 @@ export async function createArtist(data: z.infer<typeof artistSchema>) {
     });
 
     // 캐시 무효화 개선
+    updateTag('artists');
     revalidatePath('/artists');
     revalidatePath(`/artists/${artist.id}`);
     return { success: true, data: artist };
@@ -353,6 +359,7 @@ export async function updateArtist(
     });
 
     // 캐시 무효화
+    updateTag('artists');
     revalidatePath('/');
     revalidatePath(`/artists/${artist.id}`);
 
@@ -411,6 +418,7 @@ export async function deleteArtist(artistId: string) {
 
     await prisma.artist.delete({ where: { id: artistId } });
 
+    updateTag('artists');
     revalidatePath('/');
     revalidatePath('/artists');
     for (const { artworkId } of relatedArtworks) {
