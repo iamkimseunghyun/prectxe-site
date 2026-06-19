@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { prisma } from '@/lib/db/prisma';
 import { formatArtistName, formatKstDateRange, getImageUrl } from '@/lib/utils';
-import { getArtistById } from '@/modules/artists/server/actions';
+import { getArtistByIdWithCache } from '@/modules/artists/server/actions';
 import type { ArtistProgramCredit } from '@/modules/artists/server/types';
 import { ArtistCv } from '@/modules/artists/ui/components/artist-cv';
 import ArtworkListSection from '@/modules/artworks/ui/components/artwork-list-section';
@@ -192,7 +192,7 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const artist = await getArtistById(id);
+  const artist = await getArtistByIdWithCache(id);
 
   if (!artist) notFound();
 

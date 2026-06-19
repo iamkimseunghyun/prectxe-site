@@ -26,93 +26,114 @@ import {
 } from '@/lib/schemas';
 import { extractImageId } from '@/lib/utils';
 
-export const getArtistByIdWithCache =
-  // next_cache(
-  async (artistId: string) => {
-    try {
-      const artist = await prisma.artist.findUnique({
-        where: {
-          id: artistId,
+async function fetchArtistById(artistId: string) {
+  try {
+    const artist = await prisma.artist.findUnique({
+      where: {
+        id: artistId,
+      },
+      include: {
+        images: {
+          orderBy: { order: 'asc' },
         },
-        include: {
-          images: {
-            orderBy: { order: 'asc' },
-          },
-          artistArtworks: {
-            include: {
-              artwork: {
-                include: {
-                  images: {
-                    orderBy: { order: 'asc' },
-                  },
+        artistArtworks: {
+          include: {
+            artwork: {
+              include: {
+                images: {
+                  orderBy: { order: 'asc' },
                 },
               },
             },
           },
-          programCredits: {
-            include: {
-              program: {
-                select: {
-                  id: true,
-                  title: true,
-                  slug: true,
-                  status: true,
-                  type: true,
-                  startAt: true,
-                  endAt: true,
-                  heroUrl: true,
-                  venue: true,
-                  city: true,
-                },
+        },
+        programCredits: {
+          include: {
+            program: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                status: true,
+                type: true,
+                startAt: true,
+                endAt: true,
+                heroUrl: true,
+                venue: true,
+                city: true,
               },
             },
-            orderBy: {
-              program: { startAt: 'desc' },
-            },
+          },
+          orderBy: {
+            program: { startAt: 'desc' },
           },
         },
-      });
-      if (!artist) return null;
+      },
+    });
+    if (!artist) return null;
 
-      const formattedData = {
-        ...artist,
-        email: artist.email ?? undefined,
-        city: artist.city ?? undefined,
-        country: artist.country ?? undefined,
-        homepage: artist.homepage ?? undefined,
-        instagram: artist.instagram ?? undefined,
-        soundcloud: artist.soundcloud ?? undefined,
-        bandcamp: artist.bandcamp ?? undefined,
-        youtube: artist.youtube ?? undefined,
-        spotify: artist.spotify ?? undefined,
-        tagline: artist.tagline ?? undefined,
-        tags: artist.tags,
-        biography: artist.biography ?? undefined,
-        cv: artist.cv ?? undefined,
-        mainImageUrl: artist.mainImageUrl ?? undefined,
-        images: artist.images.map(({ id, imageUrl, alt, order }) => ({
-          id,
-          imageUrl,
-          alt,
-          order,
-        })),
-        programCredits: artist.programCredits,
-      };
+    const formattedData = {
+      ...artist,
+      email: artist.email ?? undefined,
+      city: artist.city ?? undefined,
+      country: artist.country ?? undefined,
+      homepage: artist.homepage ?? undefined,
+      instagram: artist.instagram ?? undefined,
+      soundcloud: artist.soundcloud ?? undefined,
+      bandcamp: artist.bandcamp ?? undefined,
+      youtube: artist.youtube ?? undefined,
+      spotify: artist.spotify ?? undefined,
+      tagline: artist.tagline ?? undefined,
+      tags: artist.tags,
+      biography: artist.biography ?? undefined,
+      cv: artist.cv ?? undefined,
+      mainImageUrl: artist.mainImageUrl ?? undefined,
+      images: artist.images.map(({ id, imageUrl, alt, order }) => ({
+        id,
+        imageUrl,
+        alt,
+        order,
+      })),
+      programCredits: artist.programCredits,
+    };
 
-      // DB 데이터를 ArtistFormData 형식으로 변환
-      return formattedData;
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
+    // DB 데이터를 ArtistFormData 형식으로 변환
+    return formattedData;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+
+const getArtistByIdCachedRaw = next_cache(fetchArtistById, ['artist-detail'], {
+  revalidate: CACHE_TIMES.ARTIST_DETAIL,
+  tags: ['artists'],
+});
+
+// 공개 상세용 — 캐시 + 편집 시 updateTag('artists')로 즉시 무효화.
+// unstable_cache는 Date를 문자열로 직렬화하므로, 소비되는 program 날짜를
+// Date로 복원해 타입(Date)과 런타임을 일치시킨다(소비처: ProgramCard).
+export async function getArtistByIdWithCache(artistId: string) {
+  const artist = await getArtistByIdCachedRaw(artistId);
+  if (!artist) return null;
+  return {
+    ...artist,
+    programCredits: artist.programCredits.map((credit) => ({
+      ...credit,
+      program: {
+        ...credit.program,
+        startAt: credit.program.startAt
+          ? new Date(credit.program.startAt)
+          : null,
+        endAt: credit.program.endAt ? new Date(credit.program.endAt) : null,
+      },
+    })),
   };
-// 특정 아티스트의 캐시 키
-//   ['artist-detail'],
-//   { revalidate: CACHE_TIMES.ARTIST_DETAIL }
-// );
+}
 
+// 어드민 편집 등 최신 데이터가 필요한 경우 — 캐시 미사용
 export async function getArtistById(artistId: string) {
-  return getArtistByIdWithCache(artistId);
+  return fetchArtistById(artistId);
 }
 
 // 통합된 아티스트 조회 함수
