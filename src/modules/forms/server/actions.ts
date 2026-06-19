@@ -60,7 +60,7 @@ export async function updateForm(formId: string, data: FormInput) {
 
     const existing = await prisma.form.findUnique({
       where: { id: formId },
-      select: { userId: true },
+      select: { id: true },
     });
 
     if (!existing) {
@@ -190,7 +190,7 @@ export async function deleteForm(formId: string) {
   try {
     const existing = await prisma.form.findUnique({
       where: { id: formId },
-      select: { userId: true },
+      select: { id: true },
     });
 
     if (!existing) {
@@ -351,7 +351,6 @@ export async function getFormSubmissions(formId: string) {
     const form = await prisma.form.findUnique({
       where: { id: formId },
       select: {
-        userId: true,
         title: true,
         fields: {
           orderBy: { order: 'asc' },

@@ -40,12 +40,12 @@ import {
   updateArtwork,
 } from '@/modules/artworks/server/actions';
 
-type ArtworkFormProps = {
+interface ArtworkFormProps {
   mode: 'create' | 'edit';
   initialData?: CreateArtworkInput | UpdateArtworkInput;
   artworkId?: string;
   artists?: { id: string; name: string; mainImageUrl: string | null }[];
-};
+}
 
 const ArtworkFormView = ({
   mode,
