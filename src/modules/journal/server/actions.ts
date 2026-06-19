@@ -44,8 +44,10 @@ export async function listArticles(options?: {
   tag?: string;
 }) {
   try {
-    // 어드민(초안 포함) 경로 — 캐시 미사용(최신 상태 필요)
+    // 어드민(초안 포함) 경로 — 관리자 전용 + 캐시 미사용(최신 상태 필요)
     if (options?.includeUnpublished) {
+      const auth = await requireAdmin();
+      if (!auth.success) return { success: false, error: auth.error } as const;
       const where: any = {};
       if (options.tag) where.tags = { has: options.tag };
       const articles = await prisma.article.findMany({
