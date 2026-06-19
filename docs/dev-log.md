@@ -2,6 +2,30 @@
 
 > 이전 기록은 [dev-log-archive.md](dev-log-archive.md) 참조
 
+## 2026-06-19
+
+### 보안 감사 + DB 성능 점검 (대규모 하드닝)
+
+하루 동안 보안·성능 다수 항목을 PR 사이클(CodeRabbit/Gemini 리뷰 → 머지 → 프로덕션 검증)로 반영.
+
+#### 1. 보안 (PR #36·#37·#38)
+- **인가 누락 차단 (CRITICAL, #36)**: forms/email/sms/artists/artworks/venues 모듈 server action이 클라이언트가 넘긴 `isAdmin`/`userId`로 인가를 판단 → 비로그인 외부인이 폼 PII 덤프·임의 이메일/SMS 발송·엔티티 삭제 가능했음. 모든 mutating·PII 액션에 `requireAdmin()` 적용, 클라이언트 인가 인자 제거. **Next.js server action은 미들웨어로 못 막으므로 액션 내부 가드 필수.**
+- **재고 잠금 DoS (HIGH, #37)**: createOrder/createGoodsOrder가 결제 없이 재고 즉시 차감 + 만료/cleanup 부재 → 반복 호출로 영구 재고 소진. `reclaimStaleOrphanOrders`(TTL 15분, claim-then-decrement로 초과판매 방지) + 주문 생성 시 self-heal 호출. `mergeByKey`로 maxPerOrder 중복 라인아이템 우회 차단.
+- **보안 헤더 (#38)**: next.config에 X-Frame-Options(DENY)/HSTS/nosniff/Referrer-Policy/Permissions-Policy(camera=self는 QR 스캐너용) + CSP frame-ancestors/base-uri/object-src 강제. 전체 리소스 CSP는 Report-Only 관찰 모드(라이브 결제/미디어 깨짐 방지, 위반 0 확인 후 enforce 승격).
+- **시크릿 로테이션**: `.env.development`가 깃 히스토리에 커밋돼 COOKIE_PASSWORD/DATABASE_URL/Cloudflare 토큰 노출 → 3종 전부 로테이션. Neon 비번 reset 시 Vercel **Preview 스코프 env까지** 갱신 필요(미갱신 시 빌드 실패 — `/sitemap.xml`이 빌드타임 DB 조회).
+
+#### 2. DB 인덱스 (PR #40)
+- 인덱스 없는 FK 33개(Prisma는 Postgres FK 자동 인덱싱 안 함) → 부모→자식 조회가 전부 seq scan. 핫/성장 테이블 위주 26개 인덱스 추가(FormResponse/FormSubmission·OrderItem·Ticket·갤러리·홈 featured 등). prod main에 Neon MCP `run_sql_transaction`으로 적용 + `schema.prisma` `@@index` 동기화. userId 등 어드민·저트래픽 FK 12개는 의도적 스킵. 데이터가 작아 체감 속도보다 컴퓨트·확장성 대비 목적.
+
+#### 3. 캐싱 + 편집 즉시 반영 (PR #39·#41~43)
+- 홈 4섹션 + 저널(상세/목록/관련글) + 아티스트 상세 캐싱 추가(프로그램·아티스트 목록은 기존). 홈 featured 3종은 `Promise.all` 병렬화.
+- **확립한 패턴**: `unstable_cache(fn, key, { revalidate, tags: ['domain'] })` + 편집 mutation에서 `updateTag('domain')`. → 트래픽엔 캐시 히트, 어드민 편집 시 즉시 무효화(read-your-own-writes). Next 16.2.4에서 동작 **프로덕션 검증 완료**(`revalidatePath`만으론 unstable_cache 무효화 안 됨).
+- **직렬화 주의**: unstable_cache는 Date를 문자열로 직렬화 → 캐시 함수에서 ISO 변환하거나 wrapper에서 Date 복원. 소비 뷰가 `new Date(...)`로 감싸면 안전. 로케일 라벨/날짜 포맷은 캐시가 아닌 렌더 시점에(i18n 대비).
+
+**리뷰 메모**: Gemini가 `updateTag`를 "next/cache에 없는 API"라며 매 PR critical 표시 → **오진**(16.2.4가 export, `cache.d.ts`/`cache.js` 확인 + 빌드·런타임 검증). CodeRabbit은 정확. 실제 유효 지적(저널 초안 유출·재고 회수 레이스·Date 직렬화)은 반영.
+
+---
+
 ## 2026-03-13
 
 ### 티켓팅 시스템 프로덕션 마이그레이션
