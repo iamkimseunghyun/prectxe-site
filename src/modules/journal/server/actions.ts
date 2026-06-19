@@ -1,6 +1,10 @@
 'use server';
 
-import { unstable_cache as next_cache, revalidatePath } from 'next/cache';
+import {
+  unstable_cache as next_cache,
+  revalidatePath,
+  updateTag,
+} from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import {
   cleanupRemovedHtmlImages,
@@ -36,7 +40,7 @@ const listPublishedArticlesCached = next_cache(
     }));
   },
   ['articles-published-list'],
-  { revalidate: CACHE_TIMES.ARTICLE_LIST }
+  { revalidate: CACHE_TIMES.ARTICLE_LIST, tags: ['journal'] }
 );
 
 export async function listArticles(options?: {
@@ -167,6 +171,7 @@ export async function toggleArticleFeatured(slug: string) {
     });
   }
 
+  updateTag('journal');
   revalidatePath('/admin/journal');
   revalidatePath('/journal');
   revalidatePath('/');
@@ -197,7 +202,7 @@ const getArticleBySlugCached = next_cache(
     };
   },
   ['article-detail'],
-  { revalidate: CACHE_TIMES.ARTICLE_DETAIL }
+  { revalidate: CACHE_TIMES.ARTICLE_DETAIL, tags: ['journal'] }
 );
 
 export async function getArticleBySlug(slug: string) {
@@ -228,7 +233,7 @@ const listArticlesByProgramCached = next_cache(
     }));
   },
   ['articles-by-program'],
-  { revalidate: CACHE_TIMES.ARTICLE_LIST }
+  { revalidate: CACHE_TIMES.ARTICLE_LIST, tags: ['journal'] }
 );
 
 export async function listArticlesByProgram(programId: string) {
@@ -265,6 +270,7 @@ export async function createArticle(input: unknown, authorId?: string | null) {
     },
     select: { slug: true },
   });
+  updateTag('journal');
   revalidatePath('/journal');
   revalidatePath(`/journal/${created.slug}`);
   revalidatePath('/');
@@ -306,6 +312,7 @@ export async function updateArticle(slug: string, input: unknown) {
     },
     select: { slug: true },
   });
+  updateTag('journal');
   revalidatePath('/journal');
   revalidatePath(`/journal/${updated.slug}`);
   revalidatePath('/');
@@ -326,6 +333,7 @@ export async function deleteArticle(slug: string) {
   }
 
   await prisma.article.delete({ where: { slug } });
+  updateTag('journal');
   revalidatePath('/journal');
   return { success: true };
 }
