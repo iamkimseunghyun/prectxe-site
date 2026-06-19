@@ -141,12 +141,22 @@ src/
 - Programs, Journal, Drops all have `opengraph-image.tsx` route handlers
 - Noto Sans KR web font loaded for Korean text rendering
 
+### Caching (read-path) — 캐시 + 편집 즉시 반영
+공개 read 경로는 `unstable_cache`(별칭 `next_cache`)로 캐싱. 도메인 태그 + 서버액션 무효화로 트래픽엔 캐시, 어드민 편집엔 즉시 반영(2026-06-19 전 모듈 적용·프로덕션 검증).
+- **패턴**: `next_cache(fn, ['key'], { revalidate: CACHE_TIMES.X, tags: ['domain'] })` + 편집 mutation(server action)에서 `updateTag('domain')`. `'domain'` = `programs|artists|journal|drops` 등.
+- **중요**: `revalidatePath`는 route 캐시만 비움 → `unstable_cache` 데이터는 **무효화 안 됨**. 즉시 반영엔 반드시 `tags` + `updateTag`(또는 무프로파일 `revalidateTag`). `updateTag`는 서버액션 전용·즉시(read-your-own-writes), Next 16.2.4에서 unstable_cache와 동작 확인.
+- **Date 직렬화**: `unstable_cache`는 Date를 ISO 문자열로 직렬화 → 캐시 함수에서 `.toISOString()` 변환하거나, 소비되는 날짜만 wrapper에서 `new Date()`로 복원(타입·런타임 일치). 소비 뷰가 이미 `new Date(...)`로 감싸면 안전.
+- **i18n 대비**: 로케일별 라벨/날짜 포맷은 캐시 함수가 아닌 **렌더 시점**에 계산(캐시 키에 로케일 없음).
+- 홈 featured-hero는 program/article/drop 모두 읽으므로 `tags: ['programs','journal','drops']`. 어드민 편집 폼은 캐시 미사용 경로(예: artists `getArtistById` vs `getArtistByIdWithCache`).
+- 자세한 Next 16 캐시 API 변경/검증은 메모리 `project_nextjs16_cache_api` 참고.
+
 ## Database
 
 - **Schema**: `prisma/schema.prisma`
 - **Key models**: Program, Article, Artist, Venue, Artwork, Form/FormField/FormSubmission, Drop, TicketTier, GoodsVariant, Order/OrderItem, Payment, BankTransfer, Ticket, User
 - **Migration caveat**: Neon에 `main`(prod) + `program-model-v1`(dev) 2개 브랜치. `bunx prisma db push`는 **dev에서만 안전**. main에는 Neon MCP `run_sql_transaction`으로 부분 마이그레이션. legacy 테이블 정리 후 enum 타입은 별도 `DROP TYPE` 필요 (자동 안 됨). 자세한 패턴은 메모리 `project_db_branches` 참고.
 - **Prisma client**: Singleton pattern in `src/lib/db/prisma.ts` (global ref to prevent multiple instances in dev)
+- **FK 인덱스**: Prisma는 PostgreSQL **외래키에 인덱스를 자동 생성하지 않음** → 새 모델/관계 추가 시 자주 조회하는 FK 컬럼에 `@@index([fkColumn])` 직접 추가할 것(없으면 부모→자식 `include`가 seq scan). 2026-06-19에 핫/성장 테이블 FK 26개 인덱스 일괄 추가(prod + schema 동기화).
 
 ### Form Data Safety (Critical)
 - **NEVER** physically delete FormField — use soft delete (`archived: true`)
