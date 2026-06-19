@@ -59,9 +59,8 @@ const getHomePrograms = next_cache(
       summary: p.summary,
       heroUrl: p.heroUrl,
       status: p.status,
-      dateLabel: p.startAt
-        ? formatKstDateRange(p.startAt, p.endAt ?? p.startAt)
-        : null,
+      startAtIso: p.startAt ? p.startAt.toISOString() : null,
+      endAtIso: p.endAt ? p.endAt.toISOString() : null,
       location: [p.venue, p.city].filter(Boolean).join(' · '),
     }));
 
@@ -102,7 +101,12 @@ export async function UpcomingProgramsSection() {
 
         <div className="grid gap-10 md:grid-cols-3 md:gap-8">
           {programs.map((program) => {
-            const dateLabel = program.dateLabel;
+            const dateLabel = program.startAtIso
+              ? formatKstDateRange(
+                  new Date(program.startAtIso),
+                  new Date(program.endAtIso ?? program.startAtIso)
+                )
+              : null;
             const location = program.location;
 
             return (

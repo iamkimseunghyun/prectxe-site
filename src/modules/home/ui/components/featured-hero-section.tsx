@@ -151,7 +151,6 @@ const getFeaturedHero = next_cache(
     let hero: string;
     let href: string;
     let artists: string | undefined;
-    let cta: { label: string; active: boolean };
 
     if (featured.type === 'program') {
       hero = featured.data.heroUrl
@@ -159,28 +158,36 @@ const getFeaturedHero = next_cache(
         : '/images/placeholder.png';
       href = `/programs/${slug}`;
       artists = creditsOf(featured.data.credits);
-      cta = { label: '자세히 보기', active: true };
     } else if (featured.type === 'article') {
       hero = featured.data.cover
         ? getImageUrl(featured.data.cover, 'public')
         : '/images/placeholder.png';
       href = `/journal/${slug}`;
-      cta = { label: '읽어보기', active: true };
     } else {
       const img = featured.data.media[0]?.url;
       hero = img ? getImageUrl(img, 'public') : '/images/placeholder.png';
       href = `/drops/${slug}`;
       artists = creditsOf(featured.data.credits);
-      cta = dropCta(
-        getEffectiveDropStatus({
-          type: featured.data.type as 'ticket' | 'goods',
-          ticketTiers: featured.data.ticketTiers,
-          variants: featured.data.variants,
-        })
-      );
     }
 
-    return { hero, href, title, artists, cta };
+    // 파생 상태(데이터)만 캐시. UI 라벨은 렌더 시점에 결정(i18n 대비).
+    const dropStatus =
+      featured.type === 'drop'
+        ? getEffectiveDropStatus({
+            type: featured.data.type as 'ticket' | 'goods',
+            ticketTiers: featured.data.ticketTiers,
+            variants: featured.data.variants,
+          })
+        : null;
+
+    return {
+      hero,
+      href,
+      title,
+      artists,
+      featuredType: featured.type,
+      dropStatus,
+    };
   },
   ['home-featured-hero'],
   { revalidate: HOME_REVALIDATE }
@@ -201,7 +208,13 @@ export async function FeaturedHeroSection() {
     );
   }
 
-  const { hero, href, title, artists, cta } = featured;
+  const { hero, href, title, artists, featuredType, dropStatus } = featured;
+  const cta =
+    featuredType === 'program'
+      ? { label: '자세히 보기', active: true }
+      : featuredType === 'article'
+        ? { label: '읽어보기', active: true }
+        : dropCta(dropStatus ?? '');
 
   return (
     <section className="relative">
