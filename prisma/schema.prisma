@@ -24,12 +24,14 @@ model Program {
   venueId     String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
-  isFeatured       Boolean         @default(false)
-  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  venueLink        Venue?          @relation(fields: [venueId], references: [id], onDelete: SetNull)
-  credits          ProgramCredit[]
-  images           ProgramImage[]
-  articles         Article[]
+  isFeatured  Boolean         @default(false)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venueLink   Venue?          @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  credits     ProgramCredit[]
+  images      ProgramImage[]
+  articles    Article[]
+
+  @@index([isFeatured, updatedAt])
 }
 
 model ProgramImage {
@@ -41,6 +43,8 @@ model ProgramImage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   program   Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@index([programId])
 }
 
 model ProgramCredit {
@@ -53,6 +57,7 @@ model ProgramCredit {
   program   Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
 
   @@id([programId, artistId])
+  @@index([artistId])
 }
 
 model Article {
@@ -71,6 +76,10 @@ model Article {
   isFeatured  Boolean   @default(false)
   author      User?     @relation(fields: [authorId], references: [id])
   program     Program?  @relation(fields: [programId], references: [id], onDelete: SetNull)
+
+  @@index([isFeatured, updatedAt])
+  @@index([publishedAt])
+  @@index([programId])
 }
 
 model User {
@@ -211,6 +220,8 @@ model ArtistImage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@index([artistId])
 }
 
 model Artwork {
@@ -238,6 +249,8 @@ model ArtworkImage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@index([artworkId])
 }
 
 model Venue {
@@ -269,6 +282,8 @@ model VenueImage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId])
 }
 
 model ArtistArtwork {
@@ -280,6 +295,7 @@ model ArtistArtwork {
   artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
 
   @@id([artistId, artworkId])
+  @@index([artworkId])
 }
 
 enum ProgramType {
@@ -335,6 +351,8 @@ model FormField {
   updatedAt   DateTime       @updatedAt
   form        Form           @relation(fields: [formId], references: [id], onDelete: Cascade)
   responses   FormResponse[]
+
+  @@index([formId])
 }
 
 model FormSubmission {
@@ -345,6 +363,8 @@ model FormSubmission {
   userAgent   String?
   form        Form           @relation(fields: [formId], references: [id], onDelete: Cascade)
   responses   FormResponse[]
+
+  @@index([formId, submittedAt])
 }
 
 model FormResponse {
@@ -357,6 +377,9 @@ model FormResponse {
   createdAt    DateTime       @default(now())
   submission   FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   field        FormField?     @relation(fields: [fieldId], references: [id], onDelete: SetNull)
+
+  @@index([submissionId])
+  @@index([fieldId])
 }
 
 enum FormStatus {
@@ -409,6 +432,8 @@ model SMSRecipient {
   sentAt     DateTime?
   createdAt  DateTime    @default(now())
   campaign   SMSCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
 }
 
 enum SMSStatus {
@@ -448,6 +473,8 @@ model EmailRecipient {
   sentAt     DateTime?
   createdAt  DateTime      @default(now())
   campaign   EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
 }
 
 enum EmailStatus {
@@ -460,28 +487,31 @@ enum EmailStatus {
 // ─── Drops & Commerce ─────────────────────────────────
 
 model Drop {
-  id          String       @id @default(cuid())
-  slug        String       @unique
-  title       String
-  summary     String?
-  description String?
-  type        DropType
+  id           String         @id @default(cuid())
+  slug         String         @unique
+  title        String
+  summary      String?
+  description  String?
+  type         DropType
   eventDate    DateTime?
   eventEndDate DateTime?
   venue        String?
   venueAddress String?
   venueId      String?
   notice       String?
-  isFeatured   Boolean      @default(false)
+  isFeatured   Boolean        @default(false)
   publishedAt  DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  venueLink   Venue?        @relation(fields: [venueId], references: [id], onDelete: SetNull)
-  media       DropMedia[]
-  credits     DropCredit[]
-  ticketTiers TicketTier[]
-  variants    GoodsVariant[]
-  orders      Order[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  venueLink    Venue?         @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  media        DropMedia[]
+  credits      DropCredit[]
+  ticketTiers  TicketTier[]
+  variants     GoodsVariant[]
+  orders       Order[]
+
+  @@index([isFeatured, updatedAt])
+  @@index([publishedAt])
 }
 
 model DropCredit {
@@ -494,6 +524,7 @@ model DropCredit {
   drop      Drop     @relation(fields: [dropId], references: [id], onDelete: Cascade)
 
   @@id([dropId, artistId])
+  @@index([artistId])
 }
 
 model DropMedia {
@@ -501,7 +532,7 @@ model DropMedia {
   dropId    String
   drop      Drop          @relation(fields: [dropId], references: [id], onDelete: Cascade)
   type      DropMediaType
-  url       String        // 이미지: Cloudflare Images URL / 영상: Cloudflare Stream ID
+  url       String // 이미지: Cloudflare Images URL / 영상: Cloudflare Stream ID
   alt       String        @default("")
   order     Int           @default(0)
   createdAt DateTime      @default(now())
@@ -510,37 +541,41 @@ model DropMedia {
 }
 
 model TicketTier {
-  id          String           @id @default(cuid())
+  id          String      @id @default(cuid())
   dropId      String?
   name        String
   description String?
-  price       Int              // 원 단위
-  quantity    Int              // 총 수량
-  soldCount   Int              @default(0)
-  maxPerOrder Int              @default(4)
+  price       Int // 원 단위
+  quantity    Int // 총 수량
+  soldCount   Int         @default(0)
+  maxPerOrder Int         @default(4)
   saleStart   DateTime?
   saleEnd     DateTime?
-  order       Int              @default(0)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  drop        Drop?            @relation(fields: [dropId], references: [id], onDelete: Cascade)
+  order       Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  drop        Drop?       @relation(fields: [dropId], references: [id], onDelete: Cascade)
   orderItems  OrderItem[]
   tickets     Ticket[]
+
+  @@index([dropId])
 }
 
 model GoodsVariant {
-  id        String   @id @default(cuid())
-  dropId    String
-  name      String
-  price     Int
-  stock     Int      @default(0)
-  soldCount Int      @default(0)
-  options   Json?    // { size?: string, color?: string, ... }
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  drop      Drop     @relation(fields: [dropId], references: [id], onDelete: Cascade)
+  id         String      @id @default(cuid())
+  dropId     String
+  name       String
+  price      Int
+  stock      Int         @default(0)
+  soldCount  Int         @default(0)
+  options    Json? // { size?: string, color?: string, ... }
+  order      Int         @default(0)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  drop       Drop        @relation(fields: [dropId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
+
+  @@index([dropId])
 }
 
 model Order {
@@ -579,22 +614,26 @@ model OrderItem {
   ticketTier     TicketTier?   @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
   goodsVariant   GoodsVariant? @relation(fields: [goodsVariantId], references: [id], onDelete: SetNull)
   tickets        Ticket[]
+
+  @@index([orderId])
+  @@index([ticketTierId])
+  @@index([goodsVariantId])
 }
 
 model Payment {
-  id                String        @id @default(cuid())
-  orderId           String        @unique
-  portonePaymentId  String        @unique
-  method            String?
-  amount            Int
-  status            PaymentStatus @default(pending)
-  paidAt            DateTime?
-  cancelledAt       DateTime?
-  cancelReason      String?
-  rawData           Json?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id               String        @id @default(cuid())
+  orderId          String        @unique
+  portonePaymentId String        @unique
+  method           String?
+  amount           Int
+  status           PaymentStatus @default(pending)
+  paidAt           DateTime?
+  cancelledAt      DateTime?
+  cancelReason     String?
+  rawData          Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  order            Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model BankTransfer {
@@ -632,6 +671,8 @@ model Ticket {
 
   @@index([status])
   @@index([orderId])
+  @@index([orderItemId])
+  @@index([ticketTierId])
 }
 
 enum DropType {
@@ -643,8 +684,6 @@ enum DropMediaType {
   image
   video
 }
-
-
 
 enum OrderStatus {
   pending
