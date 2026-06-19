@@ -10,7 +10,7 @@ export default async function NewFormPage() {
 
   async function handleSubmit(data: FormInput) {
     'use server';
-    return await createForm(session.id!, data);
+    return await createForm(data);
   }
 
   return (

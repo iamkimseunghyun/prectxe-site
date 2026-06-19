@@ -5,10 +5,6 @@ import { Loader2, Send, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import {
-  EmailEditor,
-  getEmailHTML,
-} from '@/modules/email/ui/components/email-editor';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -36,6 +32,10 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import {
+  EmailEditor,
+  getEmailHTML,
+} from '@/modules/email/ui/components/email-editor';
+import {
   createAndSendEmailCampaign,
   getFormRespondentsEmails,
   getFormsWithEmailFields,
@@ -53,15 +53,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface FormRecipientsEmailSenderProps {
-  userId: string;
-  isAdmin: boolean;
-}
-
-export function FormRecipientsEmailSender({
-  userId,
-  isAdmin,
-}: FormRecipientsEmailSenderProps) {
+export function FormRecipientsEmailSender() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [forms, setForms] = useState<
@@ -91,13 +83,13 @@ export function FormRecipientsEmailSender({
   // Form 목록 로드
   useEffect(() => {
     async function loadForms() {
-      const result = await getFormsWithEmailFields(userId, isAdmin);
+      const result = await getFormsWithEmailFields();
       if (result.success && result.data) {
         setForms(result.data);
       }
     }
     loadForms();
-  }, [userId, isAdmin]);
+  }, []);
 
   // Form 선택 시 응답자 수 확인
   const handleFormChange = async (formId: string) => {
@@ -143,7 +135,6 @@ export function FormRecipientsEmailSender({
         template: data.template,
         emails: emailResult.data.emails,
         formId: data.formId,
-        userId,
       });
 
       if (result.success && result.data) {

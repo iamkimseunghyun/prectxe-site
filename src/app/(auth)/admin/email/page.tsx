@@ -23,7 +23,7 @@ export default async function EmailPage() {
         </p>
       </div>
 
-      <EmailDashboard userId={session.id} isAdmin={session.isAdmin || false} />
+      <EmailDashboard />
     </div>
   );
 }

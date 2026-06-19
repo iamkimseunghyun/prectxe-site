@@ -79,6 +79,8 @@ export async function subscribeNewsletter(email: string) {
  * Form 응답자의 이메일 주소 추출
  */
 export async function getFormRespondentsEmails(formId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
     const form = await prisma.form.findUnique({
       where: { id: formId },
@@ -145,10 +147,12 @@ export async function createAndSendEmailCampaign(params: {
   template: 'form-notification' | 'newsletter';
   emails: string[];
   formId?: string;
-  userId: string;
 }) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
-    const { title, subject, body, template, emails, formId, userId } = params;
+    const { title, subject, body, template, emails, formId } = params;
+    const userId = auth.userId;
 
     // 이메일 검증
     const validEmails = filterValidEmails(emails);
@@ -328,10 +332,12 @@ export async function createAndSendNewsletterBroadcast(params: {
 /**
  * 이메일 캠페인 목록 조회
  */
-export async function listEmailCampaigns(userId: string, isAdmin = false) {
+export async function listEmailCampaigns() {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
     const campaigns = await prisma.emailCampaign.findMany({
-      where: isAdmin ? {} : { userId },
+      where: {},
       include: {
         form: {
           select: {
@@ -363,11 +369,9 @@ export async function listEmailCampaigns(userId: string, isAdmin = false) {
 /**
  * 이메일 캠페인 상세 조회
  */
-export async function getEmailCampaign(
-  campaignId: string,
-  userId: string,
-  isAdmin = false
-) {
+export async function getEmailCampaign(campaignId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
     const campaign = await prisma.emailCampaign.findUnique({
       where: { id: campaignId },
@@ -390,11 +394,6 @@ export async function getEmailCampaign(
       return { success: false, error: '캠페인을 찾을 수 없습니다' };
     }
 
-    // 권한 확인
-    if (!isAdmin && campaign.userId !== userId) {
-      return { success: false, error: '권한이 없습니다' };
-    }
-
     return { success: true, data: campaign };
   } catch (error) {
     console.error('캠페인 조회 오류:', error);
@@ -409,13 +408,14 @@ export async function getEmailCampaign(
 /**
  * 모든 Form 목록 조회 (이메일 필드가 있는 Form만)
  */
-export async function getFormsWithEmailFields(userId: string, isAdmin = false) {
+export async function getFormsWithEmailFields() {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
     // 이메일 필드가 있는 폼만 DB에서 필터(where some) + 제출 수는 _count로
     // (전체 submission row 적재·JS 필터 제거)
     const forms = await prisma.form.findMany({
       where: {
-        ...(isAdmin ? {} : { userId }),
         fields: { some: { type: 'email', archived: false } },
       },
       select: {

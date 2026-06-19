@@ -37,11 +37,6 @@ import {
   sendPersonalizedSMS,
 } from '../../server/actions';
 
-interface SMSCampaignListProps {
-  userId: string;
-  isAdmin: boolean;
-}
-
 type Campaign = {
   id: string;
   title: string;
@@ -64,7 +59,7 @@ type Campaign = {
   }>;
 };
 
-export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
+export function SMSCampaignList() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
@@ -78,16 +73,8 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
   useEffect(() => {
     async function loadCampaigns() {
       setIsLoading(true);
-      console.log(
-        '[SMSCampaignList] Loading campaigns for userId:',
-        userId,
-        'isAdmin:',
-        isAdmin
-      );
-      const result = await listSMSCampaigns(userId, isAdmin);
-      console.log('[SMSCampaignList] Result:', result);
+      const result = await listSMSCampaigns();
       if (result.success && result.data) {
-        console.log('[SMSCampaignList] Campaigns count:', result.data.length);
         setCampaigns(result.data as Campaign[]);
       } else {
         console.error(
@@ -98,7 +85,7 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
       setIsLoading(false);
     }
     loadCampaigns();
-  }, [userId, isAdmin]);
+  }, []);
 
   const hasPersonalizedRecipients = (campaign: Campaign) => {
     return campaign.recipients.some((r) => r.name || r.value);
@@ -148,7 +135,6 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
           recipients,
           template: resendMessage,
           title: `[재발송] ${resendCampaign.title}`,
-          userId,
         });
       } else {
         result = await createAndSendSMSCampaign({
@@ -156,7 +142,6 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
           message: resendMessage,
           phones: successPhones,
           formId: undefined,
-          userId,
         });
       }
 
@@ -167,7 +152,7 @@ export function SMSCampaignList({ userId, isAdmin }: SMSCampaignListProps) {
         });
         setResendCampaign(null);
         // 목록 새로고침
-        const refreshed = await listSMSCampaigns(userId, isAdmin);
+        const refreshed = await listSMSCampaigns();
         if (refreshed.success && refreshed.data) {
           setCampaigns(refreshed.data as Campaign[]);
         }

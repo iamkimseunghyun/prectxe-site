@@ -1,14 +1,18 @@
 'use server';
 
+import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
 import type { CampaignStats } from './stats.types';
 
-export async function getSMSStats(
-  userId: string,
-  isAdmin = false
-): Promise<{ success: boolean; data?: CampaignStats; error?: string }> {
+export async function getSMSStats(): Promise<{
+  success: boolean;
+  data?: CampaignStats;
+  error?: string;
+}> {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
-    const where = isAdmin ? {} : { userId };
+    const where = {};
 
     const now = new Date();
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);

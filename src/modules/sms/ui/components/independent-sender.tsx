@@ -39,12 +39,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface IndependentSenderProps {
-  userId: string;
-  isAdmin: boolean;
-}
-
-export function IndependentSender({ userId, isAdmin }: IndependentSenderProps) {
+export function IndependentSender() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [phoneCount, setPhoneCount] = useState(0);
@@ -117,7 +112,6 @@ export function IndependentSender({ userId, isAdmin }: IndependentSenderProps) {
         title: data.title,
         message: data.message,
         phones,
-        userId,
       });
 
       if (result.success && result.data) {

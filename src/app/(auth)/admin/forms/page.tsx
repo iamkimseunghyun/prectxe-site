@@ -21,7 +21,7 @@ export default async function FormsAdminPage({ searchParams }: PageProps) {
   const status = params.status as 'draft' | 'published' | 'closed' | undefined;
   const view = params.view === 'list' ? 'list' : 'card';
 
-  const result = await listForms(session.id, session.isAdmin, {
+  const result = await listForms({
     status,
   });
 
@@ -73,23 +73,13 @@ export default async function FormsAdminPage({ searchParams }: PageProps) {
       ) : view === 'list' ? (
         <div className="flex flex-col gap-2">
           {forms.map((form) => (
-            <FormRow
-              key={form.id}
-              form={form}
-              userId={session.id!}
-              isAdmin={session.isAdmin!}
-            />
+            <FormRow key={form.id} form={form} />
           ))}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {forms.map((form) => (
-            <FormCard
-              key={form.id}
-              form={form}
-              userId={session.id!}
-              isAdmin={session.isAdmin!}
-            />
+            <FormCard key={form.id} form={form} />
           ))}
         </div>
       )}

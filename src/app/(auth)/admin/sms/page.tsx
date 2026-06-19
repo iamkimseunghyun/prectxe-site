@@ -23,7 +23,7 @@ export default async function SMSPage() {
         </p>
       </div>
 
-      <SMSDashboard userId={session.id} isAdmin={session.isAdmin || false} />
+      <SMSDashboard />
     </div>
   );
 }

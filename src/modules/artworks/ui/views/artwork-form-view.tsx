@@ -40,19 +40,17 @@ import {
   updateArtwork,
 } from '@/modules/artworks/server/actions';
 
-type ArtworkFormProps = {
+interface ArtworkFormProps {
   mode: 'create' | 'edit';
   initialData?: CreateArtworkInput | UpdateArtworkInput;
   artworkId?: string;
-  userId?: string;
   artists?: { id: string; name: string; mainImageUrl: string | null }[];
-};
+}
 
 const ArtworkFormView = ({
   mode,
   initialData,
   artworkId,
-  userId,
   artists,
 }: ArtworkFormProps) => {
   const router = useRouter();
@@ -100,7 +98,7 @@ const ArtworkFormView = ({
       const saved =
         mode === 'edit'
           ? await updateArtwork(payload, artworkId as string)
-          : await createArtwork(payload, userId as string);
+          : await createArtwork(payload);
 
       if (!saved.success) throw new Error(saved.error);
       router.push(`/artworks/${saved.data?.id}`);

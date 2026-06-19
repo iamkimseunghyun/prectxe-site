@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import type { z } from 'zod';
+import { requireAdmin } from '@/lib/auth/require-admin';
 import { deleteAllImages, deleteRemovedImages } from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
 import { createVenueSchema, updateVenueSchema } from '@/lib/schemas';
@@ -112,11 +113,11 @@ export async function getVenueOptions() {
   });
 }
 
-export async function createVenue(
-  data: z.infer<typeof createVenueSchema>,
-  userId: string
-) {
+export async function createVenue(data: z.infer<typeof createVenueSchema>) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     const parsed = createVenueSchema.safeParse(data);
     if (!parsed.success) {
       return {
@@ -137,7 +138,7 @@ export async function createVenue(
         website: d.website,
         instagram: d.instagram,
         tags: d.tags ?? [],
-        userId,
+        userId: auth.userId,
         images: d.images?.length
           ? { createMany: { data: d.images } }
           : undefined,
@@ -162,6 +163,9 @@ export async function updateVenue(
   venueId: string
 ) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     const parsed = updateVenueSchema.safeParse(data);
     if (!parsed.success) {
       return { success: false, error: '입력 값이 올바르지 않습니다.' };
@@ -217,6 +221,9 @@ export async function updateVenue(
 
 export async function deleteVenue(venueId: string) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.success) return { success: false, error: '권한이 없습니다' };
+
     const venue = await prisma.venue.findUnique({
       where: { id: venueId },
       select: { images: { select: { imageUrl: true } } },

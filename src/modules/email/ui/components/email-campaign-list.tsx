@@ -23,11 +23,6 @@ import {
 import { formatKstDateTime } from '@/lib/utils';
 import { listEmailCampaigns } from '../../server/actions';
 
-interface EmailCampaignListProps {
-  userId: string;
-  isAdmin: boolean;
-}
-
 type Campaign = {
   id: string;
   title: string;
@@ -45,21 +40,21 @@ type Campaign = {
   } | null;
 };
 
-export function EmailCampaignList({ userId, isAdmin }: EmailCampaignListProps) {
+export function EmailCampaignList() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadCampaigns() {
       setIsLoading(true);
-      const result = await listEmailCampaigns(userId, isAdmin);
+      const result = await listEmailCampaigns();
       if (result.success && result.data) {
         setCampaigns(result.data as Campaign[]);
       }
       setIsLoading(false);
     }
     loadCampaigns();
-  }, [userId, isAdmin]);
+  }, []);
 
   const getStatusBadge = (status: string) => {
     switch (status) {

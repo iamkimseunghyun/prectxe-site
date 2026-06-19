@@ -61,7 +61,7 @@ interface Recipient {
   message: string;
 }
 
-export function PersonalizedSMSSender({ userId }: { userId: string }) {
+export function PersonalizedSMSSender() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedRecipient, setSelectedRecipient] = useState<Recipient | null>(
@@ -182,7 +182,6 @@ export function PersonalizedSMSSender({ userId }: { userId: string }) {
         recipients,
         template: data.template,
         title: data.title,
-        userId,
       });
 
       if (result.success) {

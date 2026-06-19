@@ -8,12 +8,7 @@ import { PersonalizedSMSSender } from '../components/personalized-sms-sender';
 import { SMSCampaignList } from '../components/sms-campaign-list';
 import { SMSStats } from '../components/sms-stats';
 
-interface SMSDashboardProps {
-  userId: string;
-  isAdmin: boolean;
-}
-
-export function SMSDashboard({ userId, isAdmin }: SMSDashboardProps) {
+export function SMSDashboard() {
   const [activeTab, setActiveTab] = useState('stats');
 
   return (
@@ -27,23 +22,23 @@ export function SMSDashboard({ userId, isAdmin }: SMSDashboardProps) {
       </TabsList>
 
       <TabsContent value="stats" className="space-y-4">
-        <SMSStats userId={userId} isAdmin={isAdmin} />
+        <SMSStats />
       </TabsContent>
 
       <TabsContent value="form" className="space-y-4">
-        <FormRecipientsSender userId={userId} isAdmin={isAdmin} />
+        <FormRecipientsSender />
       </TabsContent>
 
       <TabsContent value="independent" className="space-y-4">
-        <IndependentSender userId={userId} isAdmin={isAdmin} />
+        <IndependentSender />
       </TabsContent>
 
       <TabsContent value="personalized" className="space-y-4">
-        <PersonalizedSMSSender userId={userId} />
+        <PersonalizedSMSSender />
       </TabsContent>
 
       <TabsContent value="history" className="space-y-4">
-        <SMSCampaignList userId={userId} isAdmin={isAdmin} />
+        <SMSCampaignList />
       </TabsContent>
     </Tabs>
   );

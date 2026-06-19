@@ -5,11 +5,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { copyForm, deleteForm } from '@/modules/forms/server/actions';
 
-export function useFormActions(
-  formId: string,
-  userId: string,
-  isAdmin: boolean
-) {
+export function useFormActions(formId: string) {
   const router = useRouter();
   const { toast } = useToast();
   const [isCopying, setIsCopying] = useState(false);
@@ -18,7 +14,7 @@ export function useFormActions(
   const handleCopy = async () => {
     setIsCopying(true);
     try {
-      const result = await copyForm(formId, userId, isAdmin);
+      const result = await copyForm(formId);
       if (!result.success) throw new Error(result.error || '복사 실패');
       toast({
         title: '복사 완료',
@@ -41,7 +37,7 @@ export function useFormActions(
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const result = await deleteForm(formId, userId, isAdmin);
+      const result = await deleteForm(formId);
       if (!result.success) throw new Error(result.error || '삭제 실패');
       toast({
         title: '삭제 완료',

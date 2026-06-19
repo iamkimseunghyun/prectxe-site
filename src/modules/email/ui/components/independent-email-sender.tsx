@@ -5,10 +5,6 @@ import { Loader2, Send, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import {
-  EmailEditor,
-  getEmailHTML,
-} from '@/modules/email/ui/components/email-editor';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -36,6 +32,10 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import {
+  EmailEditor,
+  getEmailHTML,
+} from '@/modules/email/ui/components/email-editor';
 import { createAndSendEmailCampaign } from '../../server/actions';
 
 const formSchema = z.object({
@@ -51,15 +51,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface IndependentEmailSenderProps {
-  userId: string;
-  isAdmin: boolean;
-}
-
-export function IndependentEmailSender({
-  userId,
-  isAdmin,
-}: IndependentEmailSenderProps) {
+export function IndependentEmailSender() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [emailCount, setEmailCount] = useState(0);
@@ -139,7 +131,6 @@ export function IndependentEmailSender({
         body: emailHTML,
         template: data.template,
         emails,
-        userId,
       });
 
       if (result.success && result.data) {
