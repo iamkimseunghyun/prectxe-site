@@ -1,4 +1,5 @@
 import { ArrowUpRight } from 'lucide-react';
+import { unstable_cache as next_cache } from 'next/cache';
 import Image from 'next/image';
 import Link from 'next/link';
 import { SaleCountdown } from '@/components/shared/sale-countdown';
@@ -24,55 +25,82 @@ const STATUS_LABEL: Record<string, { label: string; className: string }> = {
   },
 };
 
-export async function NowOnSaleSection() {
-  // 공개된 drop을 가져와 파생 상태(getEffectiveDropStatus)가 on_sale/upcoming인
-  // 것만 노출. 파생 필터는 쿼리로 못 하므로 넉넉히 받아 계산 후 상위 3개로 슬라이스.
-  // 이미 끝난 과거 이벤트는 쿼리에서 제외 — 안 그러면 과거 drop이 take 슬롯을
-  // 채워 현재 판매중 drop이 0개로 가려질 수 있다(굿즈 등 무날짜 drop은 포함).
-  const now = new Date();
-  const published = await prisma.drop.findMany({
-    where: {
-      publishedAt: { not: null },
-      OR: [
-        { eventEndDate: { gte: now } },
-        { eventEndDate: null, eventDate: { gte: now } },
-        { eventDate: null, eventEndDate: null },
-      ],
-    },
-    take: 12,
-    orderBy: [{ eventDate: 'asc' }, { publishedAt: 'desc' }],
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      summary: true,
-      type: true,
-      eventDate: true,
-      media: {
-        where: { type: 'image' },
-        orderBy: { order: 'asc' },
-        take: 1,
-        select: { url: true },
+// 공개된 drop을 가져와 파생 상태가 on_sale/upcoming인 것만 노출(상위 3개).
+// 파생 상태/가격/판매창은 캐시 내부에서 직렬화 가능한 primitive로 미리 계산.
+// `now` 기준 필터는 캐시 창(revalidate)만큼 오차 허용(홈 티저라 무방).
+const getNowOnSaleDrops = next_cache(
+  async () => {
+    const now = new Date();
+    const published = await prisma.drop.findMany({
+      where: {
+        publishedAt: { not: null },
+        OR: [
+          { eventEndDate: { gte: now } },
+          { eventEndDate: null, eventDate: { gte: now } },
+          { eventDate: null, eventEndDate: null },
+        ],
       },
-      ticketTiers: {
-        select: {
-          price: true,
-          saleStart: true,
-          saleEnd: true,
-          soldCount: true,
-          quantity: true,
+      take: 12,
+      orderBy: [{ eventDate: 'asc' }, { publishedAt: 'desc' }],
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        summary: true,
+        type: true,
+        eventDate: true,
+        media: {
+          where: { type: 'image' },
+          orderBy: { order: 'asc' },
+          take: 1,
+          select: { url: true },
         },
+        ticketTiers: {
+          select: {
+            price: true,
+            saleStart: true,
+            saleEnd: true,
+            soldCount: true,
+            quantity: true,
+          },
+        },
+        variants: { select: { price: true, stock: true, soldCount: true } },
       },
-      variants: { select: { price: true, stock: true, soldCount: true } },
-    },
-  });
+    });
 
-  const drops = published
-    .map((d) => ({ ...d, effectiveStatus: getEffectiveDropStatus(d) }))
-    .filter(
-      (d) => d.effectiveStatus === 'on_sale' || d.effectiveStatus === 'upcoming'
-    )
-    .slice(0, 3);
+    return published
+      .map((d) => {
+        const effectiveStatus = getEffectiveDropStatus(d);
+        const prices =
+          d.type === 'ticket'
+            ? d.ticketTiers.map((t) => t.price)
+            : d.variants.map((v) => v.price);
+        const saleWindow = getDropSaleWindow(d.ticketTiers);
+        return {
+          id: d.id,
+          slug: d.slug,
+          title: d.title,
+          summary: d.summary,
+          imgUrl: d.media[0]?.url ?? null,
+          minPrice: prices.length > 0 ? Math.min(...prices) : null,
+          priceCount: prices.length,
+          effectiveStatus,
+          saleStartIso: saleWindow.saleStart?.toISOString() ?? null,
+          saleEndIso: saleWindow.saleEnd?.toISOString() ?? null,
+        };
+      })
+      .filter(
+        (d) =>
+          d.effectiveStatus === 'on_sale' || d.effectiveStatus === 'upcoming'
+      )
+      .slice(0, 3);
+  },
+  ['home-now-on-sale'],
+  { revalidate: 300 }
+);
+
+export async function NowOnSaleSection() {
+  const drops = await getNowOnSaleDrops();
 
   if (drops.length === 0) return null;
 
@@ -98,14 +126,7 @@ export async function NowOnSaleSection() {
 
         <div className="grid gap-6 md:grid-cols-3 md:gap-8">
           {drops.map((drop) => {
-            const img = drop.media[0]?.url;
-            const prices =
-              drop.type === 'ticket'
-                ? drop.ticketTiers.map((t) => t.price)
-                : drop.variants.map((v) => v.price);
-            const minPrice = prices.length > 0 ? Math.min(...prices) : null;
             const status = STATUS_LABEL[drop.effectiveStatus];
-            const saleWindow = getDropSaleWindow(drop.ticketTiers);
 
             return (
               <Link
@@ -114,9 +135,9 @@ export async function NowOnSaleSection() {
                 className="group block"
               >
                 <div className="relative aspect-4/5 overflow-hidden rounded-xl bg-neutral-900">
-                  {img ? (
+                  {drop.imgUrl ? (
                     <Image
-                      src={getImageUrl(img, 'public')}
+                      src={getImageUrl(drop.imgUrl, 'public')}
                       alt={drop.title}
                       fill
                       sizes="(min-width: 768px) 33vw, 100vw"
@@ -146,19 +167,19 @@ export async function NowOnSaleSection() {
                       {drop.summary}
                     </p>
                   )}
-                  {(saleWindow.saleStart || saleWindow.saleEnd) && (
+                  {(drop.saleStartIso || drop.saleEndIso) && (
                     <SaleCountdown
                       tone="dark"
-                      saleStartIso={saleWindow.saleStart?.toISOString() ?? null}
-                      saleEndIso={saleWindow.saleEnd?.toISOString() ?? null}
+                      saleStartIso={drop.saleStartIso}
+                      saleEndIso={drop.saleEndIso}
                       className="pt-1"
                     />
                   )}
-                  {minPrice !== null && (
+                  {drop.minPrice !== null && (
                     <p className="pt-1 text-sm font-medium text-white">
-                      {minPrice === 0
+                      {drop.minPrice === 0
                         ? 'FREE'
-                        : `${minPrice.toLocaleString()}원${prices.length > 1 ? '~' : ''}`}
+                        : `${drop.minPrice.toLocaleString()}원${drop.priceCount > 1 ? '~' : ''}`}
                     </p>
                   )}
                 </div>

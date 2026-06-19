@@ -1,9 +1,13 @@
 import { ArrowUpRight } from 'lucide-react';
+import { unstable_cache as next_cache } from 'next/cache';
 import Image from 'next/image';
 import Link from 'next/link';
 import { prisma } from '@/lib/db/prisma';
 import { cn, getImageUrl } from '@/lib/utils';
 import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
+
+// 홈 read-path 캐시(초). featured 토글/발행 변경은 최대 이 시간 후 반영.
+const HOME_REVALIDATE = 300;
 
 // Drop 상태별 CTA 라벨/활성 여부.
 // active=true → 흰색 실 버튼(전환 유도), false → 안내성 라벨.
@@ -22,102 +26,14 @@ function dropCta(status: string): { label: string; active: boolean } {
   }
 }
 
-export async function FeaturedHeroSection() {
-  // 1. featured 후보 조회 (program / article / drop)
-  const featuredProgram = await prisma.program.findFirst({
-    where: { isFeatured: true },
-    orderBy: { updatedAt: 'desc' },
-    select: {
-      slug: true,
-      title: true,
-      heroUrl: true,
-      updatedAt: true,
-      credits: {
-        select: {
-          artist: {
-            select: {
-              name: true,
-              nameKr: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  const featuredArticle = await prisma.article.findFirst({
-    where: { isFeatured: true, publishedAt: { not: null } },
-    orderBy: { updatedAt: 'desc' },
-    select: {
-      slug: true,
-      title: true,
-      cover: true,
-      updatedAt: true,
-    },
-  });
-
-  const featuredDrop = await prisma.drop.findFirst({
-    where: { isFeatured: true, publishedAt: { not: null } },
-    orderBy: { updatedAt: 'desc' },
-    select: {
-      slug: true,
-      title: true,
-      type: true,
-      updatedAt: true,
-      media: {
-        where: { type: 'image' },
-        orderBy: { order: 'asc' },
-        take: 1,
-        select: { url: true },
-      },
-      credits: {
-        select: {
-          artist: {
-            select: {
-              name: true,
-              nameKr: true,
-            },
-          },
-        },
-      },
-      ticketTiers: {
-        select: {
-          saleStart: true,
-          saleEnd: true,
-          soldCount: true,
-          quantity: true,
-        },
-      },
-      variants: { select: { stock: true, soldCount: true } },
-    },
-  });
-
-  // 2. 가장 최근 갱신된 featured 1개 선택 (program / article / drop 상호 배타)
-  type Featured =
-    | { type: 'program'; data: NonNullable<typeof featuredProgram> }
-    | { type: 'article'; data: NonNullable<typeof featuredArticle> }
-    | { type: 'drop'; data: NonNullable<typeof featuredDrop> };
-
-  const candidates: Featured[] = [];
-  if (featuredProgram)
-    candidates.push({ type: 'program', data: featuredProgram });
-  if (featuredArticle)
-    candidates.push({ type: 'article', data: featuredArticle });
-  if (featuredDrop) candidates.push({ type: 'drop', data: featuredDrop });
-
-  let featured: Featured | null =
-    candidates.length > 0
-      ? candidates.reduce((latest, c) =>
-          c.data.updatedAt > latest.data.updatedAt ? c : latest
-        )
-      : null;
-
-  // 3. featured 없으면 upcoming → completed program 폴백 (티켓 유도 우선)
-  if (!featured) {
-    const fallbackProgram =
-      (await prisma.program.findFirst({
-        where: { status: 'upcoming' },
-        orderBy: { startAt: 'asc' },
+// 데이터 조회 + featured 선택 + 렌더 데이터 정규화를 한 번에 캐시.
+// featured 3종(program/article/drop)은 상호 독립이라 Promise.all로 병렬 조회.
+const getFeaturedHero = next_cache(
+  async () => {
+    const [featuredProgram, featuredArticle, featuredDrop] = await Promise.all([
+      prisma.program.findFirst({
+        where: { isFeatured: true },
+        orderBy: { updatedAt: 'desc' },
         select: {
           slug: true,
           title: true,
@@ -127,25 +43,158 @@ export async function FeaturedHeroSection() {
             select: { artist: { select: { name: true, nameKr: true } } },
           },
         },
-      })) ??
-      (await prisma.program.findFirst({
-        where: { status: 'completed' },
-        orderBy: { startAt: 'desc' },
+      }),
+      prisma.article.findFirst({
+        where: { isFeatured: true, publishedAt: { not: null } },
+        orderBy: { updatedAt: 'desc' },
+        select: { slug: true, title: true, cover: true, updatedAt: true },
+      }),
+      prisma.drop.findFirst({
+        where: { isFeatured: true, publishedAt: { not: null } },
+        orderBy: { updatedAt: 'desc' },
         select: {
           slug: true,
           title: true,
-          heroUrl: true,
+          type: true,
           updatedAt: true,
+          media: {
+            where: { type: 'image' },
+            orderBy: { order: 'asc' },
+            take: 1,
+            select: { url: true },
+          },
           credits: {
             select: { artist: { select: { name: true, nameKr: true } } },
           },
+          ticketTiers: {
+            select: {
+              saleStart: true,
+              saleEnd: true,
+              soldCount: true,
+              quantity: true,
+            },
+          },
+          variants: { select: { stock: true, soldCount: true } },
         },
-      }));
+      }),
+    ]);
 
-    if (fallbackProgram) {
-      featured = { type: 'program', data: fallbackProgram };
+    // 가장 최근 갱신된 featured 1개 선택 (program / article / drop 상호 배타)
+    type Featured =
+      | { type: 'program'; data: NonNullable<typeof featuredProgram> }
+      | { type: 'article'; data: NonNullable<typeof featuredArticle> }
+      | { type: 'drop'; data: NonNullable<typeof featuredDrop> };
+
+    const candidates: Featured[] = [];
+    if (featuredProgram)
+      candidates.push({ type: 'program', data: featuredProgram });
+    if (featuredArticle)
+      candidates.push({ type: 'article', data: featuredArticle });
+    if (featuredDrop) candidates.push({ type: 'drop', data: featuredDrop });
+
+    let featured: Featured | null =
+      candidates.length > 0
+        ? candidates.reduce((latest, c) =>
+            c.data.updatedAt > latest.data.updatedAt ? c : latest
+          )
+        : null;
+
+    // featured 없으면 upcoming → completed program 폴백 (티켓 유도 우선)
+    if (!featured) {
+      const fallbackProgram =
+        (await prisma.program.findFirst({
+          where: { status: 'upcoming' },
+          orderBy: { startAt: 'asc' },
+          select: {
+            slug: true,
+            title: true,
+            heroUrl: true,
+            updatedAt: true,
+            credits: {
+              select: { artist: { select: { name: true, nameKr: true } } },
+            },
+          },
+        })) ??
+        (await prisma.program.findFirst({
+          where: { status: 'completed' },
+          orderBy: { startAt: 'desc' },
+          select: {
+            slug: true,
+            title: true,
+            heroUrl: true,
+            updatedAt: true,
+            credits: {
+              select: { artist: { select: { name: true, nameKr: true } } },
+            },
+          },
+        }));
+
+      if (fallbackProgram) {
+        featured = { type: 'program', data: fallbackProgram };
+      }
     }
-  }
+
+    if (!featured) return null;
+
+    // 렌더 데이터 정규화 (직렬화 가능한 primitive만 반환 → 캐시 안전)
+    const slug = featured.data.slug;
+    const title = featured.data.title;
+
+    const creditsOf = (
+      credits: { artist: { name: string | null; nameKr: string | null } }[]
+    ) =>
+      credits
+        .map((c) => c.artist.name || c.artist.nameKr)
+        .filter(Boolean)
+        .join(', ') || undefined;
+
+    let hero: string;
+    let href: string;
+    let artists: string | undefined;
+
+    if (featured.type === 'program') {
+      hero = featured.data.heroUrl
+        ? getImageUrl(featured.data.heroUrl, 'public')
+        : '/images/placeholder.png';
+      href = `/programs/${slug}`;
+      artists = creditsOf(featured.data.credits);
+    } else if (featured.type === 'article') {
+      hero = featured.data.cover
+        ? getImageUrl(featured.data.cover, 'public')
+        : '/images/placeholder.png';
+      href = `/journal/${slug}`;
+    } else {
+      const img = featured.data.media[0]?.url;
+      hero = img ? getImageUrl(img, 'public') : '/images/placeholder.png';
+      href = `/drops/${slug}`;
+      artists = creditsOf(featured.data.credits);
+    }
+
+    // 파생 상태(데이터)만 캐시. UI 라벨은 렌더 시점에 결정(i18n 대비).
+    const dropStatus =
+      featured.type === 'drop'
+        ? getEffectiveDropStatus({
+            type: featured.data.type as 'ticket' | 'goods',
+            ticketTiers: featured.data.ticketTiers,
+            variants: featured.data.variants,
+          })
+        : null;
+
+    return {
+      hero,
+      href,
+      title,
+      artists,
+      featuredType: featured.type,
+      dropStatus,
+    };
+  },
+  ['home-featured-hero'],
+  { revalidate: HOME_REVALIDATE }
+);
+
+export async function FeaturedHeroSection() {
+  const featured = await getFeaturedHero();
 
   if (!featured) {
     return (
@@ -159,49 +208,13 @@ export async function FeaturedHeroSection() {
     );
   }
 
-  // 4. 표시 데이터 정규화
-  const slug = featured.data.slug;
-  const title = featured.data.title;
-
-  const creditsOf = (
-    credits: { artist: { name: string | null; nameKr: string | null } }[]
-  ) =>
-    credits
-      .map((c) => c.artist.name || c.artist.nameKr)
-      .filter(Boolean)
-      .join(', ') || undefined;
-
-  let hero: string;
-  let href: string;
-  let artists: string | undefined;
-  let cta: { label: string; active: boolean };
-
-  if (featured.type === 'program') {
-    hero = featured.data.heroUrl
-      ? getImageUrl(featured.data.heroUrl, 'public')
-      : '/images/placeholder.png';
-    href = `/programs/${slug}`;
-    artists = creditsOf(featured.data.credits);
-    cta = { label: '자세히 보기', active: true };
-  } else if (featured.type === 'article') {
-    hero = featured.data.cover
-      ? getImageUrl(featured.data.cover, 'public')
-      : '/images/placeholder.png';
-    href = `/journal/${slug}`;
-    cta = { label: '읽어보기', active: true };
-  } else {
-    const img = featured.data.media[0]?.url;
-    hero = img ? getImageUrl(img, 'public') : '/images/placeholder.png';
-    href = `/drops/${slug}`;
-    artists = creditsOf(featured.data.credits);
-    cta = dropCta(
-      getEffectiveDropStatus({
-        type: featured.data.type as 'ticket' | 'goods',
-        ticketTiers: featured.data.ticketTiers,
-        variants: featured.data.variants,
-      })
-    );
-  }
+  const { hero, href, title, artists, featuredType, dropStatus } = featured;
+  const cta =
+    featuredType === 'program'
+      ? { label: '자세히 보기', active: true }
+      : featuredType === 'article'
+        ? { label: '읽어보기', active: true }
+        : dropCta(dropStatus ?? '');
 
   return (
     <section className="relative">
