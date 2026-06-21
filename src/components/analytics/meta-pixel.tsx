@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Script from 'next/script';
 import { useEffect, useRef } from 'react';
+import { trackMetaPageView } from '@/lib/analytics/meta-pixel';
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
@@ -19,7 +20,7 @@ export function MetaPixel() {
       isInitialLoad.current = false;
       return;
     }
-    window.fbq?.('track', 'PageView');
+    trackMetaPageView();
   }, [pathname]);
 
   if (!PIXEL_ID) return null;
