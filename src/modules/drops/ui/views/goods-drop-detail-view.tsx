@@ -23,6 +23,7 @@ import { artistInitials, cn, formatArtistName, getImageUrl } from '@/lib/utils';
 import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
 import { GoodsPurchaseSection } from '@/modules/drops/ui/components/goods-purchase-section';
 import { MediaLightbox } from '@/modules/drops/ui/components/media-lightbox';
+import { MobilePurchaseBar } from '@/modules/drops/ui/components/mobile-purchase-bar';
 
 type GoodsVariant = {
   id: string;
@@ -72,23 +73,26 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
+  const variantPrices = drop.variants.map((v) => v.price);
+  const lowestPrice = variantPrices.length ? Math.min(...variantPrices) : 0;
+  // 가격이 실제로 다를 때만 "~"(부터) 표기 — 동일가 옵션(사이즈 등)에선 오해 방지
+  const hasPriceRange =
+    variantPrices.length > 0 && Math.max(...variantPrices) > lowestPrice;
+
   useEffect(() => {
-    const minPrice = drop.variants.length
-      ? Math.min(...drop.variants.map((v) => v.price))
-      : 0;
     trackViewItem({
       id: drop.id,
       name: drop.title,
       category: 'goods',
-      price: minPrice,
+      price: lowestPrice,
     });
     trackMetaViewContent({
       id: drop.id,
       name: drop.title,
       category: 'goods',
-      price: minPrice,
+      price: lowestPrice,
     });
-  }, [drop.id, drop.title, drop.variants]);
+  }, [drop.id, drop.title, lowestPrice]);
 
   // 통합 미디어 목록 — DropMedia 배열 그대로 (관리자가 DnD로 순서 지정)
   const allMedia: DropMedia[] = drop.media;
@@ -249,7 +253,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
           </div>
 
           {/* ── Product Info (right: 2/5) ── */}
-          <div className="lg:basis-2/5">
+          <div id="goods-purchase" className="scroll-mt-6 lg:basis-2/5">
             <div className="py-6 lg:sticky lg:top-0 lg:max-h-screen lg:overflow-auto lg:py-12 lg:pl-8">
               {/* Title & Price */}
               <div className="border-b pb-6">
@@ -467,23 +471,15 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
         onIndexChange={setActiveMediaIndex}
       />
 
-      {/* Mobile Sticky Summary */}
-      {isSaleActive && selected && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white/95 px-4 py-3 backdrop-blur-xs lg:hidden">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-neutral-900">
-                {selected.name} × {quantity}
-              </p>
-              <p className="text-lg font-bold tabular-nums">
-                {(selected.price * quantity).toLocaleString()}원
-              </p>
-            </div>
-            <p className="text-xs text-neutral-400">
-              {SALES_TERMS.scrollToBuyTip}
-            </p>
-          </div>
-        </div>
+      {/* 모바일 전용 하단 예매 바 — 판매중일 때만 (구매 섹션 보이면 자동 숨김) */}
+      {isSaleActive && (
+        <MobilePurchaseBar
+          targetId="goods-purchase"
+          priceLabel={`${lowestPrice.toLocaleString()}원${
+            hasPriceRange ? '~' : ''
+          }`}
+          ctaLabel={SALES_TERMS.ctaPurchase}
+        />
       )}
     </div>
   );

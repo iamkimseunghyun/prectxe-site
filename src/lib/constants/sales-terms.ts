@@ -105,12 +105,6 @@ export function getSalesTerms(locale: Locale = 'ko') {
       'Purchase complete',
       'Reservation complete'
     ),
-    scrollToBuyTip: t(
-      '↑ 위에서 구매',
-      '↑ 위에서 예약',
-      '↑ Buy above',
-      '↑ Reserve above'
-    ),
     // "결제 방식: 무통장 입금 · {여기}로" 패턴에서 가운데만
     afterOrderTo: t(
       '주문 후 안내된 계좌로',
