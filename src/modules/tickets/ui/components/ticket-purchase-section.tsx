@@ -24,6 +24,7 @@ import {
   trackMetaPurchase,
 } from '@/lib/analytics/meta-pixel';
 import { getSalesTerms } from '@/lib/constants/sales-terms';
+import type { EffectiveTierStatus } from '@/lib/utils/ticket-status';
 import { subscribeNewsletter } from '@/modules/email/server/actions';
 import {
   createBankTransferOrder,
@@ -44,6 +45,7 @@ type AvailableTier = {
   soldCount: number;
   maxPerOrder: number;
   remaining: number;
+  status: EffectiveTierStatus;
 };
 
 interface TicketPurchaseSectionProps {
@@ -267,7 +269,11 @@ export function TicketPurchaseSection({
     );
   }
 
-  const lowestPrice = Math.min(...tiers.map((t) => t.price));
+  // "최저가" 안내는 실제 구매 가능한 티어 기준 (없으면 전체 fallback)
+  const onSaleTiers = tiers.filter((t) => t.status === 'on_sale');
+  const lowestPrice = Math.min(
+    ...(onSaleTiers.length > 0 ? onSaleTiers : tiers).map((t) => t.price)
+  );
 
   return (
     <div className="space-y-6">
@@ -290,14 +296,17 @@ export function TicketPurchaseSection({
         {tiers.map((tier) => {
           const qty = quantities[tier.id] || 0;
           const maxQty = Math.min(tier.maxPerOrder, tier.remaining);
-          const isSoldOut = tier.remaining <= 0;
+          // 매진: 재고 소진(현재 세션 실시간 포함). 판매종료: 판매기간 마감.
+          const isSoldOut = tier.status === 'sold_out' || tier.remaining <= 0;
+          const isClosed = tier.status === 'closed';
+          const isInactive = isSoldOut || isClosed;
           const isSelected = qty > 0;
 
           return (
             <div
               key={tier.id}
               className={`rounded-xl border-2 p-5 transition-all ${
-                isSoldOut
+                isInactive
                   ? 'border-neutral-100 bg-neutral-50 opacity-60'
                   : isSelected
                     ? 'border-neutral-900 bg-neutral-50'
@@ -310,11 +319,15 @@ export function TicketPurchaseSection({
                     <p className="text-base font-semibold text-neutral-900">
                       {tier.name}
                     </p>
-                    {isSoldOut && (
+                    {isSoldOut ? (
                       <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-red-600">
                         Sold Out
                       </span>
-                    )}
+                    ) : isClosed ? (
+                      <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-[10px] font-semibold uppercase text-neutral-500">
+                        Closed
+                      </span>
+                    ) : null}
                   </div>
                   {tier.description && (
                     <p className="mt-1 text-sm leading-relaxed text-neutral-500">
@@ -324,13 +337,13 @@ export function TicketPurchaseSection({
                   <p className="mt-2 text-lg font-bold text-neutral-900">
                     {tier.price === 0 ? t('common.free') : fmtPrice(tier.price)}
                   </p>
-                  {!isSoldOut && (
+                  {!isInactive && (
                     <p className="mt-0.5 text-xs text-neutral-400">
                       {t('drops.remaining', { count: tier.remaining })}
                     </p>
                   )}
                 </div>
-                {!isSoldOut && (
+                {!isInactive && (
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
