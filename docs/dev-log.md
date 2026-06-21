@@ -4,9 +4,9 @@
 
 ## 2026-06-21
 
-### 마케팅 트래킹 + 홈/Drops UX 개선 (PR #45~#51)
+### 마케팅 트래킹 + 홈/Drops UX 개선 + 리치 에디터 버그픽스 (PR #45~#53)
 
-하루 동안 PR 사이클(CodeRabbit/Gemini 리뷰 → 머지 → 프로덕션 실측)로 7건 반영.
+하루 동안 PR 사이클(CodeRabbit/Gemini 리뷰 → 머지 → 프로덕션 실측)로 8건 반영.
 
 #### 1. Meta Pixel 설치 + 전환 이벤트 (PR #46)
 - App Router 정석대로 `next/script`(afterInteractive) 기반 `MetaPixel` 컴포넌트 + 루트 레이아웃 배선(GA와 동일하게 `NEXT_PUBLIC_META_PIXEL_ID` env 조건부 렌더).
@@ -25,6 +25,10 @@
 - **가격 "~" 정확화 (#50·#51)**: `variants/tiers.length > 1`만 보면 동일가 옵션(사이즈 등)에서도 "30,000원~"으로 오해 → `hasPriceRange = max > min`으로 실제 가격차 있을 때만 `~`. 티켓·goods 모두 적용.
 
 **리뷰 메모**: CodeRabbit이 며칠째 burst(연속 PR) rate limit에 자주 걸림 — adaptive 한도라 간격 두면 풀림(#45는 통과, 직후 #46 막힘). 막힌 PR은 `/code-review`로 자체 리뷰 대체. Gemini는 7/17 종료 예정이나 유효 지적(이벤트 유실 큐·`object-top` 타입 분기·가격 `~`) 기여. **semantic 충돌 주의**: #47이 `availableTiers`→`onSaleTiers` 리네임 → #49 rebase가 텍스트 충돌 없이 "깨끗하게" 됐지만 빌드 깨짐(type-check가 잡음).
+
+#### 4. 리치 에디터 툴바 폼 제출 버그 (PR #53)
+- 드롭/저널 수정 모드에서 리치 에디터 툴바 버튼(h3·bold·정렬 등) 클릭 시 폼이 제출돼 저장+리다이렉트되던 버그. **원인 = shadcn `Button`이 `type` 기본값을 안 줌** → `<form>` 안에서 HTML 기본값 `type="submit"`으로 동작. `toolbar.tsx`·`image-controls.tsx`의 모든 `<Button>`에 `type="button"` 명시. 공유 컴포넌트라 저널 에디터 동일 버그도 해결.
+- **근본 후속**: `Button` 자체를 `type="button"` 기본값으로 바꾸면 전역 예방되나, 암묵적 submit 의존 폼 제출 버튼이 깨질 수 있어 전체 폼 audit 선행 필요 → 별도 과제.
 
 #### 남은 과제
 - goods 라이브 드롭 오픈 시 모바일 바 실측.
