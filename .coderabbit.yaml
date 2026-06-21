@@ -6,7 +6,7 @@ tone_instructions: >-
   데이터 정합성 문제를 우선하고, 사소한 스타일은 Biome가 잡으니 중복 지적하지 않는다.
 reviews:
   # chill: 핵심 위주(노이즈↓) / assertive: 더 깐깐하게. 필요 시 전환.
-  profile: chill
+  profile: assertive
   request_changes_workflow: false
   high_level_summary: true
   poem: false
