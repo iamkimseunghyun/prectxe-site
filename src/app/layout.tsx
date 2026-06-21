@@ -116,8 +116,10 @@ export default async function RootLayout({
 }>) {
   const locale = await getLocale();
 
+  // scrollbar-gutter: stable — 스크롤바 자리 항상 확보(레이아웃 흔들림 방지)하되
+  // overflow-y-scroll와 달리 스크롤 컨테이너를 안 만들어 position:sticky를 깨지 않음
   return (
-    <html lang={locale} className="overflow-y-scroll">
+    <html lang={locale} className="[scrollbar-gutter:stable]">
       <body
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
       >
