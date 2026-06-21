@@ -17,6 +17,7 @@ import { LocaleSwitcher } from '@/components/shared/locale-switcher';
 import { ShareButton } from '@/components/shared/share-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { trackViewItem } from '@/lib/analytics/gtag';
+import { trackMetaViewContent } from '@/lib/analytics/meta-pixel';
 import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { artistInitials, cn, formatArtistName, getImageUrl } from '@/lib/utils';
 import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
@@ -76,6 +77,12 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
       ? Math.min(...drop.variants.map((v) => v.price))
       : 0;
     trackViewItem({
+      id: drop.id,
+      name: drop.title,
+      category: 'goods',
+      price: minPrice,
+    });
+    trackMetaViewContent({
       id: drop.id,
       name: drop.title,
       category: 'goods',

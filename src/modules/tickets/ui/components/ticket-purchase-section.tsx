@@ -19,6 +19,10 @@ import {
   trackBeginCheckout,
   trackPurchase,
 } from '@/lib/analytics/gtag';
+import {
+  trackMetaInitiateCheckout,
+  trackMetaPurchase,
+} from '@/lib/analytics/meta-pixel';
 import { getSalesTerms } from '@/lib/constants/sales-terms';
 import { subscribeNewsletter } from '@/modules/email/server/actions';
 import {
@@ -133,6 +137,7 @@ export function TicketPurchaseSection({
     setIsProcessing(true);
 
     trackBeginCheckout(totalAmount, gaItems);
+    trackMetaInitiateCheckout(totalAmount, gaItems);
 
     try {
       // 무료 티켓 — 카드/무통장 흐름 우회, 즉시 주문 생성 + 무료 검증
@@ -155,6 +160,11 @@ export function TicketPurchaseSection({
         const verifyResult = await verifyPayment(order.id, `free-${order.id}`);
         if (verifyResult.success) {
           trackPurchase({
+            transactionId: `free-${order.id}`,
+            value: 0,
+            items: gaItems,
+          });
+          trackMetaPurchase({
             transactionId: `free-${order.id}`,
             value: 0,
             items: gaItems,
@@ -198,6 +208,11 @@ export function TicketPurchaseSection({
 
       const data = result.data!;
       trackPurchase({
+        transactionId: data.orderNo,
+        value: data.totalAmount,
+        items: gaItems,
+      });
+      trackMetaPurchase({
         transactionId: data.orderNo,
         value: data.totalAmount,
         items: gaItems,

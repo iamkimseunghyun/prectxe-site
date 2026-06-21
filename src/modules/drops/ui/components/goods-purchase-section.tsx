@@ -12,13 +12,17 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { useToast } from '@/hooks/use-toast';
 import {
   type GAItem,
   trackBeginCheckout,
   trackPurchase,
 } from '@/lib/analytics/gtag';
+import {
+  trackMetaInitiateCheckout,
+  trackMetaPurchase,
+} from '@/lib/analytics/meta-pixel';
+import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import {
   createGoodsOrder,
   verifyPayment,
@@ -75,6 +79,7 @@ export function GoodsPurchaseSection({
     setIsProcessing(true);
 
     trackBeginCheckout(totalAmount, gaItems);
+    trackMetaInitiateCheckout(totalAmount, gaItems);
 
     try {
       const orderResult = await createGoodsOrder(dropId, {
@@ -96,6 +101,11 @@ export function GoodsPurchaseSection({
         const verifyResult = await verifyPayment(order.id, `free-${order.id}`);
         if (verifyResult.success) {
           trackPurchase({
+            transactionId: `free-${order.id}`,
+            value: 0,
+            items: gaItems,
+          });
+          trackMetaPurchase({
             transactionId: `free-${order.id}`,
             value: 0,
             items: gaItems,
@@ -138,6 +148,11 @@ export function GoodsPurchaseSection({
       const verifyResult = await verifyPayment(order.id, payment.paymentId);
       if (verifyResult.success) {
         trackPurchase({
+          transactionId: payment.paymentId,
+          value: totalAmount,
+          items: gaItems,
+        });
+        trackMetaPurchase({
           transactionId: payment.paymentId,
           value: totalAmount,
           items: gaItems,

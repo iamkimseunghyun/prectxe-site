@@ -13,6 +13,7 @@ import { ShareButton } from '@/components/shared/share-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Locale } from '@/i18n/config';
 import { trackViewItem } from '@/lib/analytics/gtag';
+import { trackMetaViewContent } from '@/lib/analytics/meta-pixel';
 import {
   artistInitials,
   formatArtistName,
@@ -94,6 +95,12 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
       ? Math.min(...drop.ticketTiers.map((t) => t.price))
       : 0;
     trackViewItem({
+      id: drop.id,
+      name: drop.title,
+      category: 'ticket',
+      price: minPrice,
+    });
+    trackMetaViewContent({
       id: drop.id,
       name: drop.title,
       category: 'ticket',
