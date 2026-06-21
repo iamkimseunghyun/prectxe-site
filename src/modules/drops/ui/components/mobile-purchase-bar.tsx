@@ -49,6 +49,8 @@ export function MobilePurchaseBar({
         sectionVisible ? 'translate-y-[calc(100%+2rem)]' : 'translate-y-0'
       }`}
       style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+      // transform으로만 숨기면 DOM엔 남아 키보드 포커스가 잡힘 → 숨김 시 a11y 제외
+      aria-hidden={sectionVisible}
     >
       <div className="mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl border border-neutral-200/70 bg-white/85 px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl">
         <div className="min-w-0">
@@ -64,6 +66,7 @@ export function MobilePurchaseBar({
         <button
           type="button"
           onClick={scrollToPurchase}
+          tabIndex={sectionVisible ? -1 : 0}
           className="inline-flex shrink-0 items-center gap-1 rounded-full bg-neutral-900 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-700"
         >
           {ctaLabel}
