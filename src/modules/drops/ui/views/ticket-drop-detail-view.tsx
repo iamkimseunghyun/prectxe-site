@@ -117,6 +117,11 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
   }));
   // 가격 미리보기·티켓 개수는 실제 판매중 티어 기준
   const onSaleTiers = tiersWithStatus.filter((t) => t.status === 'on_sale');
+  // 가격이 실제로 다를 때만 "~"(부터) 표기 — 동일가 티어에선 오해 방지
+  const onSalePrices = onSaleTiers.map((tier) => tier.price);
+  const hasPriceRange =
+    onSalePrices.length > 0 &&
+    Math.max(...onSalePrices) > Math.min(...onSalePrices);
   // 구매 섹션에 노출할 티어: 판매중 + 매진 + 판매종료 (오픈예정은 숨김).
   // 살아있는(on_sale) 티어를 맨 위로, 종료/매진은 회색으로 아래에.
   const visibleTiers = tiersWithStatus
@@ -275,8 +280,8 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
             {onSaleTiers.length > 0 && !isClosed && !isSoldOut && (
               <div className="mt-8 flex items-center gap-4">
                 <span className="text-2xl font-bold tabular-nums sm:text-3xl">
-                  {fmtPrice(Math.min(...onSaleTiers.map((tier) => tier.price)))}
-                  {onSaleTiers.length > 1 ? ' ~' : ''}
+                  {fmtPrice(Math.min(...onSalePrices))}
+                  {hasPriceRange ? ' ~' : ''}
                 </span>
                 <span className="rounded-full border border-white/20 px-4 py-1.5 text-sm text-white/60">
                   {t('ticketCount', { count: onSaleTiers.length })}
@@ -410,9 +415,9 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
       {effectiveStatus === 'on_sale' && onSaleTiers.length > 0 && (
         <MobilePurchaseBar
           targetId="ticket-purchase"
-          priceLabel={`${fmtPrice(
-            Math.min(...onSaleTiers.map((tier) => tier.price))
-          )}${onSaleTiers.length > 1 ? '~' : ''}`}
+          priceLabel={`${fmtPrice(Math.min(...onSalePrices))}${
+            hasPriceRange ? '~' : ''
+          }`}
           ctaLabel={getSalesTerms(locale).ctaPurchase}
         />
       )}
