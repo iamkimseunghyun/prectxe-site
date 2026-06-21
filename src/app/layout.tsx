@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale } from 'next-intl/server';
 import type React from 'react';
+import { MetaPixel } from '@/components/analytics/meta-pixel';
 import { Footer } from '@/components/layout/footer';
 import Header from '@/components/layout/header';
 import { PublicHeader } from '@/components/layout/public-header';
@@ -134,6 +135,7 @@ export default async function RootLayout({
           </Providers>
         </NextIntlClientProvider>
         {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
+        <MetaPixel />
       </body>
     </html>
   );
