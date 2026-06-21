@@ -475,6 +475,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
       {isSaleActive && (
         <MobilePurchaseBar
           targetId="goods-purchase"
+          eyebrow="Goods"
           priceLabel={`${lowestPrice.toLocaleString()}원${
             hasPriceRange ? '~' : ''
           }`}

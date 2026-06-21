@@ -415,6 +415,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
       {effectiveStatus === 'on_sale' && onSaleTiers.length > 0 && (
         <MobilePurchaseBar
           targetId="ticket-purchase"
+          eyebrow="Tickets"
           priceLabel={`${fmtPrice(Math.min(...onSalePrices))}${
             hasPriceRange ? '~' : ''
           }`}
