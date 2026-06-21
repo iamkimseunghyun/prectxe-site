@@ -228,7 +228,7 @@ export async function FeaturedHeroSection() {
               fill
               priority
               sizes="100vw"
-              className="object-cover"
+              className="object-cover object-top"
             />
             {/* 어두운 그라디언트 오버레이 — 대비 개선 */}
             <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
