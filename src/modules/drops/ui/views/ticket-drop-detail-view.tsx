@@ -108,12 +108,22 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
     });
   }, [drop.id, drop.title, drop.ticketTiers]);
 
-  const availableTiers = drop.ticketTiers
-    .filter((t) => getEffectiveTierStatus(t) === 'on_sale')
-    .map((t) => ({
-      ...t,
-      remaining: t.quantity - t.soldCount,
-    }));
+  const tiersWithStatus = drop.ticketTiers.map((t) => ({
+    ...t,
+    status: getEffectiveTierStatus(t),
+    remaining: t.quantity - t.soldCount,
+  }));
+  // 가격 미리보기·티켓 개수는 실제 판매중 티어 기준
+  const onSaleTiers = tiersWithStatus.filter((t) => t.status === 'on_sale');
+  // 구매 섹션에 노출할 티어: 판매중 + 매진 + 판매종료 (오픈예정은 숨김).
+  // 살아있는(on_sale) 티어를 맨 위로, 종료/매진은 회색으로 아래에.
+  const visibleTiers = tiersWithStatus
+    .filter((t) => t.status !== 'scheduled')
+    .sort((a, b) => {
+      if (a.status === 'on_sale' && b.status !== 'on_sale') return -1;
+      if (a.status !== 'on_sale' && b.status === 'on_sale') return 1;
+      return 0;
+    });
 
   const effectiveStatus = getEffectiveDropStatus({
     type: 'ticket',
@@ -260,16 +270,14 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
             ) : null}
 
             {/* Price preview */}
-            {availableTiers.length > 0 && !isClosed && !isSoldOut && (
+            {onSaleTiers.length > 0 && !isClosed && !isSoldOut && (
               <div className="mt-8 flex items-center gap-4">
                 <span className="text-2xl font-bold tabular-nums sm:text-3xl">
-                  {fmtPrice(
-                    Math.min(...availableTiers.map((tier) => tier.price))
-                  )}
-                  {availableTiers.length > 1 ? ' ~' : ''}
+                  {fmtPrice(Math.min(...onSaleTiers.map((tier) => tier.price)))}
+                  {onSaleTiers.length > 1 ? ' ~' : ''}
                 </span>
                 <span className="rounded-full border border-white/20 px-4 py-1.5 text-sm text-white/60">
-                  {t('ticketCount', { count: availableTiers.length })}
+                  {t('ticketCount', { count: onSaleTiers.length })}
                 </span>
               </div>
             )}
@@ -380,7 +388,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                   <TicketPurchaseSection
                     dropId={drop.id}
                     title={drop.title}
-                    tiers={availableTiers}
+                    tiers={visibleTiers}
                   />
                 )}
               </div>
