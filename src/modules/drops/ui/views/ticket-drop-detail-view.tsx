@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Locale } from '@/i18n/config';
 import { trackViewItem } from '@/lib/analytics/gtag';
 import { trackMetaViewContent } from '@/lib/analytics/meta-pixel';
+import { getSalesTerms } from '@/lib/constants/sales-terms';
 import {
   artistInitials,
   formatArtistName,
@@ -26,6 +27,7 @@ import {
   getEffectiveTierStatus,
 } from '@/lib/utils/ticket-status';
 import { MediaLightbox } from '@/modules/drops/ui/components/media-lightbox';
+import { MobilePurchaseBar } from '@/modules/drops/ui/components/mobile-purchase-bar';
 import { TicketPurchaseSection } from '@/modules/tickets/ui/components/ticket-purchase-section';
 
 type TicketTier = {
@@ -368,7 +370,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
             </div>
 
             {/* Ticket Purchase (right: 2/5) */}
-            <div className="lg:col-span-4">
+            <div id="ticket-purchase" className="scroll-mt-6 lg:col-span-4">
               <div className="lg:sticky lg:top-8">
                 {isClosed ? (
                   <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-6 py-12 text-center">
@@ -403,6 +405,17 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
         onClose={() => setLightboxIndex(null)}
         onIndexChange={setLightboxIndex}
       />
+
+      {/* 모바일 전용 하단 예매 바 — 판매중일 때만 (종료/매진/오픈예정은 히어로·하단 카드가 안내) */}
+      {effectiveStatus === 'on_sale' && onSaleTiers.length > 0 && (
+        <MobilePurchaseBar
+          targetId="ticket-purchase"
+          priceLabel={`${fmtPrice(
+            Math.min(...onSaleTiers.map((tier) => tier.price))
+          )}${onSaleTiers.length > 1 ? '~' : ''}`}
+          ctaLabel={getSalesTerms(locale).ctaPurchase}
+        />
+      )}
     </div>
   );
 }
