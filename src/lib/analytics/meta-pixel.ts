@@ -12,6 +12,7 @@ declare global {
 }
 
 const CURRENCY = 'KRW';
+const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
 type QueuedEvent = { event: string; params?: Record<string, unknown> };
 
@@ -43,6 +44,8 @@ function flushWhenReady() {
 }
 
 function track(event: string, params?: Record<string, unknown>) {
+  // Pixel 미설정이면 추적·큐·폴링 전부 생략 (MetaPixel 컴포넌트도 렌더 안 됨)
+  if (!PIXEL_ID) return;
   if (typeof window === 'undefined') return;
   if (window.fbq) {
     window.fbq('track', event, params);
