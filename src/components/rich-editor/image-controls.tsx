@@ -62,6 +62,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
         </span>
 
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => setImageWidth('33%')}
@@ -70,6 +71,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
           <Minimize2 className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => setImageWidth('50%')}
@@ -78,6 +80,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
           <span className="text-xs font-medium">50%</span>
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => setImageWidth('75%')}
@@ -86,6 +89,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
           <span className="text-xs font-medium">75%</span>
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => setImageWidth('100%')}
@@ -97,6 +101,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
         <div className="h-6 w-px bg-border mx-1" />
 
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => setImageAlign('left')}
@@ -105,6 +110,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
           <AlignLeft className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => setImageAlign('center')}
@@ -113,6 +119,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
           <AlignCenter className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => setImageAlign('right')}
@@ -124,6 +131,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
         <div className="h-6 w-px bg-border mx-1" />
 
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={deleteImage}
