@@ -73,9 +73,11 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const lowestPrice = drop.variants.length
-    ? Math.min(...drop.variants.map((v) => v.price))
-    : 0;
+  const variantPrices = drop.variants.map((v) => v.price);
+  const lowestPrice = variantPrices.length ? Math.min(...variantPrices) : 0;
+  // 가격이 실제로 다를 때만 "~"(부터) 표기 — 동일가 옵션(사이즈 등)에선 오해 방지
+  const hasPriceRange =
+    variantPrices.length > 0 && Math.max(...variantPrices) > lowestPrice;
 
   useEffect(() => {
     trackViewItem({
@@ -474,7 +476,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
         <MobilePurchaseBar
           targetId="goods-purchase"
           priceLabel={`${lowestPrice.toLocaleString()}원${
-            drop.variants.length > 1 ? '~' : ''
+            hasPriceRange ? '~' : ''
           }`}
           ctaLabel={SALES_TERMS.ctaPurchase}
         />
