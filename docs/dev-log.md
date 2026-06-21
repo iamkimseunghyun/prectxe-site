@@ -2,6 +2,37 @@
 
 > 이전 기록은 [dev-log-archive.md](dev-log-archive.md) 참조
 
+## 2026-06-21
+
+### 마케팅 트래킹 + 홈/Drops UX 개선 (PR #45~#51)
+
+하루 동안 PR 사이클(CodeRabbit/Gemini 리뷰 → 머지 → 프로덕션 실측)로 7건 반영.
+
+#### 1. Meta Pixel 설치 + 전환 이벤트 (PR #46)
+- App Router 정석대로 `next/script`(afterInteractive) 기반 `MetaPixel` 컴포넌트 + 루트 레이아웃 배선(GA와 동일하게 `NEXT_PUBLIC_META_PIXEL_ID` env 조건부 렌더).
+- `meta-pixel.ts`가 `gtag.ts` 미러링 — ViewContent/InitiateCheckout/Purchase를 기존 drops/tickets 구매 흐름 호출부에 병행 발사.
+- **이벤트 유실 방지 큐**: 광고로 상세 페이지 직접 랜딩 시 afterInteractive 스텁 초기화 전 호출된 이벤트가 유실될 수 있어, `window.fbq` 준비될 때까지 큐잉 후 flush(10s 타임아웃). **PIXEL_ID 미설정 시 추적 전체 no-op 게이트**(에러 없이 조용히 꺼짐).
+- **SPA PageView**: 인라인 스크립트가 최초 1회, `usePathname` 변경마다 재발사(`@next/third-parties` GA와 달리 Meta는 자동 안 됨).
+- **함정**: `NEXT_PUBLIC_*`는 빌드 인라인 → Vercel env 추가 **후 재배포**해야 적용. 머지 직후 옛 빌드엔 안 잡혀 프로덕션에서 `fbq` undefined였다가, 재배포 후 `facebook.com/tr?ev=PageView` 200 발사 **실측 확인**.
+
+#### 2. 홈 히어로 크롭 (PR #45)
+- featured 히어로 `object-cover`에 `object-top` 추가. 고정 높이 + 반응형 폭이라 브레이크포인트마다 크롭 영역이 달라 인물 얼굴이 잘리던 문제 완화(상단 기준 크롭). `object-contain`(전체 표시)은 레터박스·텍스트 오버레이 붕괴·임팩트 상실로 비채택. 후속 정밀 제어는 focal point 필드 과제로 남김.
+
+#### 3. Drops 구매 UX (PR #47~#51, 티켓·goods 양쪽 일관화)
+- **종료·매진 티어 노출 (#47)**: on_sale만 표시 → 매진(`Sold Out`)·판매종료(`Closed`) 티어도 회색+라벨로 남기고 구매 컨트롤만 비활성. on_sale을 맨 위 정렬, 오픈예정(scheduled)은 계속 숨김. 드롭 전체 종료/매진이면 기존 통합 카드 유지.
+- **데스크톱 sticky 복구 (#48)**: 구매 위젯에 `lg:sticky`가 있는데도 본문 따라 밀려 올라감. **원인 = `<html className="overflow-y-scroll">`** — viewport overflow propagation이 html/body를 스크롤 컨테이너로 만들어 자손 `position:sticky` 무효화. `scrollbar-gutter:stable`로 교체(스크롤바 자리 확보 효과 유지, 스크롤 컨테이너 미생성). 프로덕션 실측: 위젯 top −654 → **32px 고정**.
+- **모바일 하단 예매 바 (#49 티켓, #50 goods)**: 구매 섹션이 페이지 맨 아래(~9,800px)라 모바일 전환 누수 → `MobilePurchaseBar`(최저가 + 예약 CTA, `lg:hidden`). IntersectionObserver로 구매 섹션이 보이면 자동 숨김(내부 CTA와 비충돌), iOS `safe-area-inset-bottom` 대응. 티켓은 프로덕션 실측 완료(표시/숨김/`lg:hidden`), goods는 라이브 드롭 없어 동일 컴포넌트 재사용으로 갈음.
+- **가격 "~" 정확화 (#50·#51)**: `variants/tiers.length > 1`만 보면 동일가 옵션(사이즈 등)에서도 "30,000원~"으로 오해 → `hasPriceRange = max > min`으로 실제 가격차 있을 때만 `~`. 티켓·goods 모두 적용.
+
+**리뷰 메모**: CodeRabbit이 며칠째 burst(연속 PR) rate limit에 자주 걸림 — adaptive 한도라 간격 두면 풀림(#45는 통과, 직후 #46 막힘). 막힌 PR은 `/code-review`로 자체 리뷰 대체. Gemini는 7/17 종료 예정이나 유효 지적(이벤트 유실 큐·`object-top` 타입 분기·가격 `~`) 기여. **semantic 충돌 주의**: #47이 `availableTiers`→`onSaleTiers` 리네임 → #49 rebase가 텍스트 충돌 없이 "깨끗하게" 됐지만 빌드 깨짐(type-check가 잡음).
+
+#### 남은 과제
+- goods 라이브 드롭 오픈 시 모바일 바 실측.
+- goods 상세 EN 로케일: LocaleSwitcher는 있으나 용어·가격 ko 고정(기존부터) → 별도 i18n.
+- 히어로 focal point 필드, Meta 도메인 인증(광고 AEM).
+
+---
+
 ## 2026-06-19
 
 ### 보안 감사 + DB 성능 점검 (대규모 하드닝)
