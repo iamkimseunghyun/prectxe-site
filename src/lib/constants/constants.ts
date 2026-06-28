@@ -9,7 +9,8 @@ export const categories = [
   { value: 'workshop', label: '워크숍' },
 ] as const;
 
-export const MAX_FILE_SIZE = 50 * 10240 * 10240; // 50MB
+// Cloudflare Images 업로드 하드 리밋(20,000,000 bytes)에 맞춤
+export const MAX_FILE_SIZE = 20 * 1000 * 1000; // 20MB
 export const ALLOWED_FILE_TYPES = [
   'image/jpeg',
   'image/jpg',
