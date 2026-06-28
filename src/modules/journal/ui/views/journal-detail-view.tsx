@@ -53,7 +53,7 @@ export async function JournalDetailView({ slug }: { slug: string }) {
 
       {article.body && (
         <section
-          className="prose prose-neutral dark:prose-invert max-w-none [&_img]:h-auto [&_img]:w-full [&_img]:rounded-lg [&_img]:bg-neutral-100 [&_iframe]:aspect-video [&_iframe]:h-auto [&_iframe]:w-full [&_iframe]:rounded-lg [&_pre]:overflow-x-auto"
+          className="prose prose-neutral dark:prose-invert max-w-none [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-lg [&_img]:bg-neutral-100 [&_iframe]:aspect-video [&_iframe]:h-auto [&_iframe]:w-full [&_iframe]:rounded-lg [&_pre]:overflow-x-auto"
           // biome-ignore lint/security/noDangerouslySetInnerHtml: admin-authored rich text from TipTap editor
           dangerouslySetInnerHTML={{ __html: article.body }}
         />
