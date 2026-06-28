@@ -30,7 +30,7 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
   const end = program.endAt ? new Date(program.endAt) : (start ?? undefined);
 
   return (
-    <article className="relative mx-auto max-w-4xl px-4 py-8">
+    <article className="relative mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <BackButton />
       <ProgramSchema
         program={{
@@ -59,7 +59,7 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
       )}
       <header className="mb-8">
         <div className="flex items-start justify-between gap-4">
-          <h1 className="text-3xl font-bold">{program.title}</h1>
+          <h1 className="text-3xl font-bold sm:text-4xl">{program.title}</h1>
           <CopyUrlButton className="mt-1.5 shrink-0 text-neutral-400 transition-colors hover:text-neutral-600" />
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-neutral-500">
@@ -73,7 +73,7 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
       </header>
 
       {program.description && (
-        <p className="mb-12 whitespace-pre-line leading-relaxed text-neutral-700">
+        <p className="mb-12 whitespace-pre-line break-words leading-relaxed text-neutral-700">
           {program.description}
         </p>
       )}

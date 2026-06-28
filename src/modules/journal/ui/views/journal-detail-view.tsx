@@ -21,7 +21,7 @@ export async function JournalDetailView({ slug }: { slug: string }) {
     : undefined;
 
   return (
-    <article className="relative mx-auto max-w-3xl px-4 py-10">
+    <article className="relative mx-auto max-w-3xl px-4 py-10 sm:px-6">
       <BackButton />
       <ArticleSchema
         article={{
@@ -44,7 +44,7 @@ export async function JournalDetailView({ slug }: { slug: string }) {
         />
       </div>
       <header className="mb-6">
-        <h1 className="text-3xl font-bold">{article.title}</h1>
+        <h1 className="text-3xl font-bold sm:text-4xl">{article.title}</h1>
         <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
           {date && <span>{date}</span>}
           <CopyUrlButton className="ml-auto text-xs text-neutral-400 hover:text-neutral-600" />
@@ -53,7 +53,7 @@ export async function JournalDetailView({ slug }: { slug: string }) {
 
       {article.body && (
         <section
-          className="prose prose-neutral dark:prose-invert max-w-none [&_img]:aspect-video [&_img]:w-full [&_img]:rounded-lg [&_img]:bg-neutral-100 [&_img]:object-cover"
+          className="prose prose-neutral dark:prose-invert max-w-none [&_img]:h-auto [&_img]:w-full [&_img]:rounded-lg [&_img]:bg-neutral-100 [&_iframe]:aspect-video [&_iframe]:w-full [&_iframe]:rounded-lg [&_pre]:overflow-x-auto"
           // biome-ignore lint/security/noDangerouslySetInnerHtml: admin-authored rich text from TipTap editor
           dangerouslySetInnerHTML={{ __html: article.body }}
         />
