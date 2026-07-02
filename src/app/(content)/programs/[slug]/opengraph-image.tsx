@@ -89,6 +89,7 @@ export default async function OGImage({
     >
       {/* Background image */}
       {heroSrc && (
+        // biome-ignore lint/performance/noImgElement: next/og ImageResponse (Satori) only supports raw <img>, not next/image
         <img
           src={heroSrc}
           alt=""

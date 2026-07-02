@@ -24,7 +24,10 @@ const ArtistSchema = ({ artist }: { artist: ArtistForSEO }) => {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(clean) }}
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data injection
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(clean).replace(/</g, '\\u003c'),
+      }}
     />
   );
 };

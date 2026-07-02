@@ -32,6 +32,7 @@ export function PublicHeader() {
   }, []);
 
   // 경로 변경 시 오버레이 닫기
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname is the trigger — effect closes the overlay on route change
   useEffect(() => {
     setOpen(false);
   }, [pathname]);

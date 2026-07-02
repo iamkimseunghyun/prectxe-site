@@ -15,7 +15,9 @@ export function ProgramFilters({ pathname }: { pathname: string }) {
     const hasLegacy = legacyParams.some((k) => searchParams.has(k));
     if (!hasLegacy) return;
     const params = new URLSearchParams(searchParams);
-    legacyParams.forEach((k) => params.delete(k));
+    legacyParams.forEach((k) => {
+      params.delete(k);
+    });
     router.replace(`/${pathname}?${params.toString()}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, router, searchParams]);

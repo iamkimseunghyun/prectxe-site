@@ -34,6 +34,7 @@ export default function FormNotification({
               <Text style={paragraph}>안녕하세요 {recipientName}님,</Text>
             )}
             <Text style={paragraph}>{formTitle} 관련하여 알려드립니다.</Text>
+            {/* biome-ignore lint/security/noDangerouslySetInnerHtml: 어드민이 작성한 신뢰된 이메일 본문 HTML을 그대로 렌더 */}
             <div dangerouslySetInnerHTML={{ __html: message }} />
             <Text style={footer}>이 메일은 PRECTXE에서 발송되었습니다.</Text>
           </Section>
@@ -73,18 +74,6 @@ const paragraph = {
   lineHeight: '24px',
   textAlign: 'left' as const,
   marginBottom: '16px',
-};
-
-const messageText = {
-  color: '#0a0a0a',
-  fontSize: '16px',
-  lineHeight: '24px',
-  textAlign: 'left' as const,
-  marginBottom: '24px',
-  padding: '16px',
-  backgroundColor: '#f6f9fc',
-  borderRadius: '4px',
-  whiteSpace: 'pre-wrap' as const,
 };
 
 const footer = {

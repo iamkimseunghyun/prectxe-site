@@ -3,7 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useMemo } from 'react';
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
-import { ProgramCard } from '@/modules/programs/ui/components/program-card';
+import {
+  ProgramCard,
+  type ProgramCardModel,
+} from '@/modules/programs/ui/components/program-card';
 
 type Item = {
   id: string;
@@ -48,7 +51,7 @@ export function ProgramGridInfinite({
     return p;
   }, [query.status, query.type, query.city, query.search]);
 
-  const { items, isLoading, isLastPage, trigger } = useInfiniteScroll<Item>({
+  const { items, isLoading, trigger } = useInfiniteScroll<Item>({
     initialData: initialItems,
     pageSize: 12,
     fetchFunction: (page) => fetchPage(baseQuery, page + 1), // next page
@@ -70,8 +73,8 @@ export function ProgramGridInfinite({
                 title: p.title,
                 summary: p.summary,
                 heroUrl: p.heroUrl ?? undefined,
-                status: p.status as any,
-                type: p.type as any,
+                status: p.status as ProgramCardModel['status'],
+                type: p.type as ProgramCardModel['type'],
                 startAt: p.startAt,
                 endAt: p.endAt ?? undefined,
                 city: p.city ?? undefined,

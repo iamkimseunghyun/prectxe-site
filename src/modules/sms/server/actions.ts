@@ -3,11 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
-import {
-  filterValidPhoneNumbers,
-  normalizePhoneNumber,
-  sendSMS,
-} from '@/lib/sms/provider';
+import { filterValidPhoneNumbers, sendSMS } from '@/lib/sms/provider';
 
 /**
  * Form 응답자의 전화번호 추출

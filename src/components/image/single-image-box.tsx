@@ -4,6 +4,8 @@ import { ImagePlus } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import type {
   ControllerRenderProps,
+  FieldValues,
+  RefCallBack,
   UseFormRegisterReturn,
 } from 'react-hook-form';
 
@@ -15,8 +17,8 @@ interface ImagePreview {
 // Accept either RHF register return or controller field, or a minimal shape used here
 type RegisterType =
   | UseFormRegisterReturn
-  | ControllerRenderProps<any, string>
-  | { name: string; onBlur: () => void; ref: any };
+  | ControllerRenderProps<FieldValues, string>
+  | { name: string; onBlur: () => void; ref: RefCallBack };
 
 interface SingleImageSectionProps {
   register: RegisterType;

@@ -5,7 +5,10 @@ import {
   getArticleBySlug,
   updateArticle,
 } from '@/modules/journal/server/actions';
-import { JournalFormView } from '@/modules/journal/ui/views/journal-form-view';
+import {
+  type JournalFormPayload,
+  JournalFormView,
+} from '@/modules/journal/ui/views/journal-form-view';
 
 export default async function Page({
   params,
@@ -23,11 +26,11 @@ export default async function Page({
   ]);
   if (!article) redirect('/admin/journal');
 
-  async function onSubmit(formData: any) {
+  async function onSubmit(formData: JournalFormPayload) {
     'use server';
     const session = await getSession();
     if (!session.id) redirect('/');
-    const { intent, ...data } = formData || {};
+    const { intent, ...data } = formData;
     const res = await updateArticle(slug, data);
     if (res?.success) {
       if (intent === 'continue')
@@ -37,7 +40,7 @@ export default async function Page({
     }
     return {
       success: false,
-      error: (res as any)?.error ?? '저장에 실패했습니다.',
+      error: res.error ?? '저장에 실패했습니다.',
     };
   }
 

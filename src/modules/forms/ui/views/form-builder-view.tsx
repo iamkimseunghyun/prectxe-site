@@ -94,7 +94,6 @@ export function FormBuilderView({
   const title = watch('title');
   const description = watch('description');
   const body = watch('body');
-  const slug = watch('slug');
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -518,8 +517,8 @@ export function FormBuilderView({
                             />
                           </SelectTrigger>
                           <SelectContent>
-                            {field.options?.map((opt, i) => (
-                              <SelectItem key={i} value={opt}>
+                            {field.options?.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
                                 {opt}
                               </SelectItem>
                             ))}
@@ -528,8 +527,8 @@ export function FormBuilderView({
                       )}
                       {field.type === 'radio' && (
                         <div className="space-y-2">
-                          {field.options?.map((opt, i) => (
-                            <div key={i} className="flex items-center gap-2">
+                          {field.options?.map((opt) => (
+                            <div key={opt} className="flex items-center gap-2">
                               <input
                                 type="radio"
                                 disabled
@@ -542,8 +541,8 @@ export function FormBuilderView({
                       )}
                       {field.type === 'checkbox' && (
                         <div className="space-y-2">
-                          {field.options?.map((opt, i) => (
-                            <div key={i} className="flex items-center gap-2">
+                          {field.options?.map((opt) => (
+                            <div key={opt} className="flex items-center gap-2">
                               <input
                                 type="checkbox"
                                 disabled

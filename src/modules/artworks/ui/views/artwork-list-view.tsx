@@ -2,8 +2,8 @@ import { Suspense } from 'react';
 import GridSkeleton from '@/components/layout/skeleton/grid-skeleton';
 import { PAGINATION } from '@/lib/constants/constants';
 import { getArtworksPage } from '@/modules/artworks/server/actions';
-import { ArtworkSearchBar } from '@/modules/artworks/ui/components/artwork-search-bar';
 import ArtworkGridSection from '@/modules/artworks/ui/components/artwork-grid-section';
+import { ArtworkSearchBar } from '@/modules/artworks/ui/components/artwork-search-bar';
 
 interface ArtworkListViewProps {
   searchQuery?: string;

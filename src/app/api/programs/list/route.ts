@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { listProgramsPaged } from '@/modules/programs/server/actions';
+import {
+  listProgramsPaged,
+  type ProgramStatusFilter,
+} from '@/modules/programs/server/actions';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -12,7 +15,7 @@ export async function GET(req: Request) {
 
   try {
     const data = await listProgramsPaged({
-      status: status as any,
+      status: status as ProgramStatusFilter | undefined,
       type,
       city,
       search,

@@ -108,8 +108,8 @@ export function FormPreviewDialog({
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      {field.options.map((option, idx) => (
-                        <SelectItem key={idx} value={option}>
+                      {field.options.map((option) => (
+                        <SelectItem key={option} value={option}>
                           {option}
                         </SelectItem>
                       ))}
@@ -117,8 +117,8 @@ export function FormPreviewDialog({
                   </Select>
                 ) : field.type === 'multiselect' ? (
                   <div className="space-y-2">
-                    {field.options.map((option, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
+                    {field.options.map((option) => (
+                      <div key={option} className="flex items-center gap-2">
                         <input type="checkbox" disabled className="h-4 w-4" />
                         <span className="text-sm">{option}</span>
                       </div>
@@ -126,8 +126,8 @@ export function FormPreviewDialog({
                   </div>
                 ) : field.type === 'radio' ? (
                   <div className="space-y-2">
-                    {field.options.map((option, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
+                    {field.options.map((option) => (
+                      <div key={option} className="flex items-center gap-2">
                         <input type="radio" disabled className="h-4 w-4" />
                         <span className="text-sm">{option}</span>
                       </div>
@@ -135,8 +135,8 @@ export function FormPreviewDialog({
                   </div>
                 ) : field.type === 'checkbox' ? (
                   <div className="space-y-2">
-                    {field.options.map((option, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
+                    {field.options.map((option) => (
+                      <div key={option} className="flex items-center gap-2">
                         <input type="checkbox" disabled className="h-4 w-4" />
                         <span className="text-sm">{option}</span>
                       </div>

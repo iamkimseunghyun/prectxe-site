@@ -26,14 +26,14 @@ export function AdminPagination({
     return `${pathname}?${params.toString()}`;
   };
 
-  const pages: (number | 'ellipsis')[] = [];
+  const pages: (number | 'ellipsis-start' | 'ellipsis-end')[] = [];
 
   // Always show first page
   pages.push(1);
 
   // Show ellipsis if needed
   if (currentPage > 3) {
-    pages.push('ellipsis');
+    pages.push('ellipsis-start');
   }
 
   // Show pages around current page
@@ -47,7 +47,7 @@ export function AdminPagination({
 
   // Show ellipsis if needed
   if (currentPage < totalPages - 2) {
-    pages.push('ellipsis');
+    pages.push('ellipsis-end');
   }
 
   // Always show last page
@@ -75,13 +75,10 @@ export function AdminPagination({
         </Button>
 
         <div className="flex items-center gap-1">
-          {pages.map((page, idx) => {
-            if (page === 'ellipsis') {
+          {pages.map((page) => {
+            if (page === 'ellipsis-start' || page === 'ellipsis-end') {
               return (
-                <span
-                  key={`ellipsis-${idx}`}
-                  className="px-2 text-muted-foreground"
-                >
+                <span key={page} className="px-2 text-muted-foreground">
                   ...
                 </span>
               );

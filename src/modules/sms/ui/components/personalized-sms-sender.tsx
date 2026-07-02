@@ -80,6 +80,7 @@ export function PersonalizedSMSSender() {
   });
 
   // 실시간 데이터 파싱 및 검증
+  // biome-ignore lint/correctness/useExhaustiveDependencies: form.watch(field) 값들을 deps로 사용하는 의도된 RHF 패턴 — 해당 필드 변경 시에만 재계산, 동작 변경 금지
   const parsedData = useMemo(() => {
     const phoneList = form.watch('phoneList');
     const nameList = form.watch('nameList');
@@ -355,9 +356,9 @@ export function PersonalizedSMSSender() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {parsedData.recipients.map((recipient, index) => (
+                  {parsedData.recipients.map((recipient) => (
                     <TableRow
-                      key={index}
+                      key={recipient.phone}
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => setSelectedRecipient(recipient)}
                     >

@@ -127,6 +127,7 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
   return (
     <div>
       {/* Horizontal scroll gallery */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: drag-to-scroll container — mouse-only enhancement over native horizontal scroll; thumbnails inside are focusable buttons */}
       <div
         ref={scrollRef}
         onMouseEnter={() => setIsPaused(true)}
@@ -141,12 +142,10 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
         }`}
       >
         {images.map((img, i) => (
-          <div
+          <button
             key={img.id}
-            role="button"
-            tabIndex={0}
+            type="button"
             onClick={() => handleImageClick(i)}
-            onKeyDown={(e) => e.key === 'Enter' && handleImageClick(i)}
             className="group relative aspect-4/3 w-64 shrink-0 overflow-hidden sm:w-72"
           >
             <Image
@@ -157,7 +156,7 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
               sizes="(min-width: 640px) 288px, 256px"
               className="pointer-events-none object-cover transition-transform duration-300 group-hover:scale-105"
             />
-          </div>
+          </button>
         ))}
       </div>
 
@@ -177,7 +176,7 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
               className="w-full bg-black"
             >
               <CarouselContent className="ml-0 rounded-none">
-                {images.map((img, i) => (
+                {images.map((img) => (
                   <CarouselItem key={img.id} className="pl-0">
                     <div className="relative aspect-16/10.5 w-full overflow-hidden bg-black">
                       <Image

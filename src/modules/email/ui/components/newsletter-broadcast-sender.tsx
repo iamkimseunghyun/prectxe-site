@@ -6,10 +6,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import {
-  EmailEditor,
-  getEmailHTML,
-} from '@/modules/email/ui/components/email-editor';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -39,6 +35,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import {
+  EmailEditor,
+  getEmailHTML,
+} from '@/modules/email/ui/components/email-editor';
 import { createAndSendNewsletterBroadcast } from '../../server/actions';
 
 const formSchema = z.object({

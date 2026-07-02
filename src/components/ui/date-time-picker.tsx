@@ -63,8 +63,8 @@ export function DateTimePicker({
 
   function handleDateSelect(day: Date | undefined) {
     if (!day) return;
-    const h = Number.parseInt(hours) || 0;
-    const m = Number.parseInt(minutes) || 0;
+    const h = Number.parseInt(hours, 10) || 0;
+    const m = Number.parseInt(minutes, 10) || 0;
     day.setHours(h, m, 0, 0);
     onChange?.(formatForInput(day));
   }
@@ -74,7 +74,10 @@ export function DateTimePicker({
     setMinutes(newM);
     if (parsed) {
       const updated = new Date(parsed);
-      updated.setHours(Number.parseInt(newH) || 0, Number.parseInt(newM) || 0);
+      updated.setHours(
+        Number.parseInt(newH, 10) || 0,
+        Number.parseInt(newM, 10) || 0
+      );
       onChange?.(formatForInput(updated));
     }
   }

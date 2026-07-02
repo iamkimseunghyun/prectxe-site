@@ -18,7 +18,7 @@ const CarouselGallery = ({ images }: CarouselProps) => {
       <ShadcnCarousel className="h-full w-full">
         <CarouselContent>
           {images.map((image, index) => (
-            <CarouselItem key={index}>
+            <CarouselItem key={image.imageUrl}>
               <div className="relative aspect-square overflow-hidden rounded-lg sm:aspect-16/10.5">
                 <Image
                   src={getImageUrl(image.imageUrl, 'public')}

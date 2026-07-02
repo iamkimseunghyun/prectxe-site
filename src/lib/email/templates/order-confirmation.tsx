@@ -65,6 +65,7 @@ export default function OrderConfirmation({
             <Text style={sectionTitle}>{dropTitle}</Text>
 
             {items.map((item, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: 정적 이메일 렌더 — 순서 변경/상태 없음, 항목 중복 가능
               <Section key={i} style={itemRow}>
                 <Text style={itemName}>
                   {item.name} × {item.quantity}

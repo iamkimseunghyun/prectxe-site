@@ -11,7 +11,7 @@ const ArtworkSchema = ({ artwork }: { artwork: ArtworkResponse }) => {
     // 작가 정보
     creator: artwork.artists.map((art) => ({
       '@type': 'Person',
-      name: formatArtistName(art.artist.nameKr as any, art.artist.name as any),
+      name: formatArtistName(art.artist.nameKr, art.artist.name),
     })),
     // 작품 속성
     artMedium: artwork.media || undefined,
@@ -50,7 +50,10 @@ const ArtworkSchema = ({ artwork }: { artwork: ArtworkResponse }) => {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(cleanJsonLd) }}
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data injection
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(cleanJsonLd).replace(/</g, '\\u003c'),
+      }}
     />
   );
 };

@@ -1,6 +1,6 @@
 'use server';
 
-import type { Prisma } from '@prisma/client';
+import type { Prisma, ProgramType } from '@prisma/client';
 import {
   unstable_cache as next_cache,
   revalidatePath,
@@ -52,6 +52,44 @@ function getDateRangeForStatus(status?: ProgramStatusFilter) {
   }
 }
 
+const programListSelect = {
+  id: true,
+  slug: true,
+  title: true,
+  summary: true,
+  status: true,
+  type: true,
+  startAt: true,
+  endAt: true,
+  city: true,
+  heroUrl: true,
+  venue: true,
+} satisfies Prisma.ProgramSelect;
+
+type ProgramListItem = Prisma.ProgramGetPayload<{
+  select: typeof programListSelect;
+}>;
+
+const programPagedSelect = {
+  id: true,
+  slug: true,
+  title: true,
+  summary: true,
+  status: true,
+  type: true,
+  startAt: true,
+  endAt: true,
+  city: true,
+  heroUrl: true,
+  venue: true,
+  isFeatured: true,
+  createdAt: true,
+} satisfies Prisma.ProgramSelect;
+
+type ProgramPagedItem = Prisma.ProgramGetPayload<{
+  select: typeof programPagedSelect;
+}>;
+
 export const listProgramsWithCache = next_cache(
   async (params: ListProgramsParams = {}) => {
     const { status = 'all', type, city, search } = params;
@@ -66,8 +104,8 @@ export const listProgramsWithCache = next_cache(
           : status === 'completed' || status === 'past'
             ? 'completed'
             : { not: 'draft' }, // 'all' 또는 날짜 기반 필터일 때
-      ...(dateRange && { startAt: dateRange as any }),
-      ...(type && type !== 'all-type' && { type: type as any }),
+      ...(dateRange && { startAt: dateRange }),
+      ...(type && type !== 'all-type' && { type: type as ProgramType }),
       ...(city?.trim() && { city: { contains: city, mode: 'insensitive' } }),
       ...(search?.trim() && {
         OR: [
@@ -86,25 +124,13 @@ export const listProgramsWithCache = next_cache(
       return await prisma.program.findMany({
         where,
         orderBy,
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          summary: true,
-          status: true,
-          type: true,
-          startAt: true,
-          endAt: true,
-          city: true,
-          heroUrl: true,
-          venue: true,
-        },
+        select: programListSelect,
       });
     } catch (e) {
       if (process.env.NODE_ENV === 'development') {
         console.warn('Programs list fallback (DB error):', e);
       }
-      return [] as any[];
+      return [] as ProgramListItem[];
     }
   },
   ['programs-list'],
@@ -140,8 +166,8 @@ function buildWhere(params: ListProgramsParams): Prisma.ProgramWhereInput {
     ...(includeDrafts && status === 'upcoming' && { status: 'upcoming' }),
     ...(includeDrafts &&
       (status === 'completed' || status === 'past') && { status: 'completed' }),
-    ...(dateRange && { startAt: dateRange as any }),
-    ...(type && type !== 'all-type' && { type: type as any }),
+    ...(dateRange && { startAt: dateRange }),
+    ...(type && type !== 'all-type' && { type: type as ProgramType }),
     ...(city?.trim() && { city: { contains: city, mode: 'insensitive' } }),
     ...(search?.trim() && {
       OR: [
@@ -175,21 +201,7 @@ export async function listProgramsPaged(
         orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          summary: true,
-          status: true,
-          type: true,
-          startAt: true,
-          endAt: true,
-          city: true,
-          heroUrl: true,
-          venue: true,
-          isFeatured: true,
-          createdAt: true,
-        },
+        select: programPagedSelect,
       }),
     ]);
 
@@ -198,7 +210,7 @@ export async function listProgramsPaged(
     if (process.env.NODE_ENV === 'development') {
       console.warn('Programs paged list fallback (DB error):', e);
     }
-    return { page, pageSize, total: 0, items: [] as any[] };
+    return { page, pageSize, total: 0, items: [] as ProgramPagedItem[] };
   }
 }
 
@@ -268,8 +280,8 @@ export async function createProgram(input: unknown, _userId: string) {
       slug: data.slug,
       summary: data.summary ?? null,
       description: data.description ?? null,
-      type: data.type as any,
-      status: (data.status ?? 'upcoming') as any,
+      type: data.type,
+      status: data.status ?? 'upcoming',
       startAt: parseKstDateInput(data.startAt),
       endAt: data.endAt ? parseKstDateInput(data.endAt) : null,
       city: data.city ?? null,
@@ -342,8 +354,8 @@ export async function updateProgram(id: string, input: unknown) {
       slug: data.slug,
       summary: data.summary ?? null,
       description: data.description ?? null,
-      type: data.type as any,
-      status: (data.status ?? 'upcoming') as any,
+      type: data.type,
+      status: data.status ?? 'upcoming',
       startAt: data.startAt ? parseKstDateInput(data.startAt) : undefined,
       endAt: data.endAt ? parseKstDateInput(data.endAt) : null,
       city: data.city ?? null,

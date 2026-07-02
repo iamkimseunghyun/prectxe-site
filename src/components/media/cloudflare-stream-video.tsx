@@ -1,5 +1,6 @@
 'use client';
 
+import type HlsJs from 'hls.js';
 import { useEffect, useRef, useState } from 'react';
 
 interface CloudflareStreamVideoProps {
@@ -159,7 +160,7 @@ function CloudflareHlsPlayer({
     }
 
     // Firefox 등 — hls.js 동적 import (번들에 포함되지 않음)
-    let hls: any = null;
+    let hls: HlsJs | null = null;
     import('hls.js').then((mod) => {
       const Hls = mod.default;
       if (!Hls.isSupported()) {
@@ -175,7 +176,7 @@ function CloudflareHlsPlayer({
           tryPlay();
         });
       }
-      hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
+      hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
           setFailed(true);
           onError?.();
