@@ -48,7 +48,10 @@ const nextConfig: NextConfig = {
   /* config options here */
 
   // Server-only packages (Node.js modules)
-  serverExternalPackages: ['aligoapi', 'solapi'],
+  // exceljs: Vercel 서버리스 번들링(파일 트레이싱)이 exceljs의 동적 require 내부 모듈을
+  // 누락해 P&L 엑셀 내보내기 라우트가 런타임 500 → 브라우저가 에러 응답을 파일로 저장(txt처럼 보임).
+  // external로 지정하면 번들 대상에서 제외되고 패키지 전체가 lambda에 포함된다.
+  serverExternalPackages: ['aligoapi', 'solapi', 'exceljs'],
 
   images: {
     unoptimized: true,
