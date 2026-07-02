@@ -133,6 +133,7 @@ const Carousel = React.forwardRef<
           canScrollNext,
         }}
       >
+        {/* biome-ignore lint/a11y/useSemanticElements: W3C APG carousel 패턴의 의도된 role — <section>은 접근성 이름 없이는 region이 되지 않음 */}
         <div
           ref={ref}
           onKeyDownCapture={handleKeyDown}
@@ -178,6 +179,7 @@ const CarouselItem = React.forwardRef<
   const { orientation } = useCarousel();
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: 캐러셀 슬라이드의 의도된 role="group" — 대응 시맨틱 요소 없음(fieldset은 부적절)
     <div
       ref={ref}
       role="group"

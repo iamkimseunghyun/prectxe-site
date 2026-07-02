@@ -186,11 +186,9 @@ export default async function OrderTicketsPage({
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">
               {t('notice')}
             </p>
-            <div className="space-y-2 text-sm leading-relaxed text-white/70">
-              {order.drop.notice.split('\n').map((line, i) => (
-                <p key={i}>{line}</p>
-              ))}
-            </div>
+            <p className="whitespace-pre-line text-sm leading-relaxed text-white/70">
+              {order.drop.notice}
+            </p>
           </section>
         )}
 
