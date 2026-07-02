@@ -48,3 +48,6 @@ next-env.d.ts
 
 # serena memories (regenerated per machine)
 .serena/
+
+# local scratch / throwaway experiments
+scratchtest/
