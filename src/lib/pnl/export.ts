@@ -441,3 +441,23 @@ export function safeFilename(base: string, ext: 'csv' | 'xlsx'): string {
   const stamp = new Date().toISOString().slice(0, 10);
   return `${cleaned || 'pnl-sheet'}_${stamp}.${ext}`;
 }
+
+/**
+ * Content-Disposition 헤더 값을 만든다.
+ * HTTP 헤더 값은 ASCII만 허용되고, Vercel(undici)은 이를 엄격히 검증해
+ * 비ASCII(예: 시트명의 '×', 한글)가 filename="..."에 들어가면 런타임에서
+ * `TypeError: Header has invalid value`로 함수가 크래시한다.
+ * → 따옴표 filename은 ASCII 폴백('_' 치환)을 쓰고, 원본 유니코드 이름은
+ *   RFC 5987 filename*=UTF-8''... 로 전달한다.
+ */
+export function attachmentDisposition(filename: string): string {
+  const asciiFallback =
+    filename.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '') || 'download';
+  // RFC 5987 ext-value: encodeURIComponent은 ' ( ) * ! 를 남겨두는데 이들은
+  // attr-char가 아니라 반드시 퍼센트 인코딩돼야 한다(안 하면 일부 파서에서 파일명 잘림).
+  const rfc5987 = encodeURIComponent(filename).replace(
+    /['()*!]/g,
+    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+  return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${rfc5987}`;
+}

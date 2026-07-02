@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
-import { buildSheetTable, safeFilename, toCsv, toXlsx } from '@/lib/pnl/export';
+import {
+  attachmentDisposition,
+  buildSheetTable,
+  safeFilename,
+  toCsv,
+  toXlsx,
+} from '@/lib/pnl/export';
 import type { PnLRow } from '@/lib/schemas/pnl';
 
 export async function GET(
@@ -50,7 +56,7 @@ export async function GET(
     return new Response(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+        'Content-Disposition': attachmentDisposition(filename),
         'Cache-Control': 'no-store',
       },
     });
@@ -61,7 +67,7 @@ export async function GET(
     headers: {
       'Content-Type':
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+      'Content-Disposition': attachmentDisposition(filename),
       'Cache-Control': 'no-store',
     },
   });
