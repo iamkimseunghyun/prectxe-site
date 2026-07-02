@@ -31,21 +31,24 @@ export function useInfiniteScroll<T extends { id: string }>({
   const itemIdsRef = useRef(new Set(initialData.map((item) => item.id)));
   const prevInitSigRef = useRef<string>('');
 
-  const makeSignature = (arr: T[]): string => {
-    // join ids to build a lightweight signature
-    try {
-      return (
-        (resetKey !== undefined ? `${String(resetKey)}|` : '') +
-        arr.map((i) => i.id).join('|')
-      );
-    } catch {
-      // fallback if arr malformed
-      return (
-        (resetKey !== undefined ? `${String(resetKey)}|` : '') +
-        String(arr?.length ?? 0)
-      );
-    }
-  };
+  const makeSignature = useCallback(
+    (arr: T[]): string => {
+      // join ids to build a lightweight signature
+      try {
+        return (
+          (resetKey !== undefined ? `${String(resetKey)}|` : '') +
+          arr.map((i) => i.id).join('|')
+        );
+      } catch {
+        // fallback if arr malformed
+        return (
+          (resetKey !== undefined ? `${String(resetKey)}|` : '') +
+          String(arr?.length ?? 0)
+        );
+      }
+    },
+    [resetKey]
+  );
 
   // 초기 데이터나 검색어 변경 시 상태 초기화
   useEffect(() => {
@@ -74,7 +77,9 @@ export function useInfiniteScroll<T extends { id: string }>({
 
       if (uniqueNewItems.length > 0) {
         // 새 아이템 ID 추가
-        uniqueNewItems.forEach((item) => itemIdsRef.current.add(item.id));
+        uniqueNewItems.forEach((item) => {
+          itemIdsRef.current.add(item.id);
+        });
 
         setPage((prev) => prev + 1);
         setItems((prev) => [...prev, ...uniqueNewItems]);

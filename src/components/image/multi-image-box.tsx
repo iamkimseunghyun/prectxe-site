@@ -5,6 +5,8 @@ import Image from 'next/image';
 import type { ChangeEvent } from 'react';
 import type {
   ControllerRenderProps,
+  FieldValues,
+  RefCallBack,
   UseFormRegisterReturn,
 } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -13,8 +15,8 @@ import { getImageUrl } from '@/lib/utils';
 // Accept either RHF register return or controller field, or a minimal shape used here
 type RegisterType =
   | UseFormRegisterReturn
-  | ControllerRenderProps<any, string>
-  | { name: string; onBlur: () => void; ref: any };
+  | ControllerRenderProps<FieldValues, string>
+  | { name: string; onBlur: () => void; ref: RefCallBack };
 // Core types
 interface BaseImage {
   imageUrl: string;
@@ -143,7 +145,7 @@ const MultiImageBox = ({
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
         {previews.map((preview, index) => (
-          <div key={`${preview.imageUrl}-${index}`} className="relative">
+          <div key={preview.preview} className="relative">
             <ImagePreviewItem
               preview={preview}
               index={index}

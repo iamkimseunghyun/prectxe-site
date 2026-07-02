@@ -74,7 +74,7 @@ export function useSingleImageUpload({
     },
     uploading,
     retryUpload: async (
-      uploader: (file: File, url: string) => Promise<any>
+      uploader: (file: File, url: string) => Promise<unknown>
     ) => {
       if (!imageFile) return false;
       try {

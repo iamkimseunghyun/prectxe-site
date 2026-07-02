@@ -48,6 +48,7 @@ const ProgramSchema = ({ program }: { program: ProgramForSEO }) => {
   return (
     <script
       type="application/ld+json"
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data injection
       dangerouslySetInnerHTML={{ __html: JSON.stringify(clean) }}
     />
   );

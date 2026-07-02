@@ -1,17 +1,22 @@
 import getSession from '@/lib/auth/session';
+import type { ProgramCreateInput } from '@/lib/schemas/program';
 import { createProgram } from '@/modules/programs/server/actions';
 import { ProgramFormView } from '@/modules/programs/ui/views/program-form-view';
 import { getVenueOptions } from '@/modules/venues/server/actions';
 
+type ProgramFormPayload = Partial<ProgramCreateInput> & {
+  intent?: 'default' | 'continue' | 'new';
+};
+
 export default async function Page() {
   const venues = await getVenueOptions();
-  async function onSubmit(formData: any) {
+  async function onSubmit(formData: ProgramFormPayload) {
     'use server';
     const session = await getSession();
     if (!session.id) return { success: false, error: '인증이 필요합니다.' };
-    const { intent, ...data } = formData || {};
+    const { intent, ...data } = formData ?? {};
     const res = await createProgram(data, session.id);
-    if (res?.success) {
+    if (res.success) {
       let redirectTo = '/admin/programs';
       if (intent === 'continue' && res.data?.id) {
         redirectTo = `/admin/programs/${res.data.id}/edit`;
@@ -22,14 +27,14 @@ export default async function Page() {
     }
     return {
       success: false,
-      error: (res as any)?.error ?? '저장에 실패했습니다.',
+      error: res.error ?? '저장에 실패했습니다.',
     };
   }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="mb-6 text-2xl font-semibold">새 프로그램</h1>
-      <ProgramFormView onSubmit={onSubmit as any} venues={venues} />
+      <ProgramFormView onSubmit={onSubmit} venues={venues} />
     </div>
   );
 }

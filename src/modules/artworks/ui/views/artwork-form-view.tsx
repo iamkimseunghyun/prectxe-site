@@ -29,7 +29,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useSortableImages } from '@/hooks/use-sortable-images';
 import { useToast } from '@/hooks/use-toast';
 import {
-  type Artwork,
   type CreateArtworkInput,
   createArtworkSchema,
   type UpdateArtworkInput,

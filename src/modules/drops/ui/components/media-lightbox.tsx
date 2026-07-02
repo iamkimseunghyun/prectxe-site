@@ -61,8 +61,17 @@ export function MediaLightbox({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xs"
-      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
     >
+      {/* 배경 클릭으로 닫기 — 키보드 접근성 위해 별도 버튼으로 분리 (Escape는 전역 keydown 처리) */}
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="닫기"
+        className="absolute inset-0 cursor-default"
+      />
+
       <button
         type="button"
         onClick={onClose}
@@ -86,10 +95,7 @@ export function MediaLightbox({
         </button>
       )}
 
-      <div
-        className="relative flex h-[85vh] w-[90vw] items-center justify-center"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative flex h-[85vh] w-[90vw] items-center justify-center">
         {active.type === 'image' ? (
           <Image
             src={getImageUrl(active.url, 'hires')}

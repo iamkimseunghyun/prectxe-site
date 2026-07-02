@@ -46,7 +46,7 @@ export async function ProgramsView({
             Upcoming
           </h2>
           <ProgramGridInfinite
-            initialItems={upcoming.items as any}
+            initialItems={upcoming.items}
             query={{ status: 'upcoming' }}
           />
         </section>
@@ -58,7 +58,7 @@ export async function ProgramsView({
             Archive
           </h2>
           <ProgramGridInfinite
-            initialItems={archive.items as any}
+            initialItems={archive.items}
             query={{ status: 'completed' }}
           />
         </section>

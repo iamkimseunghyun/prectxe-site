@@ -1,9 +1,14 @@
 import { redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
 import { prisma } from '@/lib/db/prisma';
+import type { ProgramCreateInput } from '@/lib/schemas/program';
 import { updateProgram } from '@/modules/programs/server/actions';
 import { ProgramFormView } from '@/modules/programs/ui/views/program-form-view';
 import { getVenueOptions } from '@/modules/venues/server/actions';
+
+type ProgramFormPayload = Partial<ProgramCreateInput> & {
+  intent?: 'default' | 'continue' | 'new';
+};
 
 export default async function Page({
   params,
@@ -23,13 +28,13 @@ export default async function Page({
   ]);
   if (!program) redirect('/admin/programs');
 
-  async function onSubmit(formData: any) {
+  async function onSubmit(formData: ProgramFormPayload) {
     'use server';
     const session = await getSession();
     if (!session.id) return { success: false, error: '인증이 필요합니다.' };
-    const { intent, ...data } = formData || {};
+    const { intent, ...data } = formData ?? {};
     const res = await updateProgram(id, data);
-    if (res?.success) {
+    if (res.success) {
       let redirectTo = '/admin/programs';
       if (intent === 'continue') {
         redirectTo = `/admin/programs/${id}/edit`;
@@ -40,7 +45,7 @@ export default async function Page({
     }
     return {
       success: false,
-      error: (res as any)?.error ?? '저장에 실패했습니다.',
+      error: res.error ?? '저장에 실패했습니다.',
     };
   }
 
@@ -58,8 +63,8 @@ export default async function Page({
           slug: program.slug,
           summary: program.summary ?? undefined,
           description: program.description ?? undefined,
-          type: program.type as any,
-          status: program.status as any,
+          type: program.type,
+          status: program.status,
           startAt: program.startAt?.toISOString().split('T')[0],
           endAt: program.endAt?.toISOString().split('T')[0] ?? undefined,
           city: program.city ?? undefined,

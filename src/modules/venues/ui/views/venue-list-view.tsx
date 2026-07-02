@@ -1,6 +1,6 @@
 import { getAllVenues } from '@/modules/venues/server/actions';
-import { VenueSearchBar } from '@/modules/venues/ui/components/venue-search-bar';
 import VenueCard from '@/modules/venues/ui/components/venue-card';
+import { VenueSearchBar } from '@/modules/venues/ui/components/venue-search-bar';
 
 interface VenueListViewProps {
   searchQuery?: string;

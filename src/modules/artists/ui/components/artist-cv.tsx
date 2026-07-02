@@ -36,11 +36,11 @@ export function ArtistCv({ cv }: ArtistCvProps) {
 
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-8 gap-y-3 md:gap-x-12">
-      {entries.map((entry, i) => {
+      {entries.map((entry) => {
         const showYear = entry.year && entry.year !== lastYear;
         if (entry.year) lastYear = entry.year;
         return (
-          <Fragment key={`${entry.year ?? 'x'}-${i}`}>
+          <Fragment key={`${entry.year ?? 'x'}-${entry.text}`}>
             <dt className="text-sm font-medium tabular-nums text-neutral-400">
               {showYear ? entry.year : ''}
             </dt>

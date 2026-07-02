@@ -19,7 +19,7 @@ export function normalizePhoneNumber(phone: string): string {
 
   // 1로 시작하고 10자리면 앞에 0 추가 (자동 보정)
   if (normalized.startsWith('1') && normalized.length === 10) {
-    normalized = '0' + normalized;
+    normalized = `0${normalized}`;
   }
 
   return normalized;

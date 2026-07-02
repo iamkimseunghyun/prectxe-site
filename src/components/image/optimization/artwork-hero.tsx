@@ -30,9 +30,9 @@ const ArtworkHero = ({ artwork, className }: ArtworkHeroProps) => {
       />
       {artwork.images.length > 1 && (
         <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6">
-          {artwork.images.slice(1).map((image, index) => (
+          {artwork.images.slice(1).map((image) => (
             <OptimizedImage
-              key={`${image.imageUrl}-${index}`}
+              key={image.imageUrl}
               src={getImageUrl(image.imageUrl, 'smaller')}
               alt={image.alt}
               aspectRatio="square"

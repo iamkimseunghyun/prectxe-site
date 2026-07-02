@@ -29,7 +29,6 @@ import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { toast } from '@/hooks/use-toast';
 import {
   type ProgramCreateInput,
-  ProgramStatusEnum,
   ProgramTypeEnum,
 } from '@/lib/schemas/program';
 import {
@@ -71,12 +70,35 @@ type Credit = {
   role: string;
 };
 
+type ProgramImageInput = {
+  imageUrl: string;
+  alt: string;
+  order: number;
+};
+
+type Intent = 'default' | 'continue' | 'new';
+
+type ProgramFormInitial = Omit<
+  Partial<ProgramCreateInput>,
+  'credits' | 'images'
+> & {
+  id?: string;
+  credits?: Credit[];
+  images?: ProgramImageInput[];
+};
+
+type ProgramFormPayload = Partial<ProgramCreateInput> & {
+  images: ProgramImageInput[];
+  credits: { artistId: string; role: string }[];
+  intent: Intent;
+};
+
 export function ProgramFormView({
   initial,
   venues,
   onSubmit,
 }: {
-  initial?: Partial<ProgramCreateInput> & { id?: string };
+  initial?: ProgramFormInitial;
   venues: {
     id: string;
     name: string;
@@ -84,7 +106,7 @@ export function ProgramFormView({
     city: string | null;
   }[];
   onSubmit: (
-    data: any
+    data: ProgramFormPayload
   ) => Promise<
     { success: boolean; redirect?: string; error?: string } | undefined
   >;
@@ -95,8 +117,8 @@ export function ProgramFormView({
     slug: initial?.slug ?? '',
     summary: initial?.summary ?? '',
     description: initial?.description ?? '',
-    type: (initial?.type as any) ?? 'exhibition',
-    status: (initial?.status as any) ?? 'upcoming',
+    type: initial?.type ?? 'exhibition',
+    status: initial?.status ?? 'upcoming',
     startAt: initial?.startAt ? formatDateForForm(initial.startAt) : '',
     endAt: initial?.endAt ? formatDateForForm(initial.endAt) : '',
     city: initial?.city ?? '',
@@ -111,10 +133,8 @@ export function ProgramFormView({
 
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [slugChecking, setSlugChecking] = useState(false);
-  const slugTimer = useRef<any>(null);
-  const [intent, setIntent] = useState<'default' | 'continue' | 'new'>(
-    'default'
-  );
+  const slugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [intent, setIntent] = useState<Intent>('default');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   // 슬러그 수동 편집 여부 추적 (편집 모드거나 사용자가 직접 수정한 경우)
@@ -126,20 +146,17 @@ export function ProgramFormView({
   // 미리보기 모달 상태
   const [showPreview, setShowPreview] = useState(false);
 
-  const [credits, setCredits] = useState<Credit[]>(
-    (initial as any)?.credits ?? []
-  );
+  const [credits, setCredits] = useState<Credit[]>(initial?.credits ?? []);
 
   const {
     multiImagePreview,
     handleMultiImageChange,
     removeMultiImage,
     error: galleryError,
-    markAllAsUploaded,
     uploadPendingWithProgress,
     retryAtWithProgress,
   } = useMultiImageUpload({
-    initialImages: (initial as any)?.images,
+    initialImages: initial?.images,
   });
 
   const {
@@ -156,7 +173,7 @@ export function ProgramFormView({
     onImageUrlChange: (url) => handleChange('heroUrl', url),
   });
 
-  const handleChange = (key: keyof ProgramCreateInput, value: any) =>
+  const handleChange = (key: keyof ProgramCreateInput, value: string | null) =>
     setForm((f) => ({ ...f, [key]: value }));
 
   // 공개/비공개 토글 핸들러
@@ -238,7 +255,7 @@ export function ProgramFormView({
         return;
       }
 
-      const payload: any = {
+      const payload: ProgramFormPayload = {
         ...form,
         images: uploadedImages,
         credits: credits.map((c) => ({ artistId: c.artistId, role: c.role })),
@@ -283,7 +300,9 @@ export function ProgramFormView({
         setSlugChecking(false);
       }
     }, 400);
-    return () => slugTimer.current && clearTimeout(slugTimer.current);
+    return () => {
+      if (slugTimer.current) clearTimeout(slugTimer.current);
+    };
   }, [form.slug, initial?.id, slugAvailable]);
 
   return (
@@ -297,7 +316,7 @@ export function ProgramFormView({
           <div>
             <Label required>제목</Label>
             <Input
-              value={form.title as any}
+              value={form.title ?? ''}
               onChange={(e) => handleTitleChange(e.target.value)}
               required
               aria-invalid={!!fieldErrors.title}
@@ -309,7 +328,7 @@ export function ProgramFormView({
           <div>
             <Label required>슬러그</Label>
             <Input
-              value={form.slug as any}
+              value={form.slug ?? ''}
               onChange={(e) => handleSlugChange(e.target.value)}
               required
               aria-invalid={slugAvailable === false}
@@ -344,7 +363,7 @@ export function ProgramFormView({
           <div>
             <Label required>유형</Label>
             <Select
-              value={form.type as any}
+              value={form.type ?? ''}
               onValueChange={(v) => handleChange('type', v)}
             >
               <SelectTrigger>
@@ -375,7 +394,7 @@ export function ProgramFormView({
             <Label required>시작일</Label>
             <Input
               type="date"
-              value={form.startAt as any}
+              value={form.startAt ?? ''}
               onChange={(e) => handleChange('startAt', e.target.value)}
               required
               aria-invalid={!!fieldErrors.startAt}
@@ -388,7 +407,7 @@ export function ProgramFormView({
             <Label>종료일</Label>
             <Input
               type="date"
-              value={form.endAt as any}
+              value={form.endAt ?? ''}
               onChange={(e) => handleChange('endAt', e.target.value)}
               aria-invalid={!!fieldErrors.endAt}
             />
@@ -399,7 +418,7 @@ export function ProgramFormView({
           <div>
             <Label>도시</Label>
             <Input
-              value={form.city as any}
+              value={form.city ?? ''}
               onChange={(e) => handleChange('city', e.target.value)}
             />
           </div>
@@ -434,7 +453,7 @@ export function ProgramFormView({
           <div>
             <Label>요약</Label>
             <Textarea
-              value={form.summary as any}
+              value={form.summary ?? ''}
               onChange={(e) => handleChange('summary', e.target.value)}
               rows={3}
             />
@@ -442,7 +461,7 @@ export function ProgramFormView({
           <div>
             <Label>설명</Label>
             <Textarea
-              value={form.description as any}
+              value={form.description ?? ''}
               onChange={(e) => handleChange('description', e.target.value)}
               rows={6}
             />
@@ -489,7 +508,7 @@ export function ProgramFormView({
             <Label>갤러리 이미지</Label>
             <MultiImageBox
               register={{ name: 'images', onBlur: () => {}, ref: () => {} }}
-              previews={multiImagePreview as any}
+              previews={multiImagePreview}
               handleMultiImageChange={handleMultiImageChange}
               removeMultiImage={removeMultiImage}
               error={galleryError}
@@ -511,17 +530,15 @@ export function ProgramFormView({
         </CardHeader>
         <CardContent>
           <ArtistSelect
-            value={
-              credits.map(({ artistId, artist }) => ({
-                artistId,
-                artist,
-              })) as any
-            }
-            onChange={(arr: any[]) => {
+            value={credits.map(({ artistId, artist }) => ({
+              artistId,
+              artist,
+            }))}
+            onChange={(arr) => {
               // 새 선택값과 기존 role을 머지
               setCredits((prev) => {
                 const map = new Map(prev.map((c) => [c.artistId, c] as const));
-                return arr.map((x: any) =>
+                return arr.map((x) =>
                   map.has(x.artistId)
                     ? {
                         ...map.get(x.artistId)!,
@@ -543,7 +560,7 @@ export function ProgramFormView({
                 >
                   <div className="flex-1">
                     <div className="text-sm font-medium">
-                      {formatArtistName(c.artist.nameKr as any, c.artist.name)}
+                      {formatArtistName(c.artist.nameKr, c.artist.name)}
                     </div>
                     <div className="mt-1 flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">
@@ -632,7 +649,7 @@ export function ProgramFormView({
               <div className="mt-2">
                 <Label>상태</Label>
                 <Select
-                  value={form.status as any}
+                  value={form.status ?? ''}
                   onValueChange={(v) => handleChange('status', v)}
                 >
                   <SelectTrigger>
@@ -759,13 +776,16 @@ export function ProgramFormView({
                   Gallery
                 </h2>
                 <div className="grid grid-cols-2 gap-4">
-                  {multiImagePreview.map((img: any, idx: number) => (
+                  {multiImagePreview.map((img, idx) => (
                     <div
-                      key={idx}
+                      key={img.preview}
                       className="relative aspect-video overflow-hidden rounded-lg"
                     >
                       <Image
-                        src={img.url || getImageUrl(img.imageUrl, 'public')}
+                        src={
+                          (img as { url?: string }).url ||
+                          getImageUrl(img.imageUrl, 'public')
+                        }
                         alt={img.alt || `Gallery ${idx + 1}`}
                         fill
                         className="object-cover"

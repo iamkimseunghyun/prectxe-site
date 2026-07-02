@@ -69,6 +69,7 @@ export default async function OGImage({
     >
       {/* Background image */}
       {coverSrc && (
+        // biome-ignore lint/performance/noImgElement: next/og ImageResponse(Satori)는 next/image를 지원하지 않음 — 원시 img 필요
         <img
           src={coverSrc}
           alt=""

@@ -35,10 +35,10 @@ interface ImageUploadHookReturn {
   markAllAsUploaded: () => void;
   retryAt: (
     index: number,
-    uploader: (file: File, url: string) => Promise<any>
+    uploader: (file: File, url: string) => Promise<unknown>
   ) => Promise<boolean>;
   uploadPending: (
-    uploader: (file: File, url: string) => Promise<any>
+    uploader: (file: File, url: string) => Promise<unknown>
   ) => Promise<{ successCount: number; failCount: number }>;
   retryAtWithProgress: (index: number) => Promise<boolean>;
   uploadPendingWithProgress: () => Promise<{
@@ -165,10 +165,10 @@ export function useMultiImageUpload({
 
   const retryAt = async (
     index: number,
-    uploader: (file: File, url: string) => Promise<any>
+    uploader: (file: File, url: string) => Promise<unknown>
   ): Promise<boolean> => {
     const item = multiImagePreview[index];
-    if (!item || !item.file) return false;
+    if (!item?.file) return false;
     try {
       const { uploadURL, imageUrl } = await getCloudflareImageUrl();
       await uploader(item.file, uploadURL);
@@ -203,7 +203,7 @@ export function useMultiImageUpload({
   };
 
   const uploadPending = async (
-    uploader: (file: File, url: string) => Promise<any>
+    uploader: (file: File, url: string) => Promise<unknown>
   ): Promise<{ successCount: number; failCount: number }> => {
     let success = 0;
     let fail = 0;
@@ -292,7 +292,7 @@ export function useMultiImageUpload({
 
   const retryAtWithProgress = async (index: number): Promise<boolean> => {
     const item = multiImagePreview[index];
-    if (!item || !item.file) return false;
+    if (!item?.file) return false;
     try {
       const { uploadURL, imageUrl } = await getCloudflareImageUrl();
       setMultiImagePreview((prev) => {
@@ -328,13 +328,13 @@ export function useMultiImageUpload({
         return next;
       });
       return true;
-    } catch (status: any) {
+    } catch (status: unknown) {
       setMultiImagePreview((prev) => {
         const next = [...prev];
         if (next[index])
           next[index] = {
             ...next[index],
-            error: `업로드 실패 (HTTP ${status}). 다시 시도해 주세요.`,
+            error: `업로드 실패 (HTTP ${String(status)}). 다시 시도해 주세요.`,
             status: 'error',
           } as ImagePreview;
         return next;
@@ -391,14 +391,14 @@ export function useMultiImageUpload({
           } as ImagePreview;
           return next;
         });
-      } catch (status: any) {
+      } catch (status: unknown) {
         fail++;
         setMultiImagePreview((prev) => {
           const next = [...prev];
           if (next[i])
             next[i] = {
               ...next[i],
-              error: `업로드 실패 (HTTP ${status}). 다시 시도해 주세요.`,
+              error: `업로드 실패 (HTTP ${String(status)}). 다시 시도해 주세요.`,
               status: 'error',
             } as ImagePreview;
           return next;

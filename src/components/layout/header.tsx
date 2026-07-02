@@ -36,6 +36,7 @@ const Header = () => {
         <span className="text-neutral-600">·</span>
         <span className="text-neutral-400">{user?.username}</span>
         <button
+          type="button"
           onClick={() => logoutMutation.mutate()}
           disabled={logoutMutation.isPending}
           className="text-neutral-500 transition-colors hover:text-neutral-300"

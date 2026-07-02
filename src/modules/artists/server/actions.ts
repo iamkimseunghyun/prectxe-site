@@ -459,6 +459,14 @@ export async function deleteArtist(artistId: string) {
   }
 }
 
+type ArtistListItem = {
+  id: string;
+  name: string;
+  nameKr: string;
+  city: string | null;
+  country: string | null;
+};
+
 export async function listArtistsPaged(
   params: { page?: number; pageSize?: number } = {}
 ) {
@@ -484,6 +492,6 @@ export async function listArtistsPaged(
     return { page, pageSize, total, items };
   } catch (e) {
     console.error('Artists paged list error:', e);
-    return { page, pageSize, total: 0, items: [] as any[] };
+    return { page, pageSize, total: 0, items: [] as ArtistListItem[] };
   }
 }

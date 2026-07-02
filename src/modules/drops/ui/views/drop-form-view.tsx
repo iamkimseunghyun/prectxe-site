@@ -492,18 +492,16 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
               </CardHeader>
               <CardContent>
                 <ArtistSelect
-                  value={
-                    credits.map(({ artistId, artist }) => ({
-                      artistId,
-                      artist,
-                    })) as any
-                  }
-                  onChange={(arr: any[]) => {
+                  value={credits.map(({ artistId, artist }) => ({
+                    artistId,
+                    artist,
+                  }))}
+                  onChange={(arr) => {
                     setCredits((prev) => {
                       const map = new Map(
                         prev.map((c) => [c.artistId, c] as const)
                       );
-                      return arr.map((x: any) =>
+                      return arr.map((x) =>
                         map.has(x.artistId)
                           ? {
                               ...map.get(x.artistId)!,
@@ -529,10 +527,7 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
                       >
                         <div className="flex-1">
                           <div className="text-sm font-medium">
-                            {formatArtistName(
-                              c.artist.nameKr as any,
-                              c.artist.name
-                            )}
+                            {formatArtistName(c.artist.nameKr, c.artist.name)}
                           </div>
                           <div className="mt-1 flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">

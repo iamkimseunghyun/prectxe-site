@@ -6,6 +6,14 @@ import Newsletter from './templates/newsletter';
 import OrderAdminNotification from './templates/order-admin-notification';
 import OrderConfirmation from './templates/order-confirmation';
 
+// 각 템플릿이 받는 props의 합집합 — 실제 페이로드 형태
+export type EmailTemplateData =
+  | Parameters<typeof FormNotification>[0]
+  | Parameters<typeof Newsletter>[0]
+  | Parameters<typeof OrderConfirmation>[0]
+  | Parameters<typeof BankTransferPending>[0]
+  | Parameters<typeof OrderAdminNotification>[0];
+
 // 이메일 발송 인터페이스
 export interface SendEmailParams {
   to: string | string[];
@@ -16,7 +24,7 @@ export interface SendEmailParams {
     | 'order-confirmation'
     | 'bank-transfer-pending'
     | 'order-admin-notification';
-  data: any;
+  data: EmailTemplateData;
 }
 
 export interface SendEmailResult {
@@ -34,20 +42,24 @@ export interface SendEmailResult {
 /**
  * 템플릿 선택
  */
-function getTemplate(template: string, data: any): ReactElement {
+function getTemplate(template: string, data: EmailTemplateData): ReactElement {
   switch (template) {
     case 'form-notification':
-      return FormNotification(data);
+      return FormNotification(data as Parameters<typeof FormNotification>[0]);
     case 'newsletter':
-      return Newsletter(data);
+      return Newsletter(data as Parameters<typeof Newsletter>[0]);
     case 'order-confirmation':
-      return OrderConfirmation(data);
+      return OrderConfirmation(data as Parameters<typeof OrderConfirmation>[0]);
     case 'bank-transfer-pending':
-      return BankTransferPending(data);
+      return BankTransferPending(
+        data as Parameters<typeof BankTransferPending>[0]
+      );
     case 'order-admin-notification':
-      return OrderAdminNotification(data);
+      return OrderAdminNotification(
+        data as Parameters<typeof OrderAdminNotification>[0]
+      );
     default:
-      return FormNotification(data);
+      return FormNotification(data as Parameters<typeof FormNotification>[0]);
   }
 }
 

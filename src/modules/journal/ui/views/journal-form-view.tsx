@@ -36,6 +36,7 @@ function Label({
   required?: boolean;
 }) {
   return (
+    // biome-ignore lint/a11y/noLabelWithoutControl: 폼 필드 위에 시각적으로 배치되는 프레젠테이션 라벨 — 연결할 단일 컨트롤이 없음
     <label className="mb-1 block text-sm font-medium">
       {children}
       {required && <span className="ml-0.5 text-red-500">*</span>}
@@ -59,6 +60,10 @@ type ProgramOption = {
   title: string;
 };
 
+export type JournalFormPayload = Initial & {
+  intent: 'default' | 'continue' | 'new';
+};
+
 export function JournalFormView({
   initial,
   onSubmit,
@@ -66,8 +71,8 @@ export function JournalFormView({
 }: {
   initial?: Initial;
   onSubmit: (
-    data: any
-  ) => Promise<{ ok?: boolean; error?: string } | undefined>;
+    data: JournalFormPayload
+  ) => Promise<{ success?: boolean; error?: string } | undefined>;
   programs?: ProgramOption[];
 }) {
   const [form, setForm] = useState<Initial>({
@@ -86,7 +91,7 @@ export function JournalFormView({
 
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [slugChecking, setSlugChecking] = useState(false);
-  const slugTimer = useRef<any>(null);
+  const slugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [intent, setIntent] = useState<'default' | 'continue' | 'new'>(
     'default'
   );
@@ -99,7 +104,7 @@ export function JournalFormView({
   // 미리보기 모달 상태
   const [showPreview, setShowPreview] = useState(false);
 
-  const handleChange = (k: keyof Initial, v: any) =>
+  const handleChange = (k: keyof Initial, v: Initial[keyof Initial]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
   // 공개/비공개 토글 핸들러
@@ -177,10 +182,10 @@ export function JournalFormView({
       intent,
     };
     const res = await onSubmit(payload);
-    if (res && (res as any).success === false) {
+    if (res?.success === false) {
       toast({
         title: '오류',
-        description: (res as any).error || '저장 중 오류가 발생했습니다.',
+        description: res.error || '저장 중 오류가 발생했습니다.',
       });
     }
   };
@@ -206,7 +211,9 @@ export function JournalFormView({
         setSlugChecking(false);
       }
     }, 400);
-    return () => slugTimer.current && clearTimeout(slugTimer.current);
+    return () => {
+      if (slugTimer.current) clearTimeout(slugTimer.current);
+    };
   }, [form.slug, initial?.slug, slugAvailable]);
 
   return (
@@ -220,7 +227,7 @@ export function JournalFormView({
           <div>
             <Label required>제목</Label>
             <Input
-              value={form.title as any}
+              value={form.title ?? ''}
               onChange={(e) => handleTitleChange(e.target.value)}
               required
             />
@@ -228,7 +235,7 @@ export function JournalFormView({
           <div>
             <Label required>슬러그</Label>
             <Input
-              value={form.slug as any}
+              value={form.slug ?? ''}
               onChange={(e) => handleSlugChange(e.target.value)}
               required
               aria-invalid={slugAvailable === false}
@@ -293,6 +300,7 @@ export function JournalFormView({
             <Label>카테고리</Label>
             <div className="flex flex-wrap gap-3">
               {STANDARD_TAGS.map((tag) => (
+                // biome-ignore lint/a11y/noLabelWithoutControl: label이 Radix Checkbox를 감싸 중첩 연결됨(Biome가 커스텀 컨트롤을 인식 못 함)
                 <label key={tag.value} className="flex items-center gap-2">
                   <Checkbox
                     checked={(form.tags ?? []).includes(tag.value)}
@@ -504,6 +512,7 @@ export function JournalFormView({
             {form.body && (
               <div
                 className="prose prose-neutral dark:prose-invert max-w-none"
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: TipTap 리치텍스트 본문 미리보기 렌더링
                 dangerouslySetInnerHTML={{ __html: form.body }}
               />
             )}

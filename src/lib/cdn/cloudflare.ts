@@ -197,14 +197,6 @@ export async function deleteCloudflareVideo(videoId: string) {
   }
 }
 
-function extractVideoId(url: string | null): string | null {
-  if (!url) return null;
-  // cloudflarestream.com/{uid} 또는 watch.cloudflarestream.com/{uid}
-  const regex = /cloudflarestream\.com\/([a-f0-9]+)/;
-  const match = url.match(regex);
-  return match ? match[1] : null;
-}
-
 // ─── Cloudflare Images ─────────────────────────────
 
 export async function deleteCloudflareImage(imageId: string) {

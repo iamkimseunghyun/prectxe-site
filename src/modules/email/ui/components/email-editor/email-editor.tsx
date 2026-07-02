@@ -16,11 +16,7 @@ interface EmailEditorProps {
   placeholder?: string;
 }
 
-export function EmailEditor({
-  content = '',
-  onChange,
-  placeholder = '이메일 내용을 입력하세요...',
-}: EmailEditorProps) {
+export function EmailEditor({ content = '', onChange }: EmailEditorProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);

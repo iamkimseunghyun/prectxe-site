@@ -35,7 +35,7 @@ export function CopyUrlButton({ className, url: providedUrl }: Props) {
     } finally {
       setCopying(false);
     }
-  }, []);
+  }, [providedUrl]);
 
   return (
     <button

@@ -125,7 +125,9 @@ async function recoverResponses() {
 
     if (errors.length > 0) {
       console.log('❌ 실패한 응답:');
-      errors.forEach((err) => console.log(`   - ${err}`));
+      errors.forEach((err) => {
+        console.log(`   - ${err}`);
+      });
     }
 
     // 4. 최종 검증

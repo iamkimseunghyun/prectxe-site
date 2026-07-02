@@ -1,5 +1,6 @@
 'use server';
 
+import type { Prisma } from '@prisma/client';
 import {
   unstable_cache as next_cache,
   revalidatePath,
@@ -13,6 +14,31 @@ import {
 import { CACHE_TIMES } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 import { articleCreateSchema, articleUpdateSchema } from '@/lib/schemas';
+
+// 목록 응답 아이템 — Date는 캐시 직렬화 안전을 위해 ISO 문자열로 변환된 형태
+type ArticleListItem = {
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  cover: string | null;
+  tags: string[];
+  publishedAt: string | null;
+  createdAt: string;
+};
+
+// 페이지네이션 아이템 — Prisma select 원본(Date 유지)
+type PagedArticleItem = Prisma.ArticleGetPayload<{
+  select: {
+    slug: true;
+    title: true;
+    excerpt: true;
+    cover: true;
+    tags: true;
+    publishedAt: true;
+    isFeatured: true;
+    createdAt: true;
+  };
+}>;
 
 // 공개 저널 목록 — 발행글만, publishedAt 내림차순. 날짜는 ISO로 변환(캐시 직렬화 안전).
 const listPublishedArticlesCached = next_cache(
@@ -52,7 +78,7 @@ export async function listArticles(options?: {
     if (options?.includeUnpublished) {
       const auth = await requireAdmin();
       if (!auth.success) return { success: false, error: auth.error } as const;
-      const where: any = {};
+      const where: Prisma.ArticleWhereInput = {};
       if (options.tag) where.tags = { has: options.tag };
       const articles = await prisma.article.findMany({
         where,
@@ -83,7 +109,7 @@ export async function listArticles(options?: {
     if (process.env.NODE_ENV === 'development') {
       console.warn('Journal listArticles fallback (DB error):', e);
     }
-    return { success: true, data: [] as any[] };
+    return { success: true, data: [] as ArticleListItem[] };
   }
 }
 
@@ -127,7 +153,7 @@ export async function listArticlesPaged(
     if (process.env.NODE_ENV === 'development') {
       console.warn('Journal listArticlesPaged fallback (DB error):', e);
     }
-    return { page, pageSize, total: 0, items: [] as any[] };
+    return { page, pageSize, total: 0, items: [] as PagedArticleItem[] };
   }
 }
 

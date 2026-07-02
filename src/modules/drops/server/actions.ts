@@ -61,7 +61,7 @@ export async function createDrop(input: {
     data: {
       title: data.title,
       slug: data.slug,
-      type: data.type as any,
+      type: data.type,
       summary: data.summary || null,
       description: data.description || null,
       eventDate: data.eventDate ? parseKstDateInput(data.eventDate) : null,
@@ -281,8 +281,8 @@ export async function listDrops(
   pageSize = 20,
   type?: 'ticket' | 'goods'
 ) {
-  const where = {
-    ...(type && { type: type as any }),
+  const where: Prisma.DropWhereInput = {
+    ...(type && { type }),
     publishedAt: { not: null },
   };
 

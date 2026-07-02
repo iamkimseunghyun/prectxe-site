@@ -40,8 +40,9 @@ export const socialIcons = [
   },
 ];
 
-// eslint-disable-next-line no-control-regex
-export const STRING_REGEX = /[\0\x01-\x08\x0B-\x0C\x0E-\x1F\x7F]/g;
+export const STRING_REGEX =
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: strips control chars; escapes preserve exact code points
+  /[\u0000\u0001-\u0008\u000B-\u000C\u000E-\u001F\u007F]/g;
 
 // 페이지네이션 관련 상수
 export const PAGINATION = {
