@@ -51,7 +51,9 @@ const ArtworkSchema = ({ artwork }: { artwork: ArtworkResponse }) => {
     <script
       type="application/ld+json"
       // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data injection
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(cleanJsonLd) }}
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(cleanJsonLd).replace(/</g, '\\u003c'),
+      }}
     />
   );
 };

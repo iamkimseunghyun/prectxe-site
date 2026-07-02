@@ -280,7 +280,7 @@ export function ProgramFormView({
   // Slug uniqueness check (debounced)
   useEffect(() => {
     if (!form.slug) {
-      if (slugAvailable !== null) setSlugAvailable(null);
+      setSlugAvailable(null);
       return;
     }
     if (slugTimer.current) clearTimeout(slugTimer.current);
@@ -303,7 +303,7 @@ export function ProgramFormView({
     return () => {
       if (slugTimer.current) clearTimeout(slugTimer.current);
     };
-  }, [form.slug, initial?.id, slugAvailable]);
+  }, [form.slug, initial?.id]);
 
   return (
     <form onSubmit={submit} className="space-y-6">
@@ -783,8 +783,9 @@ export function ProgramFormView({
                     >
                       <Image
                         src={
-                          (img as { url?: string }).url ||
-                          getImageUrl(img.imageUrl, 'public')
+                          img.file
+                            ? img.preview
+                            : getImageUrl(img.imageUrl, 'public')
                         }
                         alt={img.alt || `Gallery ${idx + 1}`}
                         fill

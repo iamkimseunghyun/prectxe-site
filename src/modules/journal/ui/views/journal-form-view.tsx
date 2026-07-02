@@ -193,7 +193,7 @@ export function JournalFormView({
   // Slug check
   useEffect(() => {
     if (!form.slug) {
-      if (slugAvailable !== null) setSlugAvailable(null);
+      setSlugAvailable(null);
       return;
     }
     if (slugTimer.current) clearTimeout(slugTimer.current);
@@ -214,7 +214,7 @@ export function JournalFormView({
     return () => {
       if (slugTimer.current) clearTimeout(slugTimer.current);
     };
-  }, [form.slug, initial?.slug, slugAvailable]);
+  }, [form.slug, initial?.slug]);
 
   return (
     <form onSubmit={submit} className="space-y-6">
