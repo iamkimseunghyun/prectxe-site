@@ -103,6 +103,8 @@ export function JournalFormView({
   const titleHasKorean = containsKorean(form.title || '');
   // 미리보기 모달 상태
   const [showPreview, setShowPreview] = useState(false);
+  // 저장 진행 상태 — 버튼 중복 클릭 시 이미지 single-use 업로드 URL 재사용 에러 방지
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (k: keyof Initial, v: Initial[keyof Initial]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -153,6 +155,7 @@ export function JournalFormView({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (slugAvailable === false) return;
     if (
       !String(form.title || '').trim() ||
@@ -165,28 +168,33 @@ export function JournalFormView({
       });
       return;
     }
-    if (imageFile) {
-      const uploadSuccess = await uploadImage(imageFile, uploadURL);
-      if (!uploadSuccess) {
-        toast({
-          title: '이미지 업로드 실패',
-          description: '이미지를 업로드하는 중 오류가 발생했습니다.',
-        });
-        return;
+    setIsSubmitting(true);
+    try {
+      if (imageFile) {
+        const uploadSuccess = await uploadImage(imageFile, uploadURL);
+        if (!uploadSuccess) {
+          toast({
+            title: '이미지 업로드 실패',
+            description: '이미지를 업로드하는 중 오류가 발생했습니다.',
+          });
+          return;
+        }
+        finalizeUpload();
       }
-      finalizeUpload();
-    }
-    const payload = {
-      ...form,
-      tags: form.tags ?? [],
-      intent,
-    };
-    const res = await onSubmit(payload);
-    if (res?.success === false) {
-      toast({
-        title: '오류',
-        description: res.error || '저장 중 오류가 발생했습니다.',
-      });
+      const payload = {
+        ...form,
+        tags: form.tags ?? [],
+        intent,
+      };
+      const res = await onSubmit(payload);
+      if (res?.success === false) {
+        toast({
+          title: '오류',
+          description: res.error || '저장 중 오류가 발생했습니다.',
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -447,6 +455,7 @@ export function JournalFormView({
           type="button"
           variant="outline"
           onClick={() => setShowPreview(true)}
+          disabled={isSubmitting}
         >
           미리보기
         </Button>
@@ -454,24 +463,24 @@ export function JournalFormView({
           type="submit"
           variant="outline"
           onClick={() => setIntent('new')}
-          disabled={slugAvailable === false}
+          disabled={slugAvailable === false || isSubmitting}
         >
-          저장 후 새로 작성
+          {isSubmitting ? '저장 중...' : '저장 후 새로 작성'}
         </Button>
         <Button
           type="submit"
           variant="outline"
           onClick={() => setIntent('continue')}
-          disabled={slugAvailable === false}
+          disabled={slugAvailable === false || isSubmitting}
         >
-          저장 후 계속 편집
+          {isSubmitting ? '저장 중...' : '저장 후 계속 편집'}
         </Button>
         <Button
           type="submit"
           onClick={() => setIntent('default')}
-          disabled={slugAvailable === false}
+          disabled={slugAvailable === false || isSubmitting}
         >
-          저장
+          {isSubmitting ? '저장 중...' : '저장'}
         </Button>
       </div>
 

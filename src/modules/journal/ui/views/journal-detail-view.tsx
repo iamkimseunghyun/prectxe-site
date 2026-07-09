@@ -5,6 +5,7 @@ import { BackButton } from '@/components/shared/back-button';
 import { CopyUrlButton } from '@/components/shared/copy-url-button';
 import { formatKstDate, getImageUrl } from '@/lib/utils';
 import { getArticleBySlug } from '@/modules/journal/server/actions';
+import { ViewCounter } from '@/modules/journal/ui/components/view-counter';
 
 export async function JournalDetailView({ slug }: { slug: string }) {
   const article = await getArticleBySlug(slug);
@@ -22,7 +23,8 @@ export async function JournalDetailView({ slug }: { slug: string }) {
 
   return (
     <article className="relative mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <BackButton />
+      <BackButton fallbackHref="/journal" />
+      <ViewCounter slug={slug} />
       <ArticleSchema
         article={{
           slug: article.slug,

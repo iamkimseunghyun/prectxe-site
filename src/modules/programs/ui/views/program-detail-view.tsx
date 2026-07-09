@@ -31,7 +31,7 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
 
   return (
     <article className="relative mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      <BackButton />
+      <BackButton fallbackHref="/programs" />
       <ProgramSchema
         program={{
           title: program.title,

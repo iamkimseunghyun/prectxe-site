@@ -21,6 +21,7 @@ type Article = {
   title: string;
   publishedAt: Date | string | null;
   isFeatured: boolean;
+  views: number;
 };
 
 interface ArticleTableProps {
@@ -52,6 +53,7 @@ export function ArticleTable({ data }: ArticleTableProps) {
             <TableRow className="bg-muted/40">
               <TableHead className="max-w-[200px]">제목</TableHead>
               <TableHead style={{ width: '10rem' }}>발행일</TableHead>
+              <TableHead style={{ width: '5rem' }}>조회수</TableHead>
               <TableHead style={{ width: '5rem' }}>메인</TableHead>
               <TableHead style={{ width: '8rem' }}>관리</TableHead>
             </TableRow>
@@ -60,7 +62,7 @@ export function ArticleTable({ data }: ArticleTableProps) {
             {data.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="py-8 text-center text-muted-foreground"
                 >
                   등록된 글이 없습니다.
@@ -77,6 +79,7 @@ export function ArticleTable({ data }: ArticleTableProps) {
                       ? formatKstDate(new Date(item.publishedAt))
                       : '미발행'}
                   </TableCell>
+                  <TableCell>{item.views.toLocaleString()}</TableCell>
                   <TableCell>
                     <Switch
                       checked={item.isFeatured}

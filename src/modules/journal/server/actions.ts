@@ -37,6 +37,7 @@ type PagedArticleItem = Prisma.ArticleGetPayload<{
     publishedAt: true;
     isFeatured: true;
     createdAt: true;
+    views: true;
   };
 }>;
 
@@ -144,6 +145,7 @@ export async function listArticlesPaged(
           publishedAt: true,
           isFeatured: true,
           createdAt: true,
+          views: true,
         },
       }),
     ]);
@@ -237,6 +239,19 @@ export async function getArticleBySlug(slug: string) {
   } catch (e) {
     console.error('Failed to get article', e);
     return null;
+  }
+}
+
+// 공개 조회수 집계 — 캐시 무효화 없는 raw write (article 캐시를 매 조회마다 무효화하면 캐싱 의미가 없어짐)
+export async function incrementArticleViews(slug: string) {
+  try {
+    await prisma.article.update({
+      where: { slug },
+      data: { views: { increment: 1 } },
+      select: { slug: true },
+    });
+  } catch (e) {
+    console.error('Failed to increment article views', e);
   }
 }
 
