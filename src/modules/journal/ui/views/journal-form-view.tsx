@@ -1,6 +1,9 @@
 'use client';
 
 import { X } from 'lucide-react';
+// onSubmit이 성공 시 서버 액션 내부에서 redirect()를 호출하는 구조라, catch에서 이 에러를
+// 실수로 삼키면 리다이렉트 자체가 깨짐 — isRedirectError로 구분해 다시 throw 해야 함
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import SingleImageBox from '@/components/image/single-image-box';
@@ -105,6 +108,8 @@ export function JournalFormView({
   const [showPreview, setShowPreview] = useState(false);
   // 저장 진행 상태 — 버튼 중복 클릭 시 이미지 single-use 업로드 URL 재사용 에러 방지
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // 업로드 재시도 진행 상태 — 저장 버튼과 별개 액션이라 동일한 이유로 자체 가드가 필요
+  const [isRetryingUpload, setIsRetryingUpload] = useState(false);
 
   const handleChange = (k: keyof Initial, v: Initial[keyof Initial]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -193,6 +198,15 @@ export function JournalFormView({
           description: res.error || '저장 중 오류가 발생했습니다.',
         });
       }
+    } catch (error) {
+      // redirect()는 Next.js가 내부적으로 특수 에러를 던져 처리하는 방식 — 그대로 다시 throw해야
+      // 실제 리다이렉트가 진행됨. 그 외의 예외만 사용자에게 토스트로 알림
+      if (isRedirectError(error)) throw error;
+      toast({
+        title: '오류',
+        description:
+          '저장 중 예기치 못한 오류가 발생했습니다. 다시 시도해주세요.',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -415,14 +429,19 @@ export function JournalFormView({
                   type="button"
                   size="sm"
                   variant="outline"
+                  disabled={isRetryingUpload}
                   onClick={async () => {
-                    if (imageFile) {
+                    if (!imageFile || isRetryingUpload) return;
+                    setIsRetryingUpload(true);
+                    try {
                       await uploadImage(imageFile, uploadURL);
                       finalizeUpload();
+                    } finally {
+                      setIsRetryingUpload(false);
                     }
                   }}
                 >
-                  업로드 재시도
+                  {isRetryingUpload ? '재시도 중...' : '업로드 재시도'}
                 </Button>
               </div>
             )}
