@@ -14,9 +14,14 @@ export function BackButton({
 }) {
   const router = useRouter();
 
-  // 공유 링크 등으로 직접 진입해 히스토리가 없으면 router.back()이 아무 동작도 하지 않음 — 폴백 경로로 이동
+  // 히스토리가 없거나(공유 링크 등 직접 진입) 직전 페이지가 우리 서비스 밖(구글/SNS 등)이면
+  // router.back()이 아무 반응이 없거나 서비스 밖으로 이탈시킴 — 두 경우 다 폴백 경로로 이동
   const handleClick = () => {
-    if (window.history.length > 1) {
+    const hasInternalReferrer = document.referrer.startsWith(
+      window.location.origin
+    );
+
+    if (hasInternalReferrer && window.history.length > 1) {
       router.back();
     } else {
       router.push(fallbackHref);
