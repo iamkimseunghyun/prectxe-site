@@ -434,7 +434,18 @@ export function JournalFormView({
                     if (!imageFile || isRetryingUpload) return;
                     setIsRetryingUpload(true);
                     try {
-                      await uploadImage(imageFile, uploadURL);
+                      const uploadSuccess = await uploadImage(
+                        imageFile,
+                        uploadURL
+                      );
+                      if (!uploadSuccess) {
+                        toast({
+                          title: '이미지 업로드 실패',
+                          description:
+                            '이미지를 업로드하는 중 오류가 발생했습니다.',
+                        });
+                        return;
+                      }
                       finalizeUpload();
                     } finally {
                       setIsRetryingUpload(false);
