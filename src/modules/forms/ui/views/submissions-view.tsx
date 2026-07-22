@@ -89,95 +89,78 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
     (typeof submissions)[0] | null
   >(null);
 
-  // Build complete field list (current + deleted)
-  const allFields = useMemo(() => {
-    const fieldMap = new Map<
-      string,
-      { id: string | null; label: string; isDeleted: boolean; index: number }
-    >();
+  // Build the column list by grouping fields by label.
+  // A field edit soft-deletes the old field and creates a new one with the
+  // same label, so a single logical question ("이름 (Name)") can be backed by
+  // many field ids (active + archived). We merge every version of a label into
+  // one column so responses land in the same place regardless of which field
+  // version the submission used.
+  const columns = useMemo(() => {
+    type Column = {
+      key: string;
+      label: string;
+      fieldIds: Set<string>;
+      matchLegacyLabel: boolean; // also match null-fieldId responses by label
+      hasActive: boolean; // has a non-archived field → not a deleted column
+      hasData: boolean; // any submission has a non-empty value
+      order: number;
+    };
 
-    // Add current (non-archived) fields
-    form.fields.forEach((field) => {
-      fieldMap.set(field.id, {
-        id: field.id,
-        label: field.label,
-        isDeleted: field.archived,
-        index: 0,
-      });
-    });
-
-    // Add deleted/archived fields from responses
-    // Track per-submission field order to detect duplicate labels
-    submissions.forEach((submission) => {
-      const deletedLabelCounts = new Map<string, number>();
-      submission.responses.forEach((response) => {
-        // Archived fields: fieldId still exists, field.archived === true
-        if (response.field?.archived && !fieldMap.has(response.field.id)) {
-          fieldMap.set(response.field.id, {
-            id: response.field.id,
-            label: response.field.label,
-            isDeleted: true,
-            index: 0,
-          });
-        }
-        // Legacy deleted fields: fieldId is null (과거 데이터 호환)
-        else if (!response.fieldId && response.fieldLabel) {
-          const count = deletedLabelCounts.get(response.fieldLabel) || 0;
-          deletedLabelCounts.set(response.fieldLabel, count + 1);
-          const key = `deleted_${response.fieldLabel}_${count}`;
-          if (!fieldMap.has(key)) {
-            fieldMap.set(key, {
-              id: null,
-              label: response.fieldLabel,
-              isDeleted: true,
-              index: count,
-            });
-          }
-        } else if (response.field && !fieldMap.has(response.field.id)) {
-          fieldMap.set(response.field.id, {
-            id: response.field.id,
-            label: response.field.label,
-            isDeleted: false,
-            index: 0,
-          });
-        }
-      });
-    });
-
-    return Array.from(fieldMap.values());
-  }, [form.fields, submissions]);
-
-  // Build unique column names for each field
-  const fieldColumnNames = useMemo(() => {
-    const names = new Map<(typeof allFields)[number], string>();
-    const labelCounts = new Map<string, number>();
-
-    // Count how many times each label appears
-    for (const field of allFields) {
-      const baseLabel = field.isDeleted
-        ? `${field.label} (삭제됨)`
-        : field.label;
-      labelCounts.set(baseLabel, (labelCounts.get(baseLabel) || 0) + 1);
-    }
-
-    // Assign unique column names with suffix for duplicates
-    const labelIndexes = new Map<string, number>();
-    for (const field of allFields) {
-      const baseLabel = field.isDeleted
-        ? `${field.label} (삭제됨)`
-        : field.label;
-      const count = labelCounts.get(baseLabel) || 1;
-      if (count > 1) {
-        const idx = (labelIndexes.get(baseLabel) || 0) + 1;
-        labelIndexes.set(baseLabel, idx);
-        names.set(field, idx === 1 ? baseLabel : `${baseLabel} (${idx})`);
-      } else {
-        names.set(field, baseLabel);
+    const map = new Map<string, Column>();
+    const getCol = (label: string) => {
+      let col = map.get(label);
+      if (!col) {
+        col = {
+          // Namespace the internal row key so field labels like "IP", "id",
+          // or "제출시간" can't overwrite the row's reserved metadata keys.
+          key: `field:${label}`,
+          label,
+          fieldIds: new Set(),
+          matchLegacyLabel: false,
+          hasActive: false,
+          hasData: false,
+          order: Number.MAX_SAFE_INTEGER,
+        };
+        map.set(label, col);
       }
-    }
+      return col;
+    };
 
-    return names;
-  }, [allFields]);
+    // Current + archived fields defined on the form
+    form.fields.forEach((field) => {
+      const col = getCol(field.label);
+      col.fieldIds.add(field.id);
+      if (!field.archived) {
+        col.hasActive = true;
+        col.order = Math.min(col.order, field.order);
+      }
+    });
+
+    // Responses may reference fields/labels no longer on the form (legacy data)
+    submissions.forEach((submission) => {
+      submission.responses.forEach((response) => {
+        if (response.field) {
+          const col = getCol(response.field.label);
+          col.fieldIds.add(response.field.id);
+          if (!response.field.archived) col.hasActive = true;
+          if (response.value?.trim()) col.hasData = true;
+        } else if (!response.fieldId && response.fieldLabel) {
+          const col = getCol(response.fieldLabel);
+          col.matchLegacyLabel = true;
+          if (response.value?.trim()) col.hasData = true;
+        }
+      });
+    });
+
+    // Keep active columns and deleted columns that actually hold data; drop
+    // empty archived-only columns (leftover from repeated field edits).
+    return Array.from(map.values())
+      .filter((col) => col.hasActive || col.hasData)
+      .sort((a, b) => {
+        if (a.order !== b.order) return a.order - b.order;
+        return a.label.localeCompare(b.label);
+      });
+  }, [form.fields, submissions]);
 
   // Transform data for table display
   const tableData = useMemo(() => {
@@ -187,30 +170,24 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
         제출시간: formatKstDateTime(new Date(submission.submittedAt)),
       };
 
-      allFields.forEach((field) => {
-        let response:
-          | SubmissionsViewProps['data']['submissions'][0]['responses'][0]
-          | undefined;
-        if (field.id) {
-          response = submission.responses.find((r) => r.fieldId === field.id);
-        } else {
-          // For deleted fields with duplicate labels, match by
-          // occurrence index within the submission's responses
-          const deletedResponses = submission.responses.filter(
-            (r) => !r.fieldId && r.fieldLabel === field.label
-          );
-          response = deletedResponses[field.index];
-        }
-
-        const columnName = fieldColumnNames.get(field) || field.label;
-        row[columnName] = response?.value || '-';
+      columns.forEach((col) => {
+        const matches = submission.responses.filter(
+          (r) =>
+            (r.fieldId != null && col.fieldIds.has(r.fieldId)) ||
+            (r.fieldId == null &&
+              col.matchLegacyLabel &&
+              r.fieldLabel === col.label)
+        );
+        // Prefer a non-empty response when a submission somehow has several.
+        const chosen = matches.find((r) => r.value?.trim()) ?? matches[0];
+        row[col.key] = chosen?.value || '-';
       });
 
       row.IP = submission.ipAddress || '-';
 
       return row;
     });
-  }, [submissions, allFields, fieldColumnNames]);
+  }, [submissions, columns]);
 
   // Filter data
   const filteredData = useMemo(() => {
@@ -258,12 +235,21 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
     });
   };
 
+  // Build export rows with display labels as headers (row keys are namespaced
+  // internally, so map them back to the human-readable column labels here).
+  const buildExportRows = () =>
+    tableData.map((row) => {
+      const record: Record<string, string> = { 제출시간: row.제출시간 };
+      columns.forEach((col) => {
+        record[col.label] = row[col.key];
+      });
+      record.IP = row.IP;
+      return record;
+    });
+
   const handleExportExcel = async () => {
     const XLSX = await import('xlsx');
-    const exportData = tableData.map((row) => {
-      const { id, ...rest } = row;
-      return rest;
-    });
+    const exportData = buildExportRows();
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
@@ -283,10 +269,7 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
 
   const handleExportCSV = async () => {
     const XLSX = await import('xlsx');
-    const exportData = tableData.map((row) => {
-      const { id, ...rest } = row;
-      return rest;
-    });
+    const exportData = buildExportRows();
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const csv = XLSX.utils.sheet_to_csv(worksheet);
@@ -388,30 +371,26 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
                         <ArrowUpDown className="h-3.5 w-3.5" />
                       </div>
                     </TableHead>
-                    {allFields.map((field, index) => {
-                      const columnName =
-                        fieldColumnNames.get(field) || field.label;
-                      return (
-                        <TableHead
-                          key={field.id || `deleted_${index}`}
-                          className="cursor-pointer select-none hover:bg-muted/80"
-                          onClick={() => handleSort(columnName)}
-                        >
-                          <div className="flex items-center gap-1">
-                            {columnName.replace(' (삭제됨)', '')}
-                            {field.isDeleted && (
-                              <Badge
-                                variant="destructive"
-                                className="h-5 text-[10px]"
-                              >
-                                삭제됨
-                              </Badge>
-                            )}
-                            <ArrowUpDown className="h-3.5 w-3.5" />
-                          </div>
-                        </TableHead>
-                      );
-                    })}
+                    {columns.map((col) => (
+                      <TableHead
+                        key={col.key}
+                        className="cursor-pointer select-none hover:bg-muted/80"
+                        onClick={() => handleSort(col.key)}
+                      >
+                        <div className="flex items-center gap-1">
+                          {col.label}
+                          {!col.hasActive && (
+                            <Badge
+                              variant="destructive"
+                              className="h-5 text-[10px]"
+                            >
+                              삭제됨
+                            </Badge>
+                          )}
+                          <ArrowUpDown className="h-3.5 w-3.5" />
+                        </div>
+                      </TableHead>
+                    ))}
                     <TableHead
                       className="w-32 cursor-pointer select-none hover:bg-muted/80"
                       onClick={() => handleSort('IP')}
@@ -441,13 +420,11 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
                         <TableCell className="text-sm font-medium">
                           {row.제출시간}
                         </TableCell>
-                        {allFields.map((field, index) => {
-                          const columnName =
-                            fieldColumnNames.get(field) || field.label;
-                          const value = row[columnName];
+                        {columns.map((col) => {
+                          const value = row[col.key];
                           return (
                             <TableCell
-                              key={field.id || `deleted_${index}`}
+                              key={col.key}
                               className="max-w-md text-sm"
                             >
                               {value === '-' ? (
@@ -575,9 +552,12 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
                     response.fieldLabel ||
                     response.field?.label ||
                     '알 수 없는 필드';
-                  const isDeleted =
-                    response.field?.archived ||
-                    (!response.fieldId && response.fieldLabel);
+                  // A response is "deleted" only when no active field with the
+                  // same label remains — otherwise it's just an older version
+                  // of a still-existing question.
+                  const isDeleted = !columns.some(
+                    (col) => col.hasActive && col.label === fieldLabel
+                  );
 
                   return (
                     <div

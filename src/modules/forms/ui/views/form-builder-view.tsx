@@ -188,11 +188,16 @@ export function FormBuilderView({
         finalizeUpload();
       }
 
-      // Ensure all fields have correct order and remove temporary ids
+      // Ensure all fields have correct order.
+      // 신규 필드의 임시 id(`field-<timestamp>`)만 제거하고, 기존 필드의 실제
+      // DB id는 유지한다. id를 모두 제거하면 서버가 매 저장마다 기존 필드를
+      // archive 하고 새로 생성해 빈 archived 필드가 계속 쌓인다.
       const fieldsToSubmit = fields.map((field, index) => {
         const { id, ...fieldData } = field;
+        const isTempId = !id || id.startsWith('field-');
         return {
           ...fieldData,
+          ...(isTempId ? {} : { id }),
           order: index,
         };
       });
