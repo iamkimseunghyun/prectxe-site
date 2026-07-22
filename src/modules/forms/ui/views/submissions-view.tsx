@@ -376,18 +376,23 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
                         key={col.key}
                         className="cursor-pointer select-none hover:bg-muted/80"
                         onClick={() => handleSort(col.key)}
+                        title={col.label}
                       >
                         <div className="flex items-center gap-1">
-                          {col.label}
+                          {/* 긴 라벨(동의문 등)이 헤더를 세로로 늘리지 않도록
+                              2줄로 clamp, 전체 텍스트는 hover 시 title로 표시 */}
+                          <span className="line-clamp-2 max-w-[200px] break-words">
+                            {col.label}
+                          </span>
                           {!col.hasActive && (
                             <Badge
                               variant="destructive"
-                              className="h-5 text-[10px]"
+                              className="h-5 shrink-0 text-[10px]"
                             >
                               삭제됨
                             </Badge>
                           )}
-                          <ArrowUpDown className="h-3.5 w-3.5" />
+                          <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
                         </div>
                       </TableHead>
                     ))}
