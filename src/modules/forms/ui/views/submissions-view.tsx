@@ -111,7 +111,9 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
       let col = map.get(label);
       if (!col) {
         col = {
-          key: label,
+          // Namespace the internal row key so field labels like "IP", "id",
+          // or "제출시간" can't overwrite the row's reserved metadata keys.
+          key: `field:${label}`,
           label,
           fieldIds: new Set(),
           matchLegacyLabel: false,
@@ -233,12 +235,21 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
     });
   };
 
+  // Build export rows with display labels as headers (row keys are namespaced
+  // internally, so map them back to the human-readable column labels here).
+  const buildExportRows = () =>
+    tableData.map((row) => {
+      const record: Record<string, string> = { 제출시간: row.제출시간 };
+      columns.forEach((col) => {
+        record[col.label] = row[col.key];
+      });
+      record.IP = row.IP;
+      return record;
+    });
+
   const handleExportExcel = async () => {
     const XLSX = await import('xlsx');
-    const exportData = tableData.map((row) => {
-      const { id, ...rest } = row;
-      return rest;
-    });
+    const exportData = buildExportRows();
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
@@ -258,10 +269,7 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
 
   const handleExportCSV = async () => {
     const XLSX = await import('xlsx');
-    const exportData = tableData.map((row) => {
-      const { id, ...rest } = row;
-      return rest;
-    });
+    const exportData = buildExportRows();
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const csv = XLSX.utils.sheet_to_csv(worksheet);
