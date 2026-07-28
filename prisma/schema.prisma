@@ -13,7 +13,7 @@ model Program {
   summary     String?
   description String?
   type        ProgramType
-  status      ProgramStatus   @default(upcoming)
+  status      ProgramStatus   @default(completed)
   startAt     DateTime
   endAt       DateTime?
   city        String?
@@ -309,7 +309,7 @@ enum ProgramType {
 
 enum ProgramStatus {
   draft
-  upcoming
+  upcoming // deprecated: Program은 아카이브(completed) 전용. 값은 레거시 데이터 호환용 dormant.
   completed
 }
 

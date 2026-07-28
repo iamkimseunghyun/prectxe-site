@@ -20,13 +20,9 @@ import {
 } from '@/lib/schemas/program';
 import { extractImageId, parseKstDateInput } from '@/lib/utils';
 
-export type ProgramStatusFilter =
-  | 'all'
-  | 'upcoming'
-  | 'completed'
-  | 'past'
-  | 'this-month'
-  | 'next-3-months';
+// Program은 아카이브 전용. 공개 목록은 status 값 구분 없이 draft만 제외한다.
+// ('all'과 'completed'는 동일하게 non-draft를 의미 — API/호출부 호환용으로만 유지)
+export type ProgramStatusFilter = 'all' | 'completed';
 
 export interface ListProgramsParams {
   status?: ProgramStatusFilter;
@@ -34,22 +30,6 @@ export interface ListProgramsParams {
   city?: string | null;
   search?: string | null;
   includeDrafts?: boolean; // 관리자용: draft 프로그램 포함
-}
-
-function getDateRangeForStatus(status?: ProgramStatusFilter) {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const threeMonthsAhead = new Date(now.getFullYear(), now.getMonth() + 3, 1);
-
-  switch (status) {
-    case 'this-month':
-      return { gte: startOfMonth, lt: startOfNextMonth } as const;
-    case 'next-3-months':
-      return { gte: now, lt: threeMonthsAhead } as const;
-    default:
-      return null;
-  }
 }
 
 const programListSelect = {
@@ -92,15 +72,9 @@ type ProgramPagedItem = Prisma.ProgramGetPayload<{
 
 export const listProgramsWithCache = next_cache(
   async (params: ListProgramsParams = {}) => {
-    const { status = 'all' } = params;
-
-    // 공개 목록: draft 제외 + 날짜 기반 effective status 필터 (buildWhere 공유)
+    // 공개 목록: draft 제외(= 아카이브 전체), 최근 이벤트 먼저
     const where = buildWhere(params);
-
-    const orderBy: Prisma.ProgramOrderByWithRelationInput =
-      status === 'completed' || status === 'past'
-        ? { startAt: 'desc' }
-        : { startAt: 'asc' };
+    const orderBy = { startAt: 'desc' } as const;
 
     try {
       return await prisma.program.findMany({
@@ -132,53 +106,15 @@ export async function listPrograms(params: ListProgramsParams = {}) {
   }
 }
 
-// 종료(지난) 프로그램 판별 where 조각: endAt 있으면 endAt, 없으면 startAt 기준.
-function endedClause(now: Date): Prisma.ProgramWhereInput {
-  return {
-    OR: [{ endAt: { lt: now } }, { endAt: null, startAt: { lt: now } }],
-  };
-}
-
-// 공개 뷰용 status where — 저장값이 아닌 날짜 기반 effective status로 필터.
-// (관리자 뷰는 저장값 그대로 사용해 미갱신 항목을 찾아 고칠 수 있게 한다.)
-function publicStatusWhere(
-  status: ProgramStatusFilter,
-  now: Date
-): Prisma.ProgramWhereInput {
-  if (status === 'upcoming') {
-    // upcoming으로 저장됐지만 아직 종료되지 않은 것만
-    return { status: 'upcoming', NOT: endedClause(now) };
-  }
-  if (status === 'completed' || status === 'past') {
-    // completed로 저장됐거나, upcoming이지만 이미 종료된 것
-    return {
-      OR: [
-        { status: 'completed' },
-        { status: 'upcoming', ...endedClause(now) },
-      ],
-    };
-  }
-  return { status: { not: 'draft' } }; // 'all' 또는 날짜 기반 필터
-}
-
 function buildWhere(params: ListProgramsParams): Prisma.ProgramWhereInput {
-  const { status = 'all', type, city, search, includeDrafts = false } = params;
-  const now = new Date();
-  const dateRange = getDateRangeForStatus(status);
+  const { type, city, search, includeDrafts = false } = params;
 
-  // OR 키 충돌(status OR vs search OR)을 피하려 AND 배열로 결합.
+  // OR 키 충돌(status vs search)을 피하려 AND 배열로 결합.
   const and: Prisma.ProgramWhereInput[] = [];
 
-  if (includeDrafts) {
-    // 관리자: 저장 상태 기준(날짜 무관). 'all'은 draft 포함 → status 제약 없음.
-    if (status === 'upcoming') and.push({ status: 'upcoming' });
-    else if (status === 'completed' || status === 'past')
-      and.push({ status: 'completed' });
-  } else {
-    and.push(publicStatusWhere(status, now));
-  }
+  // 공개 목록은 draft 제외(= 아카이브 전체). 관리자(includeDrafts)는 draft 포함.
+  if (!includeDrafts) and.push({ status: { not: 'draft' } });
 
-  if (dateRange) and.push({ startAt: dateRange });
   if (type && type !== 'all-type') and.push({ type: type as ProgramType });
   if (city?.trim()) and.push({ city: { contains: city, mode: 'insensitive' } });
   if (search?.trim())
@@ -199,13 +135,11 @@ export async function listProgramsPaged(
   const where = buildWhere(params);
 
   // Admin list (no status): newest first by createdAt
-  // Public list: sort by event date
+  // Public archive: 최근 이벤트 먼저
   const orderBy: Prisma.ProgramOrderByWithRelationInput =
     !params.status || params.status === 'all'
       ? { createdAt: 'desc' }
-      : params.status === 'completed' || params.status === 'past'
-        ? { startAt: 'desc' }
-        : { startAt: 'asc' };
+      : { startAt: 'desc' };
 
   try {
     const [total, items] = await Promise.all([
@@ -295,7 +229,7 @@ export async function createProgram(input: unknown, _userId: string) {
       summary: data.summary ?? null,
       description: data.description ?? null,
       type: data.type,
-      status: data.status ?? 'upcoming',
+      status: data.status ?? 'completed',
       startAt: parseKstDateInput(data.startAt),
       endAt: data.endAt ? parseKstDateInput(data.endAt) : null,
       city: data.city ?? null,
@@ -369,7 +303,7 @@ export async function updateProgram(id: string, input: unknown) {
       summary: data.summary ?? null,
       description: data.description ?? null,
       type: data.type,
-      status: data.status ?? 'upcoming',
+      status: data.status ?? 'completed',
       startAt: data.startAt ? parseKstDateInput(data.startAt) : undefined,
       endAt: data.endAt ? parseKstDateInput(data.endAt) : null,
       city: data.city ?? null,

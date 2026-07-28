@@ -118,7 +118,7 @@ export function ProgramFormView({
     summary: initial?.summary ?? '',
     description: initial?.description ?? '',
     type: initial?.type ?? 'exhibition',
-    status: initial?.status ?? 'upcoming',
+    status: initial?.status ?? 'completed',
     startAt: initial?.startAt ? formatDateForForm(initial.startAt) : '',
     endAt: initial?.endAt ? formatDateForForm(initial.endAt) : '',
     city: initial?.city ?? '',
@@ -180,9 +180,8 @@ export function ProgramFormView({
   const handlePublishToggle = (checked: boolean) => {
     setIsPublished(checked);
     if (checked) {
-      // 공개: upcoming 또는 completed 상태로 변경 (기존 상태 유지 또는 upcoming)
-      const newStatus = form.status === 'completed' ? 'completed' : 'upcoming';
-      handleChange('status', newStatus);
+      // 공개: completed (Program은 아카이브 전용)
+      handleChange('status', 'completed');
     } else {
       // 비공개: draft 상태로 변경
       handleChange('status', 'draft');
@@ -656,8 +655,8 @@ export function ProgramFormView({
                     <SelectValue placeholder="상태" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="upcoming">upcoming</SelectItem>
-                    <SelectItem value="completed">completed</SelectItem>
+                    <SelectItem value="draft">draft (비공개)</SelectItem>
+                    <SelectItem value="completed">completed (공개)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

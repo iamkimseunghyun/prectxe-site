@@ -93,15 +93,15 @@ const nextConfig: NextConfig = {
         destination: '/programs/:slug',
         permanent: true,
       },
-      // Merge Discover/Archive into Programs
+      // Merge Discover/Archive into Programs (아카이브 전용 — status 파라미터 불필요)
       {
         source: '/discover',
-        destination: '/programs?status=upcoming',
+        destination: '/programs',
         permanent: true,
       },
       {
         source: '/archive',
-        destination: '/programs?status=completed',
+        destination: '/programs',
         permanent: true,
       },
     ];

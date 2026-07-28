@@ -8,6 +8,8 @@ export const ProgramTypeEnum = z.enum([
   'talk',
 ]);
 
+// Program은 아카이브 전용(draft=비공개, completed=공개). 'upcoming'은 레거시
+// 데이터 호환용으로만 허용(신규 생성/폼에는 노출 안 함).
 export const ProgramStatusEnum = z.enum(['draft', 'upcoming', 'completed']);
 
 export const programBaseSchema = z.object({
@@ -16,7 +18,7 @@ export const programBaseSchema = z.object({
   summary: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   type: ProgramTypeEnum,
-  status: ProgramStatusEnum.default('upcoming'),
+  status: ProgramStatusEnum.default('completed'),
   startAt: z.string().min(1, '시작일을 입력하세요'), // YYYY-MM-DD
   endAt: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
