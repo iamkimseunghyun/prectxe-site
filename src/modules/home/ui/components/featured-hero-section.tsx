@@ -103,7 +103,16 @@ const getFeaturedHero = next_cache(
     if (!featured) {
       const fallbackProgram =
         (await prisma.program.findFirst({
-          where: { status: 'upcoming' },
+          where: {
+            status: 'upcoming',
+            // 종료일이 지난 프로그램은 upcoming 폴백에서 제외 (status 미갱신 대비).
+            NOT: {
+              OR: [
+                { endAt: { lt: new Date() } },
+                { endAt: null, startAt: { lt: new Date() } },
+              ],
+            },
+          },
           orderBy: { startAt: 'asc' },
           select: {
             slug: true,

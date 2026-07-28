@@ -36,8 +36,16 @@ const STATUS_STYLE: Record<string, { label: string; className: string }> = {
  */
 const getHomePrograms = next_cache(
   async () => {
+    const now = new Date();
     const upcoming = await prisma.program.findMany({
-      where: { status: 'upcoming' },
+      where: {
+        status: 'upcoming',
+        // 종료일이 지난 프로그램은 status가 upcoming으로 남아있어도 제외.
+        // endAt 없으면 startAt 기준, 둘 다 없으면(날짜 미설정) 유지.
+        NOT: {
+          OR: [{ endAt: { lt: now } }, { endAt: null, startAt: { lt: now } }],
+        },
+      },
       take: 3,
       orderBy: { startAt: 'asc' },
       select: PROGRAM_SELECT,
