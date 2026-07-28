@@ -92,28 +92,10 @@ type ProgramPagedItem = Prisma.ProgramGetPayload<{
 
 export const listProgramsWithCache = next_cache(
   async (params: ListProgramsParams = {}) => {
-    const { status = 'all', type, city, search } = params;
+    const { status = 'all' } = params;
 
-    const dateRange = getDateRangeForStatus(status);
-
-    const where: Prisma.ProgramWhereInput = {
-      // draft 상태 제외 (공개된 프로그램만 표시)
-      status:
-        status === 'upcoming'
-          ? 'upcoming'
-          : status === 'completed' || status === 'past'
-            ? 'completed'
-            : { not: 'draft' }, // 'all' 또는 날짜 기반 필터일 때
-      ...(dateRange && { startAt: dateRange }),
-      ...(type && type !== 'all-type' && { type: type as ProgramType }),
-      ...(city?.trim() && { city: { contains: city, mode: 'insensitive' } }),
-      ...(search?.trim() && {
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { summary: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
-    };
+    // 공개 목록: draft 제외 + 날짜 기반 effective status 필터 (buildWhere 공유)
+    const where = buildWhere(params);
 
     const orderBy: Prisma.ProgramOrderByWithRelationInput =
       status === 'completed' || status === 'past'
@@ -150,32 +132,64 @@ export async function listPrograms(params: ListProgramsParams = {}) {
   }
 }
 
+// 종료(지난) 프로그램 판별 where 조각: endAt 있으면 endAt, 없으면 startAt 기준.
+function endedClause(now: Date): Prisma.ProgramWhereInput {
+  return {
+    OR: [{ endAt: { lt: now } }, { endAt: null, startAt: { lt: now } }],
+  };
+}
+
+// 공개 뷰용 status where — 저장값이 아닌 날짜 기반 effective status로 필터.
+// (관리자 뷰는 저장값 그대로 사용해 미갱신 항목을 찾아 고칠 수 있게 한다.)
+function publicStatusWhere(
+  status: ProgramStatusFilter,
+  now: Date
+): Prisma.ProgramWhereInput {
+  if (status === 'upcoming') {
+    // upcoming으로 저장됐지만 아직 종료되지 않은 것만
+    return { status: 'upcoming', NOT: endedClause(now) };
+  }
+  if (status === 'completed' || status === 'past') {
+    // completed로 저장됐거나, upcoming이지만 이미 종료된 것
+    return {
+      OR: [
+        { status: 'completed' },
+        { status: 'upcoming', ...endedClause(now) },
+      ],
+    };
+  }
+  return { status: { not: 'draft' } }; // 'all' 또는 날짜 기반 필터
+}
+
 function buildWhere(params: ListProgramsParams): Prisma.ProgramWhereInput {
   const { status = 'all', type, city, search, includeDrafts = false } = params;
+  const now = new Date();
   const dateRange = getDateRangeForStatus(status);
-  return {
-    // draft 상태 필터링 (includeDrafts가 false이면 draft 제외)
-    ...(!includeDrafts && {
-      status:
-        status === 'upcoming'
-          ? 'upcoming'
-          : status === 'completed' || status === 'past'
-            ? 'completed'
-            : { not: 'draft' }, // 'all' 또는 날짜 기반 필터일 때
-    }),
-    ...(includeDrafts && status === 'upcoming' && { status: 'upcoming' }),
-    ...(includeDrafts &&
-      (status === 'completed' || status === 'past') && { status: 'completed' }),
-    ...(dateRange && { startAt: dateRange }),
-    ...(type && type !== 'all-type' && { type: type as ProgramType }),
-    ...(city?.trim() && { city: { contains: city, mode: 'insensitive' } }),
-    ...(search?.trim() && {
+
+  // OR 키 충돌(status OR vs search OR)을 피하려 AND 배열로 결합.
+  const and: Prisma.ProgramWhereInput[] = [];
+
+  if (includeDrafts) {
+    // 관리자: 저장 상태 기준(날짜 무관). 'all'은 draft 포함 → status 제약 없음.
+    if (status === 'upcoming') and.push({ status: 'upcoming' });
+    else if (status === 'completed' || status === 'past')
+      and.push({ status: 'completed' });
+  } else {
+    and.push(publicStatusWhere(status, now));
+  }
+
+  if (dateRange) and.push({ startAt: dateRange });
+  if (type && type !== 'all-type') and.push({ type: type as ProgramType });
+  if (city?.trim()) and.push({ city: { contains: city, mode: 'insensitive' } });
+  if (search?.trim())
+    and.push({
       OR: [
         { title: { contains: search, mode: 'insensitive' } },
         { summary: { contains: search, mode: 'insensitive' } },
       ],
-    }),
-  };
+    });
+
+  return and.length > 0 ? { AND: and } : {};
 }
 
 export async function listProgramsPaged(

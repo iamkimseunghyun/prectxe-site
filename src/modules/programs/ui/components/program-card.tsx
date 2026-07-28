@@ -1,5 +1,10 @@
 import Image from 'next/image';
-import { cn, formatKstDateRange, getImageUrl } from '@/lib/utils';
+import {
+  cn,
+  formatKstDateRange,
+  getEffectiveProgramStatus,
+  getImageUrl,
+} from '@/lib/utils';
 
 type ProgramStatus = 'upcoming' | 'completed';
 type ProgramType = 'exhibition' | 'live' | 'party' | 'workshop' | 'talk';
@@ -40,7 +45,13 @@ export function ProgramCard({
 }) {
   const start = program.startAt ? new Date(program.startAt) : null;
   const end = program.endAt ? new Date(program.endAt) : start;
-  const status = STATUS_STYLE[program.status];
+  // 종료일이 지난 upcoming은 Archive로 표시 (status 미갱신 대비)
+  const effectiveStatus = getEffectiveProgramStatus(
+    program.status,
+    program.startAt,
+    program.endAt
+  );
+  const status = STATUS_STYLE[effectiveStatus];
 
   return (
     <article className="group">
