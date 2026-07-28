@@ -99,44 +99,21 @@ const getFeaturedHero = next_cache(
           )
         : null;
 
-    // featured 없으면 upcoming → completed program 폴백 (티켓 유도 우선)
+    // featured 없으면 최근 아카이브 프로그램으로 폴백
     if (!featured) {
-      const fallbackProgram =
-        (await prisma.program.findFirst({
-          where: {
-            status: 'upcoming',
-            // 종료일이 지난 프로그램은 upcoming 폴백에서 제외 (status 미갱신 대비).
-            NOT: {
-              OR: [
-                { endAt: { lt: new Date() } },
-                { endAt: null, startAt: { lt: new Date() } },
-              ],
-            },
+      const fallbackProgram = await prisma.program.findFirst({
+        where: { status: { not: 'draft' } },
+        orderBy: { startAt: 'desc' },
+        select: {
+          slug: true,
+          title: true,
+          heroUrl: true,
+          updatedAt: true,
+          credits: {
+            select: { artist: { select: { name: true, nameKr: true } } },
           },
-          orderBy: { startAt: 'asc' },
-          select: {
-            slug: true,
-            title: true,
-            heroUrl: true,
-            updatedAt: true,
-            credits: {
-              select: { artist: { select: { name: true, nameKr: true } } },
-            },
-          },
-        })) ??
-        (await prisma.program.findFirst({
-          where: { status: 'completed' },
-          orderBy: { startAt: 'desc' },
-          select: {
-            slug: true,
-            title: true,
-            heroUrl: true,
-            updatedAt: true,
-            credits: {
-              select: { artist: { select: { name: true, nameKr: true } } },
-            },
-          },
-        }));
+        },
+      });
 
       if (fallbackProgram) {
         featured = { type: 'program', data: fallbackProgram };

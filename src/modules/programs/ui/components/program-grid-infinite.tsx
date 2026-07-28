@@ -73,7 +73,6 @@ export function ProgramGridInfinite({
                 title: p.title,
                 summary: p.summary,
                 heroUrl: p.heroUrl ?? undefined,
-                status: p.status as ProgramCardModel['status'],
                 type: p.type as ProgramCardModel['type'],
                 startAt: p.startAt,
                 endAt: p.endAt ?? undefined,

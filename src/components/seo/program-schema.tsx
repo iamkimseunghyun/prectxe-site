@@ -4,7 +4,6 @@ type ProgramForSEO = {
   title: string;
   summary?: string | null;
   description?: string | null;
-  status: 'upcoming' | 'completed';
   type: 'exhibition' | 'live' | 'party' | 'workshop' | 'talk';
   startAt?: string | null;
   endAt?: string | null;
@@ -15,8 +14,8 @@ type ProgramForSEO = {
 };
 
 const ProgramSchema = ({ program }: { program: ProgramForSEO }) => {
-  // Only generate Event JSON-LD for upcoming
-  if (program.status !== 'upcoming' || !program.startAt) return null;
+  // 일정이 있는 프로그램에 대해 Event JSON-LD 생성 (아카이브 포함)
+  if (!program.startAt) return null;
 
   const jsonLd = {
     '@context': 'https://schema.org',

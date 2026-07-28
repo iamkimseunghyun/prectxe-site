@@ -3,89 +3,51 @@ import { unstable_cache as next_cache } from 'next/cache';
 import Image from 'next/image';
 import Link from 'next/link';
 import { prisma } from '@/lib/db/prisma';
-import { cn, formatKstDateRange, getImageUrl } from '@/lib/utils';
+import { formatKstDateRange, getImageUrl } from '@/lib/utils';
 
 const PROGRAM_SELECT = {
   slug: true,
   title: true,
   summary: true,
   heroUrl: true,
-  status: true,
   startAt: true,
   endAt: true,
   city: true,
   venue: true,
 } as const;
 
-const STATUS_STYLE: Record<string, { label: string; className: string }> = {
-  upcoming: {
-    label: 'Upcoming',
-    className: 'bg-white/95 text-neutral-900',
-  },
-  completed: {
-    label: 'Archive',
-    className: 'bg-neutral-900/75 text-white',
-  },
-};
-
 /**
- * 홈페이지 프로그램 섹션 데이터.
- * - upcoming 3개 우선 (startAt 오름차순)
- * - 없으면 최근 completed 3개로 폴백 (startAt 내림차순) + 라벨 교체
+ * 홈페이지 프로그램(아카이브) 섹션.
+ * Program은 아카이브 전용 — draft가 아닌 지난 프로그램 3개(startAt 내림차순).
  * 날짜 라벨은 캐시 내부에서 문자열로 미리 계산(직렬화 안전).
  */
-const getHomePrograms = next_cache(
+const getArchivePrograms = next_cache(
   async () => {
-    const now = new Date();
-    const upcoming = await prisma.program.findMany({
-      where: {
-        status: 'upcoming',
-        // 종료일이 지난 프로그램은 status가 upcoming으로 남아있어도 제외.
-        // endAt 없으면 startAt 기준, 둘 다 없으면(날짜 미설정) 유지.
-        NOT: {
-          OR: [{ endAt: { lt: now } }, { endAt: null, startAt: { lt: now } }],
-        },
-      },
+    const rows = await prisma.program.findMany({
+      where: { status: { not: 'draft' } },
       take: 3,
-      orderBy: { startAt: 'asc' },
+      orderBy: { startAt: 'desc' },
       select: PROGRAM_SELECT,
     });
 
-    const isUpcoming = upcoming.length > 0;
-    const rows = isUpcoming
-      ? upcoming
-      : await prisma.program.findMany({
-          where: { status: 'completed' },
-          take: 3,
-          orderBy: { startAt: 'desc' },
-          select: PROGRAM_SELECT,
-        });
-
-    const programs = rows.map((p) => ({
+    return rows.map((p) => ({
       slug: p.slug,
       title: p.title,
       summary: p.summary,
       heroUrl: p.heroUrl,
-      status: p.status,
       startAtIso: p.startAt ? p.startAt.toISOString() : null,
       endAtIso: p.endAt ? p.endAt.toISOString() : null,
       location: [p.venue, p.city].filter(Boolean).join(' · '),
     }));
-
-    return { isUpcoming, programs };
   },
-  ['home-upcoming-programs'],
+  ['home-archive-programs'],
   { revalidate: 300, tags: ['programs'] }
 );
 
-export async function UpcomingProgramsSection() {
-  const { isUpcoming, programs } = await getHomePrograms();
+export async function ArchiveProgramsSection() {
+  const programs = await getArchivePrograms();
 
   if (programs.length === 0) return null;
-
-  const eyebrow = isUpcoming ? "What's Next" : 'Unfolding Scenes';
-  const title = isUpcoming ? 'Upcoming' : 'Archive';
-  const ctaText = isUpcoming ? '전체 프로그램' : '아카이브 보기';
 
   return (
     <section className="bg-white py-24 md:py-32">
@@ -93,17 +55,17 @@ export async function UpcomingProgramsSection() {
         <div className="mb-14 flex items-end justify-between gap-6 md:mb-20">
           <div>
             <p className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-neutral-500 md:mb-6">
-              {eyebrow}
+              Unfolding Scenes
             </p>
             <h2 className="text-3xl font-light leading-[1.15] tracking-tight text-neutral-900 md:text-5xl lg:text-6xl">
-              {title}
+              Archive
             </h2>
           </div>
           <Link
             href="/programs"
             className="hidden shrink-0 items-center gap-1.5 text-sm text-neutral-500 transition-colors hover:text-neutral-900 sm:inline-flex"
           >
-            {ctaText} <ArrowUpRight className="h-4 w-4" />
+            아카이브 보기 <ArrowUpRight className="h-4 w-4" />
           </Link>
         </div>
 
@@ -135,16 +97,9 @@ export async function UpcomingProgramsSection() {
                   ) : (
                     <div className="absolute inset-0 bg-linear-to-br from-neutral-200 to-neutral-100" />
                   )}
-                  {STATUS_STYLE[program.status] && (
-                    <span
-                      className={cn(
-                        'absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] backdrop-blur-xs',
-                        STATUS_STYLE[program.status].className
-                      )}
-                    >
-                      {STATUS_STYLE[program.status].label}
-                    </span>
-                  )}
+                  <span className="absolute left-3 top-3 rounded-full bg-neutral-900/75 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-xs">
+                    Archive
+                  </span>
                 </div>
 
                 <div className="mt-5 space-y-2">
@@ -169,7 +124,7 @@ export async function UpcomingProgramsSection() {
           href="/programs"
           className="mt-10 inline-flex items-center gap-1.5 text-sm text-neutral-500 transition-colors hover:text-neutral-900 sm:hidden"
         >
-          {ctaText} <ArrowUpRight className="h-4 w-4" />
+          아카이브 보기 <ArrowUpRight className="h-4 w-4" />
         </Link>
       </div>
     </section>

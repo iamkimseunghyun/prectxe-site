@@ -124,42 +124,12 @@ function ProgramCard({ credit }: { credit: ArtistProgramCredit }) {
 function ProgramSection({ credits }: { credits: ArtistProgramCredit[] }) {
   if (credits.length === 0) return null;
 
-  const now = new Date();
-  const upcoming = credits.filter(
-    (c) => c.program.startAt && new Date(c.program.startAt) > now
-  );
-  const past = credits.filter(
-    (c) => !c.program.startAt || new Date(c.program.startAt) <= now
-  );
-
+  // Program은 아카이브 전용 — 참여 프로그램을 단일 목록으로 표시
   return (
-    <div>
-      {upcoming.length > 0 && (
-        <div className="mb-10">
-          <h3 className="mb-5 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400">
-            Upcoming
-          </h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {upcoming.map((c) => (
-              <ProgramCard key={c.program.id} credit={c} />
-            ))}
-          </div>
-        </div>
-      )}
-      {past.length > 0 && (
-        <div>
-          {upcoming.length > 0 && (
-            <h3 className="mb-5 text-[11px] font-medium uppercase tracking-[0.25em] text-neutral-400">
-              Past
-            </h3>
-          )}
-          <div className="grid gap-4 sm:grid-cols-2">
-            {past.map((c) => (
-              <ProgramCard key={c.program.id} credit={c} />
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="grid gap-4 sm:grid-cols-2">
+      {credits.map((c) => (
+        <ProgramCard key={c.program.id} credit={c} />
+      ))}
     </div>
   );
 }

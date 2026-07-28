@@ -177,7 +177,8 @@ src/
 
 - **Server external packages**: `aligoapi`, `solapi` (required for SSR)
 - **Image remote patterns**: `imagedelivery.net` (Cloudflare), `avatars.githubusercontent.com`, `assets.zyrosite.com`
-- **Legacy redirects** (enabled with `ENABLE_PROGRAM_REDIRECTS=1`): `/projects/:slug` → `/programs/:slug`, `/events/:slug` → `/programs/:slug`, `/discover` → `/programs?status=upcoming`, `/archive` → `/programs?status=completed`
+- **Legacy redirects** (enabled with `ENABLE_PROGRAM_REDIRECTS=1`): `/projects/:slug` → `/programs/:slug`, `/events/:slug` → `/programs/:slug`, `/discover` → `/programs`, `/archive` → `/programs`
+- **Program은 아카이브 전용**: `status`는 `draft`(비공개)/`completed`(공개 아카이브)만 사용. `upcoming`은 레거시 데이터 호환용 dormant enum 값(신규 생성/UI 미노출). 다가오는 소식은 Journal, 판매는 Drops가 담당. 공개 목록/카드는 status 값 구분 없이 draft만 제외.
 
 ## Environment Variables
 

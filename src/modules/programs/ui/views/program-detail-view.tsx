@@ -37,7 +37,6 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
           title: program.title,
           summary: program.summary,
           description: program.description ?? undefined,
-          status: program.status as 'upcoming' | 'completed',
           type: program.type,
           startAt: program.startAt ?? null,
           endAt: program.endAt ?? null,

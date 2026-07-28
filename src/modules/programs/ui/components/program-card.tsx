@@ -1,12 +1,6 @@
 import Image from 'next/image';
-import {
-  cn,
-  formatKstDateRange,
-  getEffectiveProgramStatus,
-  getImageUrl,
-} from '@/lib/utils';
+import { cn, formatKstDateRange, getImageUrl } from '@/lib/utils';
 
-type ProgramStatus = 'upcoming' | 'completed';
 type ProgramType = 'exhibition' | 'live' | 'party' | 'workshop' | 'talk';
 
 export interface ProgramCardModel {
@@ -14,7 +8,6 @@ export interface ProgramCardModel {
   title: string;
   summary?: string | null;
   heroUrl?: string | null;
-  status: ProgramStatus;
   type: ProgramType;
   startAt: Date | string | null;
   endAt?: Date | string | null;
@@ -22,18 +15,10 @@ export interface ProgramCardModel {
   venue?: string | null;
 }
 
-const STATUS_STYLE: Record<
-  ProgramStatus,
-  { label: string; className: string }
-> = {
-  upcoming: {
-    label: 'Upcoming',
-    className: 'bg-white/95 text-neutral-900',
-  },
-  completed: {
-    label: 'Archive',
-    className: 'bg-neutral-900/75 text-white',
-  },
+// Program은 아카이브 전용 — 배지는 항상 Archive.
+const ARCHIVE_BADGE = {
+  label: 'Archive',
+  className: 'bg-neutral-900/75 text-white',
 };
 
 export function ProgramCard({
@@ -45,13 +30,7 @@ export function ProgramCard({
 }) {
   const start = program.startAt ? new Date(program.startAt) : null;
   const end = program.endAt ? new Date(program.endAt) : start;
-  // 종료일이 지난 upcoming은 Archive로 표시 (status 미갱신 대비)
-  const effectiveStatus = getEffectiveProgramStatus(
-    program.status,
-    program.startAt,
-    program.endAt
-  );
-  const status = STATUS_STYLE[effectiveStatus];
+  const status = ARCHIVE_BADGE;
 
   return (
     <article className="group">
