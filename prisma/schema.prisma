@@ -210,6 +210,12 @@ model Artist {
   images         ArtistImage[]
   programCredits ProgramCredit[]
   dropCredits    DropCredit[]
+
+  // Prisma는 FK에 인덱스를 자동 생성하지 않는다. 다른 모델은 FK 인덱스
+  // 스윕(2026-06-19)에 포함됐는데 Artist.userId만 누락돼 있었다.
+  @@index([userId])
+  // 공개 목록의 기본 정렬(createdAt desc, id desc)
+  @@index([createdAt, id])
 }
 
 model ArtistImage {

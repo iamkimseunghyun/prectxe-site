@@ -1,19 +1,19 @@
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import { Geist, Geist_Mono } from 'next/font/google';
+import './globals.css';
 
-import { GoogleAnalytics } from "@next/third-parties/google";
-import type { Metadata } from "next";
-import { NextIntlClientProvider } from "next-intl";
-import { getLocale } from "next-intl/server";
-import type React from "react";
-import { MetaPixel } from "@/components/analytics/meta-pixel";
-import { Footer } from "@/components/layout/footer";
-import Header from "@/components/layout/header";
-import { PublicHeader } from "@/components/layout/public-header";
-import { Toaster } from "@/components/ui/toaster";
-import { BUSINESS_INFO } from "@/lib/constants/business-info";
-import Providers from "@/modules/providers";
-import { VercelAnalytics } from "@/components/analytics/vercel-analytics";
+import { GoogleAnalytics } from '@next/third-parties/google';
+import type { Metadata } from 'next';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale } from 'next-intl/server';
+import type React from 'react';
+import { MetaPixel } from '@/components/analytics/meta-pixel';
+import { VercelAnalytics } from '@/components/analytics/vercel-analytics';
+import { Footer } from '@/components/layout/footer';
+import Header from '@/components/layout/header';
+import { PublicHeader } from '@/components/layout/public-header';
+import { Toaster } from '@/components/ui/toaster';
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
+import Providers from '@/modules/providers';
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
@@ -21,57 +21,57 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 export const metadata: Metadata = {
   metadataBase: new URL(BUSINESS_INFO.serviceUrl),
   title: {
-    default: "Music and Art, curated by PRECTXE",
-    template: "%s | PRECTXE",
+    default: 'Music and Art, curated by PRECTXE',
+    template: '%s | PRECTXE',
   },
   description:
-    "음악과 예술의 순간을 큐레이션하는 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠로 경험을 설계합니다.",
+    '음악과 예술의 순간을 큐레이션하는 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠로 경험을 설계합니다.',
   keywords: [
-    "PRECTXE",
-    "아트 플랫폼",
-    "음악",
-    "예술",
-    "큐레이션",
-    "공연",
-    "전시",
-    "이벤트",
+    'PRECTXE',
+    '아트 플랫폼',
+    '음악',
+    '예술',
+    '큐레이션',
+    '공연',
+    '전시',
+    '이벤트',
   ],
-  authors: [{ name: "PRECTXE" }],
-  creator: "PRECTXE",
-  publisher: "PRECTXE",
+  authors: [{ name: 'PRECTXE' }],
+  creator: 'PRECTXE',
+  publisher: 'PRECTXE',
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
   openGraph: {
-    type: "website",
-    locale: "ko_KR",
+    type: 'website',
+    locale: 'ko_KR',
     url: BUSINESS_INFO.serviceUrl,
-    title: "Music and Art, curated by PRECTXE",
+    title: 'Music and Art, curated by PRECTXE',
     description:
-      "음악과 예술의 순간을 큐레이션하는 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠로 경험을 설계합니다.",
-    siteName: "프렉티스",
+      '음악과 예술의 순간을 큐레이션하는 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠로 경험을 설계합니다.',
+    siteName: '프렉티스',
     images: [
       {
-        url: "/twitter-card.jpg", // metadataBase와 결합되어 절대 URL로 변환됨
+        url: '/twitter-card.jpg', // metadataBase와 결합되어 절대 URL로 변환됨
         width: 1200,
         height: 630,
-        alt: "Music and Art, curated by PRECTXE",
+        alt: 'Music and Art, curated by PRECTXE',
       },
     ],
   },
   twitter: {
-    card: "summary_large_image",
-    title: "Music and Art, curated by PRECTXE",
+    card: 'summary_large_image',
+    title: 'Music and Art, curated by PRECTXE',
     description:
-      "음악과 예술의 순간을 큐레이션하는 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠로 경험을 설계합니다.",
+      '음악과 예술의 순간을 큐레이션하는 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠로 경험을 설계합니다.',
     images: [
       {
-        url: "/twitter-card.jpg", // metadataBase와 결합되어 절대 URL로 변환됨
+        url: '/twitter-card.jpg', // metadataBase와 결합되어 절대 URL로 변환됨
         width: 1200,
         height: 630,
-        alt: "Music and Art, curated by PRECTXE",
+        alt: 'Music and Art, curated by PRECTXE',
       },
     ],
   },
@@ -81,31 +81,31 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      "max-image-preview": "large",
-      "max-video-preview": -1,
-      "max-snippet": -1,
+      'max-image-preview': 'large',
+      'max-video-preview': -1,
+      'max-snippet': -1,
     },
   },
   other: {
-    "naver-site-verification": "300199d0d8d13b5cec4510cd23ec7f007e7e9f56",
+    'naver-site-verification': '300199d0d8d13b5cec4510cd23ec7f007e7e9f56',
   },
 };
 
 // viewport는 별도로 export
 export const viewport = {
-  width: "device-width",
+  width: 'device-width',
   initialScale: 1,
   // maximumScale: 1,
 };
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export default async function RootLayout({
@@ -124,9 +124,16 @@ export default async function RootLayout({
       >
         <NextIntlClientProvider>
           <Providers>
+            {/* 키보드 사용자가 매 페이지 헤더 네비를 전부 탭하지 않도록 */}
+            <a
+              href="#main-content"
+              className="sr-only rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-100"
+            >
+              본문 바로가기
+            </a>
             <PublicHeader />
             <Header />
-            <main className="flex-1">
+            <main id="main-content" tabIndex={-1} className="flex-1">
               {children}
 
               <Toaster />

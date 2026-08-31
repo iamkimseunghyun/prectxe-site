@@ -24,7 +24,9 @@ export function useInfiniteScroll<T extends { id: string }>({
   const [items, setItems] = useState<T[]>(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [isLastPage, setIsLastPage] = useState(false);
+  // 초기 데이터가 페이지 크기에 못 미치면 이미 마지막 페이지다.
+  // false로 시작하면 "더 보기"가 잠깐 보였다가 빈 요청이 한 번 나간다.
+  const [isLastPage, setIsLastPage] = useState(initialData.length < pageSize);
   const trigger = useRef<HTMLSpanElement>(null);
 
   // 중복 방지를 위한 ID 추적
@@ -55,11 +57,12 @@ export function useInfiniteScroll<T extends { id: string }>({
     const sig = makeSignature(initialData || []);
     if (sig === prevInitSigRef.current) return; // guard to prevent redundant resets
     prevInitSigRef.current = sig;
-    setItems(initialData || []);
-    itemIdsRef.current = new Set((initialData || []).map((item) => item.id));
+    const next = initialData || [];
+    setItems(next);
+    itemIdsRef.current = new Set(next.map((item) => item.id));
     setPage(1);
-    setIsLastPage(false);
-  }, [initialData, makeSignature]);
+    setIsLastPage(next.length < pageSize);
+  }, [initialData, makeSignature, pageSize]);
 
   // 무한 스크롤 로직
   const loadMoreItems = useCallback(async () => {

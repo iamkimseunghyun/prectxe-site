@@ -8,9 +8,8 @@ import { MediaGallery } from '@/components/media/media-gallery';
 import ArtistSchema from '@/components/seo/artist-schema';
 import { Badge } from '@/components/ui/badge';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
-import { prisma } from '@/lib/db/prisma';
 import { formatArtistName, formatKstDateRange, getImageUrl } from '@/lib/utils';
-import { getArtistByIdWithCache } from '@/modules/artists/server/actions';
+import { getArtistByIdWithCache } from '@/modules/artists/server/queries';
 import type { ArtistProgramCredit } from '@/modules/artists/server/types';
 import { ArtistCv } from '@/modules/artists/ui/components/artist-cv';
 import ArtworkListSection from '@/modules/artworks/ui/components/artwork-list-section';
@@ -21,18 +20,9 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const artist = await prisma.artist.findUnique({
-    where: { id },
-    select: {
-      name: true,
-      nameKr: true,
-      biography: true,
-      tagline: true,
-      mainImageUrl: true,
-      city: true,
-      country: true,
-    },
-  });
+  // 페이지 본문과 같은 캐시된 조회를 재사용한다. 예전에는 여기서 prisma를
+  // 직접 호출해 요청마다 캐시를 우회한 DB 왕복이 한 번 더 발생했다.
+  const artist = await getArtistByIdWithCache(id);
 
   if (!artist) {
     return { title: 'Artist Not Found' };
@@ -99,19 +89,19 @@ function ProgramCard({ credit }: { credit: ArtistProgramCredit }) {
             {role}
           </span>
         )}
-        <h4 className="line-clamp-2 text-base font-medium leading-snug transition-colors group-hover:text-neutral-500">
+        <h3 className="line-clamp-2 text-base font-medium leading-snug transition-colors group-hover:text-neutral-500">
           {program.title}
-        </h4>
+        </h3>
         <div className="mt-2 space-y-0.5 text-xs text-neutral-500">
           {dateStr && (
             <p className="flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5" />
+              <Calendar aria-hidden className="h-3.5 w-3.5" />
               {dateStr}
             </p>
           )}
           {location && (
             <p className="flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5" />
+              <MapPin aria-hidden className="h-3.5 w-3.5" />
               {location}
             </p>
           )}
@@ -143,7 +133,8 @@ function SocialPill({ href, label }: { href: string; label: string }) {
       className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-3.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-neutral-900 hover:text-neutral-900"
     >
       {label}
-      <ExternalLink className="h-3 w-3" />
+      <ExternalLink aria-hidden className="h-3 w-3" />
+      <span className="sr-only">(새 창에서 열림)</span>
     </a>
   );
 }
@@ -189,7 +180,7 @@ export default async function Page({
   const hasBio = !!artist.biography;
   const hasCv = !!artist.cv;
   const hasPrograms = artist.programCredits.length > 0;
-  const hasArtworks = artist.artistArtworks.length > 0;
+  const hasArtworks = artist.artworkCount > 0;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12 md:px-10 md:py-16">
@@ -200,6 +191,11 @@ export default async function Page({
           nameKr: artist.nameKr,
           mainImageUrl: artist.mainImageUrl,
           homepage: artist.homepage,
+          instagram: artist.instagram,
+          soundcloud: artist.soundcloud,
+          bandcamp: artist.bandcamp,
+          youtube: artist.youtube,
+          spotify: artist.spotify,
         }}
       />
       <BreadcrumbNav entityType="artist" title={displayName} />
@@ -213,12 +209,12 @@ export default async function Page({
               alt={displayName}
               fill
               priority
-              sizes="(min-width: 768px) 50vw, 100vw"
+              sizes="(min-width: 1152px) 590px, (min-width: 768px) 50vw, 100vw"
               className="object-cover"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
-              <User className="h-20 w-20 text-neutral-300" />
+              <User aria-hidden className="h-20 w-20 text-neutral-300" />
             </div>
           )}
         </div>
@@ -255,7 +251,7 @@ export default async function Page({
           )}
           {location && (
             <p className="mt-6 flex items-center gap-1.5 text-sm text-neutral-500">
-              <MapPin className="h-4 w-4" />
+              <MapPin aria-hidden className="h-4 w-4" />
               {location}
             </p>
           )}

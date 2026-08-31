@@ -54,7 +54,12 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['aligoapi', 'solapi', 'exceljs'],
 
   images: {
-    unoptimized: true,
+    // Cloudflare Images flexible variants로 폭별 리사이즈를 위임한다.
+    // unoptimized:true였을 때는 srcset 자체가 생성되지 않아 코드 전반의
+    // `sizes`가 전부 무시됐다(모바일이 데스크톱과 동일 이미지를 수신).
+    // deviceSizes/imageSizes는 로더에 전달할 후보 폭 목록으로 계속 쓰인다.
+    loader: 'custom',
+    loaderFile: './src/lib/cdn/cloudflare-image-loader.ts',
     minimumCacheTTL: 2678400,
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -77,7 +82,6 @@ const nextConfig: NextConfig = {
         hostname: 'localhost',
       },
     ],
-    formats: ['image/webp'],
   },
   async redirects() {
     if (process.env.ENABLE_PROGRAM_REDIRECTS !== '1') return [];

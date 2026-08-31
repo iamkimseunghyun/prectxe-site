@@ -1,9 +1,12 @@
 import type { Metadata } from 'next';
 
 import { Suspense } from 'react';
-import GridSkeleton from '@/components/layout/skeleton/grid-skeleton';
 import { PAGINATION } from '@/lib/constants/constants';
-import { getArtistsPage } from '@/modules/artists/server/actions';
+import {
+  getArtistsPage,
+  normalizeSearchQuery,
+} from '@/modules/artists/server/queries';
+import ArtistGridSkeleton from '@/modules/artists/ui/components/artist-grid-skeleton';
 import { ArtistSearchBar } from '@/modules/artists/ui/components/artist-search-bar';
 import { ArtistListView } from '@/modules/artists/ui/views/artist-list-view';
 
@@ -14,18 +17,32 @@ export const metadata: Metadata = {
   keywords: ['디지털 아티스트', 'PRECTXE', '아티스트 프로필', '디지털 아트'],
 };
 
+/**
+ * 데이터 조회를 별도 async 컴포넌트로 분리해야 Suspense가 실제로 동작한다.
+ * 이전에는 Page에서 await한 뒤 클라이언트 컴포넌트에 props로 넘겨서
+ * 경계가 절대 suspend되지 않았고(스켈레톤은 죽은 코드), 헤더/검색바까지
+ * DB 응답을 기다렸다.
+ */
+async function ArtistResults({ searchQuery }: { searchQuery: string }) {
+  const initialArtists = await getArtistsPage(
+    0,
+    PAGINATION.ARTISTS_PAGE_SIZE,
+    searchQuery
+  );
+
+  return (
+    <ArtistListView initialArtists={initialArtists} searchQuery={searchQuery} />
+  );
+}
+
 const Page = async ({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) => {
   const { search } = await searchParams;
-  const searchQuery = typeof search === 'string' ? search : '';
-
-  const initialArtists = await getArtistsPage(
-    0,
-    PAGINATION.ARTISTS_PAGE_SIZE,
-    searchQuery
+  const searchQuery = normalizeSearchQuery(
+    typeof search === 'string' ? search : ''
   );
 
   return (
@@ -38,7 +55,7 @@ const Page = async ({
           {searchQuery ? (
             <>
               <span className="text-neutral-400">Searching</span>{' '}
-              <span className="italic">"{searchQuery}"</span>
+              <span className="italic">&ldquo;{searchQuery}&rdquo;</span>
             </>
           ) : (
             '아티스트'
@@ -52,11 +69,9 @@ const Page = async ({
         </div>
       </header>
 
-      <Suspense fallback={<GridSkeleton />}>
-        <ArtistListView
-          initialArtists={initialArtists}
-          searchQuery={searchQuery}
-        />
+      {/* key: 검색어가 바뀌면 새 경계로 취급해 스켈레톤을 다시 보여준다 */}
+      <Suspense key={searchQuery} fallback={<ArtistGridSkeleton />}>
+        <ArtistResults searchQuery={searchQuery} />
       </Suspense>
     </div>
   );
