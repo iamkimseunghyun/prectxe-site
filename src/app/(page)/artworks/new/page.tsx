@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
-import { getArtistsPage } from '@/modules/artists/server/actions';
+import { getArtistsPage } from '@/modules/artists/server/queries';
 import ArtworkFormView from '@/modules/artworks/ui/views/artwork-form-view';
 
 export const metadata: Metadata = {

@@ -1,6 +1,10 @@
 'use server';
 
-import { unstable_cache as next_cache, revalidatePath } from 'next/cache';
+import {
+  unstable_cache as next_cache,
+  revalidatePath,
+  updateTag,
+} from 'next/cache';
 import { notFound } from 'next/navigation';
 import type { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/require-admin';
@@ -22,8 +26,10 @@ export const getArtworksByArtistIdWithCache = next_cache(
       orderBy: { createdAt: 'desc' },
     });
   },
-  ['artworks-list'],
-  { revalidate: CACHE_TIMES.ARTWORKS_LIST }
+  ['artworks-by-artist'],
+  // tags가 없어서 작품을 수정해도 아티스트 상세의 Works 섹션이 최대 1시간
+  // 그대로였다. artworks/artists 양쪽 편집에 반응해야 한다.
+  { revalidate: CACHE_TIMES.ARTWORKS_LIST, tags: ['artworks', 'artists'] }
 );
 
 export async function getArtworksByArtistId(artistId: string) {
@@ -162,6 +168,9 @@ export async function createArtwork(data: z.infer<typeof createArtworkSchema>) {
       select: { id: true },
     });
 
+    // revalidatePath는 route 캐시만 비운다 — unstable_cache 데이터는
+    // updateTag로 무효화해야 아티스트 상세의 Works 섹션에 즉시 반영된다.
+    updateTag('artworks');
     revalidatePath('/artworks');
     for (const a of d.artists ?? []) {
       revalidatePath(`/artists/${a.artistId}`);
@@ -235,6 +244,9 @@ export async function updateArtwork(
       },
     });
 
+    // revalidatePath는 route 캐시만 비운다 — unstable_cache 데이터는
+    // updateTag로 무효화해야 아티스트 상세의 Works 섹션에 즉시 반영된다.
+    updateTag('artworks');
     revalidatePath('/artworks');
     revalidatePath(`/artworks/${artwork.id}`);
     for (const a of artwork.artists) {
@@ -275,6 +287,9 @@ export async function deleteArtwork(id: string) {
 
     await prisma.artwork.delete({ where: { id } });
 
+    // revalidatePath는 route 캐시만 비운다 — unstable_cache 데이터는
+    // updateTag로 무효화해야 아티스트 상세의 Works 섹션에 즉시 반영된다.
+    updateTag('artworks');
     revalidatePath('/artworks');
     for (const a of artwork.artists) {
       revalidatePath(`/artists/${a.artistId}`);

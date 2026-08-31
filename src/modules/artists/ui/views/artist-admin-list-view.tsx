@@ -1,6 +1,6 @@
 import { AdminHeader } from '@/components/admin/admin-header';
 import { AdminPagination } from '@/components/admin/admin-pagination';
-import { listArtistsPaged } from '@/modules/artists/server/actions';
+import { listArtistsPaged } from '@/modules/artists/server/queries';
 import { ArtistTable } from '../components/artist-table';
 
 interface ArtistAdminListViewProps {

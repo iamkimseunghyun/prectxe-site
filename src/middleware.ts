@@ -65,45 +65,54 @@ function isPublicPath(path: string): boolean {
 }
 
 export async function middleware(req: NextRequest) {
+  const path = req.nextUrl.pathname;
+
   // 개발 환경에서만 로깅
   if (process.env.NODE_ENV === 'development') {
-    console.log('middleware 콜 ->', req.nextUrl.pathname);
+    console.log('middleware 콜 ->', path);
   }
-  const session = await getSession();
-  const path = req.nextUrl.pathname;
-  const isPublicOnlyUrl = publicOnlyUrls[path];
-  const isPublicAccessible = isPublicPath(path);
 
   // 정적 파일에 대한 추가 검사
   if (path.includes('.') && /\.(svg|png|jpg|jpeg|gif|webp)$/.test(path)) {
     return NextResponse.next();
   }
 
+  // 공개 경로는 세션을 읽기 전에 통과시킨다.
+  // getSession()은 iron-session 쿠키 복호화(AES)를 수반하므로, 공개
+  // 상세 페이지(/artists/[id] 등)에서 매 요청 불필요한 비용이 들었다.
+  if (isPublicPath(path)) {
+    return NextResponse.next();
+  }
+
+  const session = await getSession();
+  const isPublicOnlyUrl = publicOnlyUrls[path];
+
   // 로그인하지 않은 사용자
   if (!session.id) {
-    // 공개 URL이면 통과
-    if (isPublicAccessible) {
-      return NextResponse.next();
-    }
-
     // 로그인 전용 URL이면 통과 (로그인/가입 페이지)
     if (isPublicOnlyUrl) {
       return NextResponse.next();
     }
 
-    // 그 외의 URL은 로그인 페이지 or 메인 페이지로 리다이렉트
+    // 그 외의 URL은 메인 페이지로 리다이렉트
     return NextResponse.redirect(new URL('/', req.nextUrl.toString()));
   }
-  // 로그인한 사용자
-  else {
-    // 로그인 전용 URL(signin/signup)에 접근하면 관리자 페이지로 리다이렉트
-    if (isPublicOnlyUrl) {
-      return NextResponse.redirect(new URL('/admin', req.nextUrl.toString()));
-    }
 
-    // 그 외에는 정상 진행
-    return NextResponse.next();
+  // 로그인 전용 URL(signin/signup)에 접근하면 관리자 페이지로 리다이렉트
+  if (isPublicOnlyUrl) {
+    return NextResponse.redirect(new URL('/admin', req.nextUrl.toString()));
   }
+
+  // 비공개 경로(편집/등록/admin)는 ADMIN만 허용.
+  // 이전에는 세션 존재 여부만 확인해서, 일반 회원이 생기는 순간
+  // 로그인한 누구나 편집 폼(email 등 비공개 필드 포함)에 진입할 수 있었다.
+  if (privatePathPatterns.some((pattern) => pattern.test(path))) {
+    if (!session.isAdmin) {
+      return NextResponse.redirect(new URL('/', req.nextUrl.toString()));
+    }
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {

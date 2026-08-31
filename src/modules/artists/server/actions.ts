@@ -1,10 +1,6 @@
 'use server';
 
-import {
-  unstable_cache as next_cache,
-  revalidatePath,
-  updateTag,
-} from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 import type { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import {
@@ -12,11 +8,7 @@ import {
   deleteCloudflareImage,
   deleteRemovedImages,
 } from '@/lib/cdn/cloudflare';
-import {
-  CACHE_TIMES,
-  PAGINATION,
-  SELECT_FIELDS,
-} from '@/lib/constants/constants';
+import { PAGINATION } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 import {
   artistSchema,
@@ -25,185 +17,15 @@ import {
   updateArtistSchema,
 } from '@/lib/schemas';
 import { extractImageId } from '@/lib/utils';
+import { getArtistsPage } from './queries';
 
-async function fetchArtistById(artistId: string) {
-  try {
-    const artist = await prisma.artist.findUnique({
-      where: {
-        id: artistId,
-      },
-      include: {
-        images: {
-          orderBy: { order: 'asc' },
-        },
-        artistArtworks: {
-          include: {
-            artwork: {
-              include: {
-                images: {
-                  orderBy: { order: 'asc' },
-                },
-              },
-            },
-          },
-        },
-        programCredits: {
-          include: {
-            program: {
-              select: {
-                id: true,
-                title: true,
-                slug: true,
-                status: true,
-                type: true,
-                startAt: true,
-                endAt: true,
-                heroUrl: true,
-                venue: true,
-                city: true,
-              },
-            },
-          },
-          orderBy: {
-            program: { startAt: 'desc' },
-          },
-        },
-      },
-    });
-    if (!artist) return null;
-
-    const formattedData = {
-      ...artist,
-      email: artist.email ?? undefined,
-      city: artist.city ?? undefined,
-      country: artist.country ?? undefined,
-      homepage: artist.homepage ?? undefined,
-      instagram: artist.instagram ?? undefined,
-      soundcloud: artist.soundcloud ?? undefined,
-      bandcamp: artist.bandcamp ?? undefined,
-      youtube: artist.youtube ?? undefined,
-      spotify: artist.spotify ?? undefined,
-      tagline: artist.tagline ?? undefined,
-      tags: artist.tags,
-      biography: artist.biography ?? undefined,
-      cv: artist.cv ?? undefined,
-      mainImageUrl: artist.mainImageUrl ?? undefined,
-      images: artist.images.map(({ id, imageUrl, alt, order }) => ({
-        id,
-        imageUrl,
-        alt,
-        order,
-      })),
-      programCredits: artist.programCredits,
-    };
-
-    // DB 데이터를 ArtistFormData 형식으로 변환
-    return formattedData;
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-}
-
-const getArtistByIdCachedRaw = next_cache(fetchArtistById, ['artist-detail'], {
-  revalidate: CACHE_TIMES.ARTIST_DETAIL,
-  tags: ['artists'],
-});
-
-// 공개 상세용 — 캐시 + 편집 시 updateTag('artists')로 즉시 무효화.
-// unstable_cache는 Date를 문자열로 직렬화하므로, 소비되는 program 날짜를
-// Date로 복원해 타입(Date)과 런타임을 일치시킨다(소비처: ProgramCard).
-export async function getArtistByIdWithCache(artistId: string) {
-  const artist = await getArtistByIdCachedRaw(artistId);
-  if (!artist) return null;
-  return {
-    ...artist,
-    programCredits: artist.programCredits.map((credit) => ({
-      ...credit,
-      program: {
-        ...credit.program,
-        startAt: credit.program.startAt
-          ? new Date(credit.program.startAt)
-          : null,
-        endAt: credit.program.endAt ? new Date(credit.program.endAt) : null,
-      },
-    })),
-  };
-}
-
-// 어드민 편집 등 최신 데이터가 필요한 경우 — 캐시 미사용
-export async function getArtistById(artistId: string) {
-  return fetchArtistById(artistId);
-}
-
-// 통합된 아티스트 조회 함수
-export const getArtistsPage = next_cache(
-  async (
-    page = 0,
-    pageSize = PAGINATION.ARTISTS_PAGE_SIZE,
-    searchQuery = ''
-  ) => {
-    try {
-      return await prisma.artist.findMany({
-        where: {
-          OR: searchQuery
-            ? [
-                { name: { contains: searchQuery, mode: 'insensitive' } },
-                { nameKr: { contains: searchQuery, mode: 'insensitive' } },
-              ]
-            : undefined,
-        },
-        select: {
-          id: true,
-          name: true,
-          nameKr: true,
-          mainImageUrl: true,
-          city: true,
-          country: true,
-          tagline: true,
-          tags: true,
-          artistArtworks: {
-            select: { artwork: { select: { id: true } } },
-          },
-        },
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        skip: page * pageSize,
-        take: pageSize,
-      });
-    } catch (error) {
-      console.error('아티스트 목록 조회 오류:', error);
-      throw new Error('아티스트 목록을 불러오는데 실패했습니다.');
-    }
-  },
-  // 캐시 키 그룹 - 이 키를 사용하여 특정 캐시 항목을 무효화할 수 있습니다
-  ['artists-list'],
-  // 캐시 옵션: 60초 동안 캐시 유지 + 편집 시 즉시 무효화(updateTag)
-  { revalidate: CACHE_TIMES.ARTISTS_LIST, tags: ['artists'] }
-);
-
-// 이 함수는 기존 getMoreArtists를 대체합니다
+/**
+ * 무한 스크롤용 — 클라이언트 컴포넌트에서 호출되므로 서버 액션으로 남긴다.
+ * 나머지 읽기 쿼리는 ./queries.ts(비 'use server')로 이동했다.
+ */
 export async function getMoreArtists(page = 0, searchQuery = '') {
   return getArtistsPage(page, PAGINATION.ARTISTS_PAGE_SIZE, searchQuery);
 }
-
-// 간단한 아티스트 목록 (드롭다운 등을 위한)
-export const getSimpleArtistsList = next_cache(
-  async () => {
-    try {
-      return await prisma.artist.findMany({
-        select: SELECT_FIELDS.SIMPLE_ARTIST,
-        orderBy: {
-          name: 'asc',
-        },
-      });
-    } catch (error) {
-      console.error('간단한 아티스트 목록 조회 오류:', error);
-      throw new Error('아티스트 목록을 불러오는데 실패했습니다.');
-    }
-  },
-  ['simple-artists-list'],
-  { revalidate: CACHE_TIMES.ARTISTS_LIST, tags: ['artists'] }
-);
 
 export async function createSimpleArtist(data: SimpleArtist) {
   try {
@@ -382,6 +204,7 @@ export async function updateArtist(
     // 캐시 무효화
     updateTag('artists');
     revalidatePath('/');
+    revalidatePath('/artists');
     revalidatePath(`/artists/${artist.id}`);
 
     const relatedArtworks = await prisma.artistArtwork.findMany({
@@ -456,42 +279,5 @@ export async function deleteArtist(artistId: string) {
           ? error.message
           : '아티스트 삭제에 실패했습니다.',
     };
-  }
-}
-
-type ArtistListItem = {
-  id: string;
-  name: string;
-  nameKr: string;
-  city: string | null;
-  country: string | null;
-};
-
-export async function listArtistsPaged(
-  params: { page?: number; pageSize?: number } = {}
-) {
-  const { page = 1, pageSize = 10 } = params;
-
-  try {
-    const [total, items] = await Promise.all([
-      prisma.artist.count(),
-      prisma.artist.findMany({
-        orderBy: { updatedAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        select: {
-          id: true,
-          name: true,
-          nameKr: true,
-          city: true,
-          country: true,
-        },
-      }),
-    ]);
-
-    return { page, pageSize, total, items };
-  } catch (e) {
-    console.error('Artists paged list error:', e);
-    return { page, pageSize, total: 0, items: [] as ArtistListItem[] };
   }
 }

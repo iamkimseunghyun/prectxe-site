@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Play, X } from 'lucide-react';
 import Image from 'next/image';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CloudflareStreamVideo } from '@/components/media/cloudflare-stream-video';
 import { getImageUrl } from '@/lib/utils';
 
@@ -46,6 +46,14 @@ export function MediaGallery({
   aspect = '4/5',
 }: MediaGalleryProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // 라이트박스를 연 썸네일 — 닫을 때 포커스를 돌려준다.
+  const openerRef = useRef<HTMLElement | null>(null);
+
+  const open = useCallback((index: number, el: HTMLElement) => {
+    openerRef.current = el;
+    setOpenIndex(index);
+  }, []);
 
   const close = useCallback(() => setOpenIndex(null), []);
   const next = useCallback(() => {
@@ -57,18 +65,64 @@ export function MediaGallery({
     setOpenIndex((i) => (i === null ? null : Math.max(0, i - 1)));
   }, []);
 
+  // aria-modal="true"를 선언한 이상 포커스 관리는 선택이 아니다.
+  // 예전에는 열려도 포커스가 이동하지 않고, Tab이 뒤쪽 페이지로 새어나가고,
+  // 닫아도 원래 썸네일로 돌아오지 않았다.
   useEffect(() => {
     if (openIndex === null) return;
+
+    const opener = openerRef.current;
+    const dialog = dialogRef.current;
+    dialog?.focus();
+
+    const focusables = () =>
+      Array.from(
+        dialog?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], video, [tabindex]:not([tabindex="-1"])'
+        ) ?? []
+      );
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
-      else if (e.key === 'ArrowRight') next();
-      else if (e.key === 'ArrowLeft') prev();
+      if (e.key === 'Escape') {
+        close();
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        next();
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        prev();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      // 포커스 트랩
+      const nodes = focusables();
+      if (nodes.length === 0) {
+        e.preventDefault();
+        dialog?.focus();
+        return;
+      }
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+
+      if (e.shiftKey && (active === first || active === dialog)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
+
     window.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
+      opener?.focus();
     };
   }, [openIndex, close, next, prev]);
 
@@ -81,7 +135,7 @@ export function MediaGallery({
           <li key={item.id} className="shrink-0">
             <button
               type="button"
-              onClick={() => setOpenIndex(i)}
+              onClick={(e) => open(i, e.currentTarget)}
               className={`group relative block overflow-hidden rounded-xl bg-neutral-100 ${WIDTH_CLASS[thumbWidth]} ${ASPECT_CLASS[aspect]}`}
               aria-label={`${item.alt || title} 확대`}
             >
@@ -110,6 +164,7 @@ export function MediaGallery({
 
       {openIndex !== null && (
         <div
+          ref={dialogRef}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-6 backdrop-blur-xs"
           onClick={(e) => {
             if (e.target === e.currentTarget) close();
@@ -163,7 +218,7 @@ export function MediaGallery({
                   src={getImageUrl(items[openIndex].url, 'hires')}
                   alt={items[openIndex].alt || title}
                   fill
-                  sizes="100vw"
+                  sizes="(min-width: 1024px) 1024px, 100vw"
                   className="object-contain"
                   priority
                 />

@@ -7,13 +7,13 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale } from 'next-intl/server';
 import type React from 'react';
 import { MetaPixel } from '@/components/analytics/meta-pixel';
+import { VercelAnalytics } from '@/components/analytics/vercel-analytics';
 import { Footer } from '@/components/layout/footer';
 import Header from '@/components/layout/header';
 import { PublicHeader } from '@/components/layout/public-header';
 import { Toaster } from '@/components/ui/toaster';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import Providers from '@/modules/providers';
-import { VercelAnalytics } from '@/components/analytics/vercel-analytics';
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
@@ -124,9 +124,16 @@ export default async function RootLayout({
       >
         <NextIntlClientProvider>
           <Providers>
+            {/* 키보드 사용자가 매 페이지 헤더 네비를 전부 탭하지 않도록 */}
+            <a
+              href="#main-content"
+              className="sr-only rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-100"
+            >
+              본문 바로가기
+            </a>
             <PublicHeader />
             <Header />
-            <main className="flex-1">
+            <main id="main-content" tabIndex={-1} className="flex-1">
               {children}
 
               <Toaster />
