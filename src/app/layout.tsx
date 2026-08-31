@@ -2,8 +2,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { GoogleAnalytics } from "@next/third-parties/google";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
@@ -15,6 +13,7 @@ import { PublicHeader } from "@/components/layout/public-header";
 import { Toaster } from "@/components/ui/toaster";
 import { BUSINESS_INFO } from "@/lib/constants/business-info";
 import Providers from "@/modules/providers";
+import { VercelAnalytics } from "@/components/analytics/vercel-analytics";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
@@ -135,18 +134,9 @@ export default async function RootLayout({
             <Footer />
           </Providers>
         </NextIntlClientProvider>
+        <VercelAnalytics />
         {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
         <MetaPixel />
-        <Analytics
-          beforeSend={(event) =>
-            new URL(event.url).pathname.startsWith("/admin") ? null : event
-          }
-        />
-        <SpeedInsights
-          beforeSend={(event) =>
-            event.route?.startsWith("/admin") ? null : event
-          }
-        />
       </body>
     </html>
   );
