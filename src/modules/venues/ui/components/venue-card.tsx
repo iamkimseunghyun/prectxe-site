@@ -17,7 +17,10 @@ interface VenueCardProps {
   venue: VenueCardData;
 }
 
-export default function VenueCard({ venue }: VenueCardProps) {
+export default function VenueCard({
+  venue,
+  priority = false,
+}: VenueCardProps & { priority?: boolean }) {
   const firstImage = venue.images[0];
   const location = [venue.city, venue.country].filter(Boolean).join(', ');
   const visibleTags = (venue.tags ?? []).slice(0, 2);
@@ -30,7 +33,8 @@ export default function VenueCard({ venue }: VenueCardProps) {
             src={getImageUrl(firstImage.imageUrl, 'smaller')}
             alt={firstImage.alt || venue.name}
             fill
-            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            priority={priority}
+            sizes="(min-width: 1152px) 341px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
           />
         ) : (
@@ -41,9 +45,9 @@ export default function VenueCard({ venue }: VenueCardProps) {
       </div>
 
       <div className="mt-5 space-y-1.5">
-        <h3 className="text-base font-medium leading-snug tracking-tight transition-colors group-hover:text-neutral-500 md:text-lg">
+        <h2 className="text-base font-medium leading-snug tracking-tight transition-colors group-hover:text-neutral-500 md:text-lg">
           {venue.name}
-        </h3>
+        </h2>
         {venue.tagline && (
           <p className="line-clamp-2 text-sm text-neutral-500">
             {venue.tagline}

@@ -107,7 +107,7 @@ export async function DropsListView({ type, page }: DropsListViewProps) {
                       src={getImageUrl(heroImage, 'public')}
                       alt={drop.title}
                       fill
-                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      sizes="(min-width: 1024px) 314px, (min-width: 640px) 45vw, 100vw"
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (

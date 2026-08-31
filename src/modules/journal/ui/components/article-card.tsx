@@ -25,7 +25,7 @@ export function ArticleCard({
           src={getImageUrl(article.cover || null, 'thumbnail')}
           alt={article.title}
           fill
-          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          sizes="(min-width: 1280px) 384px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
       </div>
@@ -43,7 +43,7 @@ export function ArticleCard({
             ))}
           </div>
         )}
-        <h3 className="font-medium text-neutral-900">{article.title}</h3>
+        <h2 className="font-medium text-neutral-900">{article.title}</h2>
         {date && <p className="mt-1 text-sm text-neutral-500">{date}</p>}
       </div>
     </Link>

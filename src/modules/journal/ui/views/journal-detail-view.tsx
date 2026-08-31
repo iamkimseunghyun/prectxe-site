@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import ArticleSchema from '@/components/seo/article-schema';
 import { BackButton } from '@/components/shared/back-button';
 import { CopyUrlButton } from '@/components/shared/copy-url-button';
@@ -9,12 +10,9 @@ import { ViewCounter } from '@/modules/journal/ui/components/view-counter';
 
 export async function JournalDetailView({ slug }: { slug: string }) {
   const article = await getArticleBySlug(slug);
-  if (!article)
-    return (
-      <div className="p-8 text-center text-muted-foreground">
-        게시글을 찾을 수 없습니다.
-      </div>
-    );
+  // 소프트 404(200 + 안내 div)는 검색엔진이 정상 페이지로 색인한다.
+  // notFound()로 실제 404 상태와 공용 not-found UI를 반환한다.
+  if (!article) notFound();
 
   const cover = getImageUrl(article.cover || null, 'public');
   const date = article.publishedAt

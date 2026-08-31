@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 
 import { Suspense } from 'react';
+import EntityGridSkeleton from '@/components/layout/skeleton/entity-grid-skeleton';
 import { PAGINATION } from '@/lib/constants/constants';
 import {
   getArtistsPage,
   normalizeSearchQuery,
 } from '@/modules/artists/server/queries';
-import ArtistGridSkeleton from '@/modules/artists/ui/components/artist-grid-skeleton';
 import { ArtistSearchBar } from '@/modules/artists/ui/components/artist-search-bar';
 import { ArtistListView } from '@/modules/artists/ui/views/artist-list-view';
 
@@ -70,7 +70,7 @@ const Page = async ({
       </header>
 
       {/* key: 검색어가 바뀌면 새 경계로 취급해 스켈레톤을 다시 보여준다 */}
-      <Suspense key={searchQuery} fallback={<ArtistGridSkeleton />}>
+      <Suspense key={searchQuery} fallback={<EntityGridSkeleton />}>
         <ArtistResults searchQuery={searchQuery} />
       </Suspense>
     </div>
