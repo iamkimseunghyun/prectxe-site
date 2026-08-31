@@ -111,9 +111,18 @@ src/
 - Goods 카드 (dormant): `createGoodsOrder` → PortOne `requestPayment` → `verifyPayment`
 - `cancelOrder`: 재고 복구 + Payment cancelled + BankTransfer cancelled + Ticket cancelled (전부 cascade)
 - 만료 처리: `cleanupExpiredBankTransferOrders` — 어드민 주문 페이지 진입 시 lazy 호출, 24h 미입금 자동 취소 + 재고 복구
-- Drop visibility: requires `status !== 'draft'` AND `publishedAt !== null`
-- Status change from draft auto-sets `publishedAt`
-- Drop statuses: `draft` → `upcoming` → `on_sale` → `sold_out` / `closed`
+- **Drop 공개 여부 = `publishedAt !== null` 단독.** Drop 모델에 `status` 컬럼은 **없다**(과거 계획이었으나 도입 안 함).
+- **판매 상태는 저장하지 않고 파생한다** — `getEffectiveDropStatus()` (`lib/utils/ticket-status.ts`)가 판매창+재고에서 실시간 계산:
+  - ticket: 티어별 `saleStart`/`saleEnd`/`soldCount`/`quantity` → `on_sale` > `upcoming` > `sold_out` > `closed` 우선순위 집계
+  - goods: `stock - soldCount > 0` ? `on_sale` : `sold_out`
+  - 티어/옵션이 아직 없으면 `upcoming`(준비 중)
+- **왜 저장하지 않나**: 시간이 흘러도 아무도 그 row에 write하지 않으므로 저장된 상태는 반드시 드리프트한다. Program이 status를 저장했다가 같은 버그를 두 번 고치고(#65, #66) 결국 `upcoming`을 걷어냈다(#67). 상태를 저장하려면 크론이 필요하고, 크론은 결제 경로에 장애점을 하나 더 만든다.
+- **원칙**: 사실(`saleStart`/`saleEnd`/`quantity`/`soldCount`/`publishedAt`/`eventDate`)은 컬럼, 시간 경과로 바뀌는 상태는 파생. 수동 개입(취소·판매 중단)이 필요해지면 status enum이 아니라 `cancelledAt`/`salesPausedAt` 같은 nullable 타임스탬프를 두고 파생 함수가 최우선으로 읽게 할 것.
+- **파생 상태 × 캐시 주의**: 파생값은 **렌더 시점** 기준이라 캐시된 페이지에서는 늙는다. 현재 노출 지점과 신선도:
+  - `/drops` 목록, `/drops/[slug]` 상세 — **무캐시**(매 요청 동적). 결제 경로라 항상 최신
+  - 홈 `NowOnSaleSection` / `FeaturedHeroSection` — `revalidate: 300`(5분). 홈 티저라 5분 오차 허용(의도된 선택)
+  - 아티스트 상세의 Drops 섹션 — `revalidate: 7200`(2시간). **판매 상태 배지를 넣지 말 것**(제목/날짜/장소 등 사실만 표시 중)
+  - `tickets/server/actions.ts`는 주문 생성 시 `getEffectiveTierStatus() === 'on_sale'`을 **서버에서 재검증**한다 — 늙은 배지를 보고 들어와도 결제는 막힌다
 - **Media**: images and videos unified in `DropMedia` model (`type: image | video`, `order` for DnD sort). No separate `DropImage`/`heroUrl`/`videoUrl` fields — first media by `order` acts as hero. Image `url` = Cloudflare Images URL; video `url` = Cloudflare Stream ID (HLS via `hls.js`).
 
 ### Tickets & QR 입장 시스템
