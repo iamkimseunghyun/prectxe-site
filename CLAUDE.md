@@ -207,3 +207,33 @@ Optional: `NEXT_PUBLIC_GA_ID`, `ENABLE_PROGRAM_REDIRECTS`, `TEST_ADMIN_*` (개�
 - **Commits**: Concise Korean/English, present tense. Optional scope: `module: message`
 - **New features**: Create module → Zod schema → server actions → UI → routes → middleware
 - **Pagination default**: `DEFAULT_PAGE_SIZE = 6` (in `src/lib/constants/constants.ts`)
+
+### 새 목록/상세 페이지 체크리스트
+
+2026-08-31 전수 점검에서 나온 반복 실수들(#68/#69/#71). 새 페이지를 만들거나 기존 페이지를 손댈 때 훑을 것.
+
+**라우팅 · 상태 코드**
+- [ ] 없는 리소스는 **`notFound()`** — 안내 `<div>`를 반환하는 소프트 404는 검색엔진이 정상 페이지로 색인한다.
+- [ ] **`loading.tsx`를 새로 만들지 말 것.** 세그먼트 `loading.tsx`는 **하위 세그먼트까지** Suspense로 감싸고, 그러면 shell이 200으로 먼저 flush돼 `notFound()`가 404 상태를 낼 수 없다. 목록 스트리밍은 **페이지 내부 `<Suspense>`** 로 할 것.
+- [ ] 배포 후 `curl -o /dev/null -w '%{http_code}' <없는-slug>` 로 404를 실제 확인.
+
+**스트리밍**
+- [ ] 데이터 조회는 **async 자식 컴포넌트 안**에서. 부모에서 `await` 후 props로 넘기면 경계가 절대 suspend되지 않아 fallback이 죽은 코드가 되고, 헤더까지 DB를 기다린다.
+- [ ] 검색/필터가 있으면 `<Suspense key={query}>` — 키가 없으면 재검색 때 스켈레톤이 안 뜬다.
+- [ ] 목록 스켈레톤은 `EntityGridSkeleton` 사용(실제 그리드와 컬럼·비율이 맞아야 CLS가 없다).
+
+**이미지**
+- [ ] `sizes`는 **컨테이너 실측 폭** 기준. `33vw` 같은 값은 `max-w-*` 컨테이너에서 와이드 화면 오버페치가 된다. 예: `max-w-6xl` 3열 gap-6 → 실폭 341px.
+- [ ] 첫 화면 카드(보통 3장)에 **`priority`** — LCP 후보가 lazy면 로딩이 한 박자 늦는다.
+- [ ] 이미지는 `images.loader: custom`(Cloudflare flexible variants)을 탄다 → `sizes`가 실제로 srcset 선택에 쓰인다. 풀블리드 히어로만 `100vw`가 정답.
+
+**접근성**
+- [ ] heading 레벨을 건너뛰지 말 것 — 목록 카드는 `h1`(페이지 제목) 다음이므로 **`h2`**.
+- [ ] 애니메이션은 **`motion-safe:`** 로 게이트(`motion-safe:animate-spin`).
+- [ ] 비동기 목록/검색에 `aria-live="polite"` 상태 안내.
+- [ ] 검색 폼은 `<search>` 랜드마크. hover로만 보이는 텍스트는 터치 기기에서 영영 안 보인다.
+
+**서버 · 캐시**
+- [ ] 읽기 쿼리는 `'use server'` 밖(`server/queries.ts`)에 둘 것. 액션 파일에서 export하면 불필요한 RPC 엔드포인트가 되고, PII를 반환하는 함수까지 노출된다. 클라이언트가 직접 부르는 것만 액션으로.
+- [ ] **캐시 키는 인수로 만들어진다** — 검색어 정규화·길이 제한은 `unstable_cache` 래퍼 **바깥**에서. 안에서 하면 정규화 결과가 같아도 원본별로 캐시 엔트리가 쌓인다.
+- [ ] 비공개 라우트는 **미들웨어 + 페이지 자체** 양쪽에서 `isAdmin`까지 확인(로그인 여부만으로는 부족).
