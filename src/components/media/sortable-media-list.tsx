@@ -287,7 +287,7 @@ function SortableMediaItem({ item, index, onRemove }: SortableMediaItemProps) {
       {/* 업로드 진행 표시 */}
       {isUploading && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white">
-          <Loader2 className="mb-2 h-6 w-6 animate-spin" />
+          <Loader2 className="mb-2 h-6 w-6 motion-safe:animate-spin" />
           {typeof item.progress === 'number' ? (
             <>
               <div className="text-xs font-medium">

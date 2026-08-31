@@ -17,7 +17,7 @@ const UploadProgress = ({
       <div className="w-full max-w-lg border bg-background p-8 shadow-lg sm:rounded-lg">
         <div className="flex flex-col items-center space-y-6">
           <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <Loader2 className="h-12 w-12 motion-safe:animate-spin text-primary" />
             <Alert className="w-full">
               <AlertDescription className="text-center font-medium">
                 {status}

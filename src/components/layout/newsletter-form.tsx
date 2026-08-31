@@ -59,7 +59,7 @@ export function NewsletterForm() {
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-900 text-neutral-900 transition-colors hover:bg-neutral-900 hover:text-white disabled:opacity-50"
       >
         {isSubmitting ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 motion-safe:animate-spin" />
         ) : (
           <ArrowRight className="h-3.5 w-3.5" />
         )}

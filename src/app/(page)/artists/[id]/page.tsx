@@ -10,7 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { formatArtistName, formatKstDateRange, getImageUrl } from '@/lib/utils';
 import { getArtistByIdWithCache } from '@/modules/artists/server/queries';
-import type { ArtistProgramCredit } from '@/modules/artists/server/types';
+import type {
+  ArtistDropCredit,
+  ArtistProgramCredit,
+} from '@/modules/artists/server/types';
 import { ArtistCv } from '@/modules/artists/ui/components/artist-cv';
 import ArtworkListSection from '@/modules/artworks/ui/components/artwork-list-section';
 
@@ -111,6 +114,58 @@ function ProgramCard({ credit }: { credit: ArtistProgramCredit }) {
   );
 }
 
+function DropCard({ credit }: { credit: ArtistDropCredit }) {
+  const { drop, role } = credit;
+  const dateStr = drop.eventDate
+    ? formatKstDateRange(
+        new Date(drop.eventDate),
+        drop.eventEndDate ? new Date(drop.eventEndDate) : null
+      )
+    : null;
+  const hero = drop.media[0];
+
+  return (
+    <Link
+      href={`/drops/${drop.slug}`}
+      className="group flex gap-4 rounded-xl border border-neutral-200 p-5 transition-colors hover:border-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+    >
+      {hero && (
+        <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
+          <Image
+            src={getImageUrl(hero.url, 'thumbnail')}
+            alt={hero.alt || drop.title}
+            fill
+            sizes="112px"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          />
+        </div>
+      )}
+      <div className="flex min-w-0 flex-1 flex-col justify-center">
+        <span className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">
+          {role || (drop.type === 'ticket' ? 'Performance' : 'Goods')}
+        </span>
+        <h3 className="line-clamp-2 text-base font-medium leading-snug transition-colors group-hover:text-neutral-500">
+          {drop.title}
+        </h3>
+        <div className="mt-2 space-y-0.5 text-xs text-neutral-500">
+          {dateStr && (
+            <p className="flex items-center gap-1.5">
+              <Calendar aria-hidden className="h-3.5 w-3.5" />
+              {dateStr}
+            </p>
+          )}
+          {drop.venue && (
+            <p className="flex items-center gap-1.5">
+              <MapPin aria-hidden className="h-3.5 w-3.5" />
+              {drop.venue}
+            </p>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 function ProgramSection({ credits }: { credits: ArtistProgramCredit[] }) {
   if (credits.length === 0) return null;
 
@@ -180,6 +235,7 @@ export default async function Page({
   const hasBio = !!artist.biography;
   const hasCv = !!artist.cv;
   const hasPrograms = artist.programCredits.length > 0;
+  const hasDrops = artist.dropCredits.length > 0;
   const hasArtworks = artist.artworkCount > 0;
 
   return (
@@ -294,6 +350,18 @@ export default async function Page({
         <section className="py-20 md:py-28">
           <SectionHeading eyebrow="Programs" />
           <ProgramSection credits={artist.programCredits} />
+        </section>
+      )}
+
+      {/* Drops — 참여한 공연/굿즈 */}
+      {hasDrops && (
+        <section className="py-20 md:py-28">
+          <SectionHeading eyebrow="Drops" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            {artist.dropCredits.map((c) => (
+              <DropCard key={c.drop.id} credit={c} />
+            ))}
+          </div>
         </section>
       )}
 

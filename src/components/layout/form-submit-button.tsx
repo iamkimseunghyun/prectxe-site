@@ -23,7 +23,9 @@ const FormSubmitButton = ({
       className={`relative ${className}`}
       {...props}
     >
-      {loading && <Loader2 className="absolute left-4 h-4 w-4 animate-spin" />}
+      {loading && (
+        <Loader2 className="absolute left-4 h-4 w-4 motion-safe:animate-spin" />
+      )}
       <span className={loading ? 'pl-6' : ''}>
         {loading ? loadingText : children}
       </span>
