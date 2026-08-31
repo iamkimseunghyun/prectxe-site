@@ -193,7 +193,7 @@ export function SMSCampaignList() {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <Loader2 className="h-6 w-6 motion-safe:animate-spin text-muted-foreground" />
         </CardContent>
       </Card>
     );
@@ -542,7 +542,7 @@ export function SMSCampaignList() {
                 >
                   {isSending ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      <Loader2 className="h-4 w-4 mr-1 motion-safe:animate-spin" />
                       발송 중...
                     </>
                   ) : (

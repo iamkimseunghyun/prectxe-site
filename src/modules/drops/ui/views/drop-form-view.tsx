@@ -640,7 +640,7 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
                   disabled={isSubmitting}
                 >
                   {isSubmitting && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 motion-safe:animate-spin" />
                   )}
                   {isEdit ? '저장' : '생성'}
                 </Button>

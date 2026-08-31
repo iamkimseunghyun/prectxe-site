@@ -21,6 +21,20 @@ export type ArtistProgramCredit = {
   };
 };
 
+export type ArtistDropCredit = {
+  role: string;
+  drop: {
+    id: string;
+    slug: string;
+    title: string;
+    type: string;
+    eventDate: Date | null;
+    eventEndDate: Date | null;
+    venue: string | null;
+    media: { url: string; alt: string }[];
+  };
+};
+
 export type ArtistCardData = {
   id: string;
   name: string;

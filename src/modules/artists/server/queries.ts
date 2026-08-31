@@ -49,6 +49,33 @@ async function fetchArtistById(artistId: string) {
         },
         orderBy: { program: { startAt: 'desc' } },
       },
+      // 참여 Drops. 공개 조건은 drops 목록과 동일하게 publishedAt 존재 여부다
+      // (Drop 모델에는 status 필드가 없다).
+      dropCredits: {
+        where: { drop: { publishedAt: { not: null } } },
+        include: {
+          drop: {
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+              type: true,
+              eventDate: true,
+              eventEndDate: true,
+              venue: true,
+              media: {
+                where: { type: 'image' },
+                orderBy: { order: 'asc' },
+                take: 1,
+                select: { url: true, alt: true },
+              },
+            },
+          },
+        },
+        // eventDate는 nullable이라 정렬이 불안정하다. 공개 목록과 동일하게
+        // publishedAt 기준으로 정렬한다(공개 drop은 항상 non-null).
+        orderBy: { drop: { publishedAt: 'desc' } },
+      },
     },
   });
   if (!artist) return null;
@@ -81,7 +108,8 @@ async function fetchArtistById(artistId: string) {
 
 const getArtistByIdCachedRaw = next_cache(fetchArtistById, ['artist-detail'], {
   revalidate: CACHE_TIMES.ARTIST_DETAIL,
-  tags: ['artists'],
+  // programCredits/dropCredits를 함께 담으므로 해당 도메인 편집에도 반응해야 한다
+  tags: ['artists', 'drops'],
 });
 
 // 공개 상세용 — 캐시 + 편집 시 updateTag('artists')로 즉시 무효화.
@@ -100,6 +128,18 @@ export async function getArtistByIdWithCache(artistId: string) {
           ? new Date(credit.program.startAt)
           : null,
         endAt: credit.program.endAt ? new Date(credit.program.endAt) : null,
+      },
+    })),
+    dropCredits: artist.dropCredits.map((credit) => ({
+      ...credit,
+      drop: {
+        ...credit.drop,
+        eventDate: credit.drop.eventDate
+          ? new Date(credit.drop.eventDate)
+          : null,
+        eventEndDate: credit.drop.eventEndDate
+          ? new Date(credit.drop.eventEndDate)
+          : null,
       },
     })),
   };

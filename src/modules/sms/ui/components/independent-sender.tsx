@@ -263,7 +263,7 @@ export function IndependentSender() {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 motion-safe:animate-spin" />
                   발송 중...
                 </>
               ) : (
