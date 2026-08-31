@@ -1,5 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { Suspense } from 'react';
+import EntityGridSkeleton from '@/components/layout/skeleton/entity-grid-skeleton';
 import { FilterChip } from '@/components/shared/filter-chip';
 import { Badge } from '@/components/ui/badge';
 import { formatKstDate, getImageUrl } from '@/lib/utils';
@@ -13,30 +15,20 @@ const TAG_FILTERS = [
   { value: 'news', label: 'News' },
 ] as const;
 
-export async function JournalListView({ tag }: { tag?: string }) {
+/**
+ * 조회를 async 자식으로 분리한다. 세그먼트 loading.tsx를 쓰면 하위
+/**
+ * 조회를 async 자식으로 분리한다. 세그먼트 loading.tsx를 쓰면 하위
+ * /journal/[slug]까지 Suspense로 감싸져 notFound()가 404 상태를 낼 수 없다
+ * (shell이 200으로 먼저 flush됨). 페이지 내부 경계는 그 문제가 없다.
+ */
+async function JournalResults({ tag }: { tag?: string }) {
   const { data } = await listArticles({ tag: tag || undefined });
   const articles = data ?? [];
   const [hero, ...rest] = articles;
 
   return (
-    <div className="mx-auto max-w-(--breakpoint-xl) px-4 pb-16 pt-28 md:px-6 lg:px-8">
-      <h1 className="mb-8 text-3xl font-bold tracking-tight text-neutral-900 md:text-4xl">
-        Journal
-      </h1>
-
-      {/* 태그 필터 */}
-      <div className="mb-12 flex flex-wrap gap-2">
-        {TAG_FILTERS.map((f) => (
-          <FilterChip
-            key={f.value}
-            href={f.value ? `/journal?tag=${f.value}` : '/journal'}
-            active={(tag || '') === f.value}
-          >
-            {f.label}
-          </FilterChip>
-        ))}
-      </div>
-
+    <>
       {articles.length === 0 ? (
         <div className="rounded-lg bg-neutral-50 p-12 text-center text-neutral-500">
           게시글이 아직 없습니다.
@@ -55,7 +47,7 @@ export async function JournalListView({ tag }: { tag?: string }) {
                   alt={hero.title}
                   fill
                   priority
-                  sizes="(min-width: 768px) 58vw, 100vw"
+                  sizes="(min-width: 1280px) 695px, (min-width: 768px) 58vw, 100vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
               </div>
@@ -100,6 +92,36 @@ export async function JournalListView({ tag }: { tag?: string }) {
           )}
         </>
       )}
+    </>
+  );
+}
+
+export function JournalListView({ tag }: { tag?: string }) {
+  return (
+    <div className="mx-auto max-w-(--breakpoint-xl) px-4 pb-16 pt-28 md:px-6 lg:px-8">
+      <h1 className="mb-8 text-3xl font-bold tracking-tight text-neutral-900 md:text-4xl">
+        Journal
+      </h1>
+
+      {/* 태그 필터 */}
+      <div className="mb-12 flex flex-wrap gap-2">
+        {TAG_FILTERS.map((f) => (
+          <FilterChip
+            key={f.value}
+            href={f.value ? `/journal?tag=${f.value}` : '/journal'}
+            active={(tag || '') === f.value}
+          >
+            {f.label}
+          </FilterChip>
+        ))}
+      </div>
+
+      <Suspense
+        key={tag ?? ''}
+        fallback={<EntityGridSkeleton aspect="aspect-16/10" />}
+      >
+        <JournalResults tag={tag} />
+      </Suspense>
     </div>
   );
 }

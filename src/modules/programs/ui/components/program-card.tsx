@@ -40,7 +40,7 @@ export function ProgramCard({
           alt={program.title}
           fill
           priority={priority}
-          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          sizes="(min-width: 1152px) 341px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
         {status && (

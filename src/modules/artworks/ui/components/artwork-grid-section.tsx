@@ -45,8 +45,8 @@ export default function ArtworkGridSection({
   return (
     <div>
       <div className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 md:gap-y-16 lg:grid-cols-3">
-        {artworks.map((artwork) => (
-          <ArtworkCard key={artwork.id} artwork={artwork} />
+        {artworks.map((artwork, i) => (
+          <ArtworkCard key={artwork.id} artwork={artwork} priority={i < 3} />
         ))}
       </div>
       {!isLastPage && (

@@ -67,7 +67,7 @@ export function ProgramGridInfinite({
         {items.map((p, i) => (
           <Link key={p.id} href={`/programs/${p.slug}`}>
             <ProgramCard
-              priority={i === 0}
+              priority={i < 3}
               program={{
                 slug: p.slug,
                 title: p.title,

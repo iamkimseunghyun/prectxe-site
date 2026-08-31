@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+import EntityGridSkeleton from '@/components/layout/skeleton/entity-grid-skeleton';
 import { getAllVenues } from '@/modules/venues/server/actions';
 import VenueCard from '@/modules/venues/ui/components/venue-card';
 import { VenueSearchBar } from '@/modules/venues/ui/components/venue-search-bar';
@@ -6,11 +8,34 @@ interface VenueListViewProps {
   searchQuery?: string;
 }
 
+/** 조회를 async 자식으로 분리해 Suspense가 실제로 스트리밍하도록 한다. */
+async function VenueResults({ searchQuery }: { searchQuery: string }) {
+  const { items } = await getAllVenues(1, 30, searchQuery);
+
+  if (items.length === 0) {
+    return (
+      <div className="border-t border-neutral-200 py-24 text-center">
+        <p className="text-sm text-neutral-500">
+          {searchQuery
+            ? `"${searchQuery}"에 해당하는 장소가 없습니다.`
+            : '등록된 장소가 아직 없습니다.'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 md:gap-y-16 lg:grid-cols-3">
+      {items.map((venue, i) => (
+        <VenueCard key={venue.id} venue={venue} priority={i < 3} />
+      ))}
+    </div>
+  );
+}
+
 export const VenueListView = async ({
   searchQuery = '',
 }: VenueListViewProps) => {
-  const { items } = await getAllVenues(1, 30, searchQuery);
-
   return (
     <div className="mx-auto max-w-6xl px-6 py-20 md:px-10 md:py-28">
       <header className="mb-14 md:mb-20">
@@ -21,7 +46,7 @@ export const VenueListView = async ({
           {searchQuery ? (
             <>
               <span className="text-neutral-400">Searching</span>{' '}
-              <span className="italic">"{searchQuery}"</span>
+              <span className="italic">&ldquo;{searchQuery}&rdquo;</span>
             </>
           ) : (
             '장소'
@@ -36,21 +61,9 @@ export const VenueListView = async ({
         </div>
       </header>
 
-      {items.length === 0 ? (
-        <div className="border-t border-neutral-200 py-24 text-center">
-          <p className="text-sm text-neutral-500">
-            {searchQuery
-              ? `"${searchQuery}"에 해당하는 장소가 없습니다.`
-              : '등록된 장소가 아직 없습니다.'}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 md:gap-y-16 lg:grid-cols-3">
-          {items.map((venue) => (
-            <VenueCard key={venue.id} venue={venue} />
-          ))}
-        </div>
-      )}
+      <Suspense key={searchQuery} fallback={<EntityGridSkeleton />}>
+        <VenueResults searchQuery={searchQuery} />
+      </Suspense>
     </div>
   );
 };

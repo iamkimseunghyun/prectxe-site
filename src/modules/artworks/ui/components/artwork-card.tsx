@@ -17,7 +17,10 @@ interface ArtworkCardProps {
   artwork: ArtworkCardData;
 }
 
-export default function ArtworkCard({ artwork }: ArtworkCardProps) {
+export default function ArtworkCard({
+  artwork,
+  priority = false,
+}: ArtworkCardProps & { priority?: boolean }) {
   const firstImage = artwork.images[0];
   const artistNames = artwork.artists
     .map((a) =>
@@ -36,7 +39,8 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
             src={getImageUrl(firstImage.imageUrl, 'smaller')}
             alt={firstImage.alt || artwork.title}
             fill
-            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            priority={priority}
+            sizes="(min-width: 1152px) 341px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
           />
         ) : (
@@ -47,9 +51,9 @@ export default function ArtworkCard({ artwork }: ArtworkCardProps) {
       </div>
 
       <div className="mt-5 space-y-1.5">
-        <h3 className="text-base font-medium leading-snug tracking-tight transition-colors group-hover:text-neutral-500 md:text-lg">
+        <h2 className="text-base font-medium leading-snug tracking-tight transition-colors group-hover:text-neutral-500 md:text-lg">
           {artwork.title}
-        </h3>
+        </h2>
         {artistNames && (
           <p className="text-sm text-neutral-500">{artistNames}</p>
         )}
