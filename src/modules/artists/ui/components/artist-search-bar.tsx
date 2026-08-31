@@ -50,7 +50,7 @@ export function ArtistSearchBar({ initialValue }: { initialValue: string }) {
           {isPending ? (
             <Loader2
               aria-hidden
-              className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-neutral-400"
+              className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 motion-safe:animate-spin text-neutral-400"
             />
           ) : (
             value && (

@@ -110,13 +110,13 @@ export async function getArtistById(artistId: string) {
   return fetchArtistById(artistId);
 }
 
-export const getArtistsPage = next_cache(
-  async (
-    page = 0,
-    pageSize = PAGINATION.ARTISTS_PAGE_SIZE,
-    searchQuery = ''
-  ) => {
-    const q = normalizeSearchQuery(searchQuery);
+/**
+ * 캐시 키는 인수로 만들어지므로 정규화는 반드시 래퍼 "바깥"에서 해야 한다.
+ * 캐시 함수 안에서 정규화하면 "  ryo  " / "ryo" / "ryo"+패딩이 모두 같은
+ * 결과를 내면서도 각각 별개의 캐시 엔트리를 만든다(길이 상한을 둔 의미가 없음).
+ */
+const getArtistsPageCached = next_cache(
+  async (page: number, pageSize: number, q: string) => {
     try {
       return await prisma.artist.findMany({
         where: q
@@ -152,6 +152,18 @@ export const getArtistsPage = next_cache(
   ['artists-list'],
   { revalidate: CACHE_TIMES.ARTISTS_LIST, tags: ['artists'] }
 );
+
+export async function getArtistsPage(
+  page = 0,
+  pageSize = PAGINATION.ARTISTS_PAGE_SIZE,
+  searchQuery = ''
+) {
+  return getArtistsPageCached(
+    page,
+    pageSize,
+    normalizeSearchQuery(searchQuery)
+  );
+}
 
 type ArtistListItem = {
   id: string;

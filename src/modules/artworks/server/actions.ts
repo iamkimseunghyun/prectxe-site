@@ -61,7 +61,7 @@ export const getArtworkByIdWithCache = next_cache(
     return artwork;
   },
   ['artworks-detail'],
-  { revalidate: CACHE_TIMES.ARTWORK_DETAIL }
+  { revalidate: CACHE_TIMES.ARTWORK_DETAIL, tags: ['artworks'] }
 );
 
 export async function getArtworkById(id: string) {
@@ -124,7 +124,7 @@ export const getArtworksPage = next_cache(
     });
   },
   ['artworks-list'],
-  { revalidate: CACHE_TIMES.ARTWORKS_LIST }
+  { revalidate: CACHE_TIMES.ARTWORKS_LIST, tags: ['artworks'] }
 );
 
 export async function getMoreArtworks(page = 0, searchQuery = '') {
