@@ -134,7 +134,10 @@ src/
 - Fallback `/scan/[token]` — 외부 카메라 앱이 인식했을 때 도달, 어드민이면 스캐너 페이지 안내, 일반 사용자에겐 운영자 안내
 
 ### Email Templates
-- Available templates in `src/lib/email/templates/`: `form-notification`, `newsletter`, `order-confirmation`, `bank-transfer-pending`
+- Available templates in `src/lib/email/templates/`: `form-notification`, `newsletter`, `order-confirmation`, `bank-transfer-pending`, `order-admin-notification`
+- **발송은 `sendEmail`(`lib/email/send.ts`) 단일 경로.** Resend batch API로 100건씩 묶고 템플릿은 1회만 렌더한다. **Resend SDK는 API 에러를 throw하지 않고 `{data, error}`로 반환하므로 반드시 `error`를 확인할 것** — try/catch만 쓰면 429·422가 전부 성공으로 집계된다
+- **수신 거부**: 단체 메일은 `includeUnsubscribe: true`로 수신자별 List-Unsubscribe 헤더(RFC 8058) + 본문 링크를 붙인다. 본문은 1회 렌더라 수신자별 URL을 넣을 수 없으므로 `UNSUBSCRIBE_URL_PLACEHOLDER`를 심고 `sendEmail`이 치환한다. **주문 확인·입금 안내 같은 거래 메일에는 붙이지 않는다**(영수증 수신을 해지하는 셈)
+- 뉴스레터 브로드캐스트는 Resend가 수신 거부를 관리하므로 `{{{RESEND_UNSUBSCRIBE_URL}}}`(`RESEND_UNSUBSCRIBE_PLACEHOLDER`)을 쓴다. **이 플레이스홀더는 Broadcasts 전용** — `emails.send` 경로에서는 치환되지 않아 죽은 링크가 나간다
 - Sent via Resend API through `src/lib/email/send.ts`
 - `order-confirmation`은 paid 시점에 발송, `ticketsUrl` prop을 받아 "입장권 보기" CTA 자동 노출
 - `bank-transfer-pending`은 무통장 주문 직후 발송 — 계좌 + 정확한 입금자명 + 마감시각 + 자동 취소 안내
@@ -176,7 +179,7 @@ src/
 - Iron Session cookie (`prectxe`): `id`, `name`, `isAdmin`
 - 현재 시스템은 **어드민 전용 인증**. 일반 회원 가입/로그인 기능은 보류 상태 (메모리 `project_member_system_deferred` 참고)
 - Public: `/programs/[slug]`, `/drops/[slug]`, `/journal/[slug]`, `/forms/[slug]` 등
-- **Token 기반 public** (middleware matcher 외): `/tickets/order/[accessToken]` (구매자 마이페이지), `/scan/[token]` (외부 카메라 fallback)
+- **Token 기반 public** (middleware matcher 외): `/tickets/order/[accessToken]` (구매자 마이페이지), `/scan/[token]` (외부 카메라 fallback), `/unsubscribe?t=` + `/api/unsubscribe?t=` (수신 거부)
 - Private (`/admin/*`, `/*/new`, `/*/[id]/edit`): 미들웨어가 ADMIN 체크 후 진입 허용. 일반 회원은 / 로 redirect
 - Public-only (로그인 시 /admin redirect): `/auth/signin`, `/auth/signup`
 - 입장 스캐너: `/admin/drops/[id]/scanner` — admin layout 안에 있지만 풀스크린 fixed 컨테이너로 nav 시각적 우회
@@ -199,7 +202,9 @@ Bank Transfer: `BANK_NAME`, `BANK_ACCOUNT_NUMBER`, `BANK_ACCOUNT_HOLDER`, `BANK_
 
 Email: `RESEND_API_KEY`, `RESEND_SENDER_EMAIL`. 뉴스레터는 Resend Segment 기반 — `RESEND_SEGMENT_NAME` (선택, 기본 `Newsletter`)로 기본 세그먼트 자동 생성/재사용. SMS: `SMS_PROVIDER` (`aligo`|`solapi`) + 해당 provider keys.
 
-Optional: `NEXT_PUBLIC_GA_ID`, `ENABLE_PROGRAM_REDIRECTS`, `TEST_ADMIN_*` (개발용)
+Optional: `NEXT_PUBLIC_GA_ID`, `ENABLE_PROGRAM_REDIRECTS`, `TEST_ADMIN_*` (개발용), `UNSUBSCRIBE_SECRET`
+
+**`UNSUBSCRIBE_SECRET`**: 수신 거부 토큰 서명 키. 없으면 `COOKIE_PASSWORD`에서 도메인 분리해 파생한다. **설정을 권장하는 이유는 `COOKIE_PASSWORD`를 로테이션하면 그 전에 발송된 메일의 원클릭 수신 거부 링크가 전부 깨지기 때문**(2026-06-26에 실제로 시크릿 로테이션을 했다). 링크가 깨져도 `/unsubscribe`에서 주소를 직접 입력해 해지할 수 있어 완전히 막히지는 않는다. 한번 정하면 바꾸지 말 것.
 
 ## Development Workflow
 

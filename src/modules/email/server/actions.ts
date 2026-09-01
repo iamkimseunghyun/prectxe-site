@@ -13,10 +13,16 @@ import {
 import { getOrCreateNewsletterSegmentId } from '@/lib/email/segments';
 import { filterValidEmails, sendEmail } from '@/lib/email/send';
 import Newsletter from '@/lib/email/templates/newsletter';
+import {
+  UNSUBSCRIBE_URL_PLACEHOLDER,
+  unsubscribeContact,
+  verifyUnsubscribeToken,
+} from '@/lib/email/unsubscribe';
 import { checkRateLimit, isRateLimited } from '@/lib/rate-limit/memory';
 import {
   emailCampaignSchema,
   newsletterBroadcastSchema,
+  unsubscribeSchema,
 } from '@/lib/schemas/email';
 
 /**
@@ -193,6 +199,58 @@ async function resolveFormRecipients(formId: string): Promise<
   };
 }
 
+/** 같은 IP에서 1시간에 허용할 수신 거부 시도 횟수 */
+const UNSUBSCRIBE_IP_LIMIT = 20;
+
+/**
+ * 수신 거부.
+ *
+ * 메일 본문 링크로 오면 서명 토큰이 주소를 담고 있고, 토큰이 없거나 깨졌으면
+ * 페이지에서 주소를 직접 입력받는다. 주소 직접 입력은 제3자가 남의 주소를
+ * 해지시킬 수 있지만, 피해가 "뉴스레터를 못 받는다"에 그치는 반면 해지 수단이
+ * 막히는 쪽이 법적으로도 사용자 경험상으로도 훨씬 나쁘다.
+ *
+ * 구독과 마찬가지로 Resend API를 호출하므로 rate limit을 건다.
+ */
+export async function unsubscribeNewsletter(input: unknown) {
+  const parsed = parseInput(unsubscribeSchema, input);
+  if (!parsed.success) return { success: false as const, error: parsed.error };
+
+  const ip = await getClientIp();
+  if (
+    !checkRateLimit(
+      `unsubscribe:ip:${ip}`,
+      UNSUBSCRIBE_IP_LIMIT,
+      SUBSCRIBE_IP_WINDOW_MS
+    )
+  ) {
+    return {
+      success: false as const,
+      error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+    };
+  }
+
+  const email =
+    'token' in parsed.data
+      ? verifyUnsubscribeToken(parsed.data.token)
+      : parsed.data.email.trim().toLowerCase();
+
+  if (!email) {
+    return {
+      success: false as const,
+      error:
+        '링크가 만료되었거나 올바르지 않습니다. 이메일 주소를 직접 입력해주세요.',
+    };
+  }
+
+  const result = await unsubscribeContact(email);
+  if (!result.success) {
+    return { success: false as const, error: result.error };
+  }
+
+  return { success: true as const };
+}
+
 /**
  * Form 응답자 수 미리보기.
  *
@@ -284,8 +342,16 @@ export async function createAndSendEmailCampaign(input: unknown) {
       to: validEmails,
       subject: params.subject,
       template,
-      data: { formTitle: params.title, message: params.body },
+      data: {
+        formTitle: params.title,
+        message: params.body,
+        // sendEmail이 수신자별 URL로 치환한다.
+        unsubscribeUrl: UNSUBSCRIBE_URL_PLACEHOLDER,
+      },
       idempotencyKey: campaign.id,
+      // 단체 안내 메일이므로 수신 거부 수단을 제공한다.
+      // 주문 확인 등 거래 메일에는 붙이지 않는다.
+      includeUnsubscribe: true,
     });
 
     // 각 수신자 결과 저장 — createMany 한 번.
