@@ -139,23 +139,21 @@ export function EmailCampaignList() {
                 <TableHead>상태</TableHead>
                 <TableHead>발송일시</TableHead>
                 <TableHead>연결된 Form</TableHead>
+                <TableHead>
+                  <span className="sr-only">상세</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {campaigns.map((campaign) => (
+                // 행 클릭은 마우스 편의용일 뿐이다.
+                // <tr>에 role="button"·tabIndex를 주면 테이블 시맨틱이 사라져
+                // 스크린리더가 셀 구조를 잃고, 버튼 역할 안에 링크가 중첩된다.
+                // 키보드·보조기술 경로는 아래 전용 "상세" 버튼이 담당한다.
                 <TableRow
                   key={campaign.id}
                   onClick={() => setOpenId(campaign.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setOpenId(campaign.id);
-                    }
-                  }}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`${campaign.title} 상세 보기`}
-                  className="cursor-pointer focus-visible:bg-muted hover:bg-muted/50"
+                  className="cursor-pointer hover:bg-muted/50"
                 >
                   <TableCell className="font-medium">
                     {campaign.title}
@@ -204,6 +202,20 @@ export function EmailCampaignList() {
                     ) : (
                       <span className="text-sm text-muted-foreground">-</span>
                     )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenId(campaign.id);
+                      }}
+                      aria-label={`${campaign.title} 상세 보기`}
+                    >
+                      상세
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

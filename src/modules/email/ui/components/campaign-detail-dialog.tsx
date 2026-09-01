@@ -48,22 +48,35 @@ export function CampaignDetailDialog({
     async (id: string, nextPage: number, failedOnly: boolean) => {
       const seq = ++requestSeq.current;
       setIsLoading(true);
-      const result = await getEmailCampaign(id, {
-        page: nextPage,
-        onlyFailed: failedOnly,
-      });
-      if (seq !== requestSeq.current) return; // 더 새 요청이 있다 — 버린다
+      try {
+        const result = await getEmailCampaign(id, {
+          page: nextPage,
+          onlyFailed: failedOnly,
+        });
+        if (seq !== requestSeq.current) return; // 더 새 요청이 있다 — 버린다
 
-      setIsLoading(false);
-      if (!result.success) {
+        if (!result.success) {
+          toast({
+            title: '불러오기 실패',
+            description: result.error,
+            variant: 'destructive',
+          });
+          return;
+        }
+        setDetail(result.data);
+      } catch (err) {
+        if (seq !== requestSeq.current) return;
         toast({
           title: '불러오기 실패',
-          description: result.error,
+          description:
+            err instanceof Error ? err.message : '알 수 없는 오류입니다',
           variant: 'destructive',
         });
-        return;
+      } finally {
+        // finally에서 내려야 한다. await가 reject하면 뒤 코드에 도달하지 못해
+        // 스피너가 영영 돌고 버튼이 잠긴 채로 굳는다.
+        if (seq === requestSeq.current) setIsLoading(false);
       }
-      setDetail(result.data);
     },
     [toast]
   );
@@ -89,25 +102,40 @@ export function CampaignDetailDialog({
   const handleResend = async () => {
     if (!campaignId) return;
     setIsResending(true);
-    const result = await resendFailedRecipients(campaignId);
-    setIsResending(false);
+    try {
+      const result = await resendFailedRecipients(campaignId);
 
-    if (!result.success) {
+      if (!result.success) {
+        toast({
+          title: '재발송 실패',
+          description: result.error,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const { retried, recovered, stillFailed, remaining } = result.data;
+      toast({
+        title: '재발송 완료',
+        description:
+          `${retried}건 재시도 → ${recovered}건 성공, ${stillFailed}건 여전히 실패` +
+          (remaining > 0
+            ? ` · 남은 실패 ${remaining}건은 다시 눌러 처리하세요`
+            : ''),
+      });
+      onChanged();
+      setPage(1);
+      void load(campaignId, 1, onlyFailed);
+    } catch (err) {
       toast({
         title: '재발송 실패',
-        description: result.error,
+        description:
+          err instanceof Error ? err.message : '알 수 없는 오류입니다',
         variant: 'destructive',
       });
-      return;
+    } finally {
+      setIsResending(false);
     }
-
-    toast({
-      title: '재발송 완료',
-      description: `${result.data.retried}건 재시도 → ${result.data.recovered}건 성공, ${result.data.stillFailed}건 여전히 실패`,
-    });
-    onChanged();
-    void load(campaignId, 1, onlyFailed);
-    setPage(1);
   };
 
   const campaign = detail?.campaign;
