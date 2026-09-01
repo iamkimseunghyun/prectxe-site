@@ -23,13 +23,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -45,7 +38,6 @@ const formSchema = z.object({
     .string()
     .min(1, '내용을 입력해주세요')
     .max(10000, '내용은 10000자 이하여야 합니다'),
-  template: z.enum(['form-notification', 'newsletter']),
   emails: z.string().min(1, '이메일을 입력해주세요'),
 });
 
@@ -62,7 +54,6 @@ export function IndependentEmailSender() {
       title: '',
       subject: '',
       body: '',
-      template: 'form-notification',
       emails: '',
     },
   });
@@ -129,7 +120,6 @@ export function IndependentEmailSender() {
         title: data.title,
         subject: data.subject,
         body: emailHTML,
-        template: data.template,
         emails,
       });
 
@@ -175,32 +165,6 @@ export function IndependentEmailSender() {
                     <Input placeholder="예: 2024 봄 뉴스레터" {...field} />
                   </FormControl>
                   <FormDescription>내부 관리용 제목입니다</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="template"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>템플릿 선택 *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="form-notification">
-                        알림 템플릿
-                      </SelectItem>
-                      <SelectItem value="newsletter">
-                        뉴스레터 템플릿
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

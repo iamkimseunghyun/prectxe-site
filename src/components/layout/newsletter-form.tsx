@@ -30,13 +30,11 @@ export function NewsletterForm() {
       return;
     }
 
+    // 이미 구독 중인지 여부는 응답으로 구분하지 않는다 —
+    // 구분해서 보여주면 외부에서 구독자 주소를 조회할 수 있는 열거 오라클이 된다.
     toast({
-      title: result.alreadySubscribed
-        ? '이미 구독 중이세요.'
-        : '구독이 완료되었습니다.',
-      description: result.alreadySubscribed
-        ? '등록된 주소로 다음 소식을 보내드릴게요.'
-        : '다음 Drop과 Journal을 이 주소로 보내드릴게요.',
+      title: '구독이 완료되었습니다.',
+      description: '다음 Drop과 Journal을 이 주소로 보내드릴게요.',
     });
     setEmail('');
   }

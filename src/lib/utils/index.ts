@@ -6,7 +6,7 @@
  * - date.ts: 날짜 포맷
  * - image-url.ts: Cloudflare 이미지/영상 URL 처리
  * - upload.ts: 이미지 업로드 + 검증
- * - text.ts: 한글/슬러그/아티스트 이름
+ * - text.ts: 한글/슬러그/아티스트 이름/로그 마스킹
  * - 도메인 전용 유틸은 별도 파일 (ticket-status, ticket-token, bank-transfer 등)
  */
 export { cn } from './cn';
@@ -32,6 +32,7 @@ export {
   artistInitials,
   containsKorean,
   formatArtistName,
+  maskEmail,
   slugify,
 } from './text';
 export {

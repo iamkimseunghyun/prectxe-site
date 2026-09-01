@@ -16,6 +16,12 @@ interface NewsletterProps {
   message: string;
   ctaText?: string;
   ctaUrl?: string;
+  /**
+   * 수신 거부 링크. Broadcasts 경로에서만
+   * `RESEND_UNSUBSCRIBE_PLACEHOLDER`를 넘긴다 — Resend가 수신자별 링크로 치환한다.
+   * 넘기지 않으면 링크를 아예 렌더하지 않는다(죽은 링크 발송 방지).
+   */
+  unsubscribeUrl?: string;
 }
 
 export default function Newsletter({
@@ -23,6 +29,7 @@ export default function Newsletter({
   message,
   ctaText,
   ctaUrl,
+  unsubscribeUrl,
 }: NewsletterProps) {
   const previewText = title;
 
@@ -45,10 +52,14 @@ export default function Newsletter({
             <Text style={footer}>
               이 메일은 PRECTXE에서 발송된 발신 전용 메일입니다. 회신은 수신되지
               않습니다.
-              <br />
-              <Link href="{{{RESEND_UNSUBSCRIBE_URL}}}" style={unsubscribeLink}>
-                수신 거부
-              </Link>
+              {unsubscribeUrl && (
+                <>
+                  <br />
+                  <Link href={unsubscribeUrl} style={unsubscribeLink}>
+                    수신 거부
+                  </Link>
+                </>
+              )}
             </Text>
           </Section>
         </Container>

@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { maskEmail } from '@/lib/utils/text';
 import { createResendClient, getSenderEmail } from './resend';
 import BankTransferPending from './templates/bank-transfer-pending';
 import FormNotification from './templates/form-notification';
@@ -69,50 +70,64 @@ function getTemplate(template: string, data: EmailTemplateData): ReactElement {
 export async function sendEmail(
   params: SendEmailParams
 ): Promise<SendEmailResult> {
-  try {
-    const client = createResendClient();
-    const from = getSenderEmail();
-    const recipients = Array.isArray(params.to) ? params.to : [params.to];
-    const results: SendEmailResult['results'] = [];
-    let sentCount = 0;
-    let failedCount = 0;
+  const client = createResendClient();
+  const from = getSenderEmail();
+  const recipients = Array.isArray(params.to) ? params.to : [params.to];
+  const results: SendEmailResult['results'] = [];
+  let sentCount = 0;
+  let failedCount = 0;
 
-    // 각 수신자에게 개별 발송
-    for (const email of recipients) {
-      try {
-        const response = await client.emails.send({
-          from,
-          to: email,
-          subject: params.subject,
-          react: getTemplate(params.template, params.data),
-        });
+  // 각 수신자에게 개별 발송
+  for (const email of recipients) {
+    try {
+      // Resend SDK는 API 에러를 throw하지 않고 { data: null, error }로 반환한다.
+      // (resend/dist fetchRequest가 모든 실패를 catch해서 error 필드에 담음)
+      // 따라서 try/catch만으로는 429·422·403·네트워크 실패를 전혀 감지하지 못한다.
+      const { data, error } = await client.emails.send({
+        from,
+        to: email,
+        subject: params.subject,
+        react: getTemplate(params.template, params.data),
+      });
 
-        results.push({
-          to: email,
-          success: true,
-          messageId: response.data?.id,
+      if (error) {
+        const message = `${error.name}: ${error.message}`;
+        // 주문 확인·입금 안내 메일도 이 경로를 타므로 실패는 반드시 로그에 남긴다.
+        // 수신자 주소는 마스킹한다 — 실패 원인 추적에는 도메인이면 충분하고,
+        // 전체 주소를 남기면 런타임 로그가 개인정보 저장소가 된다.
+        console.error('[email] 발송 실패', {
+          to: maskEmail(email),
+          template: params.template,
+          error: message,
         });
-        sentCount++;
-      } catch (error) {
-        results.push({
-          to: email,
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
+        results.push({ to: email, success: false, error: message });
         failedCount++;
+        continue;
       }
-    }
 
-    return {
-      success: sentCount > 0,
-      sentCount,
-      failedCount,
-      results,
-    };
-  } catch (error) {
-    console.error('이메일 발송 오류:', error);
-    throw error;
+      results.push({ to: email, success: true, messageId: data?.id });
+      sentCount++;
+    } catch (err) {
+      // 여기 걸리는 건 주로 템플릿 렌더 실패 등 SDK 호출 이전 예외.
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[email] 발송 예외', {
+        to: maskEmail(email),
+        template: params.template,
+        error: message,
+      });
+      results.push({ to: email, success: false, error: message });
+      failedCount++;
+    }
   }
+
+  return {
+    // 한 건이라도 실패하면 success가 아니다. 예전엔 sentCount > 0이라
+    // 500명 중 1명만 성공해도 "성공"으로 보고됐다.
+    success: failedCount === 0 && sentCount > 0,
+    sentCount,
+    failedCount,
+    results,
+  };
 }
 
 /**

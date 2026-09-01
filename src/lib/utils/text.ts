@@ -52,3 +52,23 @@ export function artistInitials(en?: string | null, kr?: string | null): string {
   const krSafe = (kr || '').trim();
   return krSafe.substring(0, 2) || 'A';
 }
+
+/**
+ * 로그용 이메일 마스킹 — `kaka@laaf.kr` → `ka**@laaf.kr`.
+ *
+ * 도메인은 남겨 장애 분석(특정 메일 서버 거부 등)이 가능하게 하되,
+ * 로컬 파트를 가려 로그만으로 개인을 식별하지 못하게 한다.
+ * DB에 남기는 발송 기록에는 쓰지 않는다 — 어드민이 봐야 하는 정보다.
+ */
+export function maskEmail(email: string): string {
+  const at = email.lastIndexOf('@');
+  if (at <= 0) return '***';
+
+  const local = email.slice(0, at);
+  const domain = email.slice(at);
+
+  // 로컬 파트가 2자 이하면 앞 2자를 남겨도 사실상 전부 노출된다.
+  if (local.length <= 2) return `${'*'.repeat(local.length)}${domain}`;
+
+  return `${local.slice(0, 2)}${'*'.repeat(local.length - 2)}${domain}`;
+}
