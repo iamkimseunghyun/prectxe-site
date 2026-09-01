@@ -1,8 +1,8 @@
 import ExcelJS from 'exceljs';
 import { formatKstDateTime } from '@/lib/utils';
 
-// PnL 내보내기(`@/lib/pnl/export`)와 동일한 패턴 — AOA 직렬화 + toCsv/toXlsx +
-// safeFilename. 주문 목록은 단순 평면 테이블이라 빌더도 단순하다.
+// AOA 직렬화 + toCsv/toXlsx + safeFilename 패턴.
+// 주문 목록은 단순 평면 테이블이라 빌더도 단순하다.
 
 type Cell = string | number;
 type AOA = Cell[][];

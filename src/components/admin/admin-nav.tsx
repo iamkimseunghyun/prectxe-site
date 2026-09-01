@@ -2,7 +2,6 @@
 
 import {
   Archive,
-  Calculator,
   ClipboardList,
   FileText,
   Image,
@@ -11,7 +10,6 @@ import {
   Mail,
   MapPin,
   MessageSquare,
-  Receipt,
   Ticket,
   Users,
 } from 'lucide-react';
@@ -56,18 +54,6 @@ const ADMIN_TABS: NavItem[] = [
     label: 'Drops',
     icon: Ticket,
     href: '/admin/drops',
-  },
-  {
-    value: 'pnl',
-    label: 'PnL',
-    icon: Calculator,
-    href: '/admin/pnl',
-  },
-  {
-    value: 'estimates',
-    label: 'Estimates',
-    icon: Receipt,
-    href: '/admin/estimates',
   },
   { value: 'sms', label: 'SMS', icon: MessageSquare, href: '/admin/sms' },
   { value: 'email', label: 'Email', icon: Mail, href: '/admin/email' },
