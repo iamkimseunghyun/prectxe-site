@@ -67,3 +67,12 @@ export const newsletterBroadcastSchema = z.object(campaignBaseFields);
 export type NewsletterBroadcastInput = z.infer<
   typeof newsletterBroadcastSchema
 >;
+
+/**
+ * 수신 거부 입력.
+ * 메일의 링크로 오면 token, 링크가 깨졌을 때 페이지에서 직접 입력하면 email.
+ */
+export const unsubscribeSchema = z.union([
+  z.object({ token: z.string().min(1) }),
+  z.object({ email: z.string().email('올바른 이메일 주소를 입력해주세요') }),
+]);

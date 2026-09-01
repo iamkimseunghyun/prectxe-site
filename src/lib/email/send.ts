@@ -7,6 +7,11 @@ import FormNotification from './templates/form-notification';
 import Newsletter from './templates/newsletter';
 import OrderAdminNotification from './templates/order-admin-notification';
 import OrderConfirmation from './templates/order-confirmation';
+import {
+  buildUnsubscribeHeaders,
+  getUnsubscribePageUrl,
+  UNSUBSCRIBE_URL_PLACEHOLDER,
+} from './unsubscribe';
 
 // 각 템플릿이 받는 props의 합집합 — 실제 페이로드 형태
 export type EmailTemplateData =
@@ -43,6 +48,14 @@ export interface SendEmailParams {
    * 이미 처리한 청크를 중복 발송하지 않는다.
    */
   idempotencyKey?: string;
+  /**
+   * true면 수신자별 List-Unsubscribe 헤더를 붙이고, 본문의
+   * `UNSUBSCRIBE_URL_PLACEHOLDER`를 그 수신자의 해지 URL로 치환한다.
+   *
+   * **광고성·안내성 단체 메일에만 쓴다.** 주문 확인·입금 안내 같은 거래 메일에
+   * 수신 거부를 붙이면 구매자가 영수증 수신을 해지하는 셈이 된다.
+   */
+  includeUnsubscribe?: boolean;
 }
 
 export interface SendEmailResult {
@@ -144,7 +157,22 @@ export async function sendEmail(
 
     // Resend SDK는 API 에러를 throw하지 않고 { data: null, error }로 반환한다.
     const { data, error } = await client.batch.send(
-      group.map((to) => ({ from, to, subject: params.subject, html })),
+      group.map((to) => ({
+        from,
+        to,
+        subject: params.subject,
+        // 본문은 한 번만 렌더했으므로 수신자별 URL은 자리표시자 치환으로 넣는다.
+        // 50KB 문자열 치환은 React 렌더에 비하면 무시할 만한 비용이다.
+        html: params.includeUnsubscribe
+          ? html.replaceAll(
+              UNSUBSCRIBE_URL_PLACEHOLDER,
+              getUnsubscribePageUrl(to)
+            )
+          : html,
+        headers: params.includeUnsubscribe
+          ? buildUnsubscribeHeaders(to)
+          : undefined,
+      })),
       {
         // strict(기본값)는 잘못된 주소 하나가 청크 전체를 실패시킨다.
         // permissive는 실패한 항목만 errors[]로 돌려주고 나머지는 발송한다.
