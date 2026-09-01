@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { render } from 'react-email';
 import { maskEmail } from '@/lib/utils/text';
 import { createResendClient, getSenderEmail } from './resend';
 import BankTransferPending from './templates/bank-transfer-pending';
@@ -15,6 +16,16 @@ export type EmailTemplateData =
   | Parameters<typeof BankTransferPending>[0]
   | Parameters<typeof OrderAdminNotification>[0];
 
+/** Resend batch API 1회 요청당 최대 수신자 수 */
+const BATCH_SIZE = 100;
+
+/**
+ * 청크 사이 최소 간격.
+ * Resend rate limit은 팀당 10 req/s를 모든 API 키가 공유하므로, 대량 발송이
+ * 예산을 독점해 주문 확인·입금 안내 메일을 밀어내지 않도록 간격을 둔다.
+ */
+const BATCH_INTERVAL_MS = 150;
+
 // 이메일 발송 인터페이스
 export interface SendEmailParams {
   to: string | string[];
@@ -26,6 +37,12 @@ export interface SendEmailParams {
     | 'bank-transfer-pending'
     | 'order-admin-notification';
   data: EmailTemplateData;
+  /**
+   * 지정하면 청크마다 `${idempotencyKey}:${index}` 형태의 Idempotency-Key를
+   * 붙인다. 발송 도중 타임아웃·크래시로 같은 캠페인을 재실행해도 Resend가
+   * 이미 처리한 청크를 중복 발송하지 않는다.
+   */
+  idempotencyKey?: string;
 }
 
 export interface SendEmailResult {
@@ -64,60 +81,138 @@ function getTemplate(template: string, data: EmailTemplateData): ReactElement {
   }
 }
 
+/** 배열을 size 단위로 자른다. */
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(items.slice(i, i + size));
+  }
+  return out;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 /**
- * 단일 또는 다수의 수신자에게 이메일 발송
+ * 단일 또는 다수의 수신자에게 이메일 발송.
+ *
+ * 수신자마다 개별 요청을 보내는 대신 Resend batch API로 100건씩 묶어 보낸다.
+ * 500명 기준 API 호출이 500회에서 5회로 줄고, 템플릿 렌더도 500회에서 1회가 된다.
  */
 export async function sendEmail(
   params: SendEmailParams
 ): Promise<SendEmailResult> {
+  const recipients = Array.isArray(params.to) ? params.to : [params.to];
+
+  if (recipients.length === 0) {
+    return { success: false, sentCount: 0, failedCount: 0, results: [] };
+  }
+
+  // 템플릿은 수신자와 무관하게 동일하므로 한 번만 렌더한다.
+  // (SDK에 react를 넘기면 수신자마다 다시 렌더된다)
+  let html: string;
+  try {
+    html = await render(getTemplate(params.template, params.data));
+  } catch (err) {
+    // 렌더가 깨지면 누구에게도 보낼 수 없다 — 전원 실패로 보고한다.
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[email] 템플릿 렌더 실패', {
+      template: params.template,
+      error: message,
+    });
+    return {
+      success: false,
+      sentCount: 0,
+      failedCount: recipients.length,
+      results: recipients.map((to) => ({
+        to,
+        success: false,
+        error: `템플릿 렌더 실패: ${message}`,
+      })),
+    };
+  }
+
   const client = createResendClient();
   const from = getSenderEmail();
-  const recipients = Array.isArray(params.to) ? params.to : [params.to];
   const results: SendEmailResult['results'] = [];
   let sentCount = 0;
   let failedCount = 0;
 
-  // 각 수신자에게 개별 발송
-  for (const email of recipients) {
-    try {
-      // Resend SDK는 API 에러를 throw하지 않고 { data: null, error }로 반환한다.
-      // (resend/dist fetchRequest가 모든 실패를 catch해서 error 필드에 담음)
-      // 따라서 try/catch만으로는 429·422·403·네트워크 실패를 전혀 감지하지 못한다.
-      const { data, error } = await client.emails.send({
-        from,
-        to: email,
-        subject: params.subject,
-        react: getTemplate(params.template, params.data),
-      });
+  const groups = chunk(recipients, BATCH_SIZE);
 
-      if (error) {
-        const message = `${error.name}: ${error.message}`;
-        // 주문 확인·입금 안내 메일도 이 경로를 타므로 실패는 반드시 로그에 남긴다.
-        // 수신자 주소는 마스킹한다 — 실패 원인 추적에는 도메인이면 충분하고,
-        // 전체 주소를 남기면 런타임 로그가 개인정보 저장소가 된다.
-        console.error('[email] 발송 실패', {
-          to: maskEmail(email),
-          template: params.template,
-          error: message,
-        });
-        results.push({ to: email, success: false, error: message });
-        failedCount++;
-        continue;
+  for (const [chunkIndex, group] of groups.entries()) {
+    if (chunkIndex > 0) await sleep(BATCH_INTERVAL_MS);
+
+    // Resend SDK는 API 에러를 throw하지 않고 { data: null, error }로 반환한다.
+    const { data, error } = await client.batch.send(
+      group.map((to) => ({ from, to, subject: params.subject, html })),
+      {
+        // strict(기본값)는 잘못된 주소 하나가 청크 전체를 실패시킨다.
+        // permissive는 실패한 항목만 errors[]로 돌려주고 나머지는 발송한다.
+        batchValidation: 'permissive',
+        idempotencyKey: params.idempotencyKey
+          ? `${params.idempotencyKey}:${chunkIndex}`
+          : undefined,
       }
+    );
 
-      results.push({ to: email, success: true, messageId: data?.id });
-      sentCount++;
-    } catch (err) {
-      // 여기 걸리는 건 주로 템플릿 렌더 실패 등 SDK 호출 이전 예외.
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      console.error('[email] 발송 예외', {
-        to: maskEmail(email),
+    if (error || !data) {
+      // 청크 전체 실패 — 429, 도메인 미인증, 네트워크 오류 등.
+      const message = error
+        ? `${error.name}: ${error.message}`
+        : 'Unknown batch error';
+      console.error('[email] 배치 발송 실패', {
         template: params.template,
+        chunkIndex,
+        size: group.length,
         error: message,
       });
-      results.push({ to: email, success: false, error: message });
-      failedCount++;
+      for (const to of group) {
+        results.push({ to, success: false, error: message });
+        failedCount++;
+      }
+      continue;
     }
+
+    // permissive 응답에서 errors[].index는 **요청 배열 기준** 인덱스이고,
+    // data[]에는 성공한 건만 순서대로 담긴다.
+    const failures = new Map<number, string>();
+    for (const e of data.errors ?? []) {
+      failures.set(e.index, e.message);
+    }
+
+    // 길이가 예상과 어긋나면 위치 기반 매핑을 신뢰하지 않는다.
+    // 발송 성패 자체는 errors[]로 확정되므로 messageId만 포기하면 된다.
+    const idsAligned = data.data.length === group.length - failures.size;
+    if (!idsAligned) {
+      console.warn('[email] 배치 응답 길이 불일치 — messageId 매핑 생략', {
+        chunkIndex,
+        requested: group.length,
+        returned: data.data.length,
+        failed: failures.size,
+      });
+    }
+
+    let cursor = 0;
+    group.forEach((to, i) => {
+      const failure = failures.get(i);
+      if (failure !== undefined) {
+        // 수신자 주소는 마스킹한다 — 원인 추적엔 도메인이면 충분하고,
+        // 전체 주소를 남기면 런타임 로그가 개인정보 저장소가 된다.
+        console.error('[email] 발송 실패', {
+          to: maskEmail(to),
+          template: params.template,
+          error: failure,
+        });
+        results.push({ to, success: false, error: failure });
+        failedCount++;
+        return;
+      }
+
+      const messageId = idsAligned ? data.data[cursor]?.id : undefined;
+      cursor++;
+      results.push({ to, success: true, messageId });
+      sentCount++;
+    });
   }
 
   return {
@@ -139,11 +234,16 @@ export function validateEmail(email: string): boolean {
 }
 
 /**
- * 배열에서 유효한 이메일만 필터링
+ * 배열에서 유효한 이메일만 필터링 + 중복 제거.
+ *
+ * 중복 제거에 `indexOf`를 쓰면 O(n²)이라 폼 응답자가 수천 건일 때 눈에 띄게
+ * 느려진다. Set은 삽입 순서를 보존하므로 결과 순서도 그대로다.
  */
 export function filterValidEmails(emails: string[]): string[] {
-  return emails
-    .map((e) => e.trim().toLowerCase())
-    .filter(validateEmail)
-    .filter((email, index, self) => self.indexOf(email) === index); // 중복 제거
+  const seen = new Set<string>();
+  for (const raw of emails) {
+    const email = raw.trim().toLowerCase();
+    if (validateEmail(email)) seen.add(email);
+  }
+  return [...seen];
 }

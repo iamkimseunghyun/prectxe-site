@@ -385,6 +385,12 @@ model EmailCampaign {
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   form        Form?            @relation(fields: [formId], references: [id], onDelete: SetNull)
   recipients  EmailRecipient[]
+
+  // Prisma는 FK에 인덱스를 자동 생성하지 않는다. 2026-06-19 FK 인덱스 일괄
+  // 추가 때 이 모델만 누락돼 있었다. sentAt은 통계(최근 12개월 조회) 기준.
+  @@index([userId])
+  @@index([formId])
+  @@index([sentAt])
 }
 
 model EmailRecipient {

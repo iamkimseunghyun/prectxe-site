@@ -37,7 +37,7 @@ import {
 } from '@/modules/email/ui/components/email-editor';
 import {
   createAndSendEmailCampaign,
-  getFormRespondentsEmails,
+  getFormRespondentsSummary,
   getFormsWithEmailFields,
 } from '../../server/actions';
 
@@ -94,7 +94,7 @@ export function FormRecipientsEmailSender() {
     setSelectedFormInfo(null);
     if (!formId) return;
 
-    const result = await getFormRespondentsEmails(formId);
+    const result = await getFormRespondentsSummary(formId);
     if (result.success && result.data) {
       setSelectedFormInfo({
         validEmailCount: result.data.validEmailCount,
@@ -113,25 +113,19 @@ export function FormRecipientsEmailSender() {
     try {
       setIsLoading(true);
 
-      // 이메일 목록 가져오기
-      const emailResult = await getFormRespondentsEmails(data.formId);
-      if (!emailResult.success || !emailResult.data) {
-        throw new Error(emailResult.error);
-      }
-
       const selectedForm = forms.find((f) => f.id === data.formId);
       const title = `${selectedForm?.title || 'Form'} 응답자 발송`;
 
       // Convert HTML to email-compatible format
       const emailHTML = getEmailHTML(data.body);
 
-      // 이메일 발송
+      // 수신자 주소는 서버가 formId로 직접 조회한다 — 여기서 보내지 않는다.
       const result = await createAndSendEmailCampaign({
+        source: 'form',
+        formId: data.formId,
         title,
         subject: data.subject,
         body: emailHTML,
-        emails: emailResult.data.emails,
-        formId: data.formId,
       });
 
       if (result.success && result.data) {
