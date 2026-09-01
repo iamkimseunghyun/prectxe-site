@@ -56,7 +56,7 @@ src/
 │   ├── rich-editor/        # TipTap 에디터 — journal/drops에서 공유
 │   └── seo/                # JSON-LD schema 컴포넌트
 ├── hooks/                  # 공용 커스텀 훅 (use-toast, use-single-image-upload 등)
-├── lib/                    # 인프라 + 유틸 (auth, cdn, db, email, payment, pnl, sms, schemas, utils)
+├── lib/                    # 인프라 + 유틸 (auth, cdn, db, email, payment, sms, schemas, utils)
 └── middleware.ts            # Route protection
 ```
 
@@ -79,7 +79,7 @@ src/
 
 ### Modules
 
-`programs`, `journal`, `artists`, `venues`, `artworks`, `auth`, `forms`, `sms`, `email`, `drops`, `tickets`, `home`, `estimates`, `pnl` — each with `server/actions.ts` + `ui/{views,components}/`. Query provider: `src/modules/providers.tsx`.
+`programs`, `journal`, `artists`, `venues`, `artworks`, `auth`, `forms`, `sms`, `email`, `drops`, `tickets`, `home` — each with `server/actions.ts` + `ui/{views,components}/`. Query provider: `src/modules/providers.tsx`.
 
 ## Key Patterns
 
