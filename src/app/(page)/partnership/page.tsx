@@ -14,7 +14,7 @@ import InstagramIcon from '@/components/icons/instagram';
 import YoutubeIcon from '@/components/icons/youtube';
 
 export const metadata: Metadata = {
-  title: 'Partnership | PRECTXE',
+  title: 'Partnership',
   description:
     'PRECTXE와 함께 브랜드의 철학을 가장 진보적인 감각으로 재설계하세요. 스폰서십, 브랜드 이벤트, 콘텐츠 협업.',
   openGraph: {

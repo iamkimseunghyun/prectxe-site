@@ -1,8 +1,8 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Send, Upload } from 'lucide-react';
-import { useState } from 'react';
+import { Upload } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -25,11 +25,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { stripHtml } from '@/lib/utils';
 import {
   EmailEditor,
   getEmailHTML,
 } from '@/modules/email/ui/components/email-editor';
 import { createAndSendEmailCampaign } from '../../server/actions';
+import { useEmailDraft } from '../hooks/use-email-draft';
+import { DraftRestoredNotice } from './draft-restored-notice';
+import { SendControls } from './send-controls';
 
 const formSchema = z.object({
   title: z.string().min(1, '캠페인 제목을 입력해주세요'),
@@ -42,6 +46,14 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+/** 줄바꿈·쉼표·세미콜론으로 구분된 주소 목록을 배열로. */
+function parseEmailList(value: string): string[] {
+  return value
+    .split(/[\n,;]/)
+    .map((e) => e.trim())
+    .filter(Boolean);
+}
 
 export function IndependentEmailSender() {
   const { toast } = useToast();
@@ -58,13 +70,23 @@ export function IndependentEmailSender() {
     },
   });
 
+  const { restored, editorKey, reset } = useEmailDraft<FormValues>(
+    'independent',
+    form,
+    (v) => !(v.title || v.subject || v.emails || stripHtml(v.body))
+  );
+
+  // 초안을 불러오면 수신자 수 표시도 같이 맞춰준다.
+  // handleEmailsChange를 부르지 않는 이유: 매 렌더 새 참조라 deps에 넣으면
+  // effect가 매번 재실행된다(CLAUDE.md의 무한 루프 함정).
+  useEffect(() => {
+    if (restored)
+      setEmailCount(parseEmailList(form.getValues('emails')).length);
+  }, [restored, form]);
+
   // 이메일 개수 계산
   const handleEmailsChange = (value: string) => {
-    const emails = value
-      .split(/[\n,;]/)
-      .map((e) => e.trim())
-      .filter(Boolean);
-    setEmailCount(emails.length);
+    setEmailCount(parseEmailList(value).length);
   };
 
   // CSV 파일 업로드
@@ -102,11 +124,7 @@ export function IndependentEmailSender() {
     try {
       setIsLoading(true);
 
-      // 이메일 파싱
-      const emails = data.emails
-        .split(/[\n,;]/)
-        .map((e) => e.trim())
-        .filter(Boolean);
+      const emails = parseEmailList(data.emails);
 
       if (emails.length === 0) {
         throw new Error('유효한 이메일이 없습니다');
@@ -129,7 +147,7 @@ export function IndependentEmailSender() {
           title: '발송 완료',
           description: `${result.data.sentCount}건 발송 성공, ${result.data.failedCount}건 실패`,
         });
-        form.reset();
+        reset();
         setEmailCount(0);
       } else {
         throw new Error(result.error);
@@ -148,14 +166,16 @@ export function IndependentEmailSender() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>독립 발송</CardTitle>
+        <CardTitle>주소 직접 입력 발송</CardTitle>
         <CardDescription>
           이메일 주소를 직접 입력하거나 CSV 파일로 업로드하여 발송합니다
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+            {restored && <DraftRestoredNotice onDiscard={reset} />}
+
             <FormField
               control={form.control}
               name="title"
@@ -163,7 +183,7 @@ export function IndependentEmailSender() {
                 <FormItem>
                   <FormLabel>캠페인 제목 *</FormLabel>
                   <FormControl>
-                    <Input placeholder="예: 2024 봄 뉴스레터" {...field} />
+                    <Input placeholder="예: 2026 봄 프로그램 안내" {...field} />
                   </FormControl>
                   <FormDescription>내부 관리용 제목입니다</FormDescription>
                   <FormMessage />
@@ -193,6 +213,7 @@ export function IndependentEmailSender() {
                   <FormLabel>이메일 내용 *</FormLabel>
                   <FormControl>
                     <EmailEditor
+                      key={editorKey}
                       content={field.value}
                       onChange={(html) => field.onChange(html)}
                       placeholder="이메일 내용을 작성하세요. 이미지, YouTube 동영상 등을 추가할 수 있습니다."
@@ -258,23 +279,17 @@ export function IndependentEmailSender() {
               )}
             />
 
-            <Button
-              type="submit"
-              disabled={isLoading || emailCount === 0}
-              className="w-full"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 motion-safe:animate-spin" />
-                  발송 중...
-                </>
-              ) : (
-                <>
-                  <Send className="mr-2 h-4 w-4" />
-                  {emailCount > 0 ? `${emailCount}명에게 발송` : '발송하기'}
-                </>
-              )}
-            </Button>
+            <SendControls
+              recipientCount={emailCount}
+              isSending={isLoading}
+              onConfirm={() => form.handleSubmit(onSubmit)()}
+              validate={() => form.trigger()}
+              getTestPayload={() => ({
+                subject: form.getValues('subject'),
+                body: getEmailHTML(form.getValues('body')),
+              })}
+              targetLabel={`직접 입력한 ${emailCount}명`}
+            />
           </form>
         </Form>
       </CardContent>

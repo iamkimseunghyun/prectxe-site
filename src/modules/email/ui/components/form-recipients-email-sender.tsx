@@ -1,11 +1,10 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Send, Users } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Users } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -31,6 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { stripHtml } from '@/lib/utils';
 import {
   EmailEditor,
   getEmailHTML,
@@ -40,6 +40,9 @@ import {
   getFormRespondentsSummary,
   getFormsWithEmailFields,
 } from '../../server/actions';
+import { useEmailDraft } from '../hooks/use-email-draft';
+import { DraftRestoredNotice } from './draft-restored-notice';
+import { SendControls } from './send-controls';
 
 const formSchema = z.object({
   formId: z.string().min(1, 'Form을 선택해주세요'),
@@ -78,6 +81,25 @@ export function FormRecipientsEmailSender() {
     },
   });
 
+  const { restored, editorKey, reset } = useEmailDraft<FormValues>(
+    'form-recipients',
+    form,
+    (v) => !(v.formId || v.subject || stripHtml(v.body))
+  );
+
+  // handleFormChange는 매 렌더 새 참조라 effect deps에 직접 넣으면 무한 루프가
+  // 난다(CLAUDE.md). ref로 최신 함수만 들고 간다.
+  const handleFormChangeRef = useRef<(formId: string) => Promise<void>>(
+    async () => {}
+  );
+
+  // 초안에 폼이 선택돼 있었다면 수신자 수도 다시 조회한다
+  useEffect(() => {
+    if (!restored) return;
+    const formId = form.getValues('formId');
+    if (formId) void handleFormChangeRef.current(formId);
+  }, [restored, form]);
+
   // Form 목록 로드
   useEffect(() => {
     async function loadForms() {
@@ -108,6 +130,7 @@ export function FormRecipientsEmailSender() {
       });
     }
   };
+  handleFormChangeRef.current = handleFormChange;
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -133,7 +156,7 @@ export function FormRecipientsEmailSender() {
           title: '발송 완료',
           description: `${result.data.sentCount}건 발송 성공, ${result.data.failedCount}건 실패`,
         });
-        form.reset();
+        reset();
         setSelectedFormInfo(null);
       } else {
         throw new Error(result.error);
@@ -159,7 +182,9 @@ export function FormRecipientsEmailSender() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+            {restored && <DraftRestoredNotice onDiscard={reset} />}
+
             <FormField
               control={form.control}
               name="formId"
@@ -236,6 +261,7 @@ export function FormRecipientsEmailSender() {
                   <FormLabel>이메일 내용 *</FormLabel>
                   <FormControl>
                     <EmailEditor
+                      key={editorKey}
                       content={field.value}
                       onChange={(html) => field.onChange(html)}
                       placeholder="이메일 내용을 작성하세요. 이미지, YouTube 동영상 등을 추가할 수 있습니다."
@@ -249,25 +275,17 @@ export function FormRecipientsEmailSender() {
               )}
             />
 
-            <Button
-              type="submit"
-              disabled={isLoading || !selectedFormInfo}
-              className="w-full"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 motion-safe:animate-spin" />
-                  발송 중...
-                </>
-              ) : (
-                <>
-                  <Send className="mr-2 h-4 w-4" />
-                  {selectedFormInfo
-                    ? `${selectedFormInfo.validEmailCount}명에게 발송`
-                    : '발송하기'}
-                </>
-              )}
-            </Button>
+            <SendControls
+              recipientCount={selectedFormInfo?.validEmailCount ?? 0}
+              isSending={isLoading}
+              onConfirm={() => form.handleSubmit(onSubmit)()}
+              validate={() => form.trigger()}
+              getTestPayload={() => ({
+                subject: form.getValues('subject'),
+                body: getEmailHTML(form.getValues('body')),
+              })}
+              targetLabel={`폼 응답자 ${selectedFormInfo?.validEmailCount ?? 0}명`}
+            />
           </form>
         </Form>
       </CardContent>

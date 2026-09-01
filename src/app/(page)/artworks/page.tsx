@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { ArtworkListView } from '@/modules/artworks/ui/views/artwork-list-view';
 
 export const metadata: Metadata = {
-  title: '작품 | PRECTXE',
+  title: '작품',
   description: 'PRECTXE가 소개한 디지털 아트·비주얼 작품 아카이브.',
   openGraph: {
     title: '작품 | PRECTXE',

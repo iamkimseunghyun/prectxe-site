@@ -200,7 +200,7 @@ Payment: `PORTONE_API_SECRET`, `PORTONE_WEBHOOK_SECRET`, `PORTONE_STORE_ID`, `PO
 
 Bank Transfer: `BANK_NAME`, `BANK_ACCOUNT_NUMBER`, `BANK_ACCOUNT_HOLDER`, `BANK_TRANSFER_EXPIRY_HOURS` (default 24)
 
-Email: `RESEND_API_KEY`, `RESEND_SENDER_EMAIL`. 뉴스레터는 Resend Segment 기반 — `RESEND_SEGMENT_NAME` (선택, 기본 `Newsletter`)로 기본 세그먼트 자동 생성/재사용. SMS: `SMS_PROVIDER` (`aligo`|`solapi`) + 해당 provider keys.
+Email: `RESEND_API_KEY`, `RESEND_SENDER_EMAIL`. 뉴스레터는 Resend Segment 기반 — **`RESEND_SEGMENT_ID`(권장)** 로 고정하거나, 없으면 `RESEND_SEGMENT_NAME`(기본 `Newsletter`)으로 자동 탐지/생성. 자동 탐지는 모듈 캐시라 무효화 경로가 없고(세그먼트 삭제·개명 시 재배포 전까지 발송 불가), 콜드 인스턴스가 동시에 뜨면 중복 생성될 수 있다. SMS: `SMS_PROVIDER` (`aligo`|`solapi`) + 해당 provider keys.
 
 Optional: `NEXT_PUBLIC_GA_ID`, `ENABLE_PROGRAM_REDIRECTS`, `TEST_ADMIN_*` (개발용), `UNSUBSCRIBE_SECRET`
 

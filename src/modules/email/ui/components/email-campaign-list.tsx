@@ -1,6 +1,6 @@
 'use client';
 
-import { ExternalLink, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -27,13 +27,14 @@ type Campaign = {
   id: string;
   title: string;
   subject: string;
-  body: string;
   template: string | null;
   sentCount: number;
   failedCount: number;
   status: string;
   sentAt: Date | null;
   createdAt: Date;
+  /** 값이 있으면 Resend 브로드캐스트 — 수신자를 Resend가 관리한다 */
+  broadcastId: string | null;
   form: {
     title: string;
     slug: string;
@@ -43,18 +44,28 @@ type Campaign = {
 export function EmailCampaignList() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     async function loadCampaigns() {
       setIsLoading(true);
-      const result = await listEmailCampaigns();
+      const result = await listEmailCampaigns(page);
+      if (cancelled) return;
       if (result.success && result.data) {
-        setCampaigns(result.data as Campaign[]);
+        setCampaigns(result.data.campaigns as Campaign[]);
+        setTotal(result.data.total);
+        setHasMore(result.data.hasMore);
       }
       setIsLoading(false);
     }
     loadCampaigns();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [page]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -106,9 +117,7 @@ export function EmailCampaignList() {
     <Card>
       <CardHeader>
         <CardTitle>발송 이력</CardTitle>
-        <CardDescription>
-          총 {campaigns.length}개의 캠페인이 있습니다
-        </CardDescription>
+        <CardDescription>총 {total}개의 캠페인이 있습니다</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
@@ -117,7 +126,7 @@ export function EmailCampaignList() {
               <TableRow>
                 <TableHead>캠페인 제목</TableHead>
                 <TableHead>이메일 제목</TableHead>
-                <TableHead>템플릿</TableHead>
+                <TableHead>발송 방식</TableHead>
                 <TableHead>발송/실패</TableHead>
                 <TableHead>상태</TableHead>
                 <TableHead>발송일시</TableHead>
@@ -133,18 +142,26 @@ export function EmailCampaignList() {
                   <TableCell>{campaign.subject}</TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {campaign.template === 'newsletter' ? '뉴스레터' : '알림'}
+                      {campaign.broadcastId ? '구독자 전체' : '지정 수신자'}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      <Badge variant="default">{campaign.sentCount}</Badge>
-                      {campaign.failedCount > 0 && (
-                        <Badge variant="destructive">
-                          {campaign.failedCount}
-                        </Badge>
-                      )}
-                    </div>
+                    {campaign.broadcastId ? (
+                      // 브로드캐스트는 수신자를 Resend가 관리해 건수를 알 수 없다.
+                      // 0을 그대로 보여주면 발송 실패로 오해하게 된다.
+                      <span className="text-sm text-muted-foreground">
+                        Resend 관리
+                      </span>
+                    ) : (
+                      <div className="flex gap-1">
+                        <Badge variant="default">{campaign.sentCount}</Badge>
+                        {campaign.failedCount > 0 && (
+                          <Badge variant="destructive">
+                            {campaign.failedCount}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>{getStatusBadge(campaign.status)}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
@@ -167,6 +184,34 @@ export function EmailCampaignList() {
             </TableBody>
           </Table>
         </div>
+
+        {(page > 1 || hasMore) && (
+          <div className="mt-4 flex items-center justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1 || isLoading}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              이전
+            </Button>
+            <span className="text-sm text-muted-foreground" aria-live="polite">
+              {page} 페이지
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={!hasMore || isLoading}
+            >
+              다음
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

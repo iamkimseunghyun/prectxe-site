@@ -72,3 +72,16 @@ export function maskEmail(email: string): string {
 
   return `${local.slice(0, 2)}${'*'.repeat(local.length - 2)}${domain}`;
 }
+
+/**
+ * HTML 태그를 걷어낸 순수 텍스트.
+ *
+ * 리치 에디터가 비어 있어도 `<p></p>` 같은 마크업을 남기므로,
+ * "내용이 있는가"를 판단하려면 태그를 제거하고 봐야 한다.
+ */
+export function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+}

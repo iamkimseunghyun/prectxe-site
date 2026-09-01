@@ -22,6 +22,7 @@ import { checkRateLimit, isRateLimited } from '@/lib/rate-limit/memory';
 import {
   emailCampaignSchema,
   newsletterBroadcastSchema,
+  testEmailSchema,
   unsubscribeSchema,
 } from '@/lib/schemas/email';
 
@@ -284,6 +285,78 @@ export async function getFormRespondentsSummary(formId: string) {
   }
 }
 
+/** 테스트 발송 한도 — 같은 어드민이 1시간에 보낼 수 있는 테스트 메일 수 */
+const TEST_SEND_LIMIT = 30;
+
+/**
+ * 테스트 발송.
+ *
+ * 전체 발송은 되돌릴 수 없는데 그 전에 실물을 확인할 방법이 없었다. 에디터는
+ * 웹용 prose 스타일로 보이지만 실제 메일은 인라인 스타일 + 템플릿 래퍼로
+ * 렌더되고, YouTube는 썸네일+링크로 변환된다 — 보이는 것과 나가는 것이 다르다.
+ *
+ * 캠페인 레코드를 남기지 않는다. 테스트는 발송 이력이 아니다.
+ */
+export async function sendTestEmail(input: unknown) {
+  const auth = await requireAdmin();
+  if (!auth.success)
+    return { success: false as const, error: '권한이 없습니다' };
+
+  const parsed = parseInput(testEmailSchema, input);
+  if (!parsed.success) return { success: false as const, error: parsed.error };
+
+  if (
+    !checkRateLimit(
+      `test-send:${auth.userId}`,
+      TEST_SEND_LIMIT,
+      SUBSCRIBE_IP_WINDOW_MS
+    )
+  ) {
+    return {
+      success: false as const,
+      error: '테스트 발송이 너무 잦습니다. 잠시 후 다시 시도해주세요.',
+    };
+  }
+
+  // 수신자를 지정하지 않으면 로그인한 어드민 계정 주소로 보낸다.
+  let to = parsed.data.to;
+  if (!to) {
+    const user = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { email: true },
+    });
+    if (!user?.email) {
+      return {
+        success: false as const,
+        error: '계정에 이메일이 없습니다. 받을 주소를 직접 입력해주세요.',
+      };
+    }
+    to = user.email;
+  }
+
+  const result = await sendEmail({
+    to,
+    subject: `[테스트] ${parsed.data.subject}`,
+    template: 'form-notification',
+    data: {
+      formTitle: '테스트 발송',
+      message: parsed.data.body,
+      // 실제 발송과 동일하게 수신 거부 링크까지 확인할 수 있게 한다.
+      unsubscribeUrl: UNSUBSCRIBE_URL_PLACEHOLDER,
+    },
+    includeUnsubscribe: true,
+  });
+
+  if (!result.success) {
+    return {
+      success: false as const,
+      error: result.results[0]?.error ?? '테스트 발송에 실패했습니다',
+    };
+  }
+
+  return { success: true as const, data: { to } };
+}
+
 /**
  * 이메일 캠페인 생성 및 발송.
  *
@@ -487,31 +560,52 @@ export async function createAndSendNewsletterBroadcast(input: unknown) {
   }
 }
 
+/** 어드민 목록 페이지 크기. 공개 목록의 DEFAULT_PAGE_SIZE(6)보다 크게 잡는다. */
+const CAMPAIGN_PAGE_SIZE = 20;
+
 /**
- * 이메일 캠페인 목록 조회
+ * 이메일 캠페인 목록 조회(페이지네이션).
+ * 예전엔 전량 반환이라 캠페인이 쌓일수록 느려졌다.
  */
-export async function listEmailCampaigns() {
+export async function listEmailCampaigns(page = 1) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
-    const campaigns = await prisma.emailCampaign.findMany({
-      where: {},
-      include: {
-        form: {
-          select: {
-            title: true,
-            slug: true,
-          },
+    const current = Math.max(1, Math.floor(page));
+    const [campaigns, total] = await Promise.all([
+      prisma.emailCampaign.findMany({
+        select: {
+          id: true,
+          title: true,
+          subject: true,
+          template: true,
+          sentCount: true,
+          failedCount: true,
+          status: true,
+          sentAt: true,
+          createdAt: true,
+          // 브로드캐스트는 수신자를 Resend가 관리해 sentCount가 0이다.
+          // UI가 0을 "발송 실패"로 오해하지 않도록 구분자를 함께 내려준다.
+          broadcastId: true,
+          form: { select: { title: true, slug: true } },
         },
-        // recipients는 목록에서 사용하지 않으므로 include하지 않음
-        // (sentCount/failedCount는 캠페인 컬럼에 비정규화돼 있음)
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: { createdAt: 'desc' },
+        skip: (current - 1) * CAMPAIGN_PAGE_SIZE,
+        take: CAMPAIGN_PAGE_SIZE,
+      }),
+      prisma.emailCampaign.count(),
+    ]);
 
-    return { success: true, data: campaigns };
+    return {
+      success: true,
+      data: {
+        campaigns,
+        total,
+        page: current,
+        pageSize: CAMPAIGN_PAGE_SIZE,
+        hasMore: current * CAMPAIGN_PAGE_SIZE < total,
+      },
+    };
   } catch (error) {
     console.error('캠페인 목록 조회 오류:', error);
     return {

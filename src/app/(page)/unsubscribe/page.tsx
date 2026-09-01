@@ -3,7 +3,7 @@ import { verifyUnsubscribeToken } from '@/lib/email/unsubscribe';
 import { UnsubscribeForm } from '@/modules/email/ui/components/unsubscribe-form';
 
 export const metadata: Metadata = {
-  title: '뉴스레터 수신 거부 | PRECTXE',
+  title: '뉴스레터 수신 거부',
   description: 'PRECTXE 뉴스레터 수신을 해지합니다.',
   robots: { index: false, follow: false },
 };

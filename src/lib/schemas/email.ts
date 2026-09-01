@@ -76,3 +76,11 @@ export const unsubscribeSchema = z.union([
   z.object({ token: z.string().min(1) }),
   z.object({ email: z.string().email('올바른 이메일 주소를 입력해주세요') }),
 ]);
+
+/** 테스트 발송 — 본문만 확인하면 되므로 캠페인 제목은 받지 않는다. */
+export const testEmailSchema = z.object({
+  subject: campaignBaseFields.subject,
+  body: campaignBaseFields.body,
+  /** 생략하면 로그인한 어드민 계정 주소로 보낸다. */
+  to: z.string().email('올바른 이메일 주소를 입력해주세요').optional(),
+});

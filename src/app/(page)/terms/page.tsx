@@ -3,7 +3,7 @@ import { LegalPageLayout } from '@/components/layout/legal-page-layout';
 import { BUSINESS_INFO } from '@/lib/constants/business-info';
 
 export const metadata: Metadata = {
-  title: '이용약관 | PRECTXE',
+  title: '이용약관',
   description: 'PRECTXE 서비스 이용약관',
   robots: { index: false, follow: true },
 };

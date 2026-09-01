@@ -34,6 +34,7 @@ export {
   formatArtistName,
   maskEmail,
   slugify,
+  stripHtml,
 } from './text';
 export {
   uploadGalleryImages,

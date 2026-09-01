@@ -72,6 +72,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           size="sm"
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
+          aria-label="실행 취소"
           title="실행 취소"
         >
           <Undo className="h-4 w-4" />
@@ -82,6 +83,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           size="sm"
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
+          aria-label="다시 실행"
           title="다시 실행"
         >
           <Redo className="h-4 w-4" />
@@ -97,8 +99,10 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           onClick={() =>
             editor.chain().focus().toggleHeading({ level: 1 }).run()
           }
+          aria-pressed={editor.isActive('heading', { level: 1 })}
           data-active={editor.isActive('heading', { level: 1 })}
           className="data-[active=true]:bg-muted"
+          aria-label="제목 1"
           title="제목 1"
         >
           <Heading1 className="h-4 w-4" />
@@ -110,8 +114,10 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           onClick={() =>
             editor.chain().focus().toggleHeading({ level: 2 }).run()
           }
+          aria-pressed={editor.isActive('heading', { level: 2 })}
           data-active={editor.isActive('heading', { level: 2 })}
           className="data-[active=true]:bg-muted"
+          aria-label="제목 2"
           title="제목 2"
         >
           <Heading2 className="h-4 w-4" />
@@ -125,8 +131,10 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
+          aria-pressed={editor.isActive('bold')}
           data-active={editor.isActive('bold')}
           className="data-[active=true]:bg-muted"
+          aria-label="굵게"
           title="굵게"
         >
           <Bold className="h-4 w-4" />
@@ -136,8 +144,10 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleItalic().run()}
+          aria-pressed={editor.isActive('italic')}
           data-active={editor.isActive('italic')}
           className="data-[active=true]:bg-muted"
+          aria-label="기울임"
           title="기울임"
         >
           <Italic className="h-4 w-4" />
@@ -147,8 +157,10 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleUnderline().run()}
+          aria-pressed={editor.isActive('underline')}
           data-active={editor.isActive('underline')}
           className="data-[active=true]:bg-muted"
+          aria-label="밑줄"
           title="밑줄"
         >
           <UnderlineIcon className="h-4 w-4" />
@@ -157,7 +169,13 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
         {/* Text Color */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button type="button" variant="ghost" size="sm" title="텍스트 색상">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-label="텍스트 색상"
+              title="텍스트 색상"
+            >
               <div
                 className="h-4 w-4 rounded border"
                 style={{ backgroundColor: color }}
@@ -204,8 +222,10 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
+          aria-pressed={editor.isActive('bulletList')}
           data-active={editor.isActive('bulletList')}
           className="data-[active=true]:bg-muted"
+          aria-label="글머리 기호"
           title="글머리 기호"
         >
           <List className="h-4 w-4" />
@@ -215,8 +235,10 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          aria-pressed={editor.isActive('orderedList')}
           data-active={editor.isActive('orderedList')}
           className="data-[active=true]:bg-muted"
+          aria-label="번호 매기기"
           title="번호 매기기"
         >
           <ListOrdered className="h-4 w-4" />
@@ -230,8 +252,10 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          aria-pressed={editor.isActive({ textAlign: 'left' })}
           data-active={editor.isActive({ textAlign: 'left' })}
           className="data-[active=true]:bg-muted"
+          aria-label="왼쪽 정렬"
           title="왼쪽 정렬"
         >
           <AlignLeft className="h-4 w-4" />
@@ -241,8 +265,10 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          aria-pressed={editor.isActive({ textAlign: 'center' })}
           data-active={editor.isActive({ textAlign: 'center' })}
           className="data-[active=true]:bg-muted"
+          aria-label="가운데 정렬"
           title="가운데 정렬"
         >
           <AlignCenter className="h-4 w-4" />
@@ -252,8 +278,10 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('right').run()}
+          aria-pressed={editor.isActive({ textAlign: 'right' })}
           data-active={editor.isActive({ textAlign: 'right' })}
           className="data-[active=true]:bg-muted"
+          aria-label="오른쪽 정렬"
           title="오른쪽 정렬"
         >
           <AlignRight className="h-4 w-4" />
@@ -268,8 +296,10 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
               type="button"
               variant="ghost"
               size="sm"
+              aria-pressed={editor.isActive('link')}
               data-active={editor.isActive('link')}
               className="data-[active=true]:bg-muted"
+              aria-label="링크"
               title="링크"
             >
               <LinkIcon className="h-4 w-4" />
@@ -314,6 +344,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
               type="button"
               variant="ghost"
               size="sm"
+              aria-label="YouTube 동영상"
               title="YouTube 동영상"
             >
               <YoutubeIcon className="h-4 w-4" />
@@ -345,6 +376,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           variant="ghost"
           size="sm"
           onClick={onImageUpload}
+          aria-label="이미지 업로드"
           title="이미지 업로드"
         >
           <span className="text-xs">📷</span>
