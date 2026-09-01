@@ -117,6 +117,7 @@ export function IndependentEmailSender() {
 
       // 이메일 발송
       const result = await createAndSendEmailCampaign({
+        source: 'manual',
         title: data.title,
         subject: data.subject,
         body: emailHTML,
