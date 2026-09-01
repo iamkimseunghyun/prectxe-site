@@ -48,7 +48,6 @@ const formSchema = z.object({
     .string()
     .min(1, '내용을 입력해주세요')
     .max(10000, '내용은 10000자 이하여야 합니다'),
-  template: z.enum(['form-notification', 'newsletter']),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -76,7 +75,6 @@ export function FormRecipientsEmailSender() {
       formId: '',
       subject: '',
       body: '',
-      template: 'form-notification',
     },
   });
 
@@ -132,7 +130,6 @@ export function FormRecipientsEmailSender() {
         title,
         subject: data.subject,
         body: emailHTML,
-        template: data.template,
         emails: emailResult.data.emails,
         formId: data.formId,
       });
@@ -222,42 +219,6 @@ export function FormRecipientsEmailSender() {
                 </div>
               </div>
             )}
-
-            <FormField
-              control={form.control}
-              name="template"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>템플릿 선택 *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="form-notification">
-                        <div>
-                          <div className="font-medium">알림 템플릿</div>
-                          <div className="text-xs text-muted-foreground">
-                            Form 응답자에게 간단한 알림 전달
-                          </div>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="newsletter">
-                        <div>
-                          <div className="font-medium">뉴스레터 템플릿</div>
-                          <div className="text-xs text-muted-foreground">
-                            CTA 버튼이 포함된 홍보용 메일
-                          </div>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}

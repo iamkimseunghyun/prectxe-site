@@ -1,12 +1,39 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
-import { createResendClient, getSenderEmail } from '@/lib/email/resend';
+import {
+  createResendClient,
+  getSenderEmail,
+  RESEND_UNSUBSCRIBE_PLACEHOLDER,
+} from '@/lib/email/resend';
 import { getOrCreateNewsletterSegmentId } from '@/lib/email/segments';
 import { filterValidEmails, sendEmail } from '@/lib/email/send';
 import Newsletter from '@/lib/email/templates/newsletter';
+import { checkRateLimit } from '@/lib/rate-limit/memory';
+
+/**
+ * 같은 IP에서 1시간에 허용할 구독 시도 횟수.
+ * 공연장 WiFi·회사망 등 NAT 뒤에서 여러 명이 구독할 수 있어 여유를 뒀다.
+ * 단일 발신지의 버스트를 시간당 10회로 묶는 것만으로 API 증폭은 충분히 막힌다.
+ */
+const SUBSCRIBE_IP_LIMIT = 10;
+const SUBSCRIBE_IP_WINDOW_MS = 60 * 60 * 1000;
+/** 같은 주소의 재구독은 24시간에 1회만 Resend까지 보낸다 */
+const SUBSCRIBE_EMAIL_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+async function getClientIp(): Promise<string> {
+  const h = await headers();
+  const forwarded = h.get('x-forwarded-for');
+  if (forwarded) {
+    // Vercel은 클라이언트 IP를 맨 앞에 둔다.
+    const first = forwarded.split(',')[0]?.trim();
+    if (first) return first;
+  }
+  return h.get('x-real-ip')?.trim() || 'unknown';
+}
 
 /**
  * 뉴스레터 구독 — Resend contacts 등록 + 뉴스레터 segment에 포함.
@@ -15,6 +42,10 @@ import Newsletter from '@/lib/email/templates/newsletter';
  *
  * 2026년부터 Resend Broadcasts는 segment_id 필수. 본 액션이 뉴스레터 세그먼트를
  * 자동 탐지/생성해서 신규·기존 구독자를 모두 세그먼트에 편입시킴.
+ *
+ * ⚠️ 인증 없는 공개 액션이다. 호출 1회당 Resend API를 최대 3회 호출하고,
+ * Resend rate limit은 **팀당 10 req/s로 모든 API 키가 공유**한다. 즉 여기를
+ * 막지 않으면 구독 폼 폭주가 주문 확인·입금 안내 메일까지 함께 끌어내린다.
  */
 export async function subscribeNewsletter(email: string) {
   const normalized = email.trim().toLowerCase();
@@ -26,6 +57,33 @@ export async function subscribeNewsletter(email: string) {
     };
   }
 
+  const ip = await getClientIp();
+  if (
+    !checkRateLimit(
+      `subscribe:ip:${ip}`,
+      SUBSCRIBE_IP_LIMIT,
+      SUBSCRIBE_IP_WINDOW_MS
+    )
+  ) {
+    return {
+      success: false as const,
+      error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+    };
+  }
+
+  // 같은 주소를 반복 제출하면 Resend를 부를 필요가 없다.
+  // 성공과 구분되는 응답을 주면 "이 주소가 이미 구독자인가"를 외부에서 조회할 수
+  // 있는 열거 오라클이 되므로, 정상 구독과 똑같은 응답을 돌려준다.
+  if (
+    !checkRateLimit(
+      `subscribe:email:${normalized}`,
+      1,
+      SUBSCRIBE_EMAIL_WINDOW_MS
+    )
+  ) {
+    return { success: true as const };
+  }
+
   try {
     const resend = createResendClient();
     const segmentId = await getOrCreateNewsletterSegmentId();
@@ -35,17 +93,12 @@ export async function subscribeNewsletter(email: string) {
       unsubscribed: false,
     });
 
-    let alreadySubscribed = false;
-    if (error) {
-      if (error.message?.toLowerCase().includes('already')) {
-        alreadySubscribed = true;
-      } else {
-        console.error('[newsletter] resend create error', error);
-        return {
-          success: false as const,
-          error: '구독 처리 중 오류가 발생했습니다.',
-        };
-      }
+    if (error && !error.message?.toLowerCase().includes('already')) {
+      console.error('[newsletter] resend create error', error);
+      return {
+        success: false as const,
+        error: '구독 처리 중 오류가 발생했습니다.',
+      };
     }
 
     // 세그먼트 편입 — 신규/기존 모두 실행(이미 속해 있으면 Resend가 무시)
@@ -65,7 +118,7 @@ export async function subscribeNewsletter(email: string) {
       }
     }
 
-    return { success: true as const, alreadySubscribed };
+    return { success: true as const };
   } catch (err) {
     console.error('[newsletter] unexpected error', err);
     return {
@@ -138,20 +191,25 @@ export async function getFormRespondentsEmails(formId: string) {
 }
 
 /**
- * 이메일 캠페인 생성 및 발송
+ * 이메일 캠페인 생성 및 발송 (지정한 주소 목록으로 개별 발송).
+ *
+ * 템플릿은 `form-notification` 고정이다. 뉴스레터 템플릿은 수신 거부 링크가
+ * Broadcasts 전용 플레이스홀더에 의존하는데 이 경로(`emails.send`)에서는
+ * 치환되지 않아 죽은 링크가 발송된다. 구독자 대상 뉴스레터는
+ * `createAndSendNewsletterBroadcast`를 쓸 것.
  */
 export async function createAndSendEmailCampaign(params: {
   title: string;
   subject: string;
   body: string;
-  template: 'form-notification' | 'newsletter';
   emails: string[];
   formId?: string;
 }) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: '권한이 없습니다' };
   try {
-    const { title, subject, body, template, emails, formId } = params;
+    const { title, subject, body, emails, formId } = params;
+    const template = 'form-notification' as const;
     const userId = auth.userId;
 
     // 이메일 검증
@@ -174,24 +232,12 @@ export async function createAndSendEmailCampaign(params: {
       },
     });
 
-    // 템플릿 데이터 준비
-    const templateData =
-      template === 'form-notification'
-        ? {
-            formTitle: title,
-            message: body,
-          }
-        : {
-            title,
-            message: body,
-          };
-
     // 이메일 발송
     const result = await sendEmail({
       to: validEmails,
       subject,
       template,
-      data: templateData,
+      data: { formTitle: title, message: body },
     });
 
     // 각 수신자 결과 저장
@@ -210,13 +256,15 @@ export async function createAndSendEmailCampaign(params: {
       )
     );
 
-    // 캠페인 상태 업데이트
+    // 캠페인 상태 업데이트.
+    // EmailStatus에 partial이 없으므로 "한 건이라도 나갔으면 sent"로 두고,
+    // 부분 실패는 failedCount(목록에서 빨간 배지)로 드러낸다.
     await prisma.emailCampaign.update({
       where: { id: campaign.id },
       data: {
         sentCount: result.sentCount,
         failedCount: result.failedCount,
-        status: result.success ? 'sent' : 'failed',
+        status: result.sentCount > 0 ? 'sent' : 'failed',
         sentAt: new Date(),
       },
     });
@@ -285,7 +333,12 @@ export async function createAndSendNewsletterBroadcast(params: {
       segmentId,
       from,
       subject,
-      react: Newsletter({ title, message: body }),
+      // 수신 거부 링크는 Broadcasts에서만 수신자별 URL로 치환된다.
+      react: Newsletter({
+        title,
+        message: body,
+        unsubscribeUrl: RESEND_UNSUBSCRIBE_PLACEHOLDER,
+      }),
       name: title,
       send: true,
     });
