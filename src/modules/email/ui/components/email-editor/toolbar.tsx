@@ -67,6 +67,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
       <div className="flex flex-wrap gap-1">
         {/* Undo/Redo */}
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().undo().run()}
@@ -76,6 +77,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           <Undo className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().redo().run()}
@@ -89,6 +91,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
 
         {/* Headings */}
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() =>
@@ -101,6 +104,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           <Heading1 className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() =>
@@ -117,6 +121,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
 
         {/* Text Formatting */}
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -127,6 +132,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           <Bold className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleItalic().run()}
@@ -137,6 +143,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           <Italic className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleUnderline().run()}
@@ -150,7 +157,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
         {/* Text Color */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" title="텍스트 색상">
+            <Button type="button" variant="ghost" size="sm" title="텍스트 색상">
               <div
                 className="h-4 w-4 rounded border"
                 style={{ backgroundColor: color }}
@@ -193,6 +200,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
 
         {/* Lists */}
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -203,6 +211,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           <List className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
@@ -217,6 +226,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
 
         {/* Alignment */}
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
@@ -227,6 +237,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           <AlignLeft className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('center').run()}
@@ -237,6 +248,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
           <AlignCenter className="h-4 w-4" />
         </Button>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign('right').run()}
@@ -253,6 +265,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
         <Popover>
           <PopoverTrigger asChild>
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               data-active={editor.isActive('link')}
@@ -276,11 +289,12 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
                 }}
               />
               <div className="flex gap-2">
-                <Button size="sm" onClick={setLink}>
+                <Button type="button" size="sm" onClick={setLink}>
                   추가
                 </Button>
                 {editor.isActive('link') && (
                   <Button
+                    type="button"
                     size="sm"
                     variant="outline"
                     onClick={() => editor.chain().focus().unsetLink().run()}
@@ -296,7 +310,12 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
         {/* YouTube */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" title="YouTube 동영상">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              title="YouTube 동영상"
+            >
               <YoutubeIcon className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
@@ -313,7 +332,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
                   }
                 }}
               />
-              <Button size="sm" onClick={addYoutube}>
+              <Button type="button" size="sm" onClick={addYoutube}>
                 추가
               </Button>
             </div>
@@ -322,6 +341,7 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
 
         {/* Image Upload */}
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={onImageUpload}
