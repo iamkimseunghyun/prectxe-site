@@ -21,6 +21,29 @@ const MAX_KEYS = 10_000;
 const buckets = new Map<string, number[]>();
 
 /**
+ * 기록하지 않고 현재 한도 초과 여부만 확인한다.
+ *
+ * "작업이 실제로 성사됐을 때만 예산을 소모"해야 하는 경우
+ * `checkRateLimit`과 짝으로 쓴다 — 먼저 이 함수로 막힌 상태인지 보고,
+ * 작업 성공 후에 `checkRateLimit`으로 기록한다. 그렇게 하지 않으면 작업이
+ * 실패했는데 예산만 소모돼 재시도가 영영 막힌다.
+ *
+ * 두 호출 사이에 경쟁 상태가 생길 수 있으므로, 중복 실행이 무해한
+ * (idempotent) 작업에만 쓸 것.
+ *
+ * @returns true면 이미 한도 초과(차단해야 함), false면 여유 있음
+ */
+export function isRateLimited(
+  key: string,
+  limit: number,
+  windowMs: number
+): boolean {
+  const cutoff = Date.now() - windowMs;
+  const recent = (buckets.get(key) ?? []).filter((t) => t > cutoff);
+  return recent.length >= limit;
+}
+
+/**
  * 호출을 1회 기록하고 허용 여부를 반환한다.
  *
  * @param key      제한 단위(예: `subscribe:ip:1.2.3.4`)

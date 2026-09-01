@@ -12,7 +12,7 @@ import {
 import { getOrCreateNewsletterSegmentId } from '@/lib/email/segments';
 import { filterValidEmails, sendEmail } from '@/lib/email/send';
 import Newsletter from '@/lib/email/templates/newsletter';
-import { checkRateLimit } from '@/lib/rate-limit/memory';
+import { checkRateLimit, isRateLimited } from '@/lib/rate-limit/memory';
 
 /**
  * 같은 IP에서 1시간에 허용할 구독 시도 횟수.
@@ -24,15 +24,22 @@ const SUBSCRIBE_IP_WINDOW_MS = 60 * 60 * 1000;
 /** 같은 주소의 재구독은 24시간에 1회만 Resend까지 보낸다 */
 const SUBSCRIBE_EMAIL_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * 클라이언트 IP.
+ *
+ * Vercel은 `x-forwarded-for`를 **덮어쓰고 외부에서 들어온 값을 전달하지 않는다**
+ * (Enterprise trusted proxy 예외) — 즉 이 배포 환경에서 이 헤더는 스푸핑되지
+ * 않는다. 반면 `x-real-ip`는 Vercel이 관리하지 않아 클라이언트가 임의 값을
+ * 넣을 수 있으므로 폴백으로도 쓰지 않는다(넣으면 한도를 무한정 우회당한다).
+ *
+ * 헤더가 없으면 'unknown' 공용 버킷으로 묶어 한도를 함께 쓰게 한다 —
+ * 제한 없이 통과시키는 것보다 안전한 실패 방향이다.
+ *
+ * @see https://vercel.com/docs/headers/request-headers
+ */
 async function getClientIp(): Promise<string> {
-  const h = await headers();
-  const forwarded = h.get('x-forwarded-for');
-  if (forwarded) {
-    // Vercel은 클라이언트 IP를 맨 앞에 둔다.
-    const first = forwarded.split(',')[0]?.trim();
-    if (first) return first;
-  }
-  return h.get('x-real-ip')?.trim() || 'unknown';
+  const forwarded = (await headers()).get('x-forwarded-for');
+  return forwarded?.split(',')[0]?.trim() || 'unknown';
 }
 
 /**
@@ -74,13 +81,12 @@ export async function subscribeNewsletter(email: string) {
   // 같은 주소를 반복 제출하면 Resend를 부를 필요가 없다.
   // 성공과 구분되는 응답을 주면 "이 주소가 이미 구독자인가"를 외부에서 조회할 수
   // 있는 열거 오라클이 되므로, 정상 구독과 똑같은 응답을 돌려준다.
-  if (
-    !checkRateLimit(
-      `subscribe:email:${normalized}`,
-      1,
-      SUBSCRIBE_EMAIL_WINDOW_MS
-    )
-  ) {
+  //
+  // 여기서는 확인만 하고 기록하지 않는다 — 구독이 실제로 성사된 뒤에 기록한다.
+  // 먼저 기록해 버리면 Resend 실패로 에러를 받은 사용자가 재시도했을 때
+  // 실제 구독 없이 성공 응답만 받는다(조용한 구독 유실).
+  const emailKey = `subscribe:email:${normalized}`;
+  if (isRateLimited(emailKey, 1, SUBSCRIBE_EMAIL_WINDOW_MS)) {
     return { success: true as const };
   }
 
@@ -118,6 +124,8 @@ export async function subscribeNewsletter(email: string) {
       }
     }
 
+    // 구독이 성사된 시점에만 24시간 예산을 소모한다.
+    checkRateLimit(emailKey, 1, SUBSCRIBE_EMAIL_WINDOW_MS);
     return { success: true as const };
   } catch (err) {
     console.error('[newsletter] unexpected error', err);

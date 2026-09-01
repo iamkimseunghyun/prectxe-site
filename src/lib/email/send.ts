@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { maskEmail } from '@/lib/utils/text';
 import { createResendClient, getSenderEmail } from './resend';
 import BankTransferPending from './templates/bank-transfer-pending';
 import FormNotification from './templates/form-notification';
@@ -92,8 +93,10 @@ export async function sendEmail(
       if (error) {
         const message = `${error.name}: ${error.message}`;
         // 주문 확인·입금 안내 메일도 이 경로를 타므로 실패는 반드시 로그에 남긴다.
+        // 수신자 주소는 마스킹한다 — 실패 원인 추적에는 도메인이면 충분하고,
+        // 전체 주소를 남기면 런타임 로그가 개인정보 저장소가 된다.
         console.error('[email] 발송 실패', {
-          to: email,
+          to: maskEmail(email),
           template: params.template,
           error: message,
         });
@@ -108,7 +111,7 @@ export async function sendEmail(
       // 여기 걸리는 건 주로 템플릿 렌더 실패 등 SDK 호출 이전 예외.
       const message = err instanceof Error ? err.message : 'Unknown error';
       console.error('[email] 발송 예외', {
-        to: email,
+        to: maskEmail(email),
         template: params.template,
         error: message,
       });
