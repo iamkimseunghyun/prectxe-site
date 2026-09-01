@@ -1,7 +1,7 @@
 'use client';
 
 import { AlertCircle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,13 +40,20 @@ export function CampaignDetailDialog({
   const [page, setPage] = useState(1);
   const [onlyFailed, setOnlyFailed] = useState(false);
 
+  // 페이지·필터를 빠르게 바꾸면 늦게 도착한 이전 응답이 최신 결과를 덮어쓴다.
+  // 요청마다 번호를 매겨 마지막 요청의 응답만 반영한다.
+  const requestSeq = useRef(0);
+
   const load = useCallback(
     async (id: string, nextPage: number, failedOnly: boolean) => {
+      const seq = ++requestSeq.current;
       setIsLoading(true);
       const result = await getEmailCampaign(id, {
         page: nextPage,
         onlyFailed: failedOnly,
       });
+      if (seq !== requestSeq.current) return; // 더 새 요청이 있다 — 버린다
+
       setIsLoading(false);
       if (!result.success) {
         toast({
