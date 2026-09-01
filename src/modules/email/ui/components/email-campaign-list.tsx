@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import { formatKstDateTime } from '@/lib/utils';
 import { listEmailCampaigns } from '../../server/actions';
+import { CampaignDetailDialog } from './campaign-detail-dialog';
 
 type Campaign = {
   id: string;
@@ -44,15 +45,22 @@ type Campaign = {
 export function EmailCampaignList() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  // page와 재조회 트리거를 한 객체로 묶는다.
+  // 재조회 트리거를 별도 state로 두고 deps에만 넣으면, effect 본문에서 읽지 않아
+  // useExhaustiveDependencies가 "불필요한 의존성"으로 잡는다.
+  // nonce를 올리면 새 객체가 되어 같은 page라도 다시 조회된다.
+  const [query, setQuery] = useState({ page: 1, nonce: 0 });
+  const page = query.page;
 
   useEffect(() => {
     let cancelled = false;
     async function loadCampaigns() {
       setIsLoading(true);
-      const result = await listEmailCampaigns(page);
+      const result = await listEmailCampaigns(query.page);
       if (cancelled) return;
       if (result.success && result.data) {
         setCampaigns(result.data.campaigns as Campaign[]);
@@ -65,7 +73,7 @@ export function EmailCampaignList() {
     return () => {
       cancelled = true;
     };
-  }, [page]);
+  }, [query]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -135,7 +143,20 @@ export function EmailCampaignList() {
             </TableHeader>
             <TableBody>
               {campaigns.map((campaign) => (
-                <TableRow key={campaign.id}>
+                <TableRow
+                  key={campaign.id}
+                  onClick={() => setOpenId(campaign.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setOpenId(campaign.id);
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`${campaign.title} 상세 보기`}
+                  className="cursor-pointer focus-visible:bg-muted hover:bg-muted/50"
+                >
                   <TableCell className="font-medium">
                     {campaign.title}
                   </TableCell>
@@ -169,7 +190,12 @@ export function EmailCampaignList() {
                   </TableCell>
                   <TableCell>
                     {campaign.form ? (
-                      <Button variant="link" size="sm" asChild>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        asChild
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Link href={`/forms/${campaign.form.slug}`}>
                           {campaign.form.title}
                           <ExternalLink className="ml-1 h-3 w-3" />
@@ -191,7 +217,9 @@ export function EmailCampaignList() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() =>
+                setQuery((q) => ({ ...q, page: Math.max(1, q.page - 1) }))
+              }
               disabled={page === 1 || isLoading}
             >
               <ChevronLeft className="mr-1 h-4 w-4" />
@@ -204,7 +232,7 @@ export function EmailCampaignList() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => setQuery((q) => ({ ...q, page: q.page + 1 }))}
               disabled={!hasMore || isLoading}
             >
               다음
@@ -213,6 +241,12 @@ export function EmailCampaignList() {
           </div>
         )}
       </CardContent>
+
+      <CampaignDetailDialog
+        campaignId={openId}
+        onClose={() => setOpenId(null)}
+        onChanged={() => setQuery((q) => ({ ...q, nonce: q.nonce + 1 }))}
+      />
     </Card>
   );
 }
