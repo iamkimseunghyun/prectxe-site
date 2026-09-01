@@ -6,6 +6,7 @@ import { SaleCountdown } from '@/components/shared/sale-countdown';
 import { prisma } from '@/lib/db/prisma';
 import { cn, getImageUrl } from '@/lib/utils';
 import {
+  type EffectiveDropStatus,
   getDropSaleWindow,
   getEffectiveDropStatus,
 } from '@/lib/utils/ticket-status';
@@ -21,11 +22,21 @@ const STATUS_LABEL: Record<string, { label: string; className: string }> = {
   },
   sold_out: {
     label: 'Sold Out',
-    className: 'bg-red-500/20 text-red-300',
+    className: 'bg-white/10 text-white/70',
   },
 };
 
-// 공개된 drop을 가져와 파생 상태가 on_sale/upcoming인 것만 노출(상위 3개).
+// 3칸을 채우는 우선순위. 매진도 노출하되(수요 신호 + 구매자 재방문 경로)
+// 판매 중인 드랍이 매진 카드에 밀리지 않도록 필터가 아닌 정렬로 처리한다.
+const STATUS_ORDER: Record<EffectiveDropStatus, number> = {
+  on_sale: 0,
+  upcoming: 1,
+  sold_out: 2,
+  closed: 3,
+};
+
+// 공개된 drop을 가져와 판매 중 > 오픈 예정 > 매진 순으로 상위 3개 노출.
+// closed(판매 종료)만 제외 — 지난 이벤트는 아래 where절이 이미 걸러낸다.
 // 파생 상태/가격/판매창은 캐시 내부에서 직렬화 가능한 primitive로 미리 계산.
 // `now` 기준 필터는 캐시 창(revalidate)만큼 오차 허용(홈 티저라 무방).
 const getNowOnSaleDrops = next_cache(
@@ -89,9 +100,10 @@ const getNowOnSaleDrops = next_cache(
           saleEndIso: saleWindow.saleEnd?.toISOString() ?? null,
         };
       })
-      .filter(
-        (d) =>
-          d.effectiveStatus === 'on_sale' || d.effectiveStatus === 'upcoming'
+      .filter((d) => d.effectiveStatus !== 'closed')
+      .sort(
+        (a, b) =>
+          STATUS_ORDER[a.effectiveStatus] - STATUS_ORDER[b.effectiveStatus]
       )
       .slice(0, 3);
   },
@@ -110,7 +122,7 @@ export async function NowOnSaleSection() {
         <div className="mb-14 flex items-end justify-between gap-6 md:mb-20">
           <div>
             <p className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-neutral-500 md:mb-6">
-              Now Available
+              Limited Runs
             </p>
             <h2 className="text-3xl font-light leading-[1.15] tracking-tight md:text-5xl lg:text-6xl">
               Drops
@@ -167,14 +179,15 @@ export async function NowOnSaleSection() {
                       {drop.summary}
                     </p>
                   )}
-                  {(drop.saleStartIso || drop.saleEndIso) && (
-                    <SaleCountdown
-                      tone="dark"
-                      saleStartIso={drop.saleStartIso}
-                      saleEndIso={drop.saleEndIso}
-                      className="pt-1"
-                    />
-                  )}
+                  {drop.effectiveStatus !== 'sold_out' &&
+                    (drop.saleStartIso || drop.saleEndIso) && (
+                      <SaleCountdown
+                        tone="dark"
+                        saleStartIso={drop.saleStartIso}
+                        saleEndIso={drop.saleEndIso}
+                        className="pt-1"
+                      />
+                    )}
                   {drop.minPrice !== null && (
                     <p className="pt-1 text-sm font-medium text-white">
                       {drop.minPrice === 0
