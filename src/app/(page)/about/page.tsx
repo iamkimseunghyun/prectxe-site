@@ -4,7 +4,7 @@ import InstagramIcon from '@/components/icons/instagram';
 import YoutubeIcon from '@/components/icons/youtube';
 
 export const metadata: Metadata = {
-  title: 'About | PRECTXE',
+  title: 'About',
   description:
     '음악과 예술의 순간을 큐레이션하는 서울 기반 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠를 기획하고 그 과정을 아카이브로 남깁니다.',
   openGraph: {

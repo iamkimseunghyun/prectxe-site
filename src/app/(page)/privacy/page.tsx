@@ -4,7 +4,7 @@ import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { SALES_TERMS } from '@/lib/constants/sales-terms';
 
 export const metadata: Metadata = {
-  title: '개인정보처리방침 | PRECTXE',
+  title: '개인정보처리방침',
   description: 'PRECTXE 개인정보처리방침',
   robots: { index: false, follow: true },
 };

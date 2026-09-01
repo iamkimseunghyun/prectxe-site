@@ -67,6 +67,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
           variant="ghost"
           size="sm"
           onClick={() => setImageWidth('33%')}
+          aria-label="작게 (33%)"
           title="작게 (33%)"
         >
           <Minimize2 className="h-4 w-4" />
@@ -76,6 +77,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
           variant="ghost"
           size="sm"
           onClick={() => setImageWidth('50%')}
+          aria-label="중간 (50%)"
           title="중간 (50%)"
         >
           <span className="text-xs font-medium">50%</span>
@@ -85,6 +87,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
           variant="ghost"
           size="sm"
           onClick={() => setImageWidth('75%')}
+          aria-label="크게 (75%)"
           title="크게 (75%)"
         >
           <span className="text-xs font-medium">75%</span>
@@ -94,6 +97,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
           variant="ghost"
           size="sm"
           onClick={() => setImageWidth('100%')}
+          aria-label="전체 (100%)"
           title="전체 (100%)"
         >
           <Maximize2 className="h-4 w-4" />
@@ -107,6 +111,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
           variant="ghost"
           size="sm"
           onClick={() => setImageAlign('left')}
+          aria-label="왼쪽 정렬"
           title="왼쪽 정렬"
         >
           <AlignLeft className="h-4 w-4" />
@@ -116,6 +121,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
           variant="ghost"
           size="sm"
           onClick={() => setImageAlign('center')}
+          aria-label="가운데 정렬"
           title="가운데 정렬"
         >
           <AlignCenter className="h-4 w-4" />
@@ -125,6 +131,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
           variant="ghost"
           size="sm"
           onClick={() => setImageAlign('right')}
+          aria-label="오른쪽 정렬"
           title="오른쪽 정렬"
         >
           <AlignRight className="h-4 w-4" />
@@ -138,6 +145,7 @@ export function ImageControls({ editor }: ImageControlsProps) {
           variant="ghost"
           size="sm"
           onClick={deleteImage}
+          aria-label="이미지 삭제"
           title="이미지 삭제"
           className="text-destructive hover:text-destructive"
         >

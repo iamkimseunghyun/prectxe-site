@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Megaphone } from 'lucide-react';
+import { Loader2, Megaphone, TestTube2 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -35,11 +35,17 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { stripHtml } from '@/lib/utils';
 import {
   EmailEditor,
   getEmailHTML,
 } from '@/modules/email/ui/components/email-editor';
-import { createAndSendNewsletterBroadcast } from '../../server/actions';
+import {
+  createAndSendNewsletterBroadcast,
+  sendTestEmail,
+} from '../../server/actions';
+import { useEmailDraft } from '../hooks/use-email-draft';
+import { DraftRestoredNotice } from './draft-restored-notice';
 
 const formSchema = z.object({
   title: z.string().min(1, '캠페인 제목을 입력해주세요'),
@@ -57,10 +63,45 @@ export function NewsletterBroadcastSender() {
   const [isLoading, setIsLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  const [isTesting, setIsTesting] = useState(false);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: { title: '', subject: '', body: '' },
   });
+
+  const { restored, editorKey, reset } = useEmailDraft<FormValues>(
+    'newsletter',
+    form,
+    (v) => !(v.title || v.subject || stripHtml(v.body))
+  );
+
+  const handleTest = async () => {
+    const subject = form.getValues('subject');
+    const body = getEmailHTML(form.getValues('body'));
+    if (!subject.trim() || !stripHtml(body)) {
+      toast({
+        title: '제목과 내용을 먼저 입력해주세요',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setIsTesting(true);
+    const result = await sendTestEmail({ subject, body });
+    setIsTesting(false);
+    if (!result.success) {
+      toast({
+        title: '테스트 발송 실패',
+        description: result.error,
+        variant: 'destructive',
+      });
+      return;
+    }
+    toast({
+      title: '테스트 발송 완료',
+      description: `${result.data.to} 로 보냈습니다.`,
+    });
+  };
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -78,7 +119,7 @@ export function NewsletterBroadcastSender() {
           title: '발송 요청 완료',
           description: 'Resend 브로드캐스트가 발송 대기열에 등록됐습니다.',
         });
-        form.reset();
+        reset();
       } else {
         throw new Error(result.error);
       }
@@ -112,6 +153,8 @@ export function NewsletterBroadcastSender() {
             }}
             className="space-y-6"
           >
+            {restored && <DraftRestoredNotice onDiscard={reset} />}
+
             <FormField
               control={form.control}
               name="title"
@@ -149,6 +192,7 @@ export function NewsletterBroadcastSender() {
                   <FormLabel>이메일 내용 *</FormLabel>
                   <FormControl>
                     <EmailEditor
+                      key={editorKey}
                       content={field.value}
                       onChange={(html) => field.onChange(html)}
                       placeholder="이메일 내용을 작성하세요."
@@ -163,46 +207,67 @@ export function NewsletterBroadcastSender() {
               )}
             />
 
-            <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-              <AlertDialogTrigger asChild>
-                <Button type="submit" disabled={isLoading} className="w-full">
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 motion-safe:animate-spin" />
-                      발송 중...
-                    </>
-                  ) : (
-                    <>
-                      <Megaphone className="mr-2 h-4 w-4" />
-                      구독자 전체에게 발송
-                    </>
-                  )}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>뉴스레터 발송 확인</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Resend의 뉴스레터 세그먼트에 등록된 모든 구독자에게 즉시
-                    발송됩니다. 이 작업은 취소할 수 없습니다.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isLoading}>
-                    취소
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    disabled={isLoading}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      form.handleSubmit(onSubmit)();
-                    }}
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleTest}
+                disabled={isLoading || isTesting}
+                className="sm:w-48"
+              >
+                {isTesting ? (
+                  <Loader2 className="mr-2 h-4 w-4 motion-safe:animate-spin" />
+                ) : (
+                  <TestTube2 className="mr-2 h-4 w-4" />
+                )}
+                내게 테스트 발송
+              </Button>
+
+              <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="submit"
+                    disabled={isLoading || isTesting}
+                    className="flex-1"
                   >
-                    발송
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 motion-safe:animate-spin" />
+                        발송 중...
+                      </>
+                    ) : (
+                      <>
+                        <Megaphone className="mr-2 h-4 w-4" />
+                        구독자 전체에게 발송
+                      </>
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>뉴스레터 발송 확인</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Resend의 뉴스레터 세그먼트에 등록된 모든 구독자에게 즉시
+                      발송됩니다. 이 작업은 취소할 수 없습니다.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isLoading}>
+                      취소
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      disabled={isLoading}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        form.handleSubmit(onSubmit)();
+                      }}
+                    >
+                      발송
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </form>
         </Form>
       </CardContent>

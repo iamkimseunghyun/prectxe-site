@@ -4,7 +4,7 @@ import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { SALES_TERMS } from '@/lib/constants/sales-terms';
 
 export const metadata: Metadata = {
-  title: '환불·취소 정책 | PRECTXE',
+  title: '환불·취소 정책',
   description: 'PRECTXE 티켓 및 굿즈 환불·취소 정책',
   robots: { index: false, follow: true },
 };
