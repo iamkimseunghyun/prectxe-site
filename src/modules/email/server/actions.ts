@@ -618,41 +618,257 @@ export async function listEmailCampaigns(page = 1) {
   }
 }
 
+/** 상세 화면의 수신자 목록 페이지 크기 */
+const RECIPIENT_PAGE_SIZE = 50;
+
 /**
- * 이메일 캠페인 상세 조회
+ * 이메일 캠페인 상세 조회.
+ *
+ * 예전엔 recipients를 무제한으로 include해서, 수천 명 캠페인이면 응답에
+ * 전부 실렸다. 페이지네이션 + 성패 필터를 붙였다.
  */
-export async function getEmailCampaign(campaignId: string) {
+export async function getEmailCampaign(
+  campaignId: string,
+  options?: { page?: number; onlyFailed?: boolean }
+) {
   const auth = await requireAdmin();
-  if (!auth.success) return { success: false, error: '권한이 없습니다' };
+  if (!auth.success)
+    return { success: false as const, error: '권한이 없습니다' };
+  try {
+    // 서버 액션은 UI 밖에서 임의 인자로 호출될 수 있다.
+    // Math.floor('abc')는 NaN이고 그대로 skip에 들어가면 조회가 깨진다.
+    const rawPage = Number(options?.page ?? 1);
+    const page = Number.isFinite(rawPage)
+      ? Math.max(1, Math.floor(rawPage))
+      : 1;
+    const recipientWhere = {
+      campaignId,
+      ...(options?.onlyFailed ? { success: false } : {}),
+    };
+
+    const [campaign, recipients, recipientTotal, failedTotal] =
+      await Promise.all([
+        prisma.emailCampaign.findUnique({
+          where: { id: campaignId },
+          select: {
+            id: true,
+            title: true,
+            subject: true,
+            body: true,
+            template: true,
+            sentCount: true,
+            failedCount: true,
+            status: true,
+            sentAt: true,
+            createdAt: true,
+            broadcastId: true,
+            form: { select: { title: true, slug: true } },
+          },
+        }),
+        prisma.emailRecipient.findMany({
+          where: recipientWhere,
+          select: {
+            id: true,
+            email: true,
+            success: true,
+            error: true,
+            sentAt: true,
+          },
+          // 실패를 먼저 보여준다 — 상세를 여는 이유가 대개 실패 확인이다
+          orderBy: [{ success: 'asc' }, { createdAt: 'asc' }],
+          skip: (page - 1) * RECIPIENT_PAGE_SIZE,
+          take: RECIPIENT_PAGE_SIZE,
+        }),
+        prisma.emailRecipient.count({ where: recipientWhere }),
+        prisma.emailRecipient.count({ where: { campaignId, success: false } }),
+      ]);
+
+    if (!campaign) {
+      return { success: false as const, error: '캠페인을 찾을 수 없습니다' };
+    }
+
+    return {
+      success: true as const,
+      data: {
+        campaign,
+        recipients,
+        recipientTotal,
+        failedTotal,
+        page,
+        pageSize: RECIPIENT_PAGE_SIZE,
+        hasMore: page * RECIPIENT_PAGE_SIZE < recipientTotal,
+      },
+    };
+  } catch (error) {
+    console.error('캠페인 조회 오류:', error);
+    return {
+      success: false as const,
+      error:
+        error instanceof Error ? error.message : '캠페인 조회에 실패했습니다',
+    };
+  }
+}
+
+/** 같은 캠페인의 재발송 간격 — 연타로 중복 발송되는 것을 막는다 */
+const RESEND_COOLDOWN_MS = 30 * 1000;
+
+/**
+ * 한 번의 재발송으로 처리할 최대 실패 건수.
+ * 발송과 DB 갱신 사이에 액션이 죽으면 그만큼이 "보냈지만 미기록"으로 남으므로,
+ * 그 최대 노출량을 이 값으로 묶는다.
+ */
+const RESEND_BATCH_LIMIT = 200;
+
+/**
+ * 실패한 수신자에게만 재발송.
+ *
+ * 예전에는 실패분을 다시 보내려면 주소를 수동으로 추려야 했다. 실패 사유가
+ * 일시적인 경우(429, 수신 서버 일시 장애)가 대부분이라 재시도 가치가 크다.
+ *
+ * 새 캠페인을 만들지 않고 **기존 EmailRecipient 행을 갱신**한다.
+ * 재발송마다 행이 늘어나면 캠페인의 sent/failed 집계가 실제 수신자 수와
+ * 어긋난다.
+ *
+ * idempotencyKey는 쓰지 않는다 — 재발송은 "같은 요청을 한 번만"이 아니라
+ * "실패한 것을 다시 시도"하는 것이라 Resend가 중복으로 판단해 거르면 안 된다.
+ * 연타 방지는 아래 쿨다운이 담당한다.
+ */
+export async function resendFailedRecipients(campaignId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success)
+    return { success: false as const, error: '권한이 없습니다' };
+
+  // 여기서는 확인만 한다. 캠페인 없음·브로드캐스트·실패 0건 같은 무의미한
+  // 요청까지 30초 쿨다운을 태우면 정상 재발송이 막힌다.
+  // 실제 소모는 발송 직전에(아래) 한다 — subscribeNewsletter와 같은 패턴.
+  const cooldownKey = `resend:${campaignId}`;
+  if (isRateLimited(cooldownKey, 1, RESEND_COOLDOWN_MS)) {
+    return {
+      success: false as const,
+      error: '방금 재발송했습니다. 30초 후 다시 시도해주세요.',
+    };
+  }
+
   try {
     const campaign = await prisma.emailCampaign.findUnique({
       where: { id: campaignId },
-      include: {
-        form: {
-          select: {
-            title: true,
-            slug: true,
-          },
-        },
-        recipients: {
-          orderBy: {
-            createdAt: 'asc',
-          },
-        },
+      select: {
+        id: true,
+        title: true,
+        subject: true,
+        body: true,
+        broadcastId: true,
       },
     });
 
     if (!campaign) {
-      return { success: false, error: '캠페인을 찾을 수 없습니다' };
+      return { success: false as const, error: '캠페인을 찾을 수 없습니다' };
+    }
+    if (campaign.broadcastId) {
+      return {
+        success: false as const,
+        error: '브로드캐스트는 수신자를 Resend가 관리해 재발송할 수 없습니다.',
+      };
     }
 
-    return { success: true, data: campaign };
-  } catch (error) {
-    console.error('캠페인 조회 오류:', error);
+    // 한 번에 처리할 양을 제한한다.
+    // 상한이 없으면 수천 건을 다 보낸 뒤에야 트랜잭션을 여는데, 그 사이
+    // 액션이 타임아웃되면 **메일은 나갔지만 행은 실패로 남아** 다음 재발송이
+    // 같은 주소로 또 보낸다(재발송은 idempotencyKey를 쓰지 않는다).
+    // 남은 건수는 응답으로 내려 UI가 이어서 처리하게 한다.
+    const [failed, failedTotal] = await Promise.all([
+      prisma.emailRecipient.findMany({
+        where: { campaignId, success: false },
+        select: { id: true, email: true },
+        orderBy: { createdAt: 'asc' },
+        take: RESEND_BATCH_LIMIT,
+      }),
+      prisma.emailRecipient.count({ where: { campaignId, success: false } }),
+    ]);
+
+    if (failed.length === 0) {
+      return { success: false as const, error: '재발송할 실패 건이 없습니다' };
+    }
+
+    // 같은 주소가 여러 행에 있어도 발송은 한 번이면 된다
+    const uniqueEmails = [...new Set(failed.map((r) => r.email))];
+
+    // 유효성 검사를 모두 통과한 시점에 쿨다운을 소모한다
+    checkRateLimit(cooldownKey, 1, RESEND_COOLDOWN_MS);
+
+    const result = await sendEmail({
+      to: uniqueEmails,
+      subject: campaign.subject,
+      template: 'form-notification',
+      data: {
+        formTitle: campaign.title,
+        message: campaign.body,
+        unsubscribeUrl: UNSUBSCRIBE_URL_PLACEHOLDER,
+      },
+      includeUnsubscribe: true,
+    });
+
+    // 주소 → 행 id 매핑으로 기존 행을 갱신한다.
+    // 한 주소에 행이 여러 개일 수 있어(과거 데이터·수동 편집) 배열로 모은다.
+    // Map<string, string> 하나만 두면 마지막 id만 남아 나머지 행이 영영
+    // 실패 상태로 굳는다.
+    const idsByEmail = new Map<string, string[]>();
+    for (const r of failed) {
+      const list = idsByEmail.get(r.email);
+      if (list) list.push(r.id);
+      else idsByEmail.set(r.email, [r.id]);
+    }
+
+    const now = new Date();
+    await prisma.$transaction(
+      result.results.flatMap((r) => {
+        const ids = idsByEmail.get(r.to) ?? [];
+        return ids.map((id) =>
+          prisma.emailRecipient.update({
+            where: { id },
+            data: {
+              success: r.success,
+              messageId: r.messageId,
+              error: r.error ?? null,
+              sentAt: r.success ? now : null,
+            },
+          })
+        );
+      })
+    );
+
+    // 캠페인 집계를 실제 행 기준으로 다시 센다(누적 오차 방지)
+    const [sentCount, failedCount] = await Promise.all([
+      prisma.emailRecipient.count({ where: { campaignId, success: true } }),
+      prisma.emailRecipient.count({ where: { campaignId, success: false } }),
+    ]);
+
+    await prisma.emailCampaign.update({
+      where: { id: campaignId },
+      data: {
+        sentCount,
+        failedCount,
+        status: sentCount > 0 ? 'sent' : 'failed',
+      },
+    });
+
+    revalidatePath('/admin/email');
+
     return {
-      success: false,
-      error:
-        error instanceof Error ? error.message : '캠페인 조회에 실패했습니다',
+      success: true as const,
+      data: {
+        retried: uniqueEmails.length,
+        recovered: result.sentCount,
+        stillFailed: result.failedCount,
+        // 이번 배치에 담기지 못하고 남은 실패 건수
+        remaining: Math.max(0, failedTotal - failed.length),
+      },
+    };
+  } catch (error) {
+    console.error('재발송 오류:', error);
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : '재발송에 실패했습니다',
     };
   }
 }

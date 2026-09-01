@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import { formatKstDateTime } from '@/lib/utils';
 import { listEmailCampaigns } from '../../server/actions';
+import { CampaignDetailDialog } from './campaign-detail-dialog';
 
 type Campaign = {
   id: string;
@@ -44,15 +45,22 @@ type Campaign = {
 export function EmailCampaignList() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  // page와 재조회 트리거를 한 객체로 묶는다.
+  // 재조회 트리거를 별도 state로 두고 deps에만 넣으면, effect 본문에서 읽지 않아
+  // useExhaustiveDependencies가 "불필요한 의존성"으로 잡는다.
+  // nonce를 올리면 새 객체가 되어 같은 page라도 다시 조회된다.
+  const [query, setQuery] = useState({ page: 1, nonce: 0 });
+  const page = query.page;
 
   useEffect(() => {
     let cancelled = false;
     async function loadCampaigns() {
       setIsLoading(true);
-      const result = await listEmailCampaigns(page);
+      const result = await listEmailCampaigns(query.page);
       if (cancelled) return;
       if (result.success && result.data) {
         setCampaigns(result.data.campaigns as Campaign[]);
@@ -65,7 +73,7 @@ export function EmailCampaignList() {
     return () => {
       cancelled = true;
     };
-  }, [page]);
+  }, [query]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -131,11 +139,22 @@ export function EmailCampaignList() {
                 <TableHead>상태</TableHead>
                 <TableHead>발송일시</TableHead>
                 <TableHead>연결된 Form</TableHead>
+                <TableHead>
+                  <span className="sr-only">상세</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {campaigns.map((campaign) => (
-                <TableRow key={campaign.id}>
+                // 행 클릭은 마우스 편의용일 뿐이다.
+                // <tr>에 role="button"·tabIndex를 주면 테이블 시맨틱이 사라져
+                // 스크린리더가 셀 구조를 잃고, 버튼 역할 안에 링크가 중첩된다.
+                // 키보드·보조기술 경로는 아래 전용 "상세" 버튼이 담당한다.
+                <TableRow
+                  key={campaign.id}
+                  onClick={() => setOpenId(campaign.id)}
+                  className="cursor-pointer hover:bg-muted/50"
+                >
                   <TableCell className="font-medium">
                     {campaign.title}
                   </TableCell>
@@ -169,7 +188,12 @@ export function EmailCampaignList() {
                   </TableCell>
                   <TableCell>
                     {campaign.form ? (
-                      <Button variant="link" size="sm" asChild>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        asChild
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Link href={`/forms/${campaign.form.slug}`}>
                           {campaign.form.title}
                           <ExternalLink className="ml-1 h-3 w-3" />
@@ -178,6 +202,20 @@ export function EmailCampaignList() {
                     ) : (
                       <span className="text-sm text-muted-foreground">-</span>
                     )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenId(campaign.id);
+                      }}
+                      aria-label={`${campaign.title} 상세 보기`}
+                    >
+                      상세
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -191,7 +229,9 @@ export function EmailCampaignList() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() =>
+                setQuery((q) => ({ ...q, page: Math.max(1, q.page - 1) }))
+              }
               disabled={page === 1 || isLoading}
             >
               <ChevronLeft className="mr-1 h-4 w-4" />
@@ -204,7 +244,7 @@ export function EmailCampaignList() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => setQuery((q) => ({ ...q, page: q.page + 1 }))}
               disabled={!hasMore || isLoading}
             >
               다음
@@ -213,6 +253,12 @@ export function EmailCampaignList() {
           </div>
         )}
       </CardContent>
+
+      <CampaignDetailDialog
+        campaignId={openId}
+        onClose={() => setOpenId(null)}
+        onChanged={() => setQuery((q) => ({ ...q, nonce: q.nonce + 1 }))}
+      />
     </Card>
   );
 }
