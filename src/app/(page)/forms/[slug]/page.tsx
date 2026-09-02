@@ -1,4 +1,3 @@
-import { headers } from 'next/headers';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getImageUrl } from '@/lib/utils';
@@ -21,22 +20,6 @@ export default async function FormSubmitPage({ params }: PageProps) {
   }
 
   const form = result.data;
-
-  async function handleSubmit(
-    formId: string,
-    data: Record<string, string | string[]>
-  ) {
-    'use server';
-
-    const headersList = await headers();
-    const ipAddress = headersList.get('x-forwarded-for') || undefined;
-    const userAgent = headersList.get('user-agent') || undefined;
-
-    return await submitFormResponse(formId, data, {
-      ipAddress,
-      userAgent,
-    });
-  }
 
   // Show closed message if form is closed
   if (form.status === 'closed') {
@@ -108,7 +91,7 @@ export default async function FormSubmitPage({ params }: PageProps) {
             helpText: field.helpText ?? undefined,
             validation: field.validation as Record<string, unknown> | undefined,
           }))}
-          onSubmit={handleSubmit}
+          onSubmit={submitFormResponse}
         />
       </div>
     </div>

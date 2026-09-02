@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { parseInput } from '@/lib/auth/server-action-helpers';
 import { prisma } from '@/lib/db/prisma';
@@ -18,6 +17,7 @@ import {
   unsubscribeContact,
   verifyUnsubscribeToken,
 } from '@/lib/email/unsubscribe';
+import { getClientIp } from '@/lib/rate-limit/client-ip';
 import { checkRateLimit, isRateLimited } from '@/lib/rate-limit/memory';
 import {
   emailCampaignSchema,
@@ -35,24 +35,6 @@ const SUBSCRIBE_IP_LIMIT = 10;
 const SUBSCRIBE_IP_WINDOW_MS = 60 * 60 * 1000;
 /** 같은 주소의 재구독은 24시간에 1회만 Resend까지 보낸다 */
 const SUBSCRIBE_EMAIL_WINDOW_MS = 24 * 60 * 60 * 1000;
-
-/**
- * 클라이언트 IP.
- *
- * Vercel은 `x-forwarded-for`를 **덮어쓰고 외부에서 들어온 값을 전달하지 않는다**
- * (Enterprise trusted proxy 예외) — 즉 이 배포 환경에서 이 헤더는 스푸핑되지
- * 않는다. 반면 `x-real-ip`는 Vercel이 관리하지 않아 클라이언트가 임의 값을
- * 넣을 수 있으므로 폴백으로도 쓰지 않는다(넣으면 한도를 무한정 우회당한다).
- *
- * 헤더가 없으면 'unknown' 공용 버킷으로 묶어 한도를 함께 쓰게 한다 —
- * 제한 없이 통과시키는 것보다 안전한 실패 방향이다.
- *
- * @see https://vercel.com/docs/headers/request-headers
- */
-async function getClientIp(): Promise<string> {
-  const forwarded = (await headers()).get('x-forwarded-for');
-  return forwarded?.split(',')[0]?.trim() || 'unknown';
-}
 
 /**
  * 뉴스레터 구독 — Resend contacts 등록 + 뉴스레터 segment에 포함.
