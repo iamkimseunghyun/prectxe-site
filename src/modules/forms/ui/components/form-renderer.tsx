@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { FormFieldInput } from '@/lib/schemas/form';
 import { createFormResponseSchema } from '@/lib/schemas/form';
+import { FormFileField } from '@/modules/forms/ui/components/form-file-field';
 
 interface FormRendererProps {
   formId: string;
@@ -236,6 +237,17 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
               <Input id={field.id} type="date" {...register(field.id!)} />
             )}
 
+            {/* URL */}
+            {field.type === 'url' && (
+              <Input
+                id={field.id}
+                type="url"
+                inputMode="url"
+                {...register(field.id!)}
+                placeholder={field.placeholder || 'https://example.com'}
+              />
+            )}
+
             {/* Select */}
             {field.type === 'select' && (
               <Controller
@@ -329,6 +341,23 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
                   );
                 })}
               </div>
+            )}
+
+            {/* File */}
+            {field.type === 'file' && (
+              <Controller
+                name={field.id!}
+                control={control}
+                render={({ field: formField }) => (
+                  <FormFileField
+                    formId={formId}
+                    fieldId={field.id!}
+                    inputId={field.id!}
+                    value={(formField.value as string) || ''}
+                    onChange={formField.onChange}
+                  />
+                )}
+              />
             )}
 
             {error && (

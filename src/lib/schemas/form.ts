@@ -150,7 +150,12 @@ export const createFormResponseSchema = (
               `${field.label}을(를) 입력해주세요`
             );
     } else {
-      fieldSchema = fieldSchema.optional();
+      // 선택 항목은 '미입력'(빈 문자열)을 허용한다.
+      // FormRenderer가 모든 필드의 defaultValue를 ''로 두기 때문에,
+      // z.string().email().optional() 같은 스키마는 비워둔 선택 항목을
+      // 형식 오류로 막아버렸다(email/phone/date/url 전부 해당).
+      // number는 z.coerce.number()가 ''를 0으로 삼켜 미입력이 0으로 저장됐다.
+      fieldSchema = z.union([z.literal(''), fieldSchema]).optional();
     }
 
     shape[field.id!] = fieldSchema;

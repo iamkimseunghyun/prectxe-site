@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { getCloudflareImageUrl } from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
 import type { FormInput } from '@/lib/schemas/form';
 import { createFormResponseSchema, formSchema } from '@/lib/schemas/form';
@@ -232,6 +233,34 @@ export async function getFormBySlug(slug: string) {
       success: false,
       error: '폼을 불러오는데 실패했습니다',
     };
+  }
+}
+
+// 공개 폼의 파일 필드 업로드 URL 발급
+// 인증 없는 공개 경로에서 호출되므로, 실제로 업로드가 허용된 필드인지
+// (게시된 폼 + 살아있는 file 필드) 서버에서 확인한 뒤에만 발급한다
+export async function getFormFileUploadUrl(formId: string, fieldId: string) {
+  try {
+    const field = await prisma.formField.findFirst({
+      where: {
+        id: fieldId,
+        formId,
+        type: 'file',
+        archived: false,
+        form: { status: 'published' },
+      },
+      select: { id: true },
+    });
+
+    if (!field) {
+      return { success: false, error: '업로드할 수 없는 항목입니다' };
+    }
+
+    const { uploadURL, imageUrl } = await getCloudflareImageUrl();
+    return { success: true, data: { uploadURL, imageUrl } };
+  } catch (error) {
+    console.error('Form file upload URL error:', error);
+    return { success: false, error: '업로드 준비에 실패했습니다' };
   }
 }
 

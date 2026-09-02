@@ -560,7 +560,7 @@ export function FormBuilderView({
                       )}
                       {field.type === 'file' && (
                         <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
-                          <span>파일 선택</span>
+                          <span>이미지 선택</span>
                         </div>
                       )}
                     </div>
