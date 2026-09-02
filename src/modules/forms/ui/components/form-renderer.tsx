@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { FormFieldInput } from '@/lib/schemas/form';
 import { createFormResponseSchema } from '@/lib/schemas/form';
+import { FormFileField } from '@/modules/forms/ui/components/form-file-field';
 
 interface FormRendererProps {
   formId: string;
@@ -55,6 +56,26 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  // 업로드가 끝나기 전에 제출하면 이미지가 빠진 채 저장된다(선택 항목일 때 특히).
+  const [uploadingFields, setUploadingFields] = useState<Set<string>>(
+    () => new Set()
+  );
+  const hasPendingUpload = uploadingFields.size > 0;
+
+  const handleUploadingChange = useCallback(
+    (fieldId: string, uploading: boolean) => {
+      setUploadingFields((prev) => {
+        const next = new Set(prev);
+        if (uploading) {
+          next.add(fieldId);
+        } else {
+          next.delete(fieldId);
+        }
+        return next;
+      });
+    },
+    []
+  );
 
   const schema = createFormResponseSchema(fields);
 
@@ -236,6 +257,17 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
               <Input id={field.id} type="date" {...register(field.id!)} />
             )}
 
+            {/* URL */}
+            {field.type === 'url' && (
+              <Input
+                id={field.id}
+                type="url"
+                inputMode="url"
+                {...register(field.id!)}
+                placeholder={field.placeholder || 'https://example.com'}
+              />
+            )}
+
             {/* Select */}
             {field.type === 'select' && (
               <Controller
@@ -331,6 +363,24 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
               </div>
             )}
 
+            {/* File */}
+            {field.type === 'file' && (
+              <Controller
+                name={field.id!}
+                control={control}
+                render={({ field: formField }) => (
+                  <FormFileField
+                    formId={formId}
+                    fieldId={field.id!}
+                    inputId={field.id!}
+                    value={(formField.value as string) || ''}
+                    onChange={formField.onChange}
+                    onUploadingChange={handleUploadingChange}
+                  />
+                )}
+              />
+            )}
+
             {error && (
               <p className="text-sm text-red-600">{error.message as string}</p>
             )}
@@ -341,11 +391,15 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
       <div className="rounded-lg border bg-white p-6 shadow-xs">
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || hasPendingUpload}
           className="w-full"
           size="lg"
         >
-          {isSubmitting ? '제출 중...' : '제출하기'}
+          {isSubmitting
+            ? '제출 중...'
+            : hasPendingUpload
+              ? '업로드 완료를 기다리는 중...'
+              : '제출하기'}
         </Button>
       </div>
     </form>

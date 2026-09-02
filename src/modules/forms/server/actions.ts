@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { getCloudflareImageUrl } from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
 import type { FormInput } from '@/lib/schemas/form';
 import { createFormResponseSchema, formSchema } from '@/lib/schemas/form';
@@ -235,6 +236,34 @@ export async function getFormBySlug(slug: string) {
   }
 }
 
+// 공개 폼의 파일 필드 업로드 URL 발급
+// 인증 없는 공개 경로에서 호출되므로, 실제로 업로드가 허용된 필드인지
+// (게시된 폼 + 살아있는 file 필드) 서버에서 확인한 뒤에만 발급한다
+export async function getFormFileUploadUrl(formId: string, fieldId: string) {
+  try {
+    const field = await prisma.formField.findFirst({
+      where: {
+        id: fieldId,
+        formId,
+        type: 'file',
+        archived: false,
+        form: { status: 'published' },
+      },
+      select: { id: true },
+    });
+
+    if (!field) {
+      return { success: false, error: '업로드할 수 없는 항목입니다' };
+    }
+
+    const { uploadURL, imageUrl } = await getCloudflareImageUrl();
+    return { success: true, data: { uploadURL, imageUrl } };
+  } catch (error) {
+    console.error('Form file upload URL error:', error);
+    return { success: false, error: '업로드 준비에 실패했습니다' };
+  }
+}
+
 // Submit Form Response
 export async function submitFormResponse(
   formId: string,
@@ -280,6 +309,21 @@ export async function submitFormResponse(
       }))
     );
     const validated = schema.parse(responses);
+
+    // file 필드는 우리가 발급한 Cloudflare Images URL만 저장한다.
+    // 인증 없는 공개 경로라 클라이언트 값을 그대로 믿을 수 없는데,
+    // 스키마는 클라이언트와 공유되므로 서버 전용 계정 해시를 참조할 수 없다.
+    // (업로드가 실제로 완료됐는지까지는 확인하지 않는다 — 아래 주석 참고)
+    const imagePrefix = `https://imagedelivery.net/${process.env.CLOUDFLARE_IMAGE_STREAM_API_ACCOUNT_HASH}/`;
+    for (const f of form.fields) {
+      if (f.type !== 'file') continue;
+      const value = (validated as Record<string, unknown>)[f.id];
+      if (typeof value === 'string' && value !== '') {
+        if (!value.startsWith(imagePrefix)) {
+          return { success: false, error: '허용되지 않은 첨부 파일입니다' };
+        }
+      }
+    }
 
     // 🔒 안전장치 1: 빈 응답 제출 방지
     const responseEntries = Object.entries(validated);

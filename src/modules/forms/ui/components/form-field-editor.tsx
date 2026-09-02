@@ -36,7 +36,7 @@ const fieldTypeLabels: Record<FieldType, string> = {
   email: '이메일',
   phone: '전화번호',
   url: 'URL',
-  file: '파일 업로드',
+  file: '이미지 업로드',
   number: '숫자',
 };
 

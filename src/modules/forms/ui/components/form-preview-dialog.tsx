@@ -143,7 +143,9 @@ export function FormPreviewDialog({
                     ))}
                   </div>
                 ) : field.type === 'file' ? (
-                  <Input type="file" disabled />
+                  <div className="rounded-md border-2 border-dashed border-neutral-300 p-4 text-center text-sm text-neutral-400">
+                    이미지 선택 (JPG, PNG, GIF, WEBP, HEIC · 최대 20MB)
+                  </div>
                 ) : (
                   <Input
                     type={field.type}

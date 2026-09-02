@@ -105,6 +105,23 @@ export const createFormResponseSchema = (
   for (const field of fields) {
     let fieldSchema: z.ZodTypeAny;
 
+    // 숫자는 별도 처리한다.
+    // 아래 공통 분기의 .min(1)은 숫자에 걸면 "길이 1 이상"이 아니라
+    // "값이 1 이상"이라, 필수 항목에 0·음수·소수를 넣어도 '입력해주세요'로
+    // 반려됐다. 빈 값 여부는 문자열 단계에서 판정하고 그 뒤에 숫자로 바꾼다.
+    if (field.type === 'number') {
+      const numberError = '숫자를 입력해주세요';
+      const asNumber = z.coerce.number<string>({ error: numberError });
+      const asTrimmed = z.coerce.string().trim();
+
+      shape[field.id!] = field.required
+        ? asTrimmed.min(1, `${field.label}을(를) 입력해주세요`).pipe(asNumber)
+        : asTrimmed
+            .pipe(z.union([z.literal(''), asNumber], { error: numberError }))
+            .optional();
+      continue;
+    }
+
     switch (field.type) {
       case 'email':
         fieldSchema = z.string().email('유효한 이메일을 입력해주세요');
@@ -119,9 +136,6 @@ export const createFormResponseSchema = (
         break;
       case 'url':
         fieldSchema = z.string().url('유효한 URL을 입력해주세요');
-        break;
-      case 'number':
-        fieldSchema = z.coerce.number();
         break;
       case 'date':
         fieldSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -150,7 +164,16 @@ export const createFormResponseSchema = (
               `${field.label}을(를) 입력해주세요`
             );
     } else {
-      fieldSchema = fieldSchema.optional();
+      // 선택 항목은 '미입력'(빈 문자열)을 허용한다.
+      // FormRenderer가 모든 필드의 defaultValue를 ''로 두기 때문에,
+      // z.string().email().optional() 같은 스키마는 비워둔 선택 항목을
+      // 형식 오류로 막아버렸다(email/phone/date/url 전부 해당).
+      // 단, 배열 필드(checkbox/multiselect)는 제외한다. ''를 허용하면 같은
+      // 필드가 제출에 따라 '' 또는 '[]'로 저장돼 응답 형식이 갈린다.
+      fieldSchema =
+        field.type === 'checkbox' || field.type === 'multiselect'
+          ? fieldSchema.optional()
+          : z.union([z.literal(''), fieldSchema]).optional();
     }
 
     shape[field.id!] = fieldSchema;
