@@ -36,9 +36,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  buildColumns,
+  buildRows,
+  formatResponseValue,
+} from '@/lib/forms/submissions-table';
 import { formatKstDateTime } from '@/lib/utils';
 
 interface SubmissionsViewProps {
+  /** 내보내기 라우트 주소를 만드는 데 쓴다 */
+  formId: string;
   data: {
     form: {
       title: string;
@@ -70,27 +77,12 @@ interface SubmissionsViewProps {
   };
 }
 
-/**
- * checkbox/multiselect 응답은 JSON 배열 문자열로 저장된다(`["a","b"]`).
- * 표·상세·내보내기에 그대로 노출되면 어드민이 원문 JSON을 읽게 되므로 편다.
- * 배열로 파싱되지 않으면(대괄호로 시작하는 평범한 답변 등) 원문을 그대로 둔다.
- */
-export function formatResponseValue(value: string): string {
-  if (!value.startsWith('[')) return value;
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed.join(', ') : value;
-  } catch {
-    return value;
-  }
-}
-
 type SortConfig = {
   key: string;
   direction: 'asc' | 'desc';
 } | null;
 
-export function SubmissionsView({ data }: SubmissionsViewProps) {
+export function SubmissionsView({ formId, data }: SubmissionsViewProps) {
   const { form, submissions } = data;
 
   // State
@@ -102,104 +94,17 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
     (typeof submissions)[0] | null
   >(null);
 
-  // Build the column list by grouping fields by label.
-  // A field edit soft-deletes the old field and creates a new one with the
-  // same label, so a single logical question ("이름 (Name)") can be backed by
-  // many field ids (active + archived). We merge every version of a label into
-  // one column so responses land in the same place regardless of which field
-  // version the submission used.
-  const columns = useMemo(() => {
-    type Column = {
-      key: string;
-      label: string;
-      fieldIds: Set<string>;
-      matchLegacyLabel: boolean; // also match null-fieldId responses by label
-      hasActive: boolean; // has a non-archived field → not a deleted column
-      hasData: boolean; // any submission has a non-empty value
-      order: number;
-    };
+  // 컬럼 그룹핑·행 변환은 내보내기 라우트와 같은 규칙을 써야 해서
+  // lib/forms/submissions-table에 있다.
+  const columns = useMemo(
+    () => buildColumns(form.fields, submissions),
+    [form.fields, submissions]
+  );
 
-    const map = new Map<string, Column>();
-    const getCol = (label: string) => {
-      let col = map.get(label);
-      if (!col) {
-        col = {
-          // Namespace the internal row key so field labels like "id" or
-          // "제출시간" can't overwrite the row's reserved metadata keys.
-          key: `field:${label}`,
-          label,
-          fieldIds: new Set(),
-          matchLegacyLabel: false,
-          hasActive: false,
-          hasData: false,
-          order: Number.MAX_SAFE_INTEGER,
-        };
-        map.set(label, col);
-      }
-      return col;
-    };
-
-    // Current + archived fields defined on the form
-    form.fields.forEach((field) => {
-      const col = getCol(field.label);
-      col.fieldIds.add(field.id);
-      if (!field.archived) {
-        col.hasActive = true;
-        col.order = Math.min(col.order, field.order);
-      }
-    });
-
-    // Responses may reference fields/labels no longer on the form (legacy data)
-    submissions.forEach((submission) => {
-      submission.responses.forEach((response) => {
-        if (response.field) {
-          const col = getCol(response.field.label);
-          col.fieldIds.add(response.field.id);
-          if (!response.field.archived) col.hasActive = true;
-          if (response.value?.trim()) col.hasData = true;
-        } else if (!response.fieldId && response.fieldLabel) {
-          const col = getCol(response.fieldLabel);
-          col.matchLegacyLabel = true;
-          if (response.value?.trim()) col.hasData = true;
-        }
-      });
-    });
-
-    // Keep active columns and deleted columns that actually hold data; drop
-    // empty archived-only columns (leftover from repeated field edits).
-    return Array.from(map.values())
-      .filter((col) => col.hasActive || col.hasData)
-      .sort((a, b) => {
-        if (a.order !== b.order) return a.order - b.order;
-        return a.label.localeCompare(b.label);
-      });
-  }, [form.fields, submissions]);
-
-  // Transform data for table display
-  const tableData = useMemo(() => {
-    return submissions.map((submission) => {
-      const row: Record<string, string> = {
-        id: submission.id,
-        제출시간: formatKstDateTime(new Date(submission.submittedAt)),
-      };
-
-      columns.forEach((col) => {
-        const matches = submission.responses.filter(
-          (r) =>
-            (r.fieldId != null && col.fieldIds.has(r.fieldId)) ||
-            (r.fieldId == null &&
-              col.matchLegacyLabel &&
-              r.fieldLabel === col.label)
-        );
-        // Prefer a non-empty response when a submission somehow has several.
-        const chosen = matches.find((r) => r.value?.trim()) ?? matches[0];
-        // 빈 배열('[]')은 펴면 빈 문자열이 되므로 미응답과 같게 '-'로 둔다.
-        row[col.key] = formatResponseValue(chosen?.value ?? '') || '-';
-      });
-
-      return row;
-    });
-  }, [submissions, columns]);
+  const tableData = useMemo(
+    () => buildRows(submissions, columns),
+    [submissions, columns]
+  );
 
   // Filter data
   const filteredData = useMemo(() => {
@@ -261,53 +166,11 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
     });
   };
 
-  // Build export rows with display labels as headers (row keys are namespaced
-  // internally, so map them back to the human-readable column labels here).
-  const buildExportRows = () =>
-    tableData.map((row) => {
-      const record: Record<string, string> = { 제출시간: row.제출시간 };
-      columns.forEach((col) => {
-        record[col.label] = row[col.key];
-      });
-      return record;
-    });
-
-  const handleExportExcel = async () => {
-    const XLSX = await import('xlsx');
-    const exportData = buildExportRows();
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, '응답');
-
-    const maxWidth = 50;
-    const wscols = Object.keys(exportData[0] || {}).map(() => ({
-      wch: maxWidth,
-    }));
-    worksheet['!cols'] = wscols;
-
-    XLSX.writeFile(
-      workbook,
-      `${form.title}_응답_${new Date().toISOString().split('T')[0]}.xlsx`
-    );
-  };
-
-  const handleExportCSV = async () => {
-    const XLSX = await import('xlsx');
-    const exportData = buildExportRows();
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const csv = XLSX.utils.sheet_to_csv(worksheet);
-    const blob = new Blob([`\uFEFF${csv}`], {
-      type: 'text/csv;charset=utf-8;',
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${form.title}_응답_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
+  // 내보내기는 서버 라우트가 만든다. 브라우저에서 스프레드시트를 만들던
+  // 예전 방식은 CSV 수식 인젝션 방어가 없었고(폼 응답은 외부인이 채운다),
+  // 취약점이 남은 xlsx 패키지를 클라이언트로 끌고 왔다.
+  const exportUrl = (format: 'csv' | 'xlsx') =>
+    `/api/admin/forms/${formId}/export?format=${format}`;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
@@ -326,13 +189,17 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button onClick={handleExportCSV} variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              CSV
+            <Button asChild variant="outline" size="sm">
+              <a href={exportUrl('csv')} download>
+                <Download className="mr-2 h-4 w-4" />
+                CSV
+              </a>
             </Button>
-            <Button onClick={handleExportExcel} size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Excel
+            <Button asChild size="sm">
+              <a href={exportUrl('xlsx')} download>
+                <Download className="mr-2 h-4 w-4" />
+                Excel
+              </a>
             </Button>
           </div>
         </div>
