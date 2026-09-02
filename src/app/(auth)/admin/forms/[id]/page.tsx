@@ -1,7 +1,8 @@
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
 import type { FormInput } from '@/lib/schemas/form';
-import { getForm, updateForm } from '@/modules/forms/server/actions';
+import { updateForm } from '@/modules/forms/server/actions';
+import { getForm } from '@/modules/forms/server/queries';
 import { FormEditHeader } from '@/modules/forms/ui/components/form-edit-header';
 import { FormBuilderView } from '@/modules/forms/ui/views/form-builder-view';
 
@@ -16,8 +17,10 @@ export default async function FormEditPage({
   const { id } = await params;
   const result = await getForm(id);
 
+  // 이 지점에 오면 이미 어드민이 확인된 상태다. 조회 실패는 곧 없는 폼이므로
+  // 목록으로 되돌리지 않고 404를 낸다(리다이렉트는 소프트 404가 된다).
   if (!result.success || !result.data) {
-    redirect('/admin/forms');
+    notFound();
   }
 
   const form = result.data;

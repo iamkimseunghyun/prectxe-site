@@ -130,7 +130,11 @@ export function FormRow({ form }: FormRowProps) {
         open={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}
         title="폼 삭제 확인"
-        description="정말 이 폼을 삭제하시겠어요? 모든 제출 내역도 함께 삭제되며, 이 작업은 되돌릴 수 없습니다."
+        description={
+          form._count.submissions > 0
+            ? `제출 ${form._count.submissions}건이 함께 삭제됩니다. 되돌릴 수 없습니다.`
+            : '정말 이 폼을 삭제하시겠어요? 되돌릴 수 없습니다.'
+        }
         confirmText="삭제"
         cancelText="취소"
         variant="destructive"
