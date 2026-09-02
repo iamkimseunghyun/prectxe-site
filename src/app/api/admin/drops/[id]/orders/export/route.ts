@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
+import { buildOrdersAoa, toOrdersXlsx } from '@/lib/drops/orders-export';
 import {
   asciiFilename,
-  buildOrdersAoa,
+  contentDisposition,
   safeFilename,
   toCsv,
-  toXlsx,
-} from '@/lib/drops/orders-export';
+} from '@/lib/export/spreadsheet';
 
 export async function GET(
   req: Request,
@@ -71,9 +71,11 @@ export async function GET(
 
     const aoa = buildOrdersAoa(orders);
     // filename=에는 ASCII 폴백, filename*=에 한글 실제 이름(구형 프록시 헤더 파싱 오류 방지)
-    const filename = safeFilename(`${drop.title}_주문목록`, format);
-    const ascii = asciiFilename(format);
-    const disposition = `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+    const filename = safeFilename(`${drop.title}_주문목록`, format, 'orders');
+    const disposition = contentDisposition(
+      filename,
+      asciiFilename('drop-orders', format)
+    );
 
     if (format === 'csv') {
       return new Response(toCsv(aoa), {
@@ -85,7 +87,7 @@ export async function GET(
       });
     }
 
-    const buf = await toXlsx(aoa, `${drop.title} 주문`);
+    const buf = await toOrdersXlsx(aoa, `${drop.title} 주문`);
     return new Response(new Uint8Array(buf), {
       headers: {
         'Content-Type':

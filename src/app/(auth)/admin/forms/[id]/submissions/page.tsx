@@ -20,5 +20,5 @@ export default async function FormSubmissionsPage({ params }: PageProps) {
     notFound();
   }
 
-  return <SubmissionsView data={result.data} />;
+  return <SubmissionsView formId={id} data={result.data} />;
 }
