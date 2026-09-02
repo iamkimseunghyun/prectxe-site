@@ -72,6 +72,21 @@ interface SubmissionsViewProps {
   };
 }
 
+/**
+ * checkbox/multiselect 응답은 JSON 배열 문자열로 저장된다(`["a","b"]`).
+ * 표·상세·내보내기에 그대로 노출되면 어드민이 원문 JSON을 읽게 되므로 편다.
+ * 배열로 파싱되지 않으면(대괄호로 시작하는 평범한 답변 등) 원문을 그대로 둔다.
+ */
+export function formatResponseValue(value: string): string {
+  if (!value.startsWith('[')) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.join(', ') : value;
+  } catch {
+    return value;
+  }
+}
+
 type SortConfig = {
   key: string;
   direction: 'asc' | 'desc';
@@ -180,7 +195,8 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
         );
         // Prefer a non-empty response when a submission somehow has several.
         const chosen = matches.find((r) => r.value?.trim()) ?? matches[0];
-        row[col.key] = chosen?.value || '-';
+        // 빈 배열('[]')은 펴면 빈 문자열이 되므로 미응답과 같게 '-'로 둔다.
+        row[col.key] = formatResponseValue(chosen?.value ?? '') || '-';
       });
 
       row.IP = submission.ipAddress || '-';
@@ -204,7 +220,20 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
   const sortedData = useMemo(() => {
     if (!sortConfig) return filteredData;
 
+    // 제출시간 칸에 들어있는 값은 '2026년 9월 2일 (화) 오후 3:03' 같은 표시용
+    // 문자열이다. 문자열로 비교하면 '9월' > '10월'이라 9월이 10월 뒤로 가고
+    // 오전/오후도 뒤섞이므로, 정렬만은 원본 timestamp로 한다.
+    const submittedAtById = new Map(
+      submissions.map((s) => [s.id, new Date(s.submittedAt).getTime()])
+    );
+
     return [...filteredData].sort((a, b) => {
+      if (sortConfig.key === '제출시간') {
+        const diff =
+          (submittedAtById.get(a.id) ?? 0) - (submittedAtById.get(b.id) ?? 0);
+        return sortConfig.direction === 'asc' ? diff : -diff;
+      }
+
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
 
@@ -213,7 +242,7 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
       const comparison = aValue < bValue ? -1 : 1;
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
-  }, [filteredData, sortConfig]);
+  }, [filteredData, sortConfig, submissions]);
 
   // Paginate data
   const paginatedData = useMemo(() => {
@@ -578,7 +607,7 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
                         )}
                       </div>
                       <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                        {response.value || '-'}
+                        {formatResponseValue(response.value) || '-'}
                       </p>
                     </div>
                   );

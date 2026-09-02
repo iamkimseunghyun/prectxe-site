@@ -68,105 +68,80 @@ export async function updateForm(formId: string, data: FormInput) {
       return { success: false, error: '폼을 찾을 수 없습니다' };
     }
 
-    // 🚨 버그 수정: FormField를 삭제하지 않고 upsert로 업데이트
-    // FormField 삭제 시 FormResponse의 fieldId가 NULL이 되어 데이터 유실 위험
-    // 대신 기존 필드는 업데이트하고, 새 필드만 생성
-
-    // 먼저 Form의 메타데이터만 업데이트 (fields 제외)
-    const form = await prisma.form.update({
-      where: { id: formId },
-      data: {
-        slug: validated.slug,
-        title: validated.title,
-        description: validated.description,
-        body: validated.body,
-        coverImage: validated.coverImage,
-        status: validated.status,
-      },
-      include: {
-        fields: {
-          where: { archived: false },
-        },
-      },
+    // Form 메타데이터 · 필드 아카이브 · 필드 upsert를 한 트랜잭션으로 묶는다.
+    // 예전에는 셋이 따로 실행돼, 중간에 실패하면 필드는 이미 archive됐는데
+    // 새 필드는 없는 상태로 남았다(게시된 폼이 필드 없이 뜰 수 있었다).
+    const existingFields = await prisma.formField.findMany({
+      where: { formId, archived: false },
+      select: { id: true },
     });
-
-    // 필드 변경사항이 있는 경우에만 처리
-    const currentFieldIds = form.fields.map((f) => f.id);
-    const newFieldIds = validated.fields
-      .map((f) => f.id)
-      .filter((id): id is string => !!id);
-
-    // 삭제할 필드 (기존 필드 중 새 데이터에 없는 것)
-    const fieldsToDelete = currentFieldIds.filter(
-      (id) => !newFieldIds.includes(id)
+    const currentFieldIds = existingFields.map((f) => f.id);
+    const newFieldIds = new Set(
+      validated.fields.map((f) => f.id).filter((id): id is string => !!id)
     );
 
-    // 🔒 안전장치: 필드 soft delete (archived)로 데이터 무결성 보존
-    // fieldId 관계를 유지하여 동일 라벨 필드가 여러 개일 때도 정확한 응답 매칭 가능
-    if (fieldsToDelete.length > 0) {
-      await prisma.formField.updateMany({
-        where: {
-          id: { in: fieldsToDelete },
-        },
-        data: {
-          archived: true,
-        },
-      });
+    // 새 데이터에 없는 기존 필드는 물리 삭제가 아니라 archive 한다.
+    // fieldId 관계를 유지해야 과거 응답이 어느 질문의 답인지 남는다.
+    const fieldsToArchive = currentFieldIds.filter(
+      (id) => !newFieldIds.has(id)
+    );
 
-      console.log(
-        `✅ 필드 ${fieldsToDelete.length}개 아카이브됨. fieldId 관계 유지.`
-      );
-    }
+    const updatedForm = await prisma.$transaction(
+      async (tx) => {
+        await tx.form.update({
+          where: { id: formId },
+          data: {
+            slug: validated.slug,
+            title: validated.title,
+            description: validated.description,
+            body: validated.body,
+            coverImage: validated.coverImage,
+            status: validated.status,
+          },
+        });
 
-    // 🔒 안전장치: 필드 업데이트/생성을 트랜잭션으로 보호
-    await prisma.$transaction(async (tx) => {
-      for (let index = 0; index < validated.fields.length; index++) {
-        const field = validated.fields[index];
-
-        if (field.id && currentFieldIds.includes(field.id)) {
-          // 기존 필드 업데이트
-          await tx.formField.update({
-            where: { id: field.id },
-            data: {
-              type: field.type,
-              label: field.label,
-              placeholder: field.placeholder,
-              helpText: field.helpText,
-              required: field.required,
-              options: field.options,
-              order: index,
-              validation: field.validation ?? {},
-            },
-          });
-        } else {
-          // 새 필드 생성
-          await tx.formField.create({
-            data: {
-              formId,
-              type: field.type,
-              label: field.label,
-              placeholder: field.placeholder,
-              helpText: field.helpText,
-              required: field.required,
-              options: field.options,
-              order: index,
-              validation: field.validation ?? {},
-            },
+        if (fieldsToArchive.length > 0) {
+          await tx.formField.updateMany({
+            where: { id: { in: fieldsToArchive } },
+            data: { archived: true },
           });
         }
-      }
-    });
 
-    // 최종 Form 데이터 조회
-    const updatedForm = await prisma.form.findUnique({
-      where: { id: formId },
-      include: {
-        fields: {
-          where: { archived: false },
-          orderBy: { order: 'asc' },
-        },
+        for (let index = 0; index < validated.fields.length; index++) {
+          const field = validated.fields[index];
+          const fieldData = {
+            type: field.type,
+            label: field.label,
+            placeholder: field.placeholder,
+            helpText: field.helpText,
+            required: field.required,
+            options: field.options,
+            order: index,
+            validation: field.validation ?? {},
+          };
+
+          if (field.id && currentFieldIds.includes(field.id)) {
+            await tx.formField.update({
+              where: { id: field.id },
+              data: fieldData,
+            });
+          } else {
+            await tx.formField.create({
+              data: { formId, ...fieldData },
+            });
+          }
+        }
+
+        return tx.form.findUnique({
+          where: { id: formId },
+          include: {
+            fields: { where: { archived: false }, orderBy: { order: 'asc' } },
+          },
+        });
       },
-    });
+      // 필드 수만큼 순차 쿼리가 나가므로 기본 5초로는 빠듯하다.
+      { timeout: 15000 }
+    );
 
     if (!updatedForm) {
       return { success: false, error: '폼 업데이트 후 조회 실패' };

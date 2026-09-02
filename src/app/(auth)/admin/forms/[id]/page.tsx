@@ -47,8 +47,11 @@ export default async function FormEditPage({
           body: form.body ?? undefined,
           coverImage: form.coverImage ?? undefined,
           status: form.status,
-          fields: form.fields.map((field, index) => ({
-            id: `field-${field.id || index}`,
+          // 실제 DB id를 그대로 넘긴다. 접두사를 붙이면 빌더가 이를 신규
+          // 필드의 임시 id로 오인해 id를 떼고 보내고, 서버는 매 저장마다
+          // 기존 필드를 전부 archive 하고 새로 만든다(응답↔필드 관계 붕괴).
+          fields: form.fields.map((field) => ({
+            id: field.id,
             type: field.type,
             label: field.label,
             placeholder: field.placeholder ?? undefined,
