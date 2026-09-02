@@ -2,6 +2,203 @@
 
 > 이전 기록은 [dev-log-archive.md](dev-log-archive.md) 참조
 
+## 2026-09-02
+
+### Forms 모듈 전수 점검 (PR #82~#90)
+
+9건. 공개 렌더 누락 → 데이터 유실 → 보안 하드닝 → 구조 정리 순으로 진행. 저장 때마다 필드가 갈리던 #84가 이 중 가장 컸다.
+
+#### 1. 공개 렌더러에 없던 필드 타입 + 검증 버그 3건 (#82)
+- 빌더의 필드 타입 목록과 미리보기에는 URL·파일이 있는데 **공개 렌더러에 두 분기가 없었다.** 어드민이 해당 필드를 만들면 공개 폼에 입력칸이 뜨지 않고, 필수로 걸어둔 경우 제출 자체가 불가능.
+- URL은 `type="url"`, 파일은 `FormFileField` 신설 — 선택 즉시 Cloudflare Images 업로드 후 성공한 URL만 값으로 넘기고, 업로드 중에는 제출을 막는다. Cloudflare Images는 이미지만 받으므로 라벨도 '파일 업로드' → '이미지 업로드'.
+- `getFormFileUploadUrl`: 게시된 폼의 살아있는 file 필드인지 확인한 뒤에만 업로드 URL 발급(기존 `getCloudflareImageUrl`은 어드민 전용 무가드 액션이라 재사용 불가). 제출 시 file 값이 우리 Cloudflare Images URL인지 서버에서 재확인.
+- 함께 고친 검증 버그: `defaultValue`가 `''`인데 `.optional()`은 undefined만 허용해 **선택 항목을 비우면 email/phone/date/url이 전부 제출 차단**(단 checkbox/multiselect 배열 필드는 `''`를 받지 않는다) / 숫자 필드의 `.min(1)`은 "길이 1 이상"이 아니라 "값이 1 이상"이라 0·음수·소수를 반려 / 업로드 오류가 스크린리더에 미전달(`role="alert"`).
+
+#### 2. 공개 폼 레이아웃 밀도 (#83)
+프로덕션 폼(필드 6개)이 모바일에서 4.4화면 분량이었다. 필드 수가 아니라 필드마다 카드를 두르고, 선택지마다 테두리 박스를 주고, 긴 안내문이 heading 스타일로 렌더된 탓.
+
+측정(모바일 390px, 프로덕션과 같은 모양의 폼):
+
+    전체 문서   3725px → 3219px  (-13.6%, 4.4화면 → 3.8화면)
+    활동 분야    943px →  821px  (선택지 18개, 폼 높이의 45%였음)
+    동의 레이블  330px →  273px  (16px/500 → 14px/400)
+
+- 필드별 카드(p-6 + border + shadow + hover) → 카드 하나 + 구분선. 제출 버튼 카드도 제거.
+- 선택지: 테두리 박스 → 평범한 행 + `text-sm`. 탭 영역은 label을 행 전체로 유지(310×35px), 열 간격은 `gap-x-6`으로 따로 줘서 데스크톱 2열이 붙지 않게.
+- **레이블 80자 초과 시 본문 스타일로 강등** — 동의 문구를 label에 통째로 넣는 폼이 있다(라이브 폼 461자).
+- Playwright로 모바일/데스크톱 렌더·선택지 토글·헤더 겹침 실측. CodeRabbit은 rate limit으로 미수행.
+
+#### 3. 저장마다 전 필드가 archive되던 문제 (#84) ★
+- 편집 페이지가 DB id에 `field-` 접두사를 붙여 넘겼고, 빌더는 그 접두사를 **신규 필드의 임시 id 표식**으로 썼다. 결과적으로 기존 필드 id가 전부 제거된 채 서버로 가서, 매 저장마다 기존 필드를 archive 하고 새로 만들었다.
+- **PR #63(7/22)에서 같은 증상을 한 번 고쳤지만 빌더 쪽만 고쳤고, 편집 페이지가 접두사를 붙이는 한 무력화된다.** 규칙이 두 파일에 흩어져 있던 것이 재발 원인.
+- 프로덕션 실측: CURRENT 폼 활성 6 / archived 61, 응답 100%가 archived 필드를 가리킴(721/721). 라벨 8개에 field id 17개.
+- 필드 id 보존 + 규칙을 `toFieldPayload()`로 분리해 테스트 추가. `updateForm`의 메타 갱신/archive/upsert를 단일 트랜잭션으로(timeout 15s).
+- 함께: 제출시간 정렬을 표시 문자열이 아닌 원본 timestamp로('9월' > '10월' 버그) / 체크박스 응답 JSON 원문을 표·상세·CSV·Excel에서 사람이 읽는 형태로 / 폼 데이터를 통째로 찍던 `console.log` 제거 / 신규 필드 임시 id를 `crypto.randomUUID()`로(같은 ms 중복 방지).
+- **과거에 흩어진 응답은 복구되지 않는다.** submissions-view의 라벨 그룹핑은 기존 데이터를 계속 보여주기 위해 유지.
+
+#### 4. 공개 제출 경로 하드닝 (#85)
+- `submitFormResponse`가 `ipAddress`/`userAgent`를 **인자로** 받았다. 서버액션은 공개 RPC라 호출자가 아무 값이나 넣을 수 있어 어드민에 보이는 IP가 위조 가능했고, 이를 근거로 한 제한은 무엇이든 우회됐다. 액션이 직접 헤더를 읽도록 바꾸고 공개 폼 페이지의 래퍼 액션을 걷어냈다.
+- `getClientIp`를 `lib/rate-limit/client-ip`로 공유(email 모듈과 근거 통일). 제출 50회/시간, 업로드 URL 발급 40회/시간(IP당).
+- `ZodError.message`(issues JSON) 대신 스키마의 한국어 메시지. Prisma P2002 → '이미 사용 중인 URL 슬러그입니다'. 제출/복사 catch에서 내부 에러 원문 노출 제거.
+
+#### 5. 전수 점검 3차 — 읽기 쿼리 분리 외 6건 (#86)
+- `getFormBySlug`/`getForm`/`listForms`/`getFormSubmissions`가 전부 서버 컴포넌트에서만 호출되는데 액션 파일에 있어 각각 **공개 RPC 엔드포인트**가 되어 있었다. 특히 `getFormSubmissions`는 응답자 PII 전체를 반환한다. `server/queries.ts`로 분리하고 클라이언트가 직접 부르는 것만 액션에 남겼다.
+- 없는 폼 id → redirect(소프트 404) 대신 `notFound()` / `?status=bogus`가 검증 없이 Prisma where로 들어가던 문제 / 제출 검색이 내부 cuid까지 매칭해 오탐 / CSV 내보내기 `URL.createObjectURL` 미해제 / 삭제 확인창에 제출 건수 표시 / 필드 편집기 삭제 버튼·드래그 핸들 접근명(핸들은 dnd-kit 권장대로 button으로).
+
+#### 6. 폼 제출 시 IP·UA 수집 중단 (#87)
+- 저장해도 쓰는 곳이 없었다. rate limit은 요청 헤더에서 직접 읽으므로 DB의 IP가 필요 없고, 저장된 IP의 유일한 용도는 어드민 표 표시였다. userAgent는 아예 어디에도 표시되지 않았다. **폼 동의문에도 IP 수집은 고지돼 있지 않다.**
+- `getFormSubmissions`를 include → 명시 select로. include는 스칼라를 전부 끌고 와 두 컬럼이 브라우저까지 갔다.
+- 제출 목록 IP 컬럼·정렬, 상세 모달 IP 블록, CSV/Excel 익스포트 IP 제거. **컬럼은 nullable 그대로 뒀다**(스키마 변경은 prod 마이그레이션이라 별건).
+
+#### 7. 응답 내보내기를 서버 라우트로 + xlsx 제거 (#88)
+- 브라우저에서 xlsx로 파일을 만들던 걸 `/api/admin/forms/[id]/export`로 이동. drops 주문 내보내기와 같은 모양.
+- **CSV 수식 인젝션 방어** — 폼 응답은 외부인이 채우는 값이라 `=`로 시작하는 답변이 어드민 엑셀에서 수식으로 실행될 수 있었다.
+- 한글 파일명 `Content-Disposition` 안전 처리(`filename=` ASCII 폴백 + `filename*=` UTF-8 퍼센트 인코딩). **7/02 #59와 같은 함정** — 그때는 PnL 쪽이었고 Vercel undici에서만 크래시했다.
+- xlsx 0.18.5 제거. CVE는 파싱 경로라 우리 사용엔 해당 없지만 npm 배포가 중단된 패키지를 남겨둘 이유가 없다.
+- 공유 모듈 2개 신설: `lib/export/spreadsheet`(AOA 기반 CSV/XLSX 직렬화 + 파일명 — drops에만 있던 것을 옮기고 drops도 이걸 쓴다), `lib/forms/submissions-table`(컬럼 그룹핑·행 변환 — 화면과 내보내기가 같은 규칙을 써야 하는데 뷰 컴포넌트 안에만 있었다).
+
+#### 8. 도움말 줄바꿈 (#89 → #90)
+- `helpText`만 `whitespace-pre-wrap`이 빠져 여러 줄로 쓴 안내가 한 문단으로 붙었다(#89). 같은 페이지의 body는 이미 pre-wrap을 쓰고 있었다.
+- 그런데 정작 어드민 입력이 한 줄짜리 `Input`이라 줄바꿈을 넣을 방법 자체가 없었다 → `Textarea`로 교체(#90). 렌더만 고치고 입력을 안 본 반쪽짜리였다.
+- 계기: 라이브 폼의 개인정보 수집·이용 동의 안내가 항목을 '·'로 구분해 한 줄에 붙어 있다.
+
+#### 남은 과제
+- 제출 목록 페이지네이션, 공개 read 캐싱 (#86에서 보류).
+- IP·UA 컬럼 실제 DROP(prod 마이그레이션 별건).
+- #84 이전에 흩어진 응답 데이터 — 복구 불가, 라벨 그룹핑으로 표시만 유지 중.
+
+---
+
+## 2026-09-01
+
+### Email 모듈 재작업 + 미사용 기능 제거 (PR #73~#81)
+
+Resend 발송 경로가 실패를 감지하지 못하던 것이 출발점. 발송 성능·안전장치·수신 거부까지 이어졌다. (#77은 #80으로 다시 열어 머지)
+
+#### 1. 홈 매진 드랍 노출 (#73)
+- 홈 Drops 섹션이 매진 드랍을 필터로 걷어냈다. 드랍이 1~2개인 평소 상태에선 매진 즉시 섹션이 통째로 사라져 "아무것도 안 하는 사이트"로 읽히고, 구매자가 공연 정보를 다시 찾을 경로도 없어진다. **히어로 섹션은 이미 매진 drop을 남기고 CTA만 "매진"으로 바꾸고 있어 같은 페이지 안에서 두 섹션의 철학이 반대였다.**
+- 필터 → 정렬로 교체(`on_sale` > `upcoming` > `sold_out` 상위 3개). `take(12)` 절단 이슈도 해소. `closed`는 계속 제외.
+- `sold_out` 배지 톤 중립화(빨강은 에러로 읽힘). 매진 카드의 판매 마감 카운트다운 숨김 — 판매창은 열려 있고 재고만 소진된 드랍에서 "Sold Out" 아래 마감 티커가 도는 모순(기존엔 필터돼 도달 불가였던 경로).
+- eyebrow "Now Available" → "Limited Runs". 나머지 4개 섹션 eyebrow는 분위기를 까는 말인데 이것만 사실 주장이라 매진 시 거짓이 됐다.
+
+#### 2. PnL·Estimates 기능 제거 (#74)
+프로덕션 데이터 확인 후 삭제(3,585줄 + 관련 라우트/스키마, 총 -4,844줄):
+- Estimate 0건, SupplierProfile 0건, EstimateCounter 0건 → 견적서는 5개월간 한 번도 발행된 적 없고 전제조건인 공급자 정보조차 입력된 적 없다.
+- PnLTemplate 0건, PnLSheet 1건(2026.07.24 KLO × Nosaj Thing, 마지막 수정 7/02) → 7월 공연 준비 때 한 번 쓰고 방치. **삭제 전 별도 백업 완료.**
+- 필요 자체는 유효하나 인앱 스프레드시트/발행기가 손에 익은 구글 시트·독스와 경쟁해 실사용을 얻지 못했다. **아무도 실행하지 않는 admin server action은 인가 가드가 깨져도 감지되지 않는 표면으로 남는다**(6월 보안감사 C1 참고) — 유지 비용이 0이 아니다.
+- Prisma 모델 5개 + User 역관계 3개 제거. 프로덕션 테이블 DROP은 별도 수행(main 브랜치 drift로 `prisma db push` 불가).
+
+#### 3. 발송 실패가 전부 성공으로 집계되던 문제 (#75) ★
+- **Resend SDK(6.x)의 `fetchRequest`는 모든 API 실패를 catch해서 `{data: null, error}`로 반환하고 throw하지 않는다.** `sendEmail`은 try/catch로만 성공을 판정해 429·422·403·네트워크 실패가 전부 `success: true`로 기록됐다. 어드민엔 "N건 발송 성공"이 뜨고 `EmailRecipient.error`는 항상 비어 있어 stats의 `errorBreakdown`이 영구히 빈 배열이었다. **같은 경로를 타는 주문 확인·입금 안내 메일도 실패가 로그에 전혀 남지 않았다.**
+- `response.error`를 명시 검사 + 로그. 성공 판정을 `sentCount > 0` → `failedCount === 0`으로 정정(500명 중 1명만 성공해도 "성공"으로 보고되던 문제).
+- `subscribeNewsletter`는 인증 없는 공개 액션인데 호출 1회당 Resend API를 최대 3회 부른다. **Resend rate limit은 팀당 10 req/s를 모든 API 키가 공유**하므로 구독 폼 폭주가 결제 경로의 주문 확인 메일까지 끌어내릴 수 있었다 → 인메모리 슬라이딩 윈도우 limiter(`lib/rate-limit/memory.ts`, IP 10회/시간·동일 주소 1회/24시간, 의존성·env 추가 없음).
+- `alreadySubscribed` 반환 제거 — 구독 여부를 외부에서 조회할 수 있는 **열거 오라클**이었다.
+- `{{{RESEND_UNSUBSCRIBE_URL}}}`은 Broadcasts 전용인데 어드민 UI에서 newsletter 템플릿을 골라 `emails.send` 경로로 보낼 수 있어 **치환되지 않은 죽은 링크가 발송**됐다 → 템플릿에 `unsubscribeUrl` prop, 없으면 링크 미렌더. 독립·Form 발송에서 템플릿 선택 제거(form-notification 고정), 뉴스레터는 브로드캐스트 탭으로 일원화.
+
+#### 4. batch 발송 + 입력 검증 + 수신자 서버 조회 (#76)
+- 수신자마다 개별 API 요청 + 매번 템플릿 재렌더 → 500명이면 호출 500회·렌더 500회. rate limit 예산을 혼자 쓰며 결제 메일을 밀어냈고 수천 명이면 함수 실행 시간 한계.
+- `resend.batch.send`로 100건씩 묶어 **호출 500회 → 5회**, 템플릿은 1회만 render.
+- `batchValidation: 'permissive'` — strict(기본값)는 잘못된 주소 하나가 청크 전체를 실패시킨다. permissive는 `errors[{index,message}]`로 실패분만 돌려주므로 index를 요청 배열과 매핑해 수신자별 성패 유지(`data[]`는 성공분만 담기므로 커서 매핑하되, 길이가 어긋나면 messageId만 포기하고 성패는 `errors[]`를 신뢰).
+- 청크 간 150ms 간격. `idempotencyKey`에 `campaign.id`를 넘겨 타임아웃 후 재실행 시 중복 발송 방지.
+- **입력 검증 부재(프로젝트 컨벤션 위반)**: 서버 액션에 zod가 전혀 없어 수신자 수·본문 길이 상한이 없었고 template이 런타임 검증되지 않아 잘못된 값이 조용히 폴백 → `lib/schemas/email.ts` + `parseInput`. 수신자 2000명·본문 200KB 백스톱.
+- **수신자를 클라이언트가 결정하던 문제**: Form 발송이 응답자 주소 전체를 브라우저로 내려보낸 뒤 그대로 되돌려 받아 발송했다(PII 왕복 + 수신자 목록 조작 가능) → `source: 'form' | 'manual'` discriminated union, form이면 서버가 formId로 직접 조회. `getFormRespondentsEmails` → `getFormRespondentsSummary`(카운트만 반환, 실제 조회는 export하지 않는 내부 헬퍼).
+- `EmailRecipient`를 `createMany` 한 번으로(예전엔 `Promise.all`로 수신자 수만큼 동시 INSERT → 커넥션 풀 고갈). `EmailCampaign` 인덱스 3개(userId·formId·sentAt) — 6/19 FK 인덱스 일괄 추가 때 이 모델만 누락돼 pkey밖에 없었다. `filterValidEmails` 중복 제거를 indexOf(O(n²)) → Set.
+
+#### 5. 에디터 툴바 버튼이 폼을 제출하던 문제 (#78)
+- 이메일 에디터 툴바·이미지 제어 버튼 27개에 `type`이 없어 HTML 기본값 submit으로 동작. 세 발송 폼 모두 `EmailEditor`를 `<form>` 안에 둬서 **Bold·H1·정렬을 누르면 폼이 제출됐다** — 독립/Form 발송은 확인창 없이 즉시 전체 발송.
+- 수신자·제목을 채운 뒤 본문을 쓰다 서식 버튼을 누르는 것이 일반적 흐름이라 **되돌릴 수 없는 발송이 실수 한 번에 나갈 수 있었다.**
+- **PR #53(6/21)에서 같은 버그를 `components/rich-editor/`에서 고쳤지만 90% 복제본인 `modules/email/ui/components/email-editor/`는 누락**돼 있었다(rich-editor 28/29 명시 / email-editor 0).
+- 근본 원인은 shadcn `Button`이 type 기본값을 주지 않는 것 + 에디터 복제 — 둘 다 별도 과제로 남김(#53에서도 "전체 폼 audit 선행 필요"로 남긴 항목).
+
+#### 6. 수신 거부 라우트 + List-Unsubscribe 헤더 (#80)
+- 단체 메일에 수신 거부 수단이 없었다. **정보통신망법상 광고성 정보에는 수신거부 방법 명시가 의무**이고 Gmail·Yahoo는 List-Unsubscribe를 발신 평판에 반영한다.
+- **HMAC 서명 토큰**(`lib/email/unsubscribe.ts`) — 구독자 모델이 자체 DB에 없고(Resend 소유) 이미 발송된 메일의 링크는 몇 년 뒤에도 동작해야 하므로 DB 조회 없이 검증되는 무상태 토큰. 만료 없음. 키는 `UNSUBSCRIBE_SECRET`, 없으면 `COOKIE_PASSWORD`에서 도메인 분리 파생 — **세션 시크릿 로테이션 시 기존 링크가 전부 깨지므로 별도 env 권장**(CLAUDE.md 명시).
+- `POST /api/unsubscribe?t=` — RFC 8058 원클릭(page.tsx는 POST를 못 받으므로 라우트 핸들러). `GET /unsubscribe?t=` — 사람이 클릭하는 확인 페이지. **여기서 바로 해지하지 않는다**: 메일 클라이언트·보안 스캐너의 링크 프리페치(GET)로 의도치 않은 해지가 일어난다. 토큰이 깨졌으면 주소 직접 입력 폼으로 degrade.
+- 템플릿은 수신자 전체에 1회만 렌더하므로(#76) 본문에 수신자별 URL을 직접 넣을 수 없다 → `UNSUBSCRIBE_URL_PLACEHOLDER`를 심고 `sendEmail`이 수신자별로 치환(Resend가 Broadcasts에서 쓰는 방식과 동일).
+- **거래 메일에는 붙이지 않는다** — 주문 확인·입금 안내에 수신 거부를 달면 구매자가 영수증 수신을 해지하는 셈. 테스트로 회귀 방지.
+
+#### 7. 발송 안전장치 + 작성 내용 보존 + UI 정리 (#79)
+- **작성 중이던 본문이 사라지던 문제**: Radix `TabsContent`가 비활성 탭을 언마운트해 탭 이동만으로 폼 상태와 TipTap 인스턴스가 통째로 파괴됐다 → `useEmailDraft` 훅(localStorage 디바운스 자동 저장 + 복원, 새로고침·브라우저 종료까지 커버). TipTap은 content를 초기값으로만 쓰므로 복원 시 `editorKey`로 재마운트. **언마운트 시 미저장분을 flush** — 탭 전환이 곧 언마운트라 타이머만 지우면 마지막 500ms 입력이 사라져 원래 증상이 남는다. localStorage는 렌더 중이 아니라 effect에서 읽는다(hydration 불일치 방지).
+- **되돌릴 수 없는 발송의 안전장치**: 확인 단계가 브로드캐스트에만 있었다 → `SendControls`로 세 경로 모두 확인 다이얼로그(대상·인원 명시). `sendTestEmail` + "내게 테스트 발송" — 에디터는 웹용 prose로 보이지만 실제 메일은 인라인 스타일 + 템플릿 래퍼로 렌더되고 YouTube는 썸네일+링크로 변환된다(**보이는 것과 나가는 것이 달랐다**). 캠페인 이력은 남기지 않는다.
+- 브로드캐스트는 수신자를 Resend가 관리해 `sentCount`가 0인데 목록이 "발송완료 0건"으로 보여줘 실패처럼 읽혔다 → 숫자를 지어내는 대신 "Resend 관리"로 표시(Segment·Broadcast 어디에도 수신자 수가 없음, SDK 타입 확인). 템플릿 컬럼('알림' 고정이라 무의미) → '발송 방식'. `listEmailCampaigns` 페이지네이션(20건).
+- `convertToEmailHTML`이 `/<p>/g`처럼 속성 없는 태그만 매칭해 TextAlign이 만든 `<p style="text-align: center">`는 margin·line-height가 통째로 누락됐다(정렬한 문단만 간격이 어긋나는 증상) → 기존 style 보존 병합. base64 이미지 차단(붙여넣기 한 번에 본문이 수 MB가 되어 DB body와 발송 페이로드에 그대로 실렸다).
+- 아이콘 버튼 23개 `aria-label`(접근 이름이 없었다), 토글 11개 `aria-pressed`. 기본 탭을 통계 → 구독자 전체 발송. "독립 발송" → "주소 직접 입력".
+- `RESEND_SEGMENT_ID`로 세그먼트 고정 지원 — 자동 탐지는 모듈 캐시라 무효화 경로가 없고(삭제·개명 시 재배포 전까지 발송 불가) 콜드 인스턴스 동시 기동 시 중복 생성될 수 있다. `segments.list` 전 페이지 순회도 수정.
+- metadata title 중복 수정(8개 파일) — 루트 layout의 template `'%s | PRECTXE'`가 있는데 페이지가 접미사를 또 붙여 "이용약관 | PRECTXE | PRECTXE"로 렌더됐다(기존 버그, 로컬 실행 중 발견).
+
+#### 8. 캠페인 상세 화면 + 실패분 재발송 (#81)
+- 발송 결과를 확인할 방법이 없었다. 결과는 toast로 5초 뜨고 사라졌고 "12건 실패"가 누구인지 볼 화면이 없었다. `getEmailCampaign`은 아무도 호출하지 않는 데드코드였다.
+- 목록 행 클릭 → 다이얼로그(키보드 Enter/Space + aria-label). **본문 미리보기는 iframe sandbox로 격리** — 이메일 HTML을 어드민 DOM에 직접 주입하면 본문의 전역 스타일이 관리 화면을 덮어쓰고 스크립트가 섞이면 그대로 실행된다.
+- 수신자 목록: 실패 우선 정렬(상세를 여는 이유가 대개 실패 확인) + 사유 표시 + "실패만" 필터 + 50건 페이지네이션. `recipients` 무제한 include를 교체(수천 명 캠페인이면 응답에 전부 실렸다).
+- **실패분 재발송**: 새 캠페인을 만들지 않고 기존 `EmailRecipient` 행을 갱신(행이 늘면 집계가 실제 수신자 수와 어긋난다). 집계는 증가가 아니라 **재계산**(증가 방식은 재발송을 반복할수록 드리프트). 한 주소에 행이 여럿일 수 있어 id를 배열로 모은다(`Map<string,string>` 하나면 마지막 id만 남아 나머지 행이 영영 실패로 굳는다). **`idempotencyKey`를 쓰지 않는다** — 재발송은 "실패한 것을 다시 시도"라 Resend가 중복으로 걸러내면 안 된다. 연타 방지는 캠페인별 30초 쿨다운.
+- 브로드캐스트는 수신자를 Resend가 관리하므로 재발송 대상에서 제외.
+
+#### 범위에서 뺀 것
+- **예약 발송**: `EmailCampaign.scheduledAt` 컬럼이 필요한데 Neon MCP 세션이 끊겼고 로컬 `.env`의 `DATABASE_URL`이 낡은 sqlite 경로라 마이그레이션 불가.
+- **오픈율·바운스**: Resend 웹훅 엔드포인트 + 이벤트 저장 스키마 + svix 서명 검증 필요.
+
+---
+
+## 2026-08-31
+
+### 아티스트 영역 전수 점검 + 사이트 전역 404 복구 (PR #68~#72)
+
+- **아티스트 영역 일괄 개선 (#68)**: draft 프로그램 노출·'더 보기' 무동작·편집 페이지 인가 누락 3건 수정. Cloudflare flexible variants 로더 도입으로 **srcset 복구**(`unoptimized`로 `sizes` 22곳이 무시되던 상태), Suspense 스트리밍 정상화, 불필요 조인·중복 쿼리 제거, 캐시 태그 정합성. 접근성(heading 레벨·라이트박스 포커스·터치 기기 제목·breadcrumb·skip link). 읽기 쿼리를 `'use server'` 밖으로 분리.
+- **참여 Drops 섹션 (#69)**: `Artist.dropCredits`가 스키마에만 있고 미사용이라 아티스트 참여 공연/굿즈가 상세에 안 뜨던 것 추가. 공개 조건은 listDrops와 동일(`publishedAt IS NOT NULL`), 캐시 태그에 `drops` 추가. `animate-spin` 17개 파일을 `motion-safe:`로 게이트.
+- **사이트 전역 404 복구 (#71)** ★: **루트 `loading.tsx`가 전 라우트를 Suspense로 감싸 shell이 200으로 먼저 flush**되면서 모든 동적 상세 라우트가 404 대신 200을 반환하고 있었다. journal/programs 상세는 소프트 404를 렌더 중. → `loading.tsx` 3개 제거하고 리스트 스트리밍을 페이지 내부 Suspense로 이전, 소프트 404 → `notFound()`, `artwork-list-view`의 죽은 Suspense 수정.
+- **문서 (#70·#72)**: CLAUDE.md의 Drop 상태 모델을 실제 구현에 맞게 정정(status 컬럼은 없고 `getEffectiveDropStatus()`가 파생, 저장하지 않는 이유와 Program #65~#67 선례). 위 점검에서 나온 반복 실수를 **새 목록/상세 페이지 체크리스트** 15항목으로 정리 — 특히 타입체크·린트를 통과해 눈에 안 띄는 두 가지(세그먼트 `loading.tsx`가 `notFound()`의 404를 막는 것, 부모에서 `await` 후 props 전달 시 Suspense가 suspend되지 않는 것).
+- Vercel Analytics 삽입, 성능 수정 일부(PR 없이 직접 커밋 2건).
+
+---
+
+## 2026-07-28
+
+### Program을 아카이브 전용으로 단순화 (PR #65~#67)
+
+- `Program.status`는 수동 저장 enum이라 기간이 끝나도 `completed`로 갱신하지 않으면 `upcoming`으로 남는다. 홈 upcoming 섹션·featured-hero 폴백에 날짜 가드 추가(#65), 이어서 `getEffectiveProgramStatus` 날짜 기반 파생 도입(#66).
+- 결국 **Program을 지난 이벤트 아카이브 전용으로 확정**(#67) — 다가오는 소식은 Journal, 판매는 Drops. 공개 뷰의 upcoming 관련 로직 전부 제거, 공개 목록은 status 구분 없이 draft만 제외(-391줄).
+- **이 3연속이 "시간이 흐르면 저장된 상태는 반드시 드리프트한다"의 근거 사례** — 이후 Drop 상태를 저장하지 않고 파생하기로 한 결정의 선례가 됐다(#70 참조).
+
+---
+
+## 2026-07-22
+
+### Forms 필드 archived 누적 (PR #63~#64)
+
+- 폼 빌더가 저장 시 **모든 필드의 id를 제거**해 `updateForm`이 기존 필드를 매번 새 필드로 인식 → archive + create 반복. 동일 라벨의 빈 archived 필드가 쌓이고 응답 화면에 중복 컬럼으로 노출됐다. 빌더가 신규 필드 임시 id(`field-<ts>`)만 제거하도록 수정.
+- **이 수정은 절반이었다** — 편집 페이지가 DB id에도 같은 접두사를 붙이고 있어 9/2 #84에서 재발이 확인됐다.
+- 동의문처럼 긴 라벨이 응답 화면 헤더를 세로로 늘리던 문제 → `max-w-200px` + `line-clamp-2`, 전체는 title(hover) (#64).
+
+---
+
+## 2026-07-09
+
+### Journal 상세·에디터 UX (PR #61~#62)
+
+- `BackButton` 히스토리 없을 때 `fallbackHref` 폴백 + 고정 헤더에 클릭이 가로채이던 z-index 버그 수정. `Article.views` 컬럼 추가 + 공개 상세 조회 시 집계(캐시 무효화 없이 raw write), 어드민 목록에만 노출. 저장 중 버튼 비활성화.
+- "업로드 재시도" 버튼에도 저장 버튼과 동일한 로딩 가드(single-use 업로드 URL 재사용 방지). `submit()` catch 추가 — `onSubmit`이 감싸지 않은 예외를 던지면 토스트 없이 조용히 실패했다. `redirect()`가 던지는 `NEXT_REDIRECT`는 `isRedirectError`로 구분해 재throw.
+
+---
+
+## 2026-07-02
+
+### 내보내기 크래시 + biome 정리 (PR #58~#60)
+
+- PnL 엑셀 내보내기가 **프로덕션에서만** 500이고 에러 응답이 파일로 저장돼 "txt 에러"처럼 보였다. 처음엔 `exceljs`를 `serverExternalPackages`에 추가(#58)했으나 이는 레드 헤링.
+- **실제 원인(Vercel 런타임 로그로 특정)**: 시트명의 `×` 같은 **비ASCII가 `Content-Disposition`의 `filename="..."`에 그대로 들어가고 Vercel(undici)이 헤더를 엄격 검증해 `TypeError: Header has invalid value`로 함수 크래시** → text/plain 에러 → 브라우저가 `export.txt`로 저장. 로컬(bun/구버전 undici)은 관대하게 허용해 재현 불가. `attachmentDisposition()` 헬퍼로 ASCII 폴백 + `filename*=` UTF-8 (#59).
+- biome 경고/에러 0 정리 — import/export 정렬, 미사용 심볼 제거 76개 파일, 로직 변경 없음 (#60).
+
+---
+
+## 2026-06-28
+
+### 업로드 크기 검증 + 본문 렌더 (PR #56~#57)
+
+- `MAX_FILE_SIZE`가 `50 * 10240 * 10240`(≈5.2GB) **오타**라 클라이언트 크기 검증이 사실상 무력화 → 20MB 초과 이미지가 Cloudflare Images 하드 리밋(20MB, error 5413)에 걸려 업로드 실패했다. 20MB로 정정 (#56).
+- Journal 본문 이미지의 `aspect-video`/`object-cover` 강제 크롭 제거(세로 사진·다이어그램이 잘리던 버그), iframe/표/코드블록 넘침 방어 클래스 추가 (#57).
+
+---
+
 ## 2026-06-21
 
 ### 마케팅 트래킹 + 홈/Drops UX 개선 + 리치 에디터 버그픽스 (PR #45~#53)
