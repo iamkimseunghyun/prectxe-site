@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -56,6 +56,26 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  // 업로드가 끝나기 전에 제출하면 이미지가 빠진 채 저장된다(선택 항목일 때 특히).
+  const [uploadingFields, setUploadingFields] = useState<Set<string>>(
+    () => new Set()
+  );
+  const hasPendingUpload = uploadingFields.size > 0;
+
+  const handleUploadingChange = useCallback(
+    (fieldId: string, uploading: boolean) => {
+      setUploadingFields((prev) => {
+        const next = new Set(prev);
+        if (uploading) {
+          next.add(fieldId);
+        } else {
+          next.delete(fieldId);
+        }
+        return next;
+      });
+    },
+    []
+  );
 
   const schema = createFormResponseSchema(fields);
 
@@ -355,6 +375,7 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
                     inputId={field.id!}
                     value={(formField.value as string) || ''}
                     onChange={formField.onChange}
+                    onUploadingChange={handleUploadingChange}
                   />
                 )}
               />
@@ -370,11 +391,15 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
       <div className="rounded-lg border bg-white p-6 shadow-xs">
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || hasPendingUpload}
           className="w-full"
           size="lg"
         >
-          {isSubmitting ? '제출 중...' : '제출하기'}
+          {isSubmitting
+            ? '제출 중...'
+            : hasPendingUpload
+              ? '업로드 완료를 기다리는 중...'
+              : '제출하기'}
         </Button>
       </div>
     </form>

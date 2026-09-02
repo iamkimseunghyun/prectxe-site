@@ -13,6 +13,8 @@ interface FormFileFieldProps {
   inputId: string;
   value: string;
   onChange: (url: string) => void;
+  /** 업로드 중에는 폼 제출을 막기 위해 부모에 상태를 알린다. */
+  onUploadingChange: (fieldId: string, uploading: boolean) => void;
 }
 
 /**
@@ -27,6 +29,7 @@ export function FormFileField({
   inputId,
   value,
   onChange,
+  onUploadingChange,
 }: FormFileFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -51,6 +54,7 @@ export function FormFileField({
     }
 
     setIsUploading(true);
+    onUploadingChange(fieldId, true);
     try {
       const result = await getFormFileUploadUrl(formId, fieldId);
       if (!result.success || !result.data) {
@@ -71,6 +75,7 @@ export function FormFileField({
       setError('업로드 중 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setIsUploading(false);
+      onUploadingChange(fieldId, false);
     }
   };
 
@@ -142,7 +147,11 @@ export function FormFileField({
         {isUploading ? '업로드 중입니다' : value ? '업로드 완료' : ''}
       </p>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

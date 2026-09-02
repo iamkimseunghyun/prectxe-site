@@ -310,6 +310,21 @@ export async function submitFormResponse(
     );
     const validated = schema.parse(responses);
 
+    // file 필드는 우리가 발급한 Cloudflare Images URL만 저장한다.
+    // 인증 없는 공개 경로라 클라이언트 값을 그대로 믿을 수 없는데,
+    // 스키마는 클라이언트와 공유되므로 서버 전용 계정 해시를 참조할 수 없다.
+    // (업로드가 실제로 완료됐는지까지는 확인하지 않는다 — 아래 주석 참고)
+    const imagePrefix = `https://imagedelivery.net/${process.env.CLOUDFLARE_IMAGE_STREAM_API_ACCOUNT_HASH}/`;
+    for (const f of form.fields) {
+      if (f.type !== 'file') continue;
+      const value = (validated as Record<string, unknown>)[f.id];
+      if (typeof value === 'string' && value !== '') {
+        if (!value.startsWith(imagePrefix)) {
+          return { success: false, error: '허용되지 않은 첨부 파일입니다' };
+        }
+      }
+    }
+
     // 🔒 안전장치 1: 빈 응답 제출 방지
     const responseEntries = Object.entries(validated);
     if (responseEntries.length === 0) {

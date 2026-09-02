@@ -168,7 +168,12 @@ export const createFormResponseSchema = (
       // FormRenderer가 모든 필드의 defaultValue를 ''로 두기 때문에,
       // z.string().email().optional() 같은 스키마는 비워둔 선택 항목을
       // 형식 오류로 막아버렸다(email/phone/date/url 전부 해당).
-      fieldSchema = z.union([z.literal(''), fieldSchema]).optional();
+      // 단, 배열 필드(checkbox/multiselect)는 제외한다. ''를 허용하면 같은
+      // 필드가 제출에 따라 '' 또는 '[]'로 저장돼 응답 형식이 갈린다.
+      fieldSchema =
+        field.type === 'checkbox' || field.type === 'multiselect'
+          ? fieldSchema.optional()
+          : z.union([z.literal(''), fieldSchema]).optional();
     }
 
     shape[field.id!] = fieldSchema;
