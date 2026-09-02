@@ -23,6 +23,10 @@ interface FormFieldEditorProps {
   index: number;
   onUpdate: (index: number, field: FormFieldInput) => void;
   onRemove: (index: number) => void;
+  /** 이 필드에 달린 기존 응답 수. 편집 화면에서만 0보다 클 수 있다. */
+  responseCount?: number;
+  /** 저장돼 있던 라벨·유형. 변경 여부 판단에 쓴다. 신규 필드는 undefined. */
+  original?: { label: string; type: FieldType };
 }
 
 const fieldTypeLabels: Record<FieldType, string> = {
@@ -45,8 +49,20 @@ export function FormFieldEditor({
   index,
   onUpdate,
   onRemove,
+  responseCount = 0,
+  original,
 }: FormFieldEditorProps) {
   const [options, setOptions] = useState(field.options?.join('\n') || '');
+
+  // 응답 표는 컬럼을 **현재** 필드 라벨로 묶는다(FormResponse에 제출 시점
+  // 라벨 스냅샷이 있지만 fieldId가 살아 있으면 그쪽을 쓰지 않는다).
+  // 그래서 라벨을 바꾸면 과거 응답이 새 라벨 아래로 소급 이동한다.
+  // 오타 수정이면 그게 맞는 동작이고, 필드를 다른 질문으로 재활용하는
+  // 경우에만 문제다 — 구분할 방법이 없으니 사실만 알리고 판단은 맡긴다.
+  const changed: string[] = [];
+  if (original && original.label !== field.label) changed.push('레이블');
+  if (original && original.type !== field.type) changed.push('유형');
+  const willReclassify = responseCount > 0 && changed.length > 0;
 
   const {
     attributes,
@@ -131,6 +147,27 @@ export function FormFieldEditor({
               />
             </div>
           </div>
+
+          {responseCount > 0 &&
+            (willReclassify ? (
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                <p>
+                  이 필드에는 기존 응답 <strong>{responseCount}건</strong>이
+                  있습니다. {changed.join('·')}을(를) 바꾸면 과거 응답도 새
+                  기준으로 표시됩니다.
+                </p>
+                <p className="mt-1">
+                  오타·표현 수정이라면 그대로 두셔도 됩니다. 다른 질문으로
+                  바꾸는 거라면{' '}
+                  <strong>이 필드를 삭제하고 새 필드를 추가</strong>
+                  하세요 — 그래야 과거 응답이 원래 질문 아래 남습니다.
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-neutral-500">
+                기존 응답 {responseCount}건이 연결돼 있습니다.
+              </p>
+            ))}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

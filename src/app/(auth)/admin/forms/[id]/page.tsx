@@ -43,6 +43,11 @@ export default async function FormEditPage({
       <FormEditHeader slug={form.slug} status={form.status} />
       <FormBuilderView
         onSubmit={onSubmit}
+        // 응답이 달린 필드의 라벨·유형을 바꾸면 과거 응답도 새 라벨로
+        // 표시된다. 편집기가 그 사실을 경고할 수 있게 건수를 넘긴다.
+        fieldResponseCounts={Object.fromEntries(
+          form.fields.map((field) => [field.id, field._count.responses])
+        )}
         initialData={{
           slug: form.slug,
           title: form.title,
