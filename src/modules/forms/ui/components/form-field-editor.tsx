@@ -146,11 +146,16 @@ export function FormFieldEditor({
             </div>
             <div>
               <Label htmlFor={`helpText-${index}`}>도움말 (선택)</Label>
-              <Input
+              {/* 한 줄 Input이면 줄바꿈을 입력할 수 없다. 개인정보 수집·이용
+                  동의처럼 항목별로 줄을 나눠야 읽히는 안내가 실제로 있다. */}
+              <Textarea
                 id={`helpText-${index}`}
                 value={field.helpText || ''}
                 onChange={(e) => updateField({ helpText: e.target.value })}
-                placeholder="예: 실명을 입력해주세요"
+                placeholder={
+                  '예: 실명을 입력해주세요\n(줄바꿈은 그대로 표시됩니다)'
+                }
+                rows={2}
               />
             </div>
           </div>
