@@ -1,11 +1,51 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { parseInput } from '@/lib/auth/server-action-helpers';
 import { getCloudflareImageUrl } from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
+import { getClientIp } from '@/lib/rate-limit/client-ip';
+import { checkRateLimit } from '@/lib/rate-limit/memory';
 import type { FormInput } from '@/lib/schemas/form';
 import { createFormResponseSchema, formSchema } from '@/lib/schemas/form';
+
+/**
+ * 같은 IP에서 1시간에 허용할 폼 제출 횟수.
+ *
+ * 넉넉하게 잡았다. 공연장에서 단체로 RSVP를 넣는 게 이 폼들의 실제 사용
+ * 패턴이라, 한 IP(장소 WiFi) 뒤에 수십 명이 동시에 있을 수 있다. 오탐의
+ * 대가는 "현장에 온 사람이 신청을 못 한다"이고 재시도도 기대하기 어려운
+ * 반면, 통과의 대가는 어드민이 지우면 되는 쓰레기 행 몇 개다.
+ *
+ * 이 한도의 목적은 분산 공격 차단이 아니라(인스턴스 로컬이라 애초에 불가)
+ * 단일 발신지가 스크립트로 수천 건을 밀어넣는 것을 막는 것이다.
+ */
+const SUBMIT_IP_LIMIT = 50;
+const SUBMIT_IP_WINDOW_MS = 60 * 60 * 1000;
+
+/**
+ * 업로드 URL 발급 한도.
+ *
+ * 제출보다 낮게 잡았다 — 여기서 발급되는 건 우리 Cloudflare 계정에 쓰는
+ * 권한이라 남용이 곧 과금이다. 파일 필드를 쓰는 폼이 드물고 있어도 1개
+ * 수준이라, 재시도를 감안해도 이 정도면 정상 사용을 막지 않는다.
+ */
+const UPLOAD_URL_IP_LIMIT = 40;
+
+/**
+ * slug 유니크 제약 위반인지. Prisma 에러 원문을 사용자에게 노출하지 않으려고
+ * 코드만 보고 우리 문구로 바꾼다.
+ */
+function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 'P2002'
+  );
+}
 
 // Create Form
 export async function createForm(data: FormInput) {
@@ -45,10 +85,10 @@ export async function createForm(data: FormInput) {
     return { success: true, data: form };
   } catch (error) {
     console.error('Form creation error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : '폼 생성에 실패했습니다',
-    };
+    if (isUniqueConstraintError(error)) {
+      return { success: false, error: '이미 사용 중인 URL 슬러그입니다' };
+    }
+    return { success: false, error: '폼 생성에 실패했습니다' };
   }
 }
 
@@ -152,10 +192,10 @@ export async function updateForm(formId: string, data: FormInput) {
     return { success: true, data: updatedForm };
   } catch (error) {
     console.error('Form update error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : '폼 수정에 실패했습니다',
-    };
+    if (isUniqueConstraintError(error)) {
+      return { success: false, error: '이미 사용 중인 URL 슬러그입니다' };
+    }
+    return { success: false, error: '폼 수정에 실패했습니다' };
   }
 }
 
@@ -216,6 +256,20 @@ export async function getFormBySlug(slug: string) {
 // (게시된 폼 + 살아있는 file 필드) 서버에서 확인한 뒤에만 발급한다
 export async function getFormFileUploadUrl(formId: string, fieldId: string) {
   try {
+    const ip = await getClientIp();
+    if (
+      !checkRateLimit(
+        `form-upload:ip:${ip}`,
+        UPLOAD_URL_IP_LIMIT,
+        SUBMIT_IP_WINDOW_MS
+      )
+    ) {
+      return {
+        success: false,
+        error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+      };
+    }
+
     const field = await prisma.formField.findFirst({
       where: {
         id: fieldId,
@@ -242,13 +296,28 @@ export async function getFormFileUploadUrl(formId: string, fieldId: string) {
 // Submit Form Response
 export async function submitFormResponse(
   formId: string,
-  responses: Record<string, string | string[]>,
-  metadata?: {
-    ipAddress?: string;
-    userAgent?: string;
-  }
+  responses: Record<string, string | string[]>
 ) {
   try {
+    // IP·UA는 호출자가 넘긴 값을 쓰지 않는다. 서버액션은 공개 RPC라
+    // 인자로 받으면 제출자가 마음대로 정할 수 있고(어드민에 보이는 IP가
+    // 위조된다), rate limit도 그대로 우회된다.
+    const ip = await getClientIp();
+    const userAgent = (await headers()).get('user-agent') ?? undefined;
+
+    if (
+      !checkRateLimit(
+        `form-submit:ip:${ip}`,
+        SUBMIT_IP_LIMIT,
+        SUBMIT_IP_WINDOW_MS
+      )
+    ) {
+      return {
+        success: false,
+        error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+      };
+    }
+
     // Get form with fields
     const form = await prisma.form.findUnique({
       where: { id: formId },
@@ -283,7 +352,13 @@ export async function submitFormResponse(
         validation: f.validation as Record<string, unknown> | undefined,
       }))
     );
-    const validated = schema.parse(responses);
+    // schema.parse가 던지면 ZodError.message(=issues JSON)가 그대로
+    // 사용자에게 갔다. 스키마가 이미 한국어 메시지를 담고 있으므로 그걸 쓴다.
+    const parsed = parseInput(schema, responses);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error };
+    }
+    const validated = parsed.data;
 
     // file 필드는 우리가 발급한 Cloudflare Images URL만 저장한다.
     // 인증 없는 공개 경로라 클라이언트 값을 그대로 믿을 수 없는데,
@@ -318,8 +393,8 @@ export async function submitFormResponse(
       const newSubmission = await tx.formSubmission.create({
         data: {
           formId,
-          ipAddress: metadata?.ipAddress,
-          userAgent: metadata?.userAgent,
+          ipAddress: ip === 'unknown' ? null : ip,
+          userAgent,
           responses: {
             create: responseEntries.map(([fieldId, value]) => {
               const field = fieldMap.get(fieldId);
@@ -355,10 +430,7 @@ export async function submitFormResponse(
     return { success: true, data: submission };
   } catch (error) {
     console.error('Form submission error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : '제출에 실패했습니다',
-    };
+    return { success: false, error: '제출에 실패했습니다' };
   }
 }
 
@@ -556,9 +628,6 @@ export async function copyForm(formId: string) {
     return { success: true, data: copiedForm };
   } catch (error) {
     console.error('Form copy error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : '폼 복사에 실패했습니다',
-    };
+    return { success: false, error: '폼 복사에 실패했습니다' };
   }
 }
