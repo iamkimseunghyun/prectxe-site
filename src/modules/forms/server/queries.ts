@@ -55,11 +55,20 @@ export async function getFormSubmissions(formId: string) {
 
     const submissions = await prisma.formSubmission.findMany({
       where: { formId },
-      include: {
+      // include를 쓰면 ipAddress·userAgent 같은 스칼라가 전부 딸려와
+      // 브라우저까지 간다. 뷰가 쓰는 것만 명시한다.
+      select: {
+        id: true,
+        submittedAt: true,
         responses: {
           // field 전체(options/validation 등)를 응답마다 중복 로드하지 않도록
           // 뷰가 실제로 쓰는 필드만 select
-          include: {
+          select: {
+            id: true,
+            fieldId: true,
+            fieldLabel: true,
+            fieldType: true,
+            value: true,
             field: {
               select: { id: true, label: true, type: true, archived: true },
             },

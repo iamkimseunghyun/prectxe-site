@@ -53,8 +53,6 @@ interface SubmissionsViewProps {
     submissions: Array<{
       id: string;
       submittedAt: Date;
-      ipAddress: string | null;
-      userAgent: string | null;
       responses: Array<{
         id: string;
         fieldId: string | null;
@@ -126,8 +124,8 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
       let col = map.get(label);
       if (!col) {
         col = {
-          // Namespace the internal row key so field labels like "IP", "id",
-          // or "제출시간" can't overwrite the row's reserved metadata keys.
+          // Namespace the internal row key so field labels like "id" or
+          // "제출시간" can't overwrite the row's reserved metadata keys.
           key: `field:${label}`,
           label,
           fieldIds: new Set(),
@@ -198,8 +196,6 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
         // 빈 배열('[]')은 펴면 빈 문자열이 되므로 미응답과 같게 '-'로 둔다.
         row[col.key] = formatResponseValue(chosen?.value ?? '') || '-';
       });
-
-      row.IP = submission.ipAddress || '-';
 
       return row;
     });
@@ -273,7 +269,6 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
       columns.forEach((col) => {
         record[col.label] = row[col.key];
       });
-      record.IP = row.IP;
       return record;
     });
 
@@ -428,15 +423,6 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
                         </div>
                       </TableHead>
                     ))}
-                    <TableHead
-                      className="w-32 cursor-pointer select-none hover:bg-muted/80"
-                      onClick={() => handleSort('IP')}
-                    >
-                      <div className="flex items-center gap-1">
-                        IP
-                        <ArrowUpDown className="h-3.5 w-3.5" />
-                      </div>
-                    </TableHead>
                     <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>
@@ -474,13 +460,6 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
                             </TableCell>
                           );
                         })}
-                        <TableCell className="text-sm">
-                          {row.IP === '-' ? (
-                            <span className="text-muted-foreground">-</span>
-                          ) : (
-                            row.IP
-                          )}
-                        </TableCell>
                         <TableCell>
                           <Button
                             variant="ghost"
@@ -564,23 +543,11 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
           </DialogHeader>
           {selectedSubmission && (
             <div className="space-y-4">
-              <div className="rounded-lg bg-muted p-4">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">제출 시간</p>
-                    <p className="font-medium">
-                      {formatKstDateTime(
-                        new Date(selectedSubmission.submittedAt)
-                      )}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">IP 주소</p>
-                    <p className="font-medium">
-                      {selectedSubmission.ipAddress || '-'}
-                    </p>
-                  </div>
-                </div>
+              <div className="rounded-lg bg-muted p-4 text-sm">
+                <p className="text-muted-foreground">제출 시간</p>
+                <p className="font-medium">
+                  {formatKstDateTime(new Date(selectedSubmission.submittedAt))}
+                </p>
               </div>
 
               <div className="space-y-3">
