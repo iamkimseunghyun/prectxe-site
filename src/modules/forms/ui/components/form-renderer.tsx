@@ -196,7 +196,9 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
                 {field.required && <span className="ml-1 text-red-500">*</span>}
               </Label>
               {field.helpText && (
-                <p className="text-sm text-neutral-500">{field.helpText}</p>
+                <p className="whitespace-pre-wrap text-sm text-neutral-500">
+                  {field.helpText}
+                </p>
               )}
 
               {/* Text Input */}
