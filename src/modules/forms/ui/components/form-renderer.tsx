@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { FormFieldInput } from '@/lib/schemas/form';
 import { createFormResponseSchema } from '@/lib/schemas/form';
+import { cn } from '@/lib/utils';
 import { FormFileField } from '@/modules/forms/ui/components/form-file-field';
 
 interface FormRendererProps {
@@ -171,237 +172,253 @@ export function FormRenderer({ formId, fields, onSubmit }: FormRendererProps) {
   return (
     <form
       onSubmit={handleSubmit(handleFormSubmit, handleValidationError)}
-      className="space-y-4"
+      className="space-y-5"
     >
-      {fields.map((field) => {
-        const error = errors[field.id!];
+      <div className="divide-y divide-neutral-200 overflow-hidden rounded-xl border bg-white shadow-xs">
+        {fields.map((field) => {
+          const error = errors[field.id!];
+          // 레이블에 안내문을 통째로 넣는 폼이 있다(동의 문구 등).
+          // heading 스타일 그대로 두면 굵은 글씨 벽이 되므로 본문 스타일로 낮춘다.
+          const isLongLabel = field.label.length > 80;
 
-        return (
-          <div
-            key={field.id}
-            className="space-y-3 rounded-lg border bg-white p-6 shadow-xs transition-shadow hover:shadow-md"
-          >
-            <Label htmlFor={field.id} className="text-base font-medium">
-              {field.label}
-              {field.required && <span className="ml-1 text-red-500">*</span>}
-            </Label>
-            {field.helpText && (
-              <p className="text-sm text-neutral-500">{field.helpText}</p>
-            )}
-
-            {/* Text Input */}
-            {field.type === 'text' && (
-              <Input
-                id={field.id}
-                {...register(field.id!)}
-                placeholder={field.placeholder}
-              />
-            )}
-
-            {/* Textarea */}
-            {field.type === 'textarea' && (
-              <Textarea
-                id={field.id}
-                {...register(field.id!)}
-                placeholder={field.placeholder}
-                rows={4}
-              />
-            )}
-
-            {/* Email */}
-            {field.type === 'email' && (
-              <Input
-                id={field.id}
-                type="email"
-                {...register(field.id!)}
-                placeholder={field.placeholder}
-              />
-            )}
-
-            {/* Phone */}
-            {field.type === 'phone' && (
-              <Controller
-                name={field.id!}
-                control={control}
-                render={({ field: formField }) => (
-                  <Input
-                    id={field.id}
-                    type="tel"
-                    inputMode="numeric"
-                    value={formatPhoneNumber(formField.value as string)}
-                    onChange={(e) => {
-                      // 숫자만 추출
-                      const numbersOnly = e.target.value.replace(/[^0-9]/g, '');
-                      // 최대 11자리까지만 허용
-                      const limited = numbersOnly.slice(0, 11);
-                      formField.onChange(limited);
-                    }}
-                    placeholder={field.placeholder || '01012345678'}
-                  />
+          return (
+            <div key={field.id} className="space-y-2.5 p-5">
+              <Label
+                htmlFor={field.id}
+                className={cn(
+                  'block',
+                  isLongLabel
+                    ? 'text-sm font-normal leading-relaxed text-neutral-700'
+                    : 'text-base font-medium'
                 )}
-              />
-            )}
+              >
+                {field.label}
+                {field.required && <span className="ml-1 text-red-500">*</span>}
+              </Label>
+              {field.helpText && (
+                <p className="text-sm text-neutral-500">{field.helpText}</p>
+              )}
 
-            {/* Number */}
-            {field.type === 'number' && (
-              <Input
-                id={field.id}
-                type="number"
-                {...register(field.id!)}
-                placeholder={field.placeholder}
-              />
-            )}
+              {/* Text Input */}
+              {field.type === 'text' && (
+                <Input
+                  id={field.id}
+                  {...register(field.id!)}
+                  placeholder={field.placeholder}
+                />
+              )}
 
-            {/* Date */}
-            {field.type === 'date' && (
-              <Input id={field.id} type="date" {...register(field.id!)} />
-            )}
+              {/* Textarea */}
+              {field.type === 'textarea' && (
+                <Textarea
+                  id={field.id}
+                  {...register(field.id!)}
+                  placeholder={field.placeholder}
+                  rows={4}
+                />
+              )}
 
-            {/* URL */}
-            {field.type === 'url' && (
-              <Input
-                id={field.id}
-                type="url"
-                inputMode="url"
-                {...register(field.id!)}
-                placeholder={field.placeholder || 'https://example.com'}
-              />
-            )}
+              {/* Email */}
+              {field.type === 'email' && (
+                <Input
+                  id={field.id}
+                  type="email"
+                  {...register(field.id!)}
+                  placeholder={field.placeholder}
+                />
+              )}
 
-            {/* Select */}
-            {field.type === 'select' && (
-              <Controller
-                name={field.id!}
-                control={control}
-                render={({ field: formField }) => (
-                  <Select
-                    value={formField.value as string}
-                    onValueChange={formField.onChange}
-                  >
-                    <SelectTrigger id={field.id}>
-                      <SelectValue
-                        placeholder={field.placeholder || '선택해주세요'}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
+              {/* Phone */}
+              {field.type === 'phone' && (
+                <Controller
+                  name={field.id!}
+                  control={control}
+                  render={({ field: formField }) => (
+                    <Input
+                      id={field.id}
+                      type="tel"
+                      inputMode="numeric"
+                      value={formatPhoneNumber(formField.value as string)}
+                      onChange={(e) => {
+                        // 숫자만 추출
+                        const numbersOnly = e.target.value.replace(
+                          /[^0-9]/g,
+                          ''
+                        );
+                        // 최대 11자리까지만 허용
+                        const limited = numbersOnly.slice(0, 11);
+                        formField.onChange(limited);
+                      }}
+                      placeholder={field.placeholder || '01012345678'}
+                    />
+                  )}
+                />
+              )}
+
+              {/* Number */}
+              {field.type === 'number' && (
+                <Input
+                  id={field.id}
+                  type="number"
+                  {...register(field.id!)}
+                  placeholder={field.placeholder}
+                />
+              )}
+
+              {/* Date */}
+              {field.type === 'date' && (
+                <Input id={field.id} type="date" {...register(field.id!)} />
+              )}
+
+              {/* URL */}
+              {field.type === 'url' && (
+                <Input
+                  id={field.id}
+                  type="url"
+                  inputMode="url"
+                  {...register(field.id!)}
+                  placeholder={field.placeholder || 'https://example.com'}
+                />
+              )}
+
+              {/* Select */}
+              {field.type === 'select' && (
+                <Controller
+                  name={field.id!}
+                  control={control}
+                  render={({ field: formField }) => (
+                    <Select
+                      value={formField.value as string}
+                      onValueChange={formField.onChange}
+                    >
+                      <SelectTrigger id={field.id}>
+                        <SelectValue
+                          placeholder={field.placeholder || '선택해주세요'}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {field.options.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              )}
+
+              {/* Radio */}
+              {field.type === 'radio' && (
+                <Controller
+                  name={field.id!}
+                  control={control}
+                  render={({ field: formField }) => (
+                    <RadioGroup
+                      value={formField.value as string}
+                      onValueChange={formField.onChange}
+                      className="grid grid-cols-1 gap-x-6 gap-y-0.5 sm:grid-cols-2"
+                    >
                       {field.options.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
+                        <div
+                          key={option}
+                          className="flex items-start gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-neutral-50"
+                        >
+                          <RadioGroupItem
+                            value={option}
+                            id={`${field.id}-${option}`}
+                            className="mt-0.5"
+                          />
+                          <Label
+                            htmlFor={`${field.id}-${option}`}
+                            className="flex-1 cursor-pointer text-sm font-normal leading-snug"
+                          >
+                            {option}
+                          </Label>
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            )}
+                    </RadioGroup>
+                  )}
+                />
+              )}
 
-            {/* Radio */}
-            {field.type === 'radio' && (
-              <Controller
-                name={field.id!}
-                control={control}
-                render={({ field: formField }) => (
-                  <RadioGroup
-                    value={formField.value as string}
-                    onValueChange={formField.onChange}
-                    className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-                  >
-                    {field.options.map((option) => (
+              {/* Checkbox / Multiselect */}
+              {(field.type === 'checkbox' || field.type === 'multiselect') && (
+                <div className="grid grid-cols-1 gap-x-6 gap-y-0.5 sm:grid-cols-2">
+                  {field.options.map((option) => {
+                    const currentValue = (watch(field.id!) as string[]) || [];
+                    const isChecked = currentValue.includes(option);
+
+                    return (
                       <div
                         key={option}
-                        className="flex items-center space-x-2 rounded-md border p-3 transition-colors hover:bg-neutral-50"
+                        className="flex items-start gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-neutral-50"
                       >
-                        <RadioGroupItem
-                          value={option}
+                        <Checkbox
                           id={`${field.id}-${option}`}
+                          className="mt-0.5"
+                          checked={isChecked}
+                          onCheckedChange={(checked: boolean) => {
+                            const current =
+                              (watch(field.id!) as string[]) || [];
+                            const updated = checked
+                              ? [...current, option]
+                              : current.filter((v: string) => v !== option);
+                            setValue(field.id!, updated);
+                          }}
                         />
                         <Label
                           htmlFor={`${field.id}-${option}`}
-                          className="flex-1 cursor-pointer font-normal"
+                          className="flex-1 cursor-pointer text-sm font-normal leading-snug"
                         >
                           {option}
                         </Label>
                       </div>
-                    ))}
-                  </RadioGroup>
-                )}
-              />
-            )}
+                    );
+                  })}
+                </div>
+              )}
 
-            {/* Checkbox / Multiselect */}
-            {(field.type === 'checkbox' || field.type === 'multiselect') && (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {field.options.map((option) => {
-                  const currentValue = (watch(field.id!) as string[]) || [];
-                  const isChecked = currentValue.includes(option);
+              {/* File */}
+              {field.type === 'file' && (
+                <Controller
+                  name={field.id!}
+                  control={control}
+                  render={({ field: formField }) => (
+                    <FormFileField
+                      formId={formId}
+                      fieldId={field.id!}
+                      inputId={field.id!}
+                      value={(formField.value as string) || ''}
+                      onChange={formField.onChange}
+                      onUploadingChange={handleUploadingChange}
+                    />
+                  )}
+                />
+              )}
 
-                  return (
-                    <div
-                      key={option}
-                      className="flex items-center space-x-2 rounded-md border p-3 transition-colors hover:bg-neutral-50"
-                    >
-                      <Checkbox
-                        id={`${field.id}-${option}`}
-                        checked={isChecked}
-                        onCheckedChange={(checked: boolean) => {
-                          const current = (watch(field.id!) as string[]) || [];
-                          const updated = checked
-                            ? [...current, option]
-                            : current.filter((v: string) => v !== option);
-                          setValue(field.id!, updated);
-                        }}
-                      />
-                      <Label
-                        htmlFor={`${field.id}-${option}`}
-                        className="flex-1 cursor-pointer font-normal"
-                      >
-                        {option}
-                      </Label>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* File */}
-            {field.type === 'file' && (
-              <Controller
-                name={field.id!}
-                control={control}
-                render={({ field: formField }) => (
-                  <FormFileField
-                    formId={formId}
-                    fieldId={field.id!}
-                    inputId={field.id!}
-                    value={(formField.value as string) || ''}
-                    onChange={formField.onChange}
-                    onUploadingChange={handleUploadingChange}
-                  />
-                )}
-              />
-            )}
-
-            {error && (
-              <p className="text-sm text-red-600">{error.message as string}</p>
-            )}
-          </div>
-        );
-      })}
-
-      <div className="rounded-lg border bg-white p-6 shadow-xs">
-        <Button
-          type="submit"
-          disabled={isSubmitting || hasPendingUpload}
-          className="w-full"
-          size="lg"
-        >
-          {isSubmitting
-            ? '제출 중...'
-            : hasPendingUpload
-              ? '업로드 완료를 기다리는 중...'
-              : '제출하기'}
-        </Button>
+              {error && (
+                <p className="text-sm text-red-600">
+                  {error.message as string}
+                </p>
+              )}
+            </div>
+          );
+        })}
       </div>
+
+      <Button
+        type="submit"
+        disabled={isSubmitting || hasPendingUpload}
+        className="w-full"
+        size="lg"
+      >
+        {isSubmitting
+          ? '제출 중...'
+          : hasPendingUpload
+            ? '업로드 완료를 기다리는 중...'
+            : '제출하기'}
+      </Button>
     </form>
   );
 }
