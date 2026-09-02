@@ -109,6 +109,11 @@ export async function getForm(formId: string) {
         fields: {
           where: { archived: false },
           orderBy: { order: 'asc' },
+          // 편집 화면이 "이 필드엔 응답 N건이 있다"를 경고하는 데 쓴다.
+          // 라벨을 바꾸면 과거 응답도 새 라벨로 표시되기 때문(제출 시점
+          // 스냅샷이 FormResponse에 있지만 표 그룹핑은 현재 라벨을 본다).
+          // FormResponse.fieldId에 인덱스가 있어 필드당 count는 싸다.
+          include: { _count: { select: { responses: true } } },
         },
         _count: {
           select: {

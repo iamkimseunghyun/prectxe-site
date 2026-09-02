@@ -76,17 +76,28 @@ interface FormBuilderViewProps {
     error?: string;
   }>;
   submitLabel?: string;
+  /** DB 필드 id → 그 필드에 달린 응답 수. 편집 화면에서만 넘어온다. */
+  fieldResponseCounts?: Record<string, number>;
 }
 
 export function FormBuilderView({
   initialData,
   onSubmit,
   submitLabel = '저장',
+  fieldResponseCounts,
 }: FormBuilderViewProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+
+  // 저장된 원래 라벨·유형. 편집 중 값과 비교해 변경 여부를 판단한다.
+  // initialData는 서버에서 온 고정값이라 매 렌더 새로 만들어도 무방하다.
+  const originalFields = new Map(
+    (initialData?.fields ?? [])
+      .filter((f): f is typeof f & { id: string } => !!f.id)
+      .map((f) => [f.id, { label: f.label, type: f.type }])
+  );
   const [fields, setFields] = useState<FormFieldInput[]>(
     initialData?.fields || []
   );
@@ -379,6 +390,12 @@ export function FormBuilderView({
                     index={index}
                     onUpdate={updateField}
                     onRemove={removeField}
+                    responseCount={
+                      field.id ? (fieldResponseCounts?.[field.id] ?? 0) : 0
+                    }
+                    original={
+                      field.id ? originalFields.get(field.id) : undefined
+                    }
                   />
                 ))}
               </div>
