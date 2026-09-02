@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { parseInput } from '@/lib/auth/server-action-helpers';
 import { getCloudflareImageUrl } from '@/lib/cdn/cloudflare';
@@ -276,11 +275,10 @@ export async function submitFormResponse(
   responses: Record<string, string | string[]>
 ) {
   try {
-    // IP·UA는 호출자가 넘긴 값을 쓰지 않는다. 서버액션은 공개 RPC라
-    // 인자로 받으면 제출자가 마음대로 정할 수 있고(어드민에 보이는 IP가
-    // 위조된다), rate limit도 그대로 우회된다.
+    // IP는 rate limit 판정에만 쓰고 저장하지 않는다.
+    // 저장해봐야 쓰는 곳이 없었고(어드민 표에 띄우는 게 전부였다), 폼
+    // 동의문에 수집 사실이 고지돼 있지도 않았다. UA도 같은 이유로 뺐다.
     const ip = await getClientIp();
-    const userAgent = (await headers()).get('user-agent') ?? undefined;
 
     if (
       !checkRateLimit(
@@ -370,8 +368,6 @@ export async function submitFormResponse(
       const newSubmission = await tx.formSubmission.create({
         data: {
           formId,
-          ipAddress: ip === 'unknown' ? null : ip,
-          userAgent,
           responses: {
             create: responseEntries.map(([fieldId, value]) => {
               const field = fieldMap.get(fieldId);
