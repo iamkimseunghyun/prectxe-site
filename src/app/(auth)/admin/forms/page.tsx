@@ -3,11 +3,14 @@ import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import getSession from '@/lib/auth/session';
-import { listForms } from '@/modules/forms/server/actions';
+import { listForms } from '@/modules/forms/server/queries';
 import { FormCard } from '@/modules/forms/ui/components/form-card';
 import { FormRow } from '@/modules/forms/ui/components/form-row';
 import { FormStatusFilter } from '@/modules/forms/ui/components/form-status-filter';
 import { FormViewToggle } from '@/modules/forms/ui/components/form-view-toggle';
+
+const FORM_STATUSES = ['draft', 'published', 'closed'] as const;
+type FormStatus = (typeof FORM_STATUSES)[number];
 
 interface PageProps {
   searchParams: Promise<{ status?: string; view?: string }>;
@@ -18,7 +21,10 @@ export default async function FormsAdminPage({ searchParams }: PageProps) {
   if (!session.id || !session.isAdmin) redirect('/auth/signin');
 
   const params = await searchParams;
-  const status = params.status as 'draft' | 'published' | 'closed' | undefined;
+  // 검증 없이 캐스팅하면 ?status=bogus가 그대로 Prisma where로 들어가 던진다.
+  const status = FORM_STATUSES.includes(params.status as FormStatus)
+    ? (params.status as FormStatus)
+    : undefined;
   const view = params.view === 'list' ? 'list' : 'card';
 
   const result = await listForms({

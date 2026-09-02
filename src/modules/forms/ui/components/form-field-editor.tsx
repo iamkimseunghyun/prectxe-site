@@ -85,13 +85,20 @@ export function FormFieldEditor({
       className="rounded-lg border bg-white p-4"
     >
       <div className="mb-4 flex items-start gap-2">
-        <div
+        {/* 핸들에 접근명이 없어 스크린리더에 '버튼'으로만 읽혔다.
+            div에 aria-label을 달면 정적 분석이 role·tabIndex를 스프레드
+            안에서 못 봐서 걸리고, 그렇다고 다시 적으면 중복 prop이 된다.
+            dnd-kit이 문서에서 권하는 대로 button을 쓰면 둘 다 없이 끝난다
+            (type="button"으로 폼 제출 방지, 기본 스타일은 preflight가 제거). */}
+        <button
+          type="button"
           {...attributes}
           {...listeners}
+          aria-label={`${field.label || `${index + 1}번째 필드`} 순서 이동`}
           className="mt-2 cursor-grab active:cursor-grabbing"
         >
           <GripVertical className="h-5 w-5 text-neutral-400" />
-        </div>
+        </button>
         <div className="flex-1 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -189,6 +196,7 @@ export function FormFieldEditor({
           type="button"
           variant="ghost"
           size="icon"
+          aria-label={`${field.label || `${index + 1}번째 필드`} 삭제`}
           onClick={() => onRemove(index)}
         >
           <X className="h-4 w-4" />

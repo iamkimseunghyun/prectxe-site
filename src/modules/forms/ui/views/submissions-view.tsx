@@ -209,10 +209,11 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
   const filteredData = useMemo(() => {
     if (!searchQuery.trim()) return tableData;
 
-    return tableData.filter((row) =>
-      Object.values(row).some((value) =>
-        value.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    const q = searchQuery.toLowerCase();
+    // row.id는 화면에 없는 내부 cuid다. 검색 대상에 넣으면 'a' 같은 짧은
+    // 질의가 엉뚱한 행을 잔뜩 물어온다.
+    return tableData.filter(({ id: _id, ...visible }) =>
+      Object.values(visible).some((value) => value.toLowerCase().includes(q))
     );
   }, [tableData, searchQuery]);
 
@@ -305,10 +306,12 @@ export function SubmissionsView({ data }: SubmissionsViewProps) {
     const blob = new Blob([`\uFEFF${csv}`], {
       type: 'text/csv;charset=utf-8;',
     });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
+    link.href = url;
     link.download = `${form.title}_응답_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
