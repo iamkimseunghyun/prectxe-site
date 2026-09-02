@@ -47,6 +47,28 @@ import { formSchema } from '@/lib/schemas/form';
 import { getImageUrl, uploadImage } from '@/lib/utils';
 import { FormFieldEditor } from '../components/form-field-editor';
 
+/** 빌더에서 새로 추가한(아직 DB에 없는) 필드의 임시 id 접두사. */
+export const TEMP_FIELD_ID_PREFIX = 'field-';
+
+/**
+ * 저장 payload로 보낼 필드 목록을 만든다.
+ *
+ * 신규 필드의 임시 id만 떼고 기존 필드의 DB id는 반드시 유지한다.
+ * id를 함께 떼버리면 서버가 매 저장마다 기존 필드를 전부 archive 하고
+ * 새로 만들어, 과거 응답이 가리키던 fieldId 관계가 끊긴다.
+ */
+export function toFieldPayload(fields: FormFieldInput[]): FormFieldInput[] {
+  return fields.map((field, index) => {
+    const { id, ...fieldData } = field;
+    const isTempId = !id || id.startsWith(TEMP_FIELD_ID_PREFIX);
+    return {
+      ...fieldData,
+      ...(isTempId ? {} : { id }),
+      order: index,
+    };
+  });
+}
+
 interface FormBuilderViewProps {
   initialData?: FormInput;
   onSubmit: (data: FormInput) => Promise<{
@@ -119,7 +141,8 @@ export function FormBuilderView({
 
   const addField = () => {
     const newField: FormFieldInput = {
-      id: `field-${Date.now()}`,
+      // 'field-' 접두사가 신규 필드 표식이다(제출 시 이 id는 떼고 보낸다).
+      id: `${TEMP_FIELD_ID_PREFIX}${crypto.randomUUID()}`,
       type: 'text',
       label: '',
       required: false,
@@ -188,21 +211,8 @@ export function FormBuilderView({
         finalizeUpload();
       }
 
-      // Ensure all fields have correct order.
-      // 신규 필드의 임시 id(`field-<timestamp>`)만 제거하고, 기존 필드의 실제
-      // DB id는 유지한다. id를 모두 제거하면 서버가 매 저장마다 기존 필드를
-      // archive 하고 새로 생성해 빈 archived 필드가 계속 쌓인다.
-      const fieldsToSubmit = fields.map((field, index) => {
-        const { id, ...fieldData } = field;
-        const isTempId = !id || id.startsWith('field-');
-        return {
-          ...fieldData,
-          ...(isTempId ? {} : { id }),
-          order: index,
-        };
-      });
+      const fieldsToSubmit = toFieldPayload(fields);
 
-      console.log('Submitting form data:', { ...data, fields: fieldsToSubmit });
       const result = await onSubmit({ ...data, fields: fieldsToSubmit });
       if (result.success) {
         toast({
