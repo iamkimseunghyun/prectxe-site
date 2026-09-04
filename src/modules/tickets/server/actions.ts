@@ -36,8 +36,8 @@ import {
   generateAccessToken,
   generateOrderNo,
   generateTicketToken,
-  getOrderTicketsUrl,
 } from '@/lib/utils/ticket-token';
+import { getOrderTicketsUrl } from '@/lib/utils/ticket-url';
 
 // ─── 티켓 발급 헬퍼 (paid 처리 시 호출) ──────────────
 

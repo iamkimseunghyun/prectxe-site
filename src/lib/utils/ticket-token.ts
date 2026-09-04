@@ -1,15 +1,16 @@
 /**
- * 주문·티켓 관련 식별자 / 토큰 / URL 유틸
+ * 주문·티켓 식별자 / 토큰 생성 (서버 전용 — `node:crypto` 의존).
  *
  * - Order.orderNo: 사람이 읽는 주문번호 (PRXE-YYYYMMDD-XXXXXX, 비유추적이지 않음)
  * - Order.accessToken: /tickets/order/[accessToken] 마이페이지 접근용 (unguessable)
  * - Ticket.token: QR 페이로드 (스캔 시 입장 검증용, unguessable)
  *
  * accessToken / ticketToken은 randomBytes(16) → hex 32자 (≈128 bits).
+ *
+ * 공개 URL 빌더·QR 파서는 클라이언트에서도 쓰이므로 `ticket-url.ts`에 있다.
  */
 
 import { randomBytes } from 'node:crypto';
-import { BUSINESS_INFO } from '@/lib/constants/business-info';
 
 function generateRandomToken(byteLength = 16): string {
   return randomBytes(byteLength).toString('hex');
@@ -27,39 +28,4 @@ export function generateTicketToken(): string {
 
 export function generateAccessToken(): string {
   return `at_${generateRandomToken(16)}`;
-}
-
-function getSiteUrl(): string {
-  const env = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, '');
-  // prod에서 env가 비었거나 localhost로 잘못 설정되면 canonical 도메인으로 강제.
-  // (이메일 "입장권 보기"·QR 스캔 링크가 localhost를 가리켜 깨지던 문제 방지)
-  if (
-    process.env.NODE_ENV === 'production' &&
-    (!env || env.includes('localhost'))
-  ) {
-    return BUSINESS_INFO.serviceUrl;
-  }
-  return env || BUSINESS_INFO.serviceUrl;
-}
-
-export function getTicketScanUrl(token: string): string {
-  return `${getSiteUrl()}/scan/${token}`;
-}
-
-export function getOrderTicketsUrl(accessToken: string): string {
-  return `${getSiteUrl()}/tickets/order/${accessToken}`;
-}
-
-/**
- * 스캐너에서 인식한 QR 데이터(URL 또는 raw token)에서 토큰만 추출.
- * 외부 카메라 앱 fallback 흐름과 자체 스캐너가 같은 QR 페이로드(URL)를 공유함.
- */
-export function extractTicketToken(qrData: string): string | null {
-  const trimmed = qrData.trim();
-  // URL 형태: https://.../scan/{token}
-  const urlMatch = trimmed.match(/\/scan\/([A-Za-z0-9_]+)/);
-  if (urlMatch) return urlMatch[1];
-  // raw token (tk_ 접두사)
-  if (/^tk_[A-Za-z0-9]+$/.test(trimmed)) return trimmed;
-  return null;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Download, Mail, Search } from 'lucide-react';
+import { ArrowLeft, Download, Link2, Mail, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { formatKstDateTime } from '@/lib/utils';
+import { getOrderTicketsUrl } from '@/lib/utils/ticket-url';
 import { getDropOrders } from '@/modules/drops/server/actions';
 import {
   OrderStatusBadge,
@@ -31,6 +32,7 @@ import {
 type Order = {
   id: string;
   orderNo: string;
+  accessToken: string | null;
   buyerName: string;
   buyerEmail: string;
   buyerPhone: string;
@@ -182,6 +184,32 @@ export function DropOrdersView({
     }
     setConfirmTarget(null);
     setActionInFlight(false);
+  }
+
+  /**
+   * 메일이 아예 닿지 않는 경우(스팸함·주소 오타)의 최종 수단 —
+   * 어드민이 링크를 복사해 카톡·문자로 직접 전달한다.
+   */
+  async function handleCopyTicketLink(order: Order) {
+    if (!order.accessToken) {
+      toast({
+        title: '입장권 링크가 아직 발급되지 않았습니다.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const url = getOrderTicketsUrl(order.accessToken);
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: '입장권 링크를 복사했습니다.', description: url });
+    } catch {
+      // 클립보드 권한이 막힌 브라우저 — 주소를 띄워 직접 복사하게 한다
+      toast({
+        title: '복사에 실패했습니다. 아래 주소를 직접 복사하세요.',
+        description: url,
+        variant: 'destructive',
+      });
+    }
   }
 
   async function handleResend() {
@@ -364,15 +392,25 @@ export function DropOrdersView({
                           </Button>
                         )}
                         {isResendable && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setResendTarget(order)}
-                            disabled={actionInFlight}
-                          >
-                            <Mail className="mr-1 h-3.5 w-3.5" />
-                            메일 재발송
-                          </Button>
+                          <div className="flex gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setResendTarget(order)}
+                              disabled={actionInFlight}
+                            >
+                              <Mail className="mr-1 h-3.5 w-3.5" />
+                              메일 재발송
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCopyTicketLink(order)}
+                            >
+                              <Link2 className="mr-1 h-3.5 w-3.5" />
+                              링크 복사
+                            </Button>
+                          </div>
                         )}
                         {isCancellable && (
                           <Button
