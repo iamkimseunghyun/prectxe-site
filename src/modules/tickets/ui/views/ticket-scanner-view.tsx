@@ -98,7 +98,7 @@ export function TicketScannerView({
       }
       lastTokenRef.current = { token, at: Date.now() };
 
-      const r = await checkInTicket(token);
+      const r = await checkInTicket(token, dropId);
       if (!r.success) {
         setResult({ kind: 'error', message: r.error });
         playBeep(false);
@@ -125,7 +125,7 @@ export function TicketScannerView({
       playBeep(true);
       refreshStats();
     },
-    [refreshStats]
+    [dropId, refreshStats]
   );
 
   // html5-qrcode 동적 import (서버 빌드 회피)
@@ -190,7 +190,7 @@ export function TicketScannerView({
 
   async function handleUndo() {
     if (!result || result.kind === 'error') return;
-    const r = await undoCheckIn(result.token);
+    const r = await undoCheckIn(result.token, dropId);
     if (r.success) {
       setResult(null);
       lastTokenRef.current = null;
@@ -339,16 +339,19 @@ function ResultPanel({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        {ok && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onUndo}
-            className="border-white/20 bg-white/5 text-white hover:bg-white/10"
-          >
-            취소
-          </Button>
-        )}
+        {/*
+          '이미 입장됨'에도 되돌리기를 둔다 — 잘못 찍고 '다음'을 눌러버리면
+          다시 찍어도 이 패널이 뜨므로, 여기 버튼이 없으면 현장에서 복구할
+          방법이 사라진다.
+        */}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onUndo}
+          className="border-white/20 bg-white/5 text-white hover:bg-white/10"
+        >
+          입장 취소
+        </Button>
         <Button
           size="sm"
           onClick={onNext}
