@@ -8,7 +8,7 @@ import type { Locale } from '@/i18n/config';
 import { getSalesTerms } from '@/lib/constants/sales-terms';
 import { prisma } from '@/lib/db/prisma';
 import { formatKstDateTime, formatKstEventRange } from '@/lib/utils';
-import { getTicketScanUrl } from '@/lib/utils/ticket-token';
+import { getTicketScanUrl } from '@/lib/utils/ticket-url';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('ticketPage');

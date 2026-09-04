@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Download, Search } from 'lucide-react';
+import { ArrowLeft, Download, Link2, Mail, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { formatKstDateTime } from '@/lib/utils';
+import { getOrderTicketsUrl } from '@/lib/utils/ticket-url';
 import { getDropOrders } from '@/modules/drops/server/actions';
 import {
   OrderStatusBadge,
@@ -25,11 +26,13 @@ import {
   cancelOrder,
   cleanupExpiredBankTransferOrders,
   confirmBankTransfer,
+  resendOrderConfirmation,
 } from '@/modules/tickets/server/actions';
 
 type Order = {
   id: string;
   orderNo: string;
+  accessToken: string | null;
   buyerName: string;
   buyerEmail: string;
   buyerPhone: string;
@@ -57,6 +60,10 @@ type Order = {
     confirmedAt: Date | null;
   } | null;
 };
+
+/** 서버 액션 자체가 실패했을 때(네트워크·배포 중 등) 어드민에게 보일 문구 */
+const FAILED_ACTION_MESSAGE =
+  '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.';
 
 const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: '', label: '전체' },
@@ -86,6 +93,7 @@ export function DropOrdersView({
   const [loading, setLoading] = useState(true);
   const [cancelTarget, setCancelTarget] = useState<Order | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<Order | null>(null);
+  const [resendTarget, setResendTarget] = useState<Order | null>(null);
   const [actionInFlight, setActionInFlight] = useState(false);
   const [search, setSearch] = useState(q ?? '');
   const cleanedRef = useRef(false);
@@ -148,29 +156,96 @@ export function DropOrdersView({
   async function handleCancel() {
     if (!cancelTarget) return;
     setActionInFlight(true);
-    const result = await cancelOrder(cancelTarget.id);
-    if (result.success) {
-      toast({ title: '주문이 취소되었습니다.' });
-      loadOrders();
-    } else {
-      toast({ title: result.error, variant: 'destructive' });
+    try {
+      const result = await cancelOrder(cancelTarget.id);
+      if (result.success) {
+        toast({ title: '주문이 취소되었습니다.' });
+        loadOrders();
+      } else {
+        toast({ title: result.error, variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: FAILED_ACTION_MESSAGE, variant: 'destructive' });
+    } finally {
+      // finally가 없으면 서버 액션이 reject할 때 actionInFlight가 true로 굳어
+      // 이 화면의 버튼이 전부 새로고침 전까지 잠긴다
+      setCancelTarget(null);
+      setActionInFlight(false);
     }
-    setCancelTarget(null);
-    setActionInFlight(false);
   }
 
   async function handleConfirmDeposit() {
     if (!confirmTarget) return;
     setActionInFlight(true);
-    const result = await confirmBankTransfer(confirmTarget.id);
-    if (result.success) {
-      toast({ title: '입금이 확인되었습니다.' });
+    try {
+      const result = await confirmBankTransfer(confirmTarget.id);
+      if (result.success) {
+        // 메일 실패는 입금 확인을 되돌리지 않는다 — 재발송으로 복구하도록 알린다
+        toast(
+          result.emailSent
+            ? { title: '입금이 확인되었습니다.' }
+            : {
+                title: '입금은 확인됐지만 메일 발송에 실패했습니다.',
+                description: '주소를 확인한 뒤 "메일 재발송"을 눌러 주세요.',
+                variant: 'destructive',
+              }
+        );
+        loadOrders();
+      } else {
+        toast({ title: result.error, variant: 'destructive' });
+      }
+    } catch {
+      // 입금 확인이 실제로 됐는지 알 수 없다 — 목록을 다시 읽어 상태를 확인시킨다
+      toast({ title: FAILED_ACTION_MESSAGE, variant: 'destructive' });
       loadOrders();
-    } else {
-      toast({ title: result.error, variant: 'destructive' });
+    } finally {
+      setConfirmTarget(null);
+      setActionInFlight(false);
     }
-    setConfirmTarget(null);
-    setActionInFlight(false);
+  }
+
+  /**
+   * 메일이 아예 닿지 않는 경우(스팸함·주소 오타)의 최종 수단 —
+   * 어드민이 링크를 복사해 카톡·문자로 직접 전달한다.
+   */
+  async function handleCopyTicketLink(order: Order) {
+    if (!order.accessToken) {
+      toast({
+        title: '입장권 링크가 아직 발급되지 않았습니다.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const url = getOrderTicketsUrl(order.accessToken);
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: '입장권 링크를 복사했습니다.', description: url });
+    } catch {
+      // 클립보드 권한이 막힌 브라우저 — 주소를 띄워 직접 복사하게 한다
+      toast({
+        title: '복사에 실패했습니다. 아래 주소를 직접 복사하세요.',
+        description: url,
+        variant: 'destructive',
+      });
+    }
+  }
+
+  async function handleResend() {
+    if (!resendTarget) return;
+    setActionInFlight(true);
+    try {
+      const result = await resendOrderConfirmation(resendTarget.id);
+      toast(
+        result.success
+          ? { title: `${result.email}로 다시 보냈습니다.` }
+          : { title: result.error, variant: 'destructive' }
+      );
+    } catch {
+      toast({ title: FAILED_ACTION_MESSAGE, variant: 'destructive' });
+    } finally {
+      setResendTarget(null);
+      setActionInFlight(false);
+    }
   }
 
   const totalPages = Math.ceil(total / pageSize);
@@ -277,6 +352,9 @@ export function DropOrdersView({
                   order.status === 'pending' ||
                   order.status === 'paid' ||
                   order.status === 'confirmed';
+                // 확정 메일은 결제 완료 이후에만 의미가 있다
+                const isResendable =
+                  order.status === 'paid' || order.status === 'confirmed';
 
                 return (
                   <div
@@ -335,6 +413,27 @@ export function DropOrdersView({
                           >
                             입금 확인
                           </Button>
+                        )}
+                        {isResendable && (
+                          <div className="flex gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setResendTarget(order)}
+                              disabled={actionInFlight}
+                            >
+                              <Mail className="mr-1 h-3.5 w-3.5" />
+                              메일 재발송
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCopyTicketLink(order)}
+                            >
+                              <Link2 className="mr-1 h-3.5 w-3.5" />
+                              링크 복사
+                            </Button>
+                          </div>
                         )}
                         {isCancellable && (
                           <Button
@@ -421,6 +520,23 @@ export function DropOrdersView({
         confirmText="입금 확인"
         disabled={actionInFlight}
         onConfirm={handleConfirmDeposit}
+      />
+
+      <ConfirmDialog
+        open={!!resendTarget}
+        onOpenChange={() => setResendTarget(null)}
+        title="확정 메일 재발송"
+        description={
+          <>
+            {resendTarget?.orderNo} 주문의 확정 메일(입장권 링크 포함)을{' '}
+            <span className="font-mono">{resendTarget?.buyerEmail}</span>로 다시
+            보냅니다. 이미 발급된 입장권을 그대로 보내므로 QR 코드와 링크는
+            달라지지 않습니다.
+          </>
+        }
+        confirmText="재발송"
+        disabled={actionInFlight}
+        onConfirm={handleResend}
       />
     </div>
   );

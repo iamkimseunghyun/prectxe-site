@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { formatKstDateTime } from '@/lib/utils';
-import { extractTicketToken } from '@/lib/utils/ticket-token';
+import { extractTicketToken } from '@/lib/utils/ticket-url';
 import {
   checkInTicket,
   getCheckInStats,
