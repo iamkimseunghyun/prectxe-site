@@ -81,6 +81,76 @@ async function issueTicketsForOrder(
   return { accessToken, ticketCount: ticketRows.length };
 }
 
+// ─── 주문 확인 메일 발송 헬퍼 ────────────────────────
+
+/** 메일 본문에 필요한 최소 주문 형태 (paid 시점 · 재발송 공용) */
+type OrderMailSource = {
+  buyerName: string;
+  buyerEmail: string;
+  orderNo: string;
+  totalAmount: number;
+  drop: { title: string } | null;
+  items: {
+    quantity: number;
+    unitPrice: number;
+    subtotal: number;
+    ticketTier: { name: string } | null;
+    goodsVariant: { name: string } | null;
+  }[];
+};
+
+/**
+ * 주문 확인 메일 발송. paid 전환 시점과 어드민 재발송이 같은 경로를 쓴다.
+ *
+ * **성공 여부를 반환하는 이유**: Resend SDK는 API 에러를 throw하지 않고
+ * `{data, error}`로 돌려준다. try/catch만 두면 422(잘못된 주소)·429가 전부
+ * 성공으로 집계돼, 어드민은 메일이 나간 줄 알고 넘어간다.
+ */
+async function sendOrderConfirmationMail(params: {
+  order: OrderMailSource;
+  subject: string;
+  locale: Locale;
+  accessToken: string | null;
+  ticketCount: number;
+}): Promise<boolean> {
+  const { order, subject, locale, accessToken, ticketCount } = params;
+  try {
+    const result = await sendEmail({
+      to: order.buyerEmail,
+      subject,
+      template: 'order-confirmation',
+      data: {
+        buyerName: order.buyerName,
+        orderNo: order.orderNo,
+        dropTitle: order.drop?.title ?? 'PRECTXE',
+        items: order.items.map((item) => ({
+          name: item.ticketTier?.name ?? item.goodsVariant?.name ?? '상품',
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          subtotal: item.subtotal,
+        })),
+        totalAmount: order.totalAmount,
+        locale,
+        ticketsUrl:
+          ticketCount > 0 && accessToken
+            ? getOrderTicketsUrl(accessToken)
+            : undefined,
+      },
+    });
+    if (!result.success) {
+      console.error(
+        '주문 확인 이메일 발송 실패:',
+        order.orderNo,
+        result.results[0]?.error
+      );
+    }
+    return result.success;
+  } catch (emailErr) {
+    console.error('주문 확인 이메일 발송 실패:', order.orderNo, emailErr);
+    return false;
+  }
+}
+
 // ─── TicketTier CRUD (Admin) ─────────────────────────
 
 export async function createTicketTier(dropId: string, data: TicketTierInput) {
@@ -717,34 +787,14 @@ export async function verifyPayment(orderId: string, portonePaymentId: string) {
 
     revalidatePath('/admin/drops');
 
-    // 주문 확인 이메일 발송 (실패해도 결제 결과에 영향 없음)
-    try {
-      const dropTitle = order.drop?.title ?? 'PRECTXE';
-      const items = order.items.map((item) => ({
-        name: item.ticketTier?.name ?? item.goodsVariant?.name ?? '상품',
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        subtotal: item.subtotal,
-      }));
-
-      await sendEmail({
-        to: order.buyerEmail,
-        subject: ST.emailSubject(dropTitle),
-        template: 'order-confirmation',
-        data: {
-          buyerName: order.buyerName,
-          orderNo: order.orderNo,
-          dropTitle,
-          items,
-          totalAmount: order.totalAmount,
-          locale,
-          ticketsUrl:
-            ticketCount > 0 ? getOrderTicketsUrl(accessToken) : undefined,
-        },
-      });
-    } catch (emailErr) {
-      console.error('주문 확인 이메일 발송 실패:', emailErr);
-    }
+    // 주문 확인 이메일 (실패해도 결제 결과엔 영향 없음 — 어드민이 재발송)
+    await sendOrderConfirmationMail({
+      order,
+      subject: ST.emailSubject(order.drop?.title ?? 'PRECTXE'),
+      locale,
+      accessToken,
+      ticketCount,
+    });
 
     return { success: true as const, data: { orderNo: order.orderNo } };
   } catch (e) {
@@ -811,40 +861,85 @@ export async function confirmBankTransfer(orderId: string) {
 
   // 확정 이메일 (기존 order-confirmation 재사용).
   // 어드민 컨텍스트라 getLocale() 대신 주문 시 저장한 구매자 로케일 사용.
-  try {
-    // DB에는 임의 string이 들어올 수 있으므로 'en' 외엔 모두 'ko'로 명시 폴백
-    const locale: Locale = order.locale === 'en' ? 'en' : 'ko';
-    const dropTitle = order.drop?.title ?? 'PRECTXE';
-    const items = order.items.map((item) => ({
-      name: item.ticketTier?.name ?? item.goodsVariant?.name ?? '상품',
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      subtotal: item.subtotal,
-    }));
+  // DB에는 임의 string이 들어올 수 있으므로 'en' 외엔 모두 'ko'로 명시 폴백
+  const locale: Locale = order.locale === 'en' ? 'en' : 'ko';
+  const emailSent = await sendOrderConfirmationMail({
+    order,
+    subject: bankTransferMailSubject(locale, order.drop?.title ?? 'PRECTXE'),
+    locale,
+    accessToken,
+    ticketCount,
+  });
 
-    await sendEmail({
-      to: order.buyerEmail,
-      subject:
-        locale === 'en'
-          ? `[PRECTXE] Payment confirmed — ${dropTitle}`
-          : `[PRECTXE] 입금 확인 — ${dropTitle}`,
-      template: 'order-confirmation',
-      data: {
-        buyerName: order.buyerName,
-        orderNo: order.orderNo,
-        dropTitle,
-        items,
-        totalAmount: order.totalAmount,
-        locale,
-        ticketsUrl:
-          ticketCount > 0 ? getOrderTicketsUrl(accessToken) : undefined,
+  // 입금 확인 자체는 성공. 메일 실패는 어드민이 재발송할 수 있도록 알려만 준다.
+  return { success: true, emailSent } as const;
+}
+
+/** 입금 확인·재발송 메일 제목 (두 경로가 같은 제목을 쓰도록 공유) */
+function bankTransferMailSubject(locale: Locale, dropTitle: string) {
+  return locale === 'en'
+    ? `[PRECTXE] Payment confirmed — ${dropTitle}`
+    : `[PRECTXE] 입금 확인 — ${dropTitle}`;
+}
+
+// ─── 주문 확인 메일 재발송 (Admin) ───────────────────
+
+/**
+ * 이미 발급된 입장권 정보를 그대로 다시 보낸다.
+ *
+ * **상태 전이·티켓 발급은 하지 않는다.** `confirmBankTransfer`를 다시 태우면
+ * `issueTicketsForOrder`가 티켓을 한 번 더 만들고 accessToken을 갈아끼워
+ * 먼저 보낸 링크가 죽는다. 재발송은 통지만 반복하는 연산이어야 한다.
+ */
+export async function resendOrderConfirmation(orderId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error } as const;
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      drop: { select: { title: true } },
+      items: {
+        select: {
+          quantity: true,
+          unitPrice: true,
+          subtotal: true,
+          ticketTier: { select: { name: true } },
+          goodsVariant: { select: { name: true } },
+        },
       },
-    });
-  } catch (emailErr) {
-    console.error('입금 확인 이메일 발송 실패:', emailErr);
-  }
+      bankTransfer: { select: { status: true } },
+      _count: { select: { tickets: true } },
+    },
+  });
+  if (!order)
+    return { success: false, error: SALES_TERMS.errorOrderNotFound } as const;
+  if (order.status !== 'paid' && order.status !== 'confirmed')
+    return {
+      success: false,
+      error: '결제가 완료된 주문만 재발송할 수 있습니다.',
+    } as const;
 
-  return { success: true } as const;
+  const locale: Locale = order.locale === 'en' ? 'en' : 'ko';
+  const dropTitle = order.drop?.title ?? 'PRECTXE';
+  const sent = await sendOrderConfirmationMail({
+    order,
+    // 처음 나간 메일과 같은 제목이어야 구매자가 메일함에서 같은 건으로 알아본다
+    subject:
+      order.bankTransfer?.status === 'confirmed'
+        ? bankTransferMailSubject(locale, dropTitle)
+        : getSalesTerms(locale).emailSubject(dropTitle),
+    locale,
+    accessToken: order.accessToken,
+    ticketCount: order._count.tickets,
+  });
+  if (!sent)
+    return {
+      success: false,
+      error: '메일 발송에 실패했습니다. 주소를 확인해 주세요.',
+    } as const;
+
+  return { success: true, email: order.buyerEmail } as const;
 }
 
 // ─── 만료된 무통장 주문 일괄 정리 (Admin / lazy) ───

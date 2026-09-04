@@ -2,6 +2,26 @@
 
 > 이전 기록은 [dev-log-archive.md](dev-log-archive.md) 참조
 
+## 2026-09-04
+
+### 확정 메일 재발송 (drops/tickets)
+
+"입금 확인을 눌렀는데 메일을 못 받았다"는 구매자가 가끔 있다. 어드민이 손으로 복구할 수단이 없었다.
+
+**재발송을 `confirmBankTransfer` 재실행으로 만들면 안 된다.** 이 액션은 상태 전이 + 티켓 발급 + 메일을 한 덩어리로 하는데, `issueTicketsForOrder`는 호출할 때마다 **새 accessToken을 발급하고 Ticket row를 새로 만든다**. 재실행하면 티켓이 2배가 되고 먼저 보낸 링크가 죽는다. 통지는 상태 전이에서 떼어내 따로 반복 가능한 연산이어야 한다.
+
+- `resendOrderConfirmation(orderId)` 신설 — paid/confirmed 주문만, 이미 저장된 `order.accessToken`을 읽어 같은 메일을 다시 보낸다. DB는 건드리지 않는다.
+- 제목은 결제 수단에 따라 처음 나간 것과 동일하게(무통장 확정 → "입금 확인", 카드·무료 → `emailSubject`). 메일함에서 같은 건으로 보이게.
+- 발송 로직을 `sendOrderConfirmationMail()`로 추출 — `verifyPayment`·`confirmBankTransfer`·재발송이 한 경로를 쓴다.
+
+**함께 고친 것**: 기존 두 경로는 `sendEmail`을 `try/catch`로만 감쌌다. **Resend SDK는 API 에러를 throw하지 않고 결과 객체로 돌려주므로**(CLAUDE.md에 적어둔 함정) 422(잘못된 주소)·429가 전부 조용히 넘어갔고, 어드민은 "입금이 확인되었습니다" 토스트만 보고 지나갔다 — 아마 미수신 사례의 일부는 여기서 났다. 이제 `confirmBankTransfer`가 `emailSent`를 반환하고, 실패하면 어드민에게 재발송을 안내한다.
+
+**남은 한계**: Resend가 접수(202)한 뒤의 스팸함·바운스는 여전히 보이지 않는다. 주소 오타면 재발송해도 같은 곳으로 간다 — 주소 수정 후 발송, 또는 입장권 링크 복사(카톡·문자 직접 전달)가 다음 후보.
+
+**검증**: type-check·biome·`next build` 통과. 프로덕션 재발송 동작은 배포 후 확인 필요.
+
+---
+
 ## 2026-09-03
 
 ### 응답 있는 필드 편집 경고 (forms)
