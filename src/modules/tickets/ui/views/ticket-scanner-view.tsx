@@ -27,6 +27,12 @@ type ScanResult =
       checkedInAt: Date | null;
       token: string;
     }
+  | {
+      kind: 'undone';
+      buyerName: string;
+      tierName: string;
+      token: string;
+    }
   | { kind: 'error'; message: string };
 
 const COOLDOWN_MS = 1500;
@@ -68,6 +74,9 @@ export function TicketScannerView({
   const [scanning, setScanning] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const lastTokenRef = useRef<{ token: string; at: number } | null>(null);
+  // 입장 취소 직후 카메라에 그대로 남아 있는 같은 QR이 즉시 재체크인되는 것을
+  // 막는다. '다음'을 누르거나 다른 QR이 들어올 때까지 이 토큰은 무시한다.
+  const suppressedTokenRef = useRef<string | null>(null);
   const scannerRef = useRef<{
     stop: () => Promise<void>;
     clear: () => void;
@@ -92,6 +101,10 @@ export function TicketScannerView({
         playBeep(false);
         return;
       }
+      if (suppressedTokenRef.current === token) return;
+      // 다른 사람으로 넘어갔으면 억제 해제
+      suppressedTokenRef.current = null;
+
       const last = lastTokenRef.current;
       if (last && last.token === token && Date.now() - last.at < COOLDOWN_MS) {
         return;
@@ -189,15 +202,29 @@ export function TicketScannerView({
   }, [handleScan]);
 
   async function handleUndo() {
-    if (!result || result.kind === 'error') return;
+    if (!result || result.kind === 'error' || result.kind === 'undone') return;
     const r = await undoCheckIn(result.token, dropId);
     if (r.success) {
-      setResult(null);
+      suppressedTokenRef.current = result.token;
       lastTokenRef.current = null;
+      setResult({
+        kind: 'undone',
+        buyerName: result.buyerName,
+        tierName: result.tierName,
+        token: result.token,
+      });
+      playBeep(false);
       refreshStats();
     } else {
       setErrorMsg(r.error);
     }
+  }
+
+  /** 결과 패널을 닫고 억제를 푼다 — 같은 사람을 다시 찍을 수 있어야 한다. */
+  function handleNext() {
+    suppressedTokenRef.current = null;
+    lastTokenRef.current = null;
+    setResult(null);
   }
 
   return (
@@ -268,7 +295,7 @@ export function TicketScannerView({
           <ResultPanel
             result={result}
             onUndo={handleUndo}
-            onNext={() => setResult(null)}
+            onNext={handleNext}
           />
         ) : (
           <div className="flex items-center justify-center px-6 py-5 text-sm text-white/40">
@@ -304,6 +331,31 @@ function ResultPanel({
           variant="outline"
           onClick={onNext}
           className="border-white/20 bg-white/5 text-white hover:bg-white/10"
+        >
+          다음
+        </Button>
+      </div>
+    );
+  }
+
+  if (result.kind === 'undone') {
+    return (
+      <div className="flex items-center justify-between gap-4 border-t border-white/15 bg-white/5 px-5 py-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <RotateCcw className="h-7 w-7 shrink-0 text-white/60" />
+          <div className="min-w-0">
+            <p className="truncate text-base font-bold text-white">
+              {result.buyerName} · {result.tierName}
+            </p>
+            <p className="text-xs text-white/50">
+              입장 취소됨 · 다시 스캔하려면 '다음'
+            </p>
+          </div>
+        </div>
+        <Button
+          size="sm"
+          onClick={onNext}
+          className="shrink-0 bg-white text-black hover:bg-white/90"
         >
           다음
         </Button>
