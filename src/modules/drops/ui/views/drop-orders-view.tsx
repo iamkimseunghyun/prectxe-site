@@ -61,6 +61,10 @@ type Order = {
   } | null;
 };
 
+/** 서버 액션 자체가 실패했을 때(네트워크·배포 중 등) 어드민에게 보일 문구 */
+const FAILED_ACTION_MESSAGE =
+  '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+
 const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: '', label: '전체' },
   { value: 'pending', label: '대기' },
@@ -152,38 +156,52 @@ export function DropOrdersView({
   async function handleCancel() {
     if (!cancelTarget) return;
     setActionInFlight(true);
-    const result = await cancelOrder(cancelTarget.id);
-    if (result.success) {
-      toast({ title: '주문이 취소되었습니다.' });
-      loadOrders();
-    } else {
-      toast({ title: result.error, variant: 'destructive' });
+    try {
+      const result = await cancelOrder(cancelTarget.id);
+      if (result.success) {
+        toast({ title: '주문이 취소되었습니다.' });
+        loadOrders();
+      } else {
+        toast({ title: result.error, variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: FAILED_ACTION_MESSAGE, variant: 'destructive' });
+    } finally {
+      // finally가 없으면 서버 액션이 reject할 때 actionInFlight가 true로 굳어
+      // 이 화면의 버튼이 전부 새로고침 전까지 잠긴다
+      setCancelTarget(null);
+      setActionInFlight(false);
     }
-    setCancelTarget(null);
-    setActionInFlight(false);
   }
 
   async function handleConfirmDeposit() {
     if (!confirmTarget) return;
     setActionInFlight(true);
-    const result = await confirmBankTransfer(confirmTarget.id);
-    if (result.success) {
-      // 메일 실패는 입금 확인을 되돌리지 않는다 — 재발송으로 복구하도록 알린다
-      toast(
-        result.emailSent
-          ? { title: '입금이 확인되었습니다.' }
-          : {
-              title: '입금은 확인됐지만 메일 발송에 실패했습니다.',
-              description: '주소를 확인한 뒤 "메일 재발송"을 눌러 주세요.',
-              variant: 'destructive',
-            }
-      );
+    try {
+      const result = await confirmBankTransfer(confirmTarget.id);
+      if (result.success) {
+        // 메일 실패는 입금 확인을 되돌리지 않는다 — 재발송으로 복구하도록 알린다
+        toast(
+          result.emailSent
+            ? { title: '입금이 확인되었습니다.' }
+            : {
+                title: '입금은 확인됐지만 메일 발송에 실패했습니다.',
+                description: '주소를 확인한 뒤 "메일 재발송"을 눌러 주세요.',
+                variant: 'destructive',
+              }
+        );
+        loadOrders();
+      } else {
+        toast({ title: result.error, variant: 'destructive' });
+      }
+    } catch {
+      // 입금 확인이 실제로 됐는지 알 수 없다 — 목록을 다시 읽어 상태를 확인시킨다
+      toast({ title: FAILED_ACTION_MESSAGE, variant: 'destructive' });
       loadOrders();
-    } else {
-      toast({ title: result.error, variant: 'destructive' });
+    } finally {
+      setConfirmTarget(null);
+      setActionInFlight(false);
     }
-    setConfirmTarget(null);
-    setActionInFlight(false);
   }
 
   /**
@@ -215,14 +233,19 @@ export function DropOrdersView({
   async function handleResend() {
     if (!resendTarget) return;
     setActionInFlight(true);
-    const result = await resendOrderConfirmation(resendTarget.id);
-    toast(
-      result.success
-        ? { title: `${result.email}로 다시 보냈습니다.` }
-        : { title: result.error, variant: 'destructive' }
-    );
-    setResendTarget(null);
-    setActionInFlight(false);
+    try {
+      const result = await resendOrderConfirmation(resendTarget.id);
+      toast(
+        result.success
+          ? { title: `${result.email}로 다시 보냈습니다.` }
+          : { title: result.error, variant: 'destructive' }
+      );
+    } catch {
+      toast({ title: FAILED_ACTION_MESSAGE, variant: 'destructive' });
+    } finally {
+      setResendTarget(null);
+      setActionInFlight(false);
+    }
   }
 
   const totalPages = Math.ceil(total / pageSize);
