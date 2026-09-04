@@ -1094,20 +1094,44 @@ export async function cancelOrder(orderId: string) {
 
 // ─── 체크인 (입장 검증) ────────────────────────────
 
-export async function checkInTicket(token: string) {
+/**
+ * 입장 체크인.
+ *
+ * `dropId`는 스캐너가 열려 있는 드랍이다. **토큰만으로 처리하면 A 공연
+ * 스캐너에서 B 공연 티켓을 찍어도 조용히 입장 처리된다** — 카운터는 드랍별로
+ * 집계되므로 숫자에도 안 잡힌다. 드랍 판별은 티어(삭제 시 SetNull로 끊길 수
+ * 있다)가 아니라 `order.dropId`를 기준으로 한다.
+ */
+export async function checkInTicket(token: string, dropId: string) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;
 
   const ticket = await prisma.ticket.findUnique({
     where: { token },
     include: {
-      order: { select: { id: true, status: true, buyerName: true } },
-      ticketTier: { select: { name: true, dropId: true } },
+      order: {
+        select: {
+          id: true,
+          status: true,
+          buyerName: true,
+          dropId: true,
+          drop: { select: { title: true } },
+        },
+      },
+      ticketTier: { select: { name: true } },
     },
   });
 
   if (!ticket)
     return { success: false, error: '유효하지 않은 티켓입니다.' } as const;
+  if (ticket.order.dropId !== dropId)
+    return {
+      success: false,
+      // 어느 공연 것인지 알려줘야 입장구에서 바로 안내할 수 있다
+      error: `다른 공연의 입장권입니다${
+        ticket.order.drop ? ` (${ticket.order.drop.title})` : ''
+      }.`,
+    } as const;
   if (ticket.status === 'cancelled')
     return { success: false, error: '취소된 티켓입니다.' } as const;
   if (ticket.order.status !== 'paid')
@@ -1123,7 +1147,6 @@ export async function checkInTicket(token: string) {
       data: {
         buyerName: ticket.order.buyerName,
         tierName: ticket.ticketTier?.name ?? '티켓',
-        dropId: ticket.ticketTier?.dropId ?? null,
         checkedInAt: ticket.checkedInAt,
       },
     } as const;
@@ -1145,19 +1168,24 @@ export async function checkInTicket(token: string) {
     data: {
       buyerName: ticket.order.buyerName,
       tierName: ticket.ticketTier?.name ?? '티켓',
-      dropId: ticket.ticketTier?.dropId ?? null,
       checkedInAt: now,
     },
   } as const;
 }
 
-export async function undoCheckIn(token: string) {
+/** 체크인 되돌리기. 다른 공연 스캐너에서 남의 티켓을 되돌리지 못하게 같은 스코프를 건다. */
+export async function undoCheckIn(token: string, dropId: string) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;
 
-  const ticket = await prisma.ticket.findUnique({ where: { token } });
+  const ticket = await prisma.ticket.findUnique({
+    where: { token },
+    include: { order: { select: { dropId: true } } },
+  });
   if (!ticket)
     return { success: false, error: '유효하지 않은 티켓입니다.' } as const;
+  if (ticket.order.dropId !== dropId)
+    return { success: false, error: '다른 공연의 입장권입니다.' } as const;
   if (ticket.status !== 'checked_in')
     return {
       success: false,
@@ -1180,19 +1208,19 @@ export async function getCheckInStats(dropId: string) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;
 
+  // 집계 기준을 체크인과 맞춘다 — 티어 기준으로 세면 티어가 삭제된(SetNull)
+  // 티켓이 분모에서 빠져 "입장 12 / 11" 같은 숫자가 나올 수 있다
   const [total, checkedIn] = await Promise.all([
     prisma.ticket.count({
       where: {
-        ticketTier: { dropId },
         status: { in: ['active', 'checked_in'] },
-        order: { status: 'paid' },
+        order: { dropId, status: 'paid' },
       },
     }),
     prisma.ticket.count({
       where: {
-        ticketTier: { dropId },
         status: 'checked_in',
-        order: { status: 'paid' },
+        order: { dropId, status: 'paid' },
       },
     }),
   ]);
