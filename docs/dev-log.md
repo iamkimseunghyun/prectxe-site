@@ -2,6 +2,28 @@
 
 > 이전 기록은 [dev-log-archive.md](dev-log-archive.md) 참조
 
+## 2026-09-09
+
+### 끝난 공연이 계속 '매진'으로 남던 문제 (drops)
+
+Drops 목록에서 B(e)-LAB EP.01이 행사(9/5)도 판매(9/3)도 끝났는데 `Sold Out` 배지를 달고 있었다. 종료가 맞다.
+
+**원인은 판정 우선순위**였다. `getEffectiveTierStatus`가 재고를 제일 먼저 봤다 — `soldCount >= quantity`면 판매창이 닫히든 행사가 끝나든 영원히 `sold_out`. 같은 목록의 7월 KLO 드랍은 미매진(34/50)이라 `closed`로 잘 떨어져서, 매진된 드랍만 갇히는 모양이었다.
+
+**매진은 판매창이 열려 있는 동안에만 의미 있는 상태다.** 취소 시 재고가 복구되므로(`cancelOrder`) 판매 중 매진은 "지금은 없음, 풀릴 수 있음"이지만, 마감된 뒤의 매진은 아무 행동도 유도하지 못한다. 그래서 우선순위를 `closed > sold_out > scheduled > on_sale`로 뒤집었다.
+
+**같이 막은 구멍이 더 컸다.** 파생 함수가 `eventDate`를 아예 보지 않았다. `saleEnd`는 nullable이라 어드민이 판매 마감을 비워두면 **행사가 끝나도 `on_sale`이 유지되고**, 배지만이 아니라 `createOrder`·`createBankTransferOrder`의 `getEffectiveTierStatus(tier) !== 'on_sale'` 가드까지 통과해 **끝난 공연 티켓이 실제로 팔린다.** 현재 데이터는 모든 등급에 `saleEnd`가 있어 덮여 있었을 뿐이다.
+
+- `isEventOver(drop)` 신설 — `eventEndDate ?? eventDate` 경과 판정. 행사일 없는 상시 굿즈는 항상 false.
+- `getEffectiveTierStatus(tier, event?)`가 행사 종료를 최우선으로 본다. 결제 경로는 `findUnique`에 `include: { drop: { select: { eventDate, eventEndDate } } }`를 붙여 반드시 넘긴다.
+- `getEffectiveDropStatus`가 `eventDate`/`eventEndDate`를 받는다. 티켓 집계는 `every(sold_out)` → `includes('sold_out')`로 바꿨다 — 등급별 판정이 이미 종료를 걸러내므로, 남은 매진은 "판매창 안에서 매진"뿐이고 그건 매진으로 알리는 게 맞다.
+- 행사일을 읽도록 조회를 넓혔다: 홈 `NowOnSaleSection`·`FeaturedHeroSection`의 select, 어드민 드랍 목록 select. 목록/OG는 `include`라 이미 들어 있었다.
+- 어드민 등급 목록(`TicketTierList`)도 행사일을 받는다. 매진 성과는 옆 `50/50 · 100%` 표시에 그대로 남는다.
+
+**검증**: 프로덕션 두 드랍의 실제 행/시각으로 파생 결과를 직접 확인 — B(e)-LAB `sold_out → closed`, KLO `closed` 유지, 판매창 안 매진은 `sold_out` 유지, `saleEnd` 미설정 + 행사 종료는 `closed`(결제 가드 포함). type-check·biome 통과, 로컬 `/drops` 렌더 회귀 없음.
+
+---
+
 ## 2026-09-05
 
 ### 입장 스캐너 검표 갭 2건 (tickets)

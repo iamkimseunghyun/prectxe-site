@@ -413,9 +413,11 @@ export async function createOrder(
     for (const item of sortedItems) {
       const tier = await tx.ticketTier.findUnique({
         where: { id: item.ticketTierId },
+        // 행사가 끝난 드랍의 티켓이 팔리지 않도록 drop 일시까지 함께 검증
+        include: { drop: { select: { eventDate: true, eventEndDate: true } } },
       });
       if (!tier) throw new Error('티켓 등급을 찾을 수 없습니다.');
-      if (getEffectiveTierStatus(tier) !== 'on_sale')
+      if (getEffectiveTierStatus(tier, tier.drop) !== 'on_sale')
         throw new Error(`${tier.name}은(는) 현재 판매 중이 아닙니다.`);
       if (item.quantity > tier.maxPerOrder)
         throw new Error(
@@ -506,9 +508,13 @@ export async function createBankTransferOrder(
       for (const item of sortedItems) {
         const tier = await tx.ticketTier.findUnique({
           where: { id: item.ticketTierId },
+          // 행사가 끝난 드랍의 티켓이 팔리지 않도록 drop 일시까지 함께 검증
+          include: {
+            drop: { select: { eventDate: true, eventEndDate: true } },
+          },
         });
         if (!tier) throw new Error('티켓 등급을 찾을 수 없습니다.');
-        if (getEffectiveTierStatus(tier) !== 'on_sale')
+        if (getEffectiveTierStatus(tier, tier.drop) !== 'on_sale')
           throw new Error(`${tier.name}은(는) 현재 판매 중이 아닙니다.`);
         if (item.quantity > tier.maxPerOrder)
           throw new Error(

@@ -56,6 +56,8 @@ const getFeaturedHero = next_cache(
           slug: true,
           title: true,
           type: true,
+          eventDate: true,
+          eventEndDate: true,
           updatedAt: true,
           media: {
             where: { type: 'image' },
@@ -161,6 +163,8 @@ const getFeaturedHero = next_cache(
       featured.type === 'drop'
         ? getEffectiveDropStatus({
             type: featured.data.type as 'ticket' | 'goods',
+            eventDate: featured.data.eventDate,
+            eventEndDate: featured.data.eventEndDate,
             ticketTiers: featured.data.ticketTiers,
             variants: featured.data.variants,
           })

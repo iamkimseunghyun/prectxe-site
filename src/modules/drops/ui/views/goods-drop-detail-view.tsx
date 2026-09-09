@@ -62,6 +62,9 @@ type GoodsDrop = {
   summary: string | null;
   description: string | null;
   notice: string | null;
+  // 굿즈에도 행사일이 걸릴 수 있다(픽업 행사 등) — 지나면 판매 종료로 파생
+  eventDate?: Date | null;
+  eventEndDate?: Date | null;
   media: DropMedia[];
   credits: DropCredit[];
   variants: GoodsVariant[];
@@ -106,6 +109,8 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
   // on_sale일 때만 구매 가능, 재고 소진 시 sold_out.
   const effectiveStatus = getEffectiveDropStatus({
     type: 'goods',
+    eventDate: drop.eventDate,
+    eventEndDate: drop.eventEndDate,
     variants: drop.variants,
   });
   const isSoldOut = effectiveStatus === 'sold_out';

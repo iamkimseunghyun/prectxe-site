@@ -38,6 +38,8 @@ type DropData = {
   type: string;
   summary: string | null;
   description: string | null;
+  eventDate: Date | null;
+  eventEndDate: Date | null;
   publishedAt: Date | null;
   credits: {
     dropId: string;
@@ -156,6 +158,8 @@ export function DropDetailView({ dropId }: { dropId: string }) {
 
   const effectiveStatus = getEffectiveDropStatus({
     type: drop.type as 'ticket' | 'goods',
+    eventDate: drop.eventDate,
+    eventEndDate: drop.eventEndDate,
     ticketTiers: drop.ticketTiers,
     variants: drop.variants,
   });
@@ -277,6 +281,8 @@ export function DropDetailView({ dropId }: { dropId: string }) {
                   dropId={drop.id}
                   tiers={drop.ticketTiers}
                   onRefresh={loadData}
+                  eventDate={drop.eventDate}
+                  eventEndDate={drop.eventEndDate}
                 />
               </CardContent>
             </Card>

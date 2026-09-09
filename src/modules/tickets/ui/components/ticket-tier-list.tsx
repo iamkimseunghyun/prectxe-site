@@ -33,6 +33,9 @@ interface TicketTierListProps {
   dropId: string;
   tiers: Tier[];
   onRefresh: () => void;
+  /** 행사 일시 — 행사가 끝난 뒤에는 매진 등급도 '판매 종료'로 표시된다 */
+  eventDate?: Date | null;
+  eventEndDate?: Date | null;
 }
 
 const STATUS_LABELS: Record<
@@ -52,6 +55,8 @@ export function TicketTierList({
   dropId,
   tiers,
   onRefresh,
+  eventDate,
+  eventEndDate,
 }: TicketTierListProps) {
   const { toast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
@@ -115,7 +120,10 @@ export function TicketTierList({
                 tier.quantity > 0
                   ? Math.round((tier.soldCount / tier.quantity) * 100)
                   : 0;
-              const effectiveStatus = getEffectiveTierStatus(tier);
+              const effectiveStatus = getEffectiveTierStatus(tier, {
+                eventDate,
+                eventEndDate,
+              });
               const statusInfo =
                 STATUS_LABELS[effectiveStatus] ?? STATUS_LABELS.scheduled;
 
