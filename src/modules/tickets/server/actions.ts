@@ -31,7 +31,7 @@ import {
   getBankTransferExpiryHours,
 } from '@/lib/utils/bank-transfer';
 import { parseKstDateInput } from '@/lib/utils/date';
-import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
+import { getEffectiveTierStatus, isEventOver } from '@/lib/utils/ticket-status';
 import {
   generateAccessToken,
   generateOrderNo,
@@ -670,6 +670,15 @@ export async function createGoodsOrder(
   );
 
   const result = await prisma.$transaction(async (tx) => {
+    // 행사가 끝난 드랍은 주문을 받지 않는다. 굿즈는 옵션에 판매창이 없어
+    // 행사일이 유일한 마감 신호이고, 클라이언트의 isSaleActive는 우회 가능하다.
+    const drop = await tx.drop.findUnique({
+      where: { id: dropId },
+      select: { eventDate: true, eventEndDate: true },
+    });
+    if (!drop) throw new Error('상품을 찾을 수 없습니다.');
+    if (isEventOver(drop)) throw new Error('판매가 종료되었습니다.');
+
     let totalAmount = 0;
     const orderItems: {
       goodsVariantId: string;

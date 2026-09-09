@@ -19,6 +19,9 @@ Drops 목록에서 B(e)-LAB EP.01이 행사(9/5)도 판매(9/3)도 끝났는데 
 - `getEffectiveDropStatus`가 `eventDate`/`eventEndDate`를 받는다. 티켓 집계는 `every(sold_out)` → `includes('sold_out')`로 바꿨다 — 등급별 판정이 이미 종료를 걸러내므로, 남은 매진은 "판매창 안에서 매진"뿐이고 그건 매진으로 알리는 게 맞다.
 - 행사일을 읽도록 조회를 넓혔다: 홈 `NowOnSaleSection`·`FeaturedHeroSection`의 select, 어드민 드랍 목록 select. 목록/OG는 `include`라 이미 들어 있었다.
 - 어드민 등급 목록(`TicketTierList`)도 행사일을 받는다. 매진 성과는 옆 `50/50 · 100%` 표시에 그대로 남는다.
+- **굿즈도 같은 갭이 있었다**(CodeRabbit). `createGoodsOrder`는 드랍을 조회조차 하지 않고 재고를 차감했다 — 굿즈 옵션엔 판매창이 없어 행사일이 유일한 마감 신호인데, 그 검증이 클라이언트 `isSaleActive`에만 있었다. 트랜잭션 첫머리에 `isEventOver(drop)` 가드를 넣었다. 굿즈 상세의 비판매 문구도 `준비 중` 하나로 뭉뚱그리던 걸 `종료`와 분리했다.
+
+**남겨둔 것**: 홈 티저(`NowOnSaleSection`·`FeaturedHeroSection`)는 파생값을 5분 캐시하므로 종료 전환이 최대 5분 늦는다 — CLAUDE.md에 적어둔 의도된 트레이드오프고 결제는 서버가 다시 막는다. 상세 페이지를 열어둔 채 마감 시각을 넘기면 UI가 그대로 남는 것도 마찬가지(새로고침 시 해소, 주문은 거절). 둘 다 이번 변경으로 새로 생긴 문제가 아니다.
 
 **검증**: 프로덕션 두 드랍의 실제 행/시각으로 파생 결과를 직접 확인 — B(e)-LAB `sold_out → closed`, KLO `closed` 유지, 판매창 안 매진은 `sold_out` 유지, `saleEnd` 미설정 + 행사 종료는 `closed`(결제 가드 포함). type-check·biome 통과, 로컬 `/drops` 렌더 회귀 없음.
 

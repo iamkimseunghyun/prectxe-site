@@ -114,6 +114,8 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
     variants: drop.variants,
   });
   const isSoldOut = effectiveStatus === 'sold_out';
+  // 행사가 끝난 굿즈(픽업 행사 등)는 '준비 중'이 아니라 '종료'다
+  const isClosed = effectiveStatus === 'closed';
   const isSaleActive = effectiveStatus === 'on_sale';
 
   return (
@@ -332,7 +334,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                     )}
                   >
                     <p className="text-lg font-semibold">
-                      {isSoldOut ? 'Sold Out' : '준비 중'}
+                      {isSoldOut ? 'Sold Out' : isClosed ? '종료' : '준비 중'}
                     </p>
                   </div>
                 ) : (
