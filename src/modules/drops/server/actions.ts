@@ -445,6 +445,8 @@ export async function listAdminDrops(page = 1, pageSize = 20) {
         title: true,
         slug: true,
         type: true,
+        eventDate: true,
+        eventEndDate: true,
         isFeatured: true,
         publishedAt: true,
         createdAt: true,

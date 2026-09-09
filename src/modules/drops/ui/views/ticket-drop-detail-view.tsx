@@ -112,7 +112,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
 
   const tiersWithStatus = drop.ticketTiers.map((t) => ({
     ...t,
-    status: getEffectiveTierStatus(t),
+    status: getEffectiveTierStatus(t, drop),
     remaining: t.quantity - t.soldCount,
   }));
   // 가격 미리보기·티켓 개수는 실제 판매중 티어 기준
@@ -134,6 +134,8 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
 
   const effectiveStatus = getEffectiveDropStatus({
     type: 'ticket',
+    eventDate: drop.eventDate,
+    eventEndDate: drop.eventEndDate,
     ticketTiers: drop.ticketTiers,
   });
   const isClosed = effectiveStatus === 'closed';

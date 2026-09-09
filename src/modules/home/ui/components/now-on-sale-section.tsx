@@ -60,6 +60,7 @@ const getNowOnSaleDrops = next_cache(
         summary: true,
         type: true,
         eventDate: true,
+        eventEndDate: true,
         media: {
           where: { type: 'image' },
           orderBy: { order: 'asc' },
