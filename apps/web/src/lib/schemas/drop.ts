@@ -36,6 +36,7 @@ export const dropCreateSchema = z.object({
   venueId: z.string().optional(),
   notice: z.string().optional(),
   published: z.boolean().optional(),
+  allowReentry: z.boolean().optional(),
   media: z.array(dropMediaSchema).optional(),
   credits: z.array(dropCreditSchema).optional(),
 });
@@ -54,6 +55,7 @@ export const dropUpdateSchema = z.object({
   venueId: z.string().nullable().optional(),
   notice: z.string().optional(),
   published: z.boolean().optional(),
+  allowReentry: z.boolean().optional(),
   media: z.array(dropMediaSchema).optional(),
   credits: z.array(dropCreditSchema).optional(),
 });

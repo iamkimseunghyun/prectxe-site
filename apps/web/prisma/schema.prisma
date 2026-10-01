@@ -430,6 +430,8 @@ model Drop {
   venueId      String?
   notice       String?
   isFeatured   Boolean        @default(false)
+  /// 이미 입장한 티켓을 다시 스캔했을 때 들여보낼지 (전시·레이브 등)
+  allowReentry Boolean        @default(false)
   publishedAt  DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
@@ -439,6 +441,7 @@ model Drop {
   ticketTiers  TicketTier[]
   variants     GoodsVariant[]
   orders       Order[]
+  checkIns     CheckIn[]
 
   @@index([isFeatured, updatedAt])
   @@index([publishedAt])
@@ -598,11 +601,35 @@ model Ticket {
   order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderItem    OrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
   ticketTier   TicketTier?  @relation(fields: [ticketTierId], references: [id], onDelete: SetNull)
+  checkIns     CheckIn[]
 
   @@index([status])
   @@index([orderId])
   @@index([orderItemId])
   @@index([ticketTierId])
+}
+
+/// 입장·입장 취소 기록. 지우지 않고 쌓는다 — Ticket.status/checkedInAt은 현재 상태 캐시다.
+/// "누가 언제 어느 입구에서"를 복원하고, 오프라인 기록이 겹쳤을 때 사후 추적하는 근거.
+model CheckIn {
+  id        String      @id @default(cuid())
+  /// 기록을 만든 쪽(기기·서버)이 붙이는 UUID. 재전송돼도 한 번만 저장된다
+  clientId  String      @unique
+  kind      CheckInKind
+  ticketId  String
+  dropId    String
+  /// 입구 이름 (A, B 등). 웹 스캐너는 비워 둔다
+  gate      String?
+  /// 웹 스캐너에서 처리한 어드민 User.id
+  userId    String?
+  /// 스캔한 시각 (기기 기준). 서버 수신 시각은 createdAt
+  scannedAt DateTime
+  createdAt DateTime    @default(now())
+  ticket    Ticket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  drop      Drop        @relation(fields: [dropId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([dropId, createdAt])
 }
 
 enum DropType {
@@ -642,4 +669,9 @@ enum TicketStatus {
   active
   checked_in
   cancelled
+}
+
+enum CheckInKind {
+  entry
+  undo
 }

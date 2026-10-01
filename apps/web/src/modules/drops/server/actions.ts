@@ -41,6 +41,7 @@ export async function createDrop(input: {
   venueId?: string;
   notice?: string;
   published?: boolean;
+  allowReentry?: boolean;
   media?: DropMediaInput[];
   credits?: DropCreditInput[];
 }) {
@@ -73,6 +74,7 @@ export async function createDrop(input: {
       venueId: data.venueId || null,
       notice: data.notice || null,
       publishedAt: data.published ? new Date() : null,
+      allowReentry: data.allowReentry ?? false,
       media: data.media?.length
         ? { createMany: { data: data.media } }
         : undefined,
@@ -103,6 +105,7 @@ export async function updateDrop(
     venueId?: string | null;
     notice?: string;
     published?: boolean;
+    allowReentry?: boolean;
     media?: DropMediaInput[];
     credits?: DropCreditInput[];
   }
@@ -183,6 +186,9 @@ export async function updateDrop(
       }),
       ...(data.notice !== undefined && { notice: data.notice || null }),
       ...publishedAtUpdate,
+      ...(data.allowReentry !== undefined && {
+        allowReentry: data.allowReentry,
+      }),
       ...(hasNewMedia && {
         media: {
           deleteMany: {},
