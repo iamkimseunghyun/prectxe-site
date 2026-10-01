@@ -77,6 +77,7 @@ type DropData = {
   venueId: string | null;
   notice: string | null;
   publishedAt: Date | null;
+  allowReentry: boolean;
   media?: DropMediaInit[];
   credits?: DropCreditInit[];
 };
@@ -132,6 +133,7 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
   // Select 상태 (controlled — Radix name prop이 React 19 form에서 무한루프 유발)
   const [type, setType] = useState(drop?.type ?? 'ticket');
   const [published, setPublished] = useState(!!drop?.publishedAt);
+  const [allowReentry, setAllowReentry] = useState(drop?.allowReentry ?? false);
 
   // Venue 상태 — 기존 venueId 있으면 link 모드, 없으면 legacy 문자열 모드
   const [venue, setVenue] = useState({
@@ -306,6 +308,7 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
         venueId: venue.venueId ?? undefined,
         notice: (fd.get('notice') as string) || undefined,
         published,
+        allowReentry,
         media,
         credits: credits.map((c) => ({ artistId: c.artistId, role: c.role })),
       };
@@ -658,6 +661,30 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
                 )}
               </CardContent>
             </Card>
+
+            {type === 'ticket' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>입장</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium">재입장 허용</p>
+                      <p className="text-xs text-muted-foreground">
+                        켜면 이미 입장한 티켓을 다시 스캔해도 들여보냅니다.
+                        전시·레이브처럼 드나드는 행사용.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={allowReentry}
+                      onCheckedChange={setAllowReentry}
+                      aria-label="재입장 허용"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </form>

@@ -15,9 +15,10 @@ import {
 type ScanResult =
   | {
       kind: 'ok';
+      /** 재입장 허용 행사에서 이미 입장한 티켓을 다시 들여보낸 경우 */
+      reentry: boolean;
       buyerName: string;
       tierName: string;
-      checkedInAt: Date;
       token: string;
     }
   | {
@@ -117,7 +118,7 @@ export function TicketScannerView({
         playBeep(false);
         return;
       }
-      if (r.alreadyCheckedIn) {
+      if (r.result === 'already') {
         setResult({
           kind: 'already',
           buyerName: r.data.buyerName,
@@ -130,9 +131,9 @@ export function TicketScannerView({
       }
       setResult({
         kind: 'ok',
+        reentry: r.result === 'reentered',
         buyerName: r.data.buyerName,
         tierName: r.data.tierName,
-        checkedInAt: r.data.checkedInAt,
         token,
       });
       playBeep(true);
@@ -381,7 +382,9 @@ function ResultPanel({
           </p>
           <p className="text-xs opacity-80">
             {ok
-              ? '입장 완료'
+              ? result.reentry
+                ? '재입장'
+                : '입장 완료'
               : `이미 입장됨${
                   result.checkedInAt
                     ? ` · ${formatKstDateTime(new Date(result.checkedInAt))}`

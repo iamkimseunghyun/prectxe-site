@@ -4,6 +4,21 @@
 
 ## 2026-10-01
 
+### 입장 기록(CheckIn) + 재입장 허용 (tickets, drops)
+
+게이트(체크인 앱) 백엔드 1단계. 앱보다 먼저, 웹 스캐너가 쓰는 판정을 앱과 공유할 수 있는 형태로 바꿨다.
+
+- **판정 함수를 `'use server'` 밖으로 뺐다** — `modules/tickets/server/check-in.ts`의 `checkInByToken`·`undoCheckInByToken`. 액션 파일에서 export하면 인증 없는 RPC 엔드포인트가 되므로, 인증은 호출하는 쪽(웹 액션, 이후 게이트 API)이 하고 판정·기록만 여기서 한다. 웹 액션 두 개는 `requireAdmin` 후 위임하는 래퍼가 됐다.
+- **`CheckIn` 테이블** — 입장·취소를 지우지 않고 쌓는다. `Ticket.status/checkedInAt`은 현재 상태 캐시로 남긴다(동시 스캔 원자 판정에 필요). 상태 갱신과 기록 생성은 한 트랜잭션.
+- **입장 취소 이력 보존** — 전에는 `undoCheckIn`이 `checkedInAt/By`를 null로 덮어써 "누가 언제 입장시켰다가 취소했는지"가 사라졌다. 이제 `undo` 기록이 남는다. 취소도 `status: 'checked_in'` 조건부 갱신이라 동시 취소가 이중 기록되지 않는다.
+- **재입장 허용** — `Drop.allowReentry`(기본 false). 켜면 이미 입장한 티켓도 초록으로 들여보내고 입장 기록만 추가한다(상태·최초 입장 시각은 그대로). 어드민 드랍 폼 사이드바에 티켓형일 때만 토글이 보인다. 스캐너는 "재입장"으로 표시.
+- `clientId`(unique)는 게이트 앱이 오프라인 기록을 재전송해도 한 번만 저장되게 하기 위한 자리. 웹은 서버가 UUID를 붙인다.
+
+**마이그레이션**: `prisma/manual-migrations/2026-10-01_checkin_log.sql` — 추가만 하므로 기존 코드와 호환. **배포 전에 prod에 먼저 적용해야 한다** — Drop 기본 select가 `allowReentry`를 요구해서, 순서가 뒤집히면 드랍 페이지가 500이 된다.
+
+**검증**: type-check·biome 통과. SQL은 main 스키마 → 현 스키마를 `prisma migrate diff`로 오프라인 비교해 생성. DB 적용 후 로컬 실측은 아래에 추가.
+
+
 ### 모노레포 전환: 웹 사이트를 `apps/web`으로 (repo)
 
 체크인 앱(게이트, Expo)을 같은 저장소에 두고 웹과 API·타입을 공유하기 위한 준비. 게이트 코드보다 먼저, 이전만 하는 단독 PR로 분리했다 — 결제가 라이브인 사이트의 빌드 경로가 바뀌는 변경이라 다른 변경과 섞으면 원인 추적이 어렵다.

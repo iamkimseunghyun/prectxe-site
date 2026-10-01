@@ -29,6 +29,7 @@ export default async function Page({ params }: PageProps) {
         venueId: drop.venueId,
         notice: drop.notice,
         publishedAt: drop.publishedAt,
+        allowReentry: drop.allowReentry,
         media: drop.media,
         credits: drop.credits.map((c) => ({
           artistId: c.artistId,

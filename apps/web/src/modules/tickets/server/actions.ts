@@ -38,6 +38,7 @@ import {
   generateTicketToken,
 } from '@/lib/utils/ticket-token';
 import { getOrderTicketsUrl } from '@/lib/utils/ticket-url';
+import { checkInByToken, undoCheckInByToken } from './check-in';
 
 // ─── 티켓 발급 헬퍼 (paid 처리 시 호출) ──────────────
 
@@ -1120,120 +1121,14 @@ export async function cancelOrder(orderId: string) {
 export async function checkInTicket(token: string, dropId: string) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;
-
-  const ticket = await prisma.ticket.findUnique({
-    where: { token },
-    include: {
-      order: {
-        select: {
-          id: true,
-          status: true,
-          buyerName: true,
-          dropId: true,
-          drop: { select: { title: true } },
-        },
-      },
-      ticketTier: { select: { name: true } },
-    },
-  });
-
-  if (!ticket)
-    return { success: false, error: '유효하지 않은 티켓입니다.' } as const;
-  if (ticket.order.dropId !== dropId)
-    return {
-      success: false,
-      // 어느 공연 것인지 알려줘야 입장구에서 바로 안내할 수 있다
-      error: `다른 공연의 입장권입니다${
-        ticket.order.drop ? ` (${ticket.order.drop.title})` : ''
-      }.`,
-    } as const;
-  if (ticket.status === 'cancelled')
-    return { success: false, error: '취소된 티켓입니다.' } as const;
-  if (ticket.order.status !== 'paid')
-    return {
-      success: false,
-      error: '결제가 완료되지 않은 티켓입니다.',
-    } as const;
-
-  const buyerName = ticket.order.buyerName;
-  const tierName = ticket.ticketTier?.name ?? '티켓';
-
-  if (ticket.status === 'checked_in') {
-    return {
-      success: true,
-      alreadyCheckedIn: true,
-      data: { buyerName, tierName, checkedInAt: ticket.checkedInAt },
-    } as const;
-  }
-
-  // 조회와 갱신 사이에 다른 입구가 같은 QR을 먼저 찍을 수 있다. active일 때만
-  // 갱신해야 동시 스캔에서 한쪽만 입장으로 판정된다 (cancelOrder도 같은 행을
-  // cancelled로 바꾸므로 취소와 겹쳐도 이 조건에서 걸린다)
-  const now = new Date();
-  const updated = await prisma.ticket.updateMany({
-    where: { id: ticket.id, status: 'active' },
-    data: {
-      status: 'checked_in',
-      checkedInAt: now,
-      checkedInBy: auth.userId,
-    },
-  });
-
-  if (updated.count === 0) {
-    const current = await prisma.ticket.findUnique({
-      where: { id: ticket.id },
-      select: { status: true, checkedInAt: true },
-    });
-    if (current?.status === 'checked_in')
-      return {
-        success: true,
-        alreadyCheckedIn: true,
-        data: { buyerName, tierName, checkedInAt: current.checkedInAt },
-      } as const;
-    if (current?.status === 'cancelled')
-      return { success: false, error: '취소된 티켓입니다.' } as const;
-    return {
-      success: false,
-      error: '티켓 상태가 바뀌었습니다. 다시 스캔해주세요.',
-    } as const;
-  }
-
-  return {
-    success: true,
-    alreadyCheckedIn: false,
-    data: { buyerName, tierName, checkedInAt: now },
-  } as const;
+  return checkInByToken({ token, dropId, actor: { userId: auth.userId } });
 }
 
 /** 체크인 되돌리기. 다른 공연 스캐너에서 남의 티켓을 되돌리지 못하게 같은 스코프를 건다. */
 export async function undoCheckIn(token: string, dropId: string) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;
-
-  const ticket = await prisma.ticket.findUnique({
-    where: { token },
-    include: { order: { select: { dropId: true } } },
-  });
-  if (!ticket)
-    return { success: false, error: '유효하지 않은 티켓입니다.' } as const;
-  if (ticket.order.dropId !== dropId)
-    return { success: false, error: '다른 공연의 입장권입니다.' } as const;
-  if (ticket.status !== 'checked_in')
-    return {
-      success: false,
-      error: '체크인된 티켓이 아닙니다.',
-    } as const;
-
-  await prisma.ticket.update({
-    where: { id: ticket.id },
-    data: {
-      status: 'active',
-      checkedInAt: null,
-      checkedInBy: null,
-    },
-  });
-
-  return { success: true } as const;
+  return undoCheckInByToken({ token, dropId, actor: { userId: auth.userId } });
 }
 
 export async function getCheckInStats(dropId: string) {
