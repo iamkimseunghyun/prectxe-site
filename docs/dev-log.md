@@ -27,6 +27,10 @@
 
 **검증**: type-check(web·gate-contract)·biome 통과, 프로덕션 빌드 성공(`/api/gate/*` 8개). dev DB 적용 후 로컬 `next start`로 DB를 쓰지 않는 경로 실측 — 토큰 없음·위조 토큰 401(전 엔드포인트), JSON 아님·잘못된 이메일·코드 형식 400, 미등록 주소 request-code 200(`{ok:true}`), verify 401, 같은 주소 6번째 요청 429(대소문자 다른 주소도 같은 버킷 — 정규화 확인), 서버 로그 에러 없음. 스태프 배정 → 코드 메일 → 로그인 → 입장 흐름은 dev DB 쓰기가 필요해 미실측.
 
+**테스트 도구** (`apps/web/scripts/`, prod DB 호스트면 실행 거부):
+- `gate-test-seed.ts` — 비공개 테스트 드랍 `gate-test`(행사 +2시간, 결제 주문 5건·티켓 6장 + 취소 1장)를 만들거나 초기화. `--staff <email>`로 스태프 배정, 카메라 테스트용 QR 시트(HTML)를 임시 폴더에 생성. 같은 slug의 드랍이 공개됐거나 제목에 `[테스트]`가 없으면 멈춘다(실제 드랍의 주문을 지우지 않게).
+- `gate-test-smoke.ts` — 실제 HTTP로 로그인(코드는 `issueLoginCode`로 직접 받아 `/auth/verify` 통과)부터 입장·재전송·취소·재입장·동시 스캔·변경분·로그아웃까지 23개 항목 확인. **dev DB에서 전부 통과** — 같은 티켓 5곳 동시 스캔 시 entered 1·already 4, 같은 clientId 동시 3회 시 전부 entered·기록 1건, 입장에 쓴 clientId로 취소하면 422.
+
 
 ### 입장 기록(CheckIn) + 재입장 허용 (tickets, drops)
 
