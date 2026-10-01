@@ -24,6 +24,7 @@ import type {
   VerifyCodeResponse,
 } from '@prectxe/gate-contract';
 import { prisma } from '@/lib/db/prisma';
+import { salesOrderWhere } from '@/lib/db/sales-order';
 import { issueLoginCode } from '@/modules/gate/server/auth';
 import { getDropCheckInLog } from '@/modules/tickets/server/queries';
 import { assertNotProduction } from './gate-test-guard';
@@ -182,6 +183,17 @@ async function main() {
   );
   const listedGuests = list.data.tickets?.filter((t) =>
     guestTokens.has(t.token)
+  );
+  // 대시보드·매출·주문 목록·내보내기가 쓰는 판매 주문 조건은 게스트를 뺀다
+  const [allOrders, salesOrders, guestOrders] = await Promise.all([
+    prisma.order.count({ where: { dropId: drop.id } }),
+    prisma.order.count({ where: { dropId: drop.id, ...salesOrderWhere } }),
+    prisma.order.count({ where: { dropId: drop.id, isGuest: true } }),
+  ]);
+  check(
+    '판매 주문 조건(salesOrderWhere)은 게스트 주문을 뺀다',
+    guestOrders > 0 && salesOrders === allOrders - guestOrders,
+    { allOrders, salesOrders, guestOrders }
   );
   check(
     "게스트는 '게스트' 등급·메모와 함께 목록에 포함",

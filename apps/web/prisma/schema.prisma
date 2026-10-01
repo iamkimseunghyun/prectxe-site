@@ -518,7 +518,10 @@ model Order {
   accessToken  String?       @unique
   dropId       String?
   buyerName    String
+  /// 게스트(isGuest) 주문은 연락처 없이 발급할 수 있어 빈 문자열일 수 있다 —
+  /// 구매자 대상 발송·검색은 salesOrderWhere로 게스트를 빼거나 빈 값을 거를 것
   buyerEmail   String
+  /// buyerEmail과 같다 (게스트는 빈 문자열 가능)
   buyerPhone   String
   totalAmount  Int
   status       OrderStatus   @default(pending)

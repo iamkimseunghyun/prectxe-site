@@ -10,6 +10,7 @@ import {
   generateOrderNo,
   generateTicketToken,
 } from '@/lib/utils/ticket-token';
+import { checkInByToken } from '@/modules/tickets/server/check-in';
 
 /**
  * 게스트를 추가한다. 게스트는 0원·결제 없음·등급 없음 주문(`isGuest`)으로
@@ -76,4 +77,37 @@ export async function addGuest(
 
   revalidatePath(`/admin/drops/${dropId}/guests`);
   return { success: true } as const;
+}
+
+/**
+ * 게스트 일행 중 아직 입장하지 않은 1명을 입장 처리한다. 화면 목록은 오래됐을
+ * 수 있어(다른 입구·게이트 앱이 방금 처리) 미입장 티켓을 서버에서 다시 읽고,
+ * 고른 티켓을 다른 곳이 먼저 처리했으면 다음 미입장 티켓으로 넘어간다 — 그러지
+ * 않으면 일행이 남았는데도 '이미 입장'으로 끝난다.
+ */
+export async function checkInGuest(orderId: string, dropId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error } as const;
+
+  const tickets = await prisma.ticket.findMany({
+    where: {
+      orderId,
+      status: 'active',
+      order: { dropId, isGuest: true, status: 'paid' },
+    },
+    select: { token: true },
+    orderBy: { createdAt: 'asc' },
+  });
+  for (const ticket of tickets) {
+    const r = await checkInByToken({
+      token: ticket.token,
+      dropId,
+      actor: { userId: auth.userId },
+    });
+    if (!r.success) return r;
+    if (r.result === 'entered')
+      return { success: true, buyerName: r.data.buyerName } as const;
+    // already·reentered: 읽은 사이 다른 곳이 이 티켓을 처리했다 — 다음 티켓으로
+  }
+  return { success: false, error: '일행이 모두 입장했습니다.' } as const;
 }

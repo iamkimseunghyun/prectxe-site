@@ -13,12 +13,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ORDERS } from '@/lib/constants/constants';
 import { getOrderTicketsUrl } from '@/lib/utils/ticket-url';
-import {
-  cancelOrder,
-  checkInTicket,
-  undoCheckIn,
-} from '@/modules/tickets/server/actions';
-import { addGuest } from '@/modules/tickets/server/guest-actions';
+import { cancelOrder, undoCheckIn } from '@/modules/tickets/server/actions';
+import { addGuest, checkInGuest } from '@/modules/tickets/server/guest-actions';
 import type { DropGuest } from '@/modules/tickets/server/queries';
 
 export function GuestListView({
@@ -33,6 +29,8 @@ export function GuestListView({
   const [pending, startTransition] = useTransition();
   const [query, setQuery] = useState('');
   const [removeTarget, setRemoveTarget] = useState<DropGuest | null>(null);
+  const removeEntered =
+    removeTarget?.tickets.filter((t) => t.status === 'checked_in').length ?? 0;
 
   const totalPeople = guests.reduce((n, g) => n + g.tickets.length, 0);
   const enteredPeople = guests.reduce(
@@ -43,11 +41,16 @@ export function GuestListView({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return guests;
+    // 번호는 하이픈·공백 유무와 상관없이 찾히게 숫자끼리 비교한다
+    const digits = q.replace(/[\s-]/g, '');
+    const isNumber = /^\d+$/.test(digits);
     return guests.filter((g) =>
-      [g.buyerName, g.buyerPhone, g.note ?? '']
-        .join(' ')
-        .toLowerCase()
-        .includes(q)
+      isNumber
+        ? g.buyerPhone.replace(/\D/g, '').includes(digits)
+        : [g.buyerName, g.buyerPhone, g.note ?? '']
+            .join(' ')
+            .toLowerCase()
+            .includes(q)
     );
   }, [guests, query]);
 
@@ -79,20 +82,15 @@ export function GuestListView({
   };
 
   const enterOne = (guest: DropGuest) => {
-    const next = guest.tickets.find((t) => t.status === 'active');
-    if (!next) return;
+    // 어느 티켓을 쓸지는 서버가 정한다 — 이 화면의 목록은 다른 입구가 방금
+    // 처리한 것을 모를 수 있다
     run(async () => {
-      const r = await checkInTicket(next.token, drop.id);
+      const r = await checkInGuest(guest.id, drop.id);
       if (!r.success) {
         toast({ title: r.error, variant: 'destructive' });
         return;
       }
-      toast({
-        title:
-          r.result === 'already'
-            ? `${guest.buyerName} — 이미 입장 처리돼 있습니다.`
-            : `${guest.buyerName} 입장`,
-      });
+      toast({ title: `${r.buyerName} 입장` });
     });
   };
 
@@ -336,6 +334,12 @@ export function GuestListView({
               ? ` 외 ${removeTarget.tickets.length - 1}명`
               : ''}
             을(를) 명단에서 지웁니다. 발급된 입장권도 무효가 됩니다.
+            {removeEntered > 0 && (
+              <strong className="mt-2 block text-destructive">
+                이미 {removeEntered}명이 입장했습니다. 삭제하면 입장 인원에서
+                빠지고, 다시 들어올 때 취소된 입장권으로 거절됩니다.
+              </strong>
+            )}
           </>
         }
         confirmText="삭제"

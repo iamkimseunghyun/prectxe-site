@@ -10,6 +10,7 @@ import {
   deleteCloudflareVideo,
 } from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
+import { salesOrderWhere } from '@/lib/db/sales-order';
 import { dropCreateSchema, dropUpdateSchema } from '@/lib/schemas/drop';
 import { extractImageId, extractVideoId, parseKstDateInput } from '@/lib/utils';
 import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
@@ -340,7 +341,11 @@ export async function getDropWithStats(dropId: string) {
       },
     }),
     prisma.order.aggregate({
-      where: { dropId, status: { in: ['paid', 'confirmed'] }, isGuest: false },
+      where: {
+        dropId,
+        status: { in: ['paid', 'confirmed'] },
+        ...salesOrderWhere,
+      },
       _sum: { totalAmount: true },
       _count: true,
     }),
@@ -386,7 +391,7 @@ export async function getDropOrders(
   if (!auth.success) return { success: false, error: auth.error } as const;
 
   // 게스트는 판매 주문이 아니다 — 게스트 페이지에서 따로 관리
-  const where: Prisma.OrderWhereInput = { dropId, isGuest: false };
+  const where: Prisma.OrderWhereInput = { dropId, ...salesOrderWhere };
   const VALID_STATUSES = [
     'pending',
     'paid',
@@ -484,7 +489,7 @@ export async function listAdminDrops(page = 1, pageSize = 20) {
         where: {
           dropId: { in: dropIds },
           status: { in: ['paid', 'confirmed'] },
-          isGuest: false,
+          ...salesOrderWhere,
         },
         _sum: { totalAmount: true },
         _count: true,

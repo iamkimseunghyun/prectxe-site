@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { AdminStatsCard } from '@/components/admin/admin-stats-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { prisma } from '@/lib/db/prisma';
+import { salesOrderWhere } from '@/lib/db/sales-order';
 import { formatKstDate, getImageUrl } from '@/lib/utils';
 
 export default async function Page() {
@@ -29,12 +30,12 @@ export default async function Page() {
       prisma.artwork.count(),
       prisma.drop.count(),
       prisma.order.count({
-        where: { status: { in: ['paid', 'confirmed'] }, isGuest: false },
+        where: { status: { in: ['paid', 'confirmed'] }, ...salesOrderWhere },
       }),
     ]),
     prisma.order
       .aggregate({
-        where: { status: { in: ['paid', 'confirmed'] }, isGuest: false },
+        where: { status: { in: ['paid', 'confirmed'] }, ...salesOrderWhere },
         _sum: { totalAmount: true },
       })
       .catch(() => ({ _sum: { totalAmount: 0 } })),
