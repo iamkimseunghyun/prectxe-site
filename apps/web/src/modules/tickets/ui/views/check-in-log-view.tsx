@@ -12,7 +12,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatKstDateTime } from '@/lib/utils';
-import type { CheckInLogEntry } from '@/modules/tickets/server/queries';
+import type {
+  CheckInLog,
+  CheckInLogEntry,
+} from '@/modules/tickets/server/queries';
 
 const FLAG_LABEL = {
   duplicate: '중복 입장',
@@ -72,16 +75,12 @@ function LogTable({ entries }: { entries: CheckInLogEntry[] }) {
 
 export function CheckInLogView({
   drop,
-  entries,
-  truncated,
+  log,
 }: {
   drop: { id: string; title: string };
-  entries: CheckInLogEntry[];
-  truncated: boolean;
+  log: CheckInLog;
 }) {
-  const flagged = entries.filter((e) => e.flag);
-  const entryCount = entries.filter((e) => e.kind === 'entry').length;
-  const undoCount = entries.length - entryCount;
+  const { entries, truncated, flagged, counts } = log;
 
   return (
     <div className="space-y-6">
@@ -101,13 +100,15 @@ export function CheckInLogView({
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">입장 처리</p>
-            <p className="text-2xl font-semibold tabular-nums">{entryCount}</p>
+            <p className="text-2xl font-semibold tabular-nums">
+              {counts.entry}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">입장 취소</p>
-            <p className="text-2xl font-semibold tabular-nums">{undoCount}</p>
+            <p className="text-2xl font-semibold tabular-nums">{counts.undo}</p>
           </CardContent>
         </Card>
         <Card>
@@ -149,7 +150,8 @@ export function CheckInLogView({
         )}
         {truncated && (
           <p className="text-xs text-muted-foreground">
-            최근 기록만 표시합니다.
+            전체 기록 표는 최근 기록만 표시합니다. 위 집계와 확인 필요 목록은
+            전체 기준입니다.
           </p>
         )}
       </section>

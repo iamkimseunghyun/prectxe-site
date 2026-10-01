@@ -56,6 +56,10 @@ export async function POST(
             clientId: record.clientId,
             ...outcome,
           });
+          // 앞 기록이 반영되지 않았는데 뒤 기록(예: 그 입장의 취소)을 처리하면
+          // 뒤 기록만 최종 결과로 끝나 앱이 버린다. 남은 기록은 결과를 비워
+          // 아래에서 전부 retry로 돌려준다.
+          if (outcome.status === 'retry') break;
         } catch (error) {
           // 한 건의 일시적 오류로 배치 전체를 실패시키지 않는다 — 그 건만 재시도
           console.error('[gate] 오프라인 기록 반영 실패', {
@@ -67,6 +71,7 @@ export async function POST(
             clientId: record.clientId,
             status: 'retry',
           });
+          break;
         }
       }
     }

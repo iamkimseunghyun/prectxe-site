@@ -500,6 +500,60 @@ async function main() {
   const empty = await call('POST', `${D}/sync`, token, { records: [] });
   check('빈 배치 → 400', empty.status === 400, empty);
 
+  // 취소 대상이 지금의 입장 상태를 만든 기록이 아니면 티켓을 되돌리지 않는다
+  await prisma.drop.update({
+    where: { id: drop.id },
+    data: { allowReentry: true },
+  });
+  const r1 = id();
+  const reBatch = await call<SyncResponse>('POST', `${D}/sync`, token, {
+    records: [
+      { kind: 'entry', clientId: r1, token: B.token, scannedAt: ago(20) },
+      {
+        kind: 'undo',
+        clientId: id(),
+        token: B.token,
+        scannedAt: ago(5),
+        undoes: r1,
+      },
+    ],
+  });
+  await prisma.drop.update({
+    where: { id: drop.id },
+    data: { allowReentry: false },
+  });
+  const b = await prisma.ticket.findUnique({
+    where: { token: B.token },
+    select: { status: true },
+  });
+  check(
+    '재입장 기록을 오프라인 취소 → 최초 입장은 유지',
+    reBatch.data.results?.every((r) => r.status === 'applied') &&
+      b?.status === 'checked_in',
+    { results: reBatch.data.results, b }
+  );
+  // A: c1 입장 → 온라인 취소 → 다른 입장으로 다시 입장된 상태. c1의 오프라인 취소가 늦게 도착
+  const stale = await call<SyncResponse>('POST', `${D}/sync`, token, {
+    records: [
+      {
+        kind: 'undo',
+        clientId: id(),
+        token: A.token,
+        scannedAt: ago(1),
+        undoes: c1,
+      },
+    ],
+  });
+  const a = await prisma.ticket.findUnique({
+    where: { token: A.token },
+    select: { status: true },
+  });
+  check(
+    '이미 취소된 옛 입장을 늦게 취소 → 이후 입장은 유지',
+    stale.data.results?.[0]?.status === 'applied' && a?.status === 'checked_in',
+    { results: stale.data.results, a }
+  );
+
   const log = await prisma.checkIn.groupBy({
     by: ['kind', 'flag'],
     where: { dropId: drop.id },

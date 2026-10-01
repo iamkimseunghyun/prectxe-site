@@ -20,6 +20,6 @@ export default async function CheckInLogPage({
   });
   if (!drop || drop.type !== 'ticket') notFound();
 
-  const { entries, truncated } = await getDropCheckInLog(id);
-  return <CheckInLogView drop={drop} entries={entries} truncated={truncated} />;
+  const log = await getDropCheckInLog(id);
+  return <CheckInLogView drop={drop} log={log} />;
 }
