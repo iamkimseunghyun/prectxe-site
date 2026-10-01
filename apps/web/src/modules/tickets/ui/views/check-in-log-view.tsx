@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ORDERS } from '@/lib/constants/constants';
 import { formatKstDateTime } from '@/lib/utils';
 import type {
   CheckInLog,
@@ -66,7 +67,10 @@ function LogTable({ entries }: { entries: CheckInLogEntry[] }) {
                   {entry.ticket.order.orderNo}
                 </span>
               </TableCell>
-              <TableCell>{entry.ticket.ticketTier?.name ?? '-'}</TableCell>
+              <TableCell>
+                {entry.ticket.ticketTier?.name ??
+                  (entry.ticket.order.isGuest ? ORDERS.GUEST_TIER_LABEL : '-')}
+              </TableCell>
               <TableCell>{entry.gate ?? '-'}</TableCell>
               <TableCell>{actorLabel(entry)}</TableCell>
             </TableRow>

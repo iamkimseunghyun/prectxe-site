@@ -523,6 +523,11 @@ model Order {
   totalAmount  Int
   status       OrderStatus   @default(pending)
   locale       String        @default("ko")
+  /// 어드민이 발급한 게스트 입장(0원, 결제 없음, 등급 없음). 매출·주문 목록·
+  /// 내보내기 같은 판매 집계에서는 반드시 뺀다 (`isGuest: false`)
+  isGuest      Boolean       @default(false)
+  /// 게스트 메모 (누구의 게스트인지 등). 입구 확인용으로 게이트 앱에도 내려간다
+  note         String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   drop         Drop?         @relation(fields: [dropId], references: [id], onDelete: Cascade)

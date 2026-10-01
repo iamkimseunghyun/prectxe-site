@@ -83,6 +83,7 @@
     "admitted": "Admitted",
     "waiting": "Awaiting entry",
     "tierFallback": "Ticket",
+    "guestTier": "Guest",
     "admittedAt": "Admitted at {time}",
     "notice": "Details",
     "footerShowQr": "Show the QR code above to staff upon entry.",

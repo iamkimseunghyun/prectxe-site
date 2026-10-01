@@ -45,7 +45,8 @@ export async function GET(
     }
 
     const orders = await prisma.order.findMany({
-      where: { dropId: id },
+      // 게스트는 판매 주문이 아니라 내보내기에서 뺀다
+      where: { dropId: id, isGuest: false },
       select: {
         orderNo: true,
         createdAt: true,

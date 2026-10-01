@@ -3,6 +3,7 @@ import type {
   GateTicket,
   GateTicketsResponse,
 } from '@prectxe/gate-contract';
+import { ORDERS } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 
 // 행사 목록에 노출하는 시간 창. 입장 준비(목록 다운로드)를 하루 전부터 할 수
@@ -100,7 +101,15 @@ export async function getDropTickets(
       token: true,
       status: true,
       checkedInAt: true,
-      order: { select: { status: true, buyerName: true, buyerPhone: true } },
+      order: {
+        select: {
+          status: true,
+          buyerName: true,
+          buyerPhone: true,
+          isGuest: true,
+          note: true,
+        },
+      },
       ticketTier: { select: { name: true } },
     },
     orderBy: { createdAt: 'asc' },
@@ -114,7 +123,10 @@ export async function getDropTickets(
         // 주문이 결제 상태가 아니면(취소·환불) 티켓 상태와 무관하게 무효
         status: t.order.status === 'paid' ? t.status : 'cancelled',
         buyerName: t.order.buyerName,
-        tierName: t.ticketTier?.name ?? '티켓',
+        tierName:
+          t.ticketTier?.name ??
+          (t.order.isGuest ? ORDERS.GUEST_TIER_LABEL : '티켓'),
+        note: t.order.note,
         phoneLast4: phoneLast4(t.order.buyerPhone),
         checkedInAt: t.checkedInAt?.toISOString() ?? null,
       })

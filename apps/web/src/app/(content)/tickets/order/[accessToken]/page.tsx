@@ -145,7 +145,8 @@ export default async function OrderTicketsPage({
 
                   <div className="px-5 py-6">
                     <p className="text-base font-semibold text-white">
-                      {ticket.ticketTier?.name ?? t('tierFallback')}
+                      {ticket.ticketTier?.name ??
+                        (order.isGuest ? t('guestTier') : t('tierFallback'))}
                     </p>
                     {ticket.ticketTier?.description && (
                       <div className="prose prose-invert prose-sm mt-1 max-w-none text-white/60 leading-relaxed prose-p:my-0">

@@ -28,11 +28,13 @@ export default async function Page() {
       prisma.venue.count(),
       prisma.artwork.count(),
       prisma.drop.count(),
-      prisma.order.count({ where: { status: { in: ['paid', 'confirmed'] } } }),
+      prisma.order.count({
+        where: { status: { in: ['paid', 'confirmed'] }, isGuest: false },
+      }),
     ]),
     prisma.order
       .aggregate({
-        where: { status: { in: ['paid', 'confirmed'] } },
+        where: { status: { in: ['paid', 'confirmed'] }, isGuest: false },
         _sum: { totalAmount: true },
       })
       .catch(() => ({ _sum: { totalAmount: 0 } })),

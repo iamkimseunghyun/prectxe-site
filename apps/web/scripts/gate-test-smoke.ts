@@ -72,12 +72,15 @@ async function main() {
     );
   const tickets = await prisma.ticket.findMany({
     where: { order: { dropId: drop.id } },
-    select: { token: true, status: true },
+    select: { token: true, status: true, order: { select: { isGuest: true } } },
     orderBy: { createdAt: 'asc' },
   });
-  const active = tickets.filter((t) => t.status === 'active');
+  const active = tickets.filter(
+    (t) => t.status === 'active' && !t.order.isGuest
+  );
   const cancelled = tickets.find((t) => t.status === 'cancelled');
-  if (active.length < 8 || !cancelled)
+  const guestTickets = tickets.filter((t) => t.order.isGuest);
+  if (active.length < 8 || !cancelled || guestTickets.length < 1)
     throw new Error('티켓 상태가 초기값이 아닙니다. 시드를 다시 실행하세요.');
   const [A, B, C, T4, T5, T6, T7, T8] = active;
   const D = `/drops/${drop.id}`;
@@ -170,11 +173,23 @@ async function main() {
     list.data.tickets?.find((t) => t.token === cancelled.token)?.status ===
       'cancelled'
   );
+  const guestTokens = new Set(guestTickets.map((t) => t.token));
   check(
-    '전화번호는 뒷자리만, 이메일 없음',
-    list.data.tickets?.every(
-      (t) => (t.phoneLast4 ?? '').length === 4 && !('buyerEmail' in t)
-    )
+    '전화번호는 뒷자리만, 이메일 없음 (판매 티켓)',
+    list.data.tickets
+      ?.filter((t) => !guestTokens.has(t.token))
+      .every((t) => (t.phoneLast4 ?? '').length === 4 && !('buyerEmail' in t))
+  );
+  const listedGuests = list.data.tickets?.filter((t) =>
+    guestTokens.has(t.token)
+  );
+  check(
+    "게스트는 '게스트' 등급·메모와 함께 목록에 포함",
+    listedGuests?.length === guestTickets.length &&
+      listedGuests.every(
+        (t) => t.tierName === '게스트' && t.note === '아티스트 게스트'
+      ),
+    listedGuests
   );
   const syncedAt = list.data.syncedAt;
 
@@ -257,6 +272,16 @@ async function main() {
     clientId: randomUUID(),
   });
   check('없는 토큰 → 422', fake.status === 422, fake);
+  const guestIn = await call<CheckInResponse>('POST', `${D}/check-in`, token, {
+    token: guestTickets[0].token,
+    clientId: randomUUID(),
+  });
+  check(
+    "게스트 입장 → entered, 등급 '게스트'",
+    guestIn.data.result === 'entered' &&
+      guestIn.data.ticket?.tierName === '게스트',
+    guestIn
+  );
 
   console.log('\n동시성');
   const race = await Promise.all(
