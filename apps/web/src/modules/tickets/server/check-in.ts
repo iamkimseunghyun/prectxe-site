@@ -141,17 +141,34 @@ export async function checkInByToken(input: {
   const view = { buyerName, tierName, checkedInAt: current.checkedInAt };
   if (!allowReentry) return { success: true, result: 'already', data: view };
 
-  // 재입장 허용 행사: 상태는 그대로 두고 입장 기록만 남긴다 (입구별 유입 집계용)
-  await prisma.checkIn.create({
-    data: logData({
-      kind: 'entry',
-      ticketId: ticket.id,
-      dropId,
-      actor,
-      gate,
-      at: new Date(),
-    }),
+  // 재입장 허용 행사: 상태는 그대로 두고 입장 기록만 남긴다 (입구별 유입 집계용).
+  // 확인과 기록 사이에 입장 취소·주문 취소가 끼면 기록과 상태가 어긋나므로,
+  // 조건부 갱신으로 행을 잠그고 같은 트랜잭션에서 기록한다. 바꿀 값이 없으면
+  // UPDATE 자체가 생략될 수 있어 updatedAt을 실제로 갱신한다.
+  const now = new Date();
+  const reentered = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.ticket.updateMany({
+      where: { id: ticket.id, status: 'checked_in' },
+      data: { updatedAt: now },
+    });
+    if (count === 0) return false;
+    await tx.checkIn.create({
+      data: logData({
+        kind: 'entry',
+        ticketId: ticket.id,
+        dropId,
+        actor,
+        gate,
+        at: now,
+      }),
+    });
+    return true;
   });
+  if (!reentered)
+    return {
+      success: false,
+      error: '티켓 상태가 바뀌었습니다. 다시 스캔해주세요.',
+    };
   return { success: true, result: 'reentered', data: view };
 }
 
