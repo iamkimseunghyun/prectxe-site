@@ -68,18 +68,21 @@ function isClientIdConflict(error: unknown): boolean {
  */
 async function findReplay(
   clientId: string | undefined,
-  ticketId: string
+  ticketId: string,
+  kind: CheckInKind
 ): Promise<'none' | 'same' | 'mismatch'> {
   if (!clientId) return 'none';
   const prev = await prisma.checkIn.findUnique({
     where: { clientId },
-    select: { ticketId: true },
+    select: { ticketId: true, kind: true },
   });
   if (!prev) return 'none';
-  return prev.ticketId === ticketId ? 'same' : 'mismatch';
+  // 티켓뿐 아니라 작업 종류까지 같아야 같은 요청이다 — 입장에 쓴 ID로 취소를
+  // 보내면 실제로 취소하지 않고 성공만 돌려주게 된다
+  return prev.ticketId === ticketId && prev.kind === kind ? 'same' : 'mismatch';
 }
 
-const CLIENT_ID_MISMATCH = '같은 요청 ID가 다른 티켓에 이미 쓰였습니다.';
+const CLIENT_ID_MISMATCH = '같은 요청 ID가 다른 요청에 이미 쓰였습니다.';
 
 export async function checkInByToken(input: {
   token: string;
@@ -121,15 +124,28 @@ export async function checkInByToken(input: {
   const buyerName = ticket.order.buyerName;
   const tierName = ticket.ticketTier?.name ?? '티켓';
 
-  const replay = await findReplay(clientId, ticket.id);
-  if (replay === 'mismatch')
-    return { success: false, error: CLIENT_ID_MISMATCH };
-  if (replay === 'same')
+  // 이 요청이 이미 처리된 재전송이면 처음 결과를, 아니면 null. 처음 들어올
+  // 때뿐 아니라 갱신이 0건이거나 고유키에 걸렸을 때도 다시 본다 — 같은 요청이
+  // 동시에 두 번 오면 둘 다 처음엔 'none'을 보고, 늦은 쪽은 먼저 커밋된 기록에
+  // 막힌 뒤에야 재전송이었다는 걸 알 수 있다.
+  const replayed = async (): Promise<CheckInOutcome | null> => {
+    const replay = await findReplay(clientId, ticket.id, 'entry');
+    if (replay === 'none') return null;
+    if (replay === 'mismatch')
+      return { success: false, error: CLIENT_ID_MISMATCH };
+    const settled = await prisma.ticket.findUnique({
+      where: { id: ticket.id },
+      select: { checkedInAt: true },
+    });
     return {
       success: true,
       result: 'entered',
-      data: { buyerName, tierName, checkedInAt: ticket.checkedInAt },
+      data: { buyerName, tierName, checkedInAt: settled?.checkedInAt ?? null },
     };
+  };
+
+  const early = await replayed();
+  if (early) return early;
 
   if (ticket.status === 'cancelled')
     return { success: false, error: '취소된 티켓입니다.' };
@@ -173,6 +189,8 @@ export async function checkInByToken(input: {
           result: 'entered',
           data: { buyerName, tierName, checkedInAt: now },
         };
+      const late = await replayed();
+      if (late) return late;
     }
 
     // 이미 입장한 티켓 — 처음부터 그랬거나, 방금 다른 입구가 먼저 찍었거나
@@ -215,18 +233,12 @@ export async function checkInByToken(input: {
       };
     return { success: true, result: 'reentered', data: view };
   } catch (error) {
-    // 같은 요청이 동시에 두 번 들어와 한쪽이 먼저 기록한 경우 — 트랜잭션은
-    // 롤백됐으므로 먼저 들어간 쪽의 결과를 돌려준다
+    // 고유키 충돌 — 같은 요청의 동시 재전송이면 먼저 들어간 쪽 결과를 준다.
+    // 다른 요청이 같은 ID를 썼다면 트랜잭션이 롤백됐으므로 입장된 게 아니다
     if (!isClientIdConflict(error)) throw error;
-    const settled = await prisma.ticket.findUnique({
-      where: { id: ticket.id },
-      select: { checkedInAt: true },
-    });
-    return {
-      success: true,
-      result: 'entered',
-      data: { buyerName, tierName, checkedInAt: settled?.checkedInAt ?? null },
-    };
+    const late = await replayed();
+    if (late) return late;
+    throw error;
   }
 }
 
@@ -252,10 +264,17 @@ export async function undoCheckInByToken(input: {
   if (ticket.order.dropId !== dropId)
     return { success: false, error: '다른 공연의 입장권입니다.' };
 
-  const replay = await findReplay(clientId, ticket.id);
-  if (replay === 'mismatch')
-    return { success: false, error: CLIENT_ID_MISMATCH };
-  if (replay === 'same') return { success: true };
+  // checkInByToken과 같은 이유로 처음·갱신 0건·고유키 충돌 세 지점에서 본다
+  const replayed = async () => {
+    const replay = await findReplay(clientId, ticket.id, 'undo');
+    if (replay === 'same') return { success: true } as const;
+    if (replay === 'mismatch')
+      return { success: false, error: CLIENT_ID_MISMATCH } as const;
+    return null;
+  };
+
+  const early = await replayed();
+  if (early) return early;
 
   const now = new Date();
   try {
@@ -278,10 +297,14 @@ export async function undoCheckInByToken(input: {
       });
       return true;
     });
-    if (!undone) return { success: false, error: '체크인된 티켓이 아닙니다.' };
-    return { success: true };
+    if (undone) return { success: true };
+    const late = await replayed();
+    if (late) return late;
+    return { success: false, error: '체크인된 티켓이 아닙니다.' };
   } catch (error) {
     if (!isClientIdConflict(error)) throw error;
-    return { success: true };
+    const late = await replayed();
+    if (late) return late;
+    throw error;
   }
 }

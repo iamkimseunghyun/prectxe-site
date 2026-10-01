@@ -2,6 +2,7 @@ import {
   type RequestCodeResponse,
   requestCodeBody,
 } from '@prectxe/gate-contract';
+import { after } from 'next/server';
 import { sendEmail } from '@/lib/email/send';
 import { getClientIp } from '@/lib/rate-limit/client-ip';
 import { checkRateLimit } from '@/lib/rate-limit/memory';
@@ -33,21 +34,25 @@ export async function POST(request: Request) {
 
   const issued = await issueLoginCode(email);
   if (issued) {
-    const sent = await sendEmail({
-      to: issued.staff.email,
-      subject: `[PRECTXE 게이트] 로그인 코드 ${issued.code}`,
-      template: 'staff-login-code',
-      data: {
-        code: issued.code,
-        expiresInMinutes: LOGIN_CODE_TTL_MINUTES,
-        staffName: issued.staff.name,
-      },
-    });
-    if (!sent.success)
-      console.error('[gate] 로그인 코드 메일 발송 실패', {
-        staffId: issued.staff.id,
-        error: sent.results[0]?.error,
+    // 응답을 보낸 뒤에 발송한다. 발송을 기다리면 실제 스태프 주소일 때만
+    // 응답이 수백 ms 늦어져, 응답 본문이 같아도 시간 차로 주소가 드러난다
+    after(async () => {
+      const sent = await sendEmail({
+        to: issued.staff.email,
+        subject: `[PRECTXE 게이트] 로그인 코드 ${issued.code}`,
+        template: 'staff-login-code',
+        data: {
+          code: issued.code,
+          expiresInMinutes: LOGIN_CODE_TTL_MINUTES,
+          staffName: issued.staff.name,
+        },
       });
+      if (!sent.success)
+        console.error('[gate] 로그인 코드 메일 발송 실패', {
+          staffId: issued.staff.id,
+          error: sent.results[0]?.error,
+        });
+    });
   }
 
   return json<RequestCodeResponse>({ ok: true });
