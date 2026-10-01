@@ -149,6 +149,9 @@ src/
 - 인증: `Staff`(어드민 세션과 별개) — 이메일 6자리 코드(`/auth/request-code` → `/auth/verify`) → `Authorization: Bearer <token>`. 코드·토큰은 해시만 저장. 세션 30일(개인 휴대폰 기준)
 - 권한: 행사별 API는 매 요청 `DropStaff` 배정 확인(`requireStaffForDrop`). 배정은 어드민 드랍 편집 사이드바 "게이트 스태프"
 - `/drops/[id]/tickets?since=` — 처음엔 전체, 이후 `syncedAt`부터 바뀐 것만(다른 입구 반영). 주문이 결제 상태가 아니면 `cancelled`로 내려간다
+- `/drops/[id]/sync` — 오프라인 기록 일괄 반영(`applyOfflineRecord`). 이미 들여보낸 입장은 거절하지 않고 기록하되 `CheckIn.flag`(`duplicate`·`cancelled_ticket`)로 표시. 오프라인 취소는 `undoes`(대상 입장의 clientId) 필수 — 토큰 기준 취소는 다른 입구의 정상 입장을 지운다. `retry` 외 결과는 최종
+- 어드민 `/admin/drops/[id]/check-ins` — 입장 기록·확인 필요 입장
+- 테스트: `apps/web/scripts/gate-test-seed.ts`(dev에 비공개 테스트 드랍 생성·초기화) → 서버 실행 → `gate-test-smoke.ts`(API 시나리오 전체). prod DB 호스트면 실행 거부
 - 스키마 변경은 `prisma/manual-migrations/`의 SQL을 **배포 전에** dev → prod 순서로 적용
 
 ### Email Templates

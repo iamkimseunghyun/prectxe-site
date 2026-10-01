@@ -5,6 +5,7 @@ import {
   Banknote,
   BarChart3,
   ExternalLink,
+  History,
   Package,
   Pencil,
   QrCode,
@@ -211,6 +212,14 @@ export function DropDetailView({ dropId }: { dropId: string }) {
               <Link href={`/admin/drops/${drop.id}/scanner`}>
                 <QrCode className="mr-1 h-4 w-4" />
                 입장 스캐너
+              </Link>
+            </Button>
+          )}
+          {drop.type === 'ticket' && (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/admin/drops/${drop.id}/check-ins`}>
+                <History className="mr-1 h-4 w-4" />
+                입장 기록
               </Link>
             </Button>
           )}

@@ -613,9 +613,9 @@ model Ticket {
 /// 입장·입장 취소 기록. 지우지 않고 쌓는다 — Ticket.status/checkedInAt은 현재 상태 캐시다.
 /// "누가 언제 어느 입구에서"를 복원하고, 오프라인 기록이 겹쳤을 때 사후 추적하는 근거.
 model CheckIn {
-  id        String      @id @default(cuid())
+  id        String       @id @default(cuid())
   /// 기록을 만든 쪽(기기·서버)이 붙이는 UUID. 재전송돼도 한 번만 저장된다
-  clientId  String      @unique
+  clientId  String       @unique
   kind      CheckInKind
   ticketId  String
   dropId    String
@@ -627,10 +627,15 @@ model CheckIn {
   staffId   String?
   /// 스캔한 시각 (기기 기준). 서버 수신 시각은 createdAt
   scannedAt DateTime
-  createdAt DateTime    @default(now())
-  ticket    Ticket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  drop      Drop        @relation(fields: [dropId], references: [id], onDelete: Cascade)
-  staff     Staff?      @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  /// 오프라인 기록을 동기화했을 때 문제가 있던 입장. 정상이면 null
+  flag      CheckInFlag?
+  /// 취소 기록이 되돌린 입장의 clientId (게이트 앱의 취소만). 표시된 입장이
+  /// 이미 취소로 무효가 됐는지 화면에서 가려내는 데 쓴다
+  undoes    String?
+  createdAt DateTime     @default(now())
+  ticket    Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  drop      Drop         @relation(fields: [dropId], references: [id], onDelete: Cascade)
+  staff     Staff?       @relation(fields: [staffId], references: [id], onDelete: SetNull)
 
   @@index([ticketId])
   @@index([dropId, createdAt])
@@ -733,4 +738,13 @@ enum TicketStatus {
 enum CheckInKind {
   entry
   undo
+}
+
+/// 오프라인 입장을 동기화해 보니 들여보내면 안 됐던 경우. 이미 입장한 사람이라
+/// 되돌릴 수는 없고, 주최자가 사후에 확인할 수 있게 표시만 한다
+enum CheckInFlag {
+  /// 재입장 불가 행사에서 이미 입장 처리된 티켓이 또 입장 (다른 입구와 겹침 등)
+  duplicate
+  /// 목록을 받은 뒤 취소·환불된 티켓으로 입장
+  cancelled_ticket
 }
