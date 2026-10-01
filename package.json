@@ -11,7 +11,7 @@
     "gate": "bun --cwd apps/gate run start",
     "gate:type-check": "bun --cwd apps/gate run type-check",
     "build": "turbo run build",
-    "type-check": "turbo run type-check",
+    "type-check": "turbo run type-check && bun run gate:type-check",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",

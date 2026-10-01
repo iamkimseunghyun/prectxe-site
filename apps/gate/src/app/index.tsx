@@ -2,6 +2,7 @@ import type { GateDrop, GateDropsResponse } from '@prectxe/gate-contract';
 import { useQuery } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
 import {
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -18,7 +19,8 @@ export default function DropsScreen() {
   const auth = useAuth();
   const drops = useQuery({
     queryKey: ['drops'],
-    queryFn: () => auth.request<GateDropsResponse>('/drops'),
+    queryFn: ({ signal }) =>
+      auth.request<GateDropsResponse>('/drops', { signal }),
     select: (res) => res.drops,
   });
 
@@ -29,7 +31,7 @@ export default function DropsScreen() {
           headerRight: () => (
             <Pressable
               accessibilityRole="button"
-              onPress={auth.signOut}
+              onPress={() => confirmSignOut(auth.signOut)}
               hitSlop={12}
             >
               <Text style={styles.headerAction}>로그아웃</Text>
@@ -64,6 +66,19 @@ export default function DropsScreen() {
         }
       />
     </View>
+  );
+}
+
+// 다시 들어오려면 메일로 코드를 받아야 해서, 인터넷이 안 되는 입구에서 잘못
+// 누르면 그 자리에서 입장 처리를 못 한다
+function confirmSignOut(signOut: () => Promise<void>) {
+  Alert.alert(
+    '로그아웃할까요?',
+    '다시 로그인하려면 이메일로 코드를 받아야 합니다. 인터넷이 안 되는 곳에서는 다시 들어올 수 없습니다.',
+    [
+      { text: '취소', style: 'cancel' },
+      { text: '로그아웃', style: 'destructive', onPress: () => signOut() },
+    ]
   );
 }
 

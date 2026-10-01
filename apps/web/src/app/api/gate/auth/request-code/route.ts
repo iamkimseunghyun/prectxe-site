@@ -38,9 +38,13 @@ export async function POST(request: Request) {
   after(async () => {
     const issued = await issueLoginCode(email, challengeId);
     if (!issued) return;
-    // 로컬 개발 서버(next dev)에서는 메일 대신 터미널에 찍는다 — 시뮬레이터
-    // 테스트용 가짜 주소로 메일을 보내면 반송이 쌓여 발신 평판만 깎인다
-    if (process.env.NODE_ENV === 'development') {
+    // 로컬 테스트용: 메일 대신 터미널에 찍는다 — 가짜 테스트 주소로 메일을
+    // 보내면 반송이 쌓여 발신 평판이 깎인다. NODE_ENV만 보면 로컬 .env가 prod
+    // DB를 가리킬 때 실제 스태프의 코드가 메일 대신 로그로 새므로 명시적으로 켠다
+    if (
+      process.env.NODE_ENV === 'development' &&
+      process.env.GATE_DEV_LOG_CODES === '1'
+    ) {
       console.info(`[gate] ${issued.staff.email} 로그인 코드: ${issued.code}`);
       return;
     }

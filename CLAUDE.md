@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 루트에는 워크스페이스 설정(`package.json`, `turbo.json`, `bun.lock`), Biome·Husky, `docs/`, 이 문서만 둔다.
 - 로컬 `.env`는 `apps/web/.env` (Next와 `prisma.config.ts`가 앱 폴더에서 읽는다).
 - Vercel 프로젝트의 Root Directory는 `apps/web`. `vercel.json`도 그 안에 있다.
-- 스태프 체크인 앱(게이트, Expo SDK 57)은 **`apps/gate/`** — **Bun 워크스페이스 밖**이다(Expo가 `react` 19.2.3 고정, 웹은 19.2.5). 자기 `bun.lock`·`node_modules`를 쓰고, 의존성은 `apps/gate`에서 `bunx expo install`로 추가. `packages/gate-contract`는 설치하지 않고 Metro `resolveRequest` + tsconfig `paths`로 소스를 직접 가리킨다. 루트에서 `bun run gate`, `bun run gate:type-check`.
+- 스태프 체크인 앱(게이트, Expo SDK 57)은 **`apps/gate/`** — **Bun 워크스페이스 밖**이다(Expo가 `react` 19.2.3 고정, 웹은 19.2.5). 자기 `bun.lock`·`node_modules`를 쓰므로 **루트 `bun install`로는 설치되지 않는다 — 처음 한 번 `cd apps/gate && bun install`**. 의존성 추가는 `apps/gate`에서 `bunx expo install`. `packages/gate-contract`는 설치하지 않고 Metro `resolveRequest` + tsconfig `paths`로 소스를 직접 가리킨다. 루트에서 `bun run gate`(Metro). 루트 `bun run type-check`(= pre-commit 훅)가 게이트 앱까지 검사한다.
 
 ## Build & Dev Commands
 
@@ -224,7 +224,7 @@ Bank Transfer: `BANK_NAME`, `BANK_ACCOUNT_NUMBER`, `BANK_ACCOUNT_HOLDER`, `BANK_
 
 Email: `RESEND_API_KEY`, `RESEND_SENDER_EMAIL`. 뉴스레터는 Resend Segment 기반 — **`RESEND_SEGMENT_ID`(권장)** 로 고정하거나, 없으면 `RESEND_SEGMENT_NAME`(기본 `Newsletter`)으로 자동 탐지/생성. 자동 탐지는 모듈 캐시라 무효화 경로가 없고(세그먼트 삭제·개명 시 재배포 전까지 발송 불가), 콜드 인스턴스가 동시에 뜨면 중복 생성될 수 있다. SMS: `SMS_PROVIDER` (`aligo`|`solapi`) + 해당 provider keys.
 
-Optional: `NEXT_PUBLIC_GA_ID`, `ENABLE_PROGRAM_REDIRECTS`, `TEST_ADMIN_*` (개발용), `UNSUBSCRIBE_SECRET`
+Optional: `NEXT_PUBLIC_GA_ID`, `ENABLE_PROGRAM_REDIRECTS`, `TEST_ADMIN_*` (개발용), `UNSUBSCRIBE_SECRET`, `GATE_DEV_LOG_CODES=1` (`next dev`에서 게이트 로그인 코드를 메일 대신 터미널에 출력 — 시뮬레이터 테스트용)
 
 **`UNSUBSCRIBE_SECRET`**: 수신 거부 토큰 서명 키. 없으면 `COOKIE_PASSWORD`에서 도메인 분리해 파생한다. **설정을 권장하는 이유는 `COOKIE_PASSWORD`를 로테이션하면 그 전에 발송된 메일의 원클릭 수신 거부 링크가 전부 깨지기 때문**(2026-06-26에 실제로 시크릿 로테이션을 했다). 링크가 깨져도 `/unsubscribe`에서 주소를 직접 입력해 해지할 수 있어 완전히 막히지는 않는다. 한번 정하면 바꾸지 말 것.
 

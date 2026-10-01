@@ -1,4 +1,5 @@
 import type { MeResponse, StaffProfile } from '@prectxe/gate-contract';
+import { useQueryClient } from '@tanstack/react-query';
 import * as SecureStore from 'expo-secure-store';
 import {
   createContext,
@@ -7,6 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { api, GateApiError, type RequestOptions } from './api';
@@ -32,22 +34,39 @@ type AuthContextValue = AuthState & {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function readSession(): Promise<Session | null> {
-  const raw = await SecureStore.getItemAsync(SESSION_KEY);
-  if (!raw) return null;
   try {
-    return JSON.parse(raw) as Session;
+    const raw = await SecureStore.getItemAsync(SESSION_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as Partial<Session>;
+    return typeof saved.token === 'string' && saved.staff
+      ? (saved as Session)
+      : null;
   } catch {
+    // 키체인·Keystore를 못 읽으면(백업 복원 뒤 복호화 실패 등) 다시 로그인하게
+    // 한다. 여기서 멈추면 앱이 스플래시에서 넘어가지 않는다
+    await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
     return null;
   }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [state, setState] = useState<AuthState>({ status: 'loading' });
+  // 지금 로그인된 토큰. 응답이 늦게 온 옛 토큰의 401이 새 로그인을 지우지 않게
+  // 세션을 끝낼 때 비교한다
+  const currentToken = useRef<string | null>(null);
 
-  const clear = useCallback(async () => {
-    await SecureStore.deleteItemAsync(SESSION_KEY);
-    setState({ status: 'signedOut' });
-  }, []);
+  const endSession = useCallback(
+    async (token: string | null) => {
+      if (token !== currentToken.current) return;
+      currentToken.current = null;
+      setState({ status: 'signedOut' });
+      // 다음에 로그인한 사람에게 이전 계정의 행사 목록이 보이면 안 된다
+      queryClient.clear();
+      await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
+    },
+    [queryClient]
+  );
 
   useEffect(() => {
     (async () => {
@@ -56,46 +75,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState({ status: 'signedOut' });
         return;
       }
+      // 저장된 로그인으로 바로 연다. 서버 확인을 기다리면 신호가 약한 공연장에서
+      // 스플래시에 멈춘다 — 확인은 뒤에서 하고, 서버가 세션을 거절할 때만 내보낸다
+      currentToken.current = saved.token;
+      setState({ status: 'signedIn', ...saved });
       try {
         const { staff } = await api<MeResponse>('/me', { token: saved.token });
-        setState({ status: 'signedIn', token: saved.token, staff });
+        setState((prev) =>
+          prev.status === 'signedIn' && prev.token === saved.token
+            ? { ...prev, staff }
+            : prev
+        );
       } catch (error) {
-        // 서버가 세션을 거절했을 때만 로그아웃한다. 통신이 안 되는 건 공연장
-        // 지하에서 앱을 다시 연 경우일 수 있다 — 저장된 로그인으로 들어간다.
-        if (error instanceof GateApiError && error.status === 401) {
-          await clear();
-          return;
-        }
-        setState({ status: 'signedIn', ...saved });
+        if (error instanceof GateApiError && error.status === 401)
+          await endSession(saved.token);
       }
     })();
-  }, [clear]);
+  }, [endSession]);
 
-  const signIn = useCallback(async (session: Session) => {
-    await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(session));
-    setState({ status: 'signedIn', ...session });
-  }, []);
-
-  const token = state.status === 'signedIn' ? state.token : null;
+  const signIn = useCallback(
+    async (session: Session) => {
+      await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(session));
+      queryClient.clear();
+      currentToken.current = session.token;
+      setState({ status: 'signedIn', ...session });
+    },
+    [queryClient]
+  );
 
   const signOut = useCallback(async () => {
-    if (token)
-      // 서버 세션도 지운다. 실패해도(오프라인) 기기에서는 로그아웃한다
-      await api('/auth/logout', { method: 'POST', token }).catch(() => {});
-    await clear();
-  }, [token, clear]);
+    const token = currentToken.current;
+    await endSession(token);
+    // 서버 세션도 지운다. 기다리지 않는다 — 오프라인이면 실패하지만 기기에서는
+    // 이미 로그아웃됐다
+    if (token) api('/auth/logout', { method: 'POST', token }).catch(() => {});
+  }, [endSession]);
 
   const request = useCallback(
     async <T,>(path: string, options?: Omit<RequestOptions, 'token'>) => {
+      const token = currentToken.current;
       try {
         return await api<T>(path, { ...options, token });
       } catch (error) {
         if (error instanceof GateApiError && error.status === 401)
-          await clear();
+          await endSession(token);
         throw error;
       }
     },
-    [token, clear]
+    [endSession]
   );
 
   const value = useMemo<AuthContextValue>(

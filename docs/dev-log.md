@@ -19,7 +19,16 @@
 
 **세션**: 토큰은 `expo-secure-store`(키체인/Keystore)에 저장. 앱을 열 때 `/me`로 확인하되 **네트워크 오류면 저장된 세션을 그대로 쓴다** — 공연장에서 통신이 안 될 때 앱이 로그아웃되면 안 된다. 401일 때만 지운다(만료·관리자 해제).
 
-**로컬 테스트**: `next dev`에서는 로그인 코드 메일 대신 터미널에 코드를 찍는다(`[gate] … 로그인 코드: 123456`). 시뮬레이터용 가짜 주소로 메일을 보내면 반송이 쌓여 발신 평판이 깎인다. `next start`·Vercel은 production이라 그대로 메일을 보낸다. 테스트 계정은 `bun scripts/gate-test-seed.ts --staff <email>`로 테스트 드랍에 배정, 앱은 `EXPO_PUBLIC_API_URL=http://localhost:3000 bun run gate`.
+**로컬 테스트**: `GATE_DEV_LOG_CODES=1 bun run dev`면 로그인 코드를 메일 대신 터미널에 찍는다(`[gate] … 로그인 코드: 123456`). 시뮬레이터용 가짜 주소로 메일을 보내면 반송이 쌓여 발신 평판이 깎인다. `NODE_ENV`만 보지 않고 플래그를 따로 둔 건, 로컬 `.env`가 prod DB를 가리킨 채 띄우면 실제 스태프의 코드가 메일 대신 로그로 새기 때문. 테스트 계정은 `bun scripts/gate-test-seed.ts --staff <email>`로 테스트 드랍에 배정, 앱은 `EXPO_PUBLIC_API_URL=http://localhost:3000 bun run gate`(실기기는 맥의 LAN IP). 처음 한 번 `cd apps/gate && bun install` — 워크스페이스 밖이라 루트 설치에 안 들어간다.
+
+**자체 코드 리뷰 반영** (머지 전):
+- **요청 타임아웃 10초 + 저장된 로그인으로 바로 열기** — 신호가 약한 곳에서는 요청이 실패하지도 않고 OS 기본값(iOS 60초)까지 매달려, 앱 시작 때 `/me`를 기다리는 동안 스플래시에 멈췄다. 이제 저장된 세션으로 먼저 열고 확인은 뒤에서, 401일 때만 내보낸다. 로그아웃도 서버 응답을 기다리지 않는다.
+- **SecureStore 읽기 실패 시 다시 로그인** — Android는 백업 복원 뒤 Keystore 복호화가 실패할 수 있는데, 예외가 그대로 새면 앱이 스플래시에서 영영 안 넘어갔다.
+- **성공 응답인데 JSON이 아니면 오프라인 취급** — 공연장 와이파이 로그인 페이지(캡티브 포털)가 200 HTML을 돌려주면 `null`이 응답으로 넘어가 화면에 영문 TypeError가 떴다.
+- **로그아웃 확인 창** — 다시 들어오려면 메일 코드가 필요해, 인터넷이 안 되는 입구에서 잘못 누르면 입장 처리를 못 한다.
+- 로그인 요청 중복 방지(키보드 완료 키로 코드 요청이 두 번 나가면 먼저 온 메일의 코드가 무효), 로그아웃·401 때 쿼리 캐시 비우기(다음 계정에 이전 계정의 행사가 보였다), 늦게 온 옛 토큰의 401이 새 로그인을 지우지 않게, Android 키보드가 로그인 버튼을 가리지 않게(`behavior="height"`).
+- 루트 `type-check`(pre-commit 훅)에 게이트 앱 포함, 쓰지 않는 템플릿 의존성 제거(`expo-image`·`expo-web-browser`·`expo-device`·`react-native-web`·`react-dom` — `@expo/ui`·`expo-glass-effect`·`expo-symbols`는 expo-router가 직접 의존해 유지), PNG 예외를 `assets/`로 좁힘.
+- **남은 것**: 오프라인으로 열면 로그인은 유지되지만 행사 목록이 없어 행사 화면에 못 들어간다 — 다음 PR에서 명단 저장과 함께 행사 목록도 기기에 저장한다.
 
 ### 게스트리스트 (tickets, gate)
 

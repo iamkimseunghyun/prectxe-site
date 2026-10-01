@@ -4,7 +4,7 @@ import {
   type VerifyCodeResponse,
   verifyCodeBody,
 } from '@prectxe/gate-contract';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -27,56 +27,63 @@ export default function LoginScreen() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fail = (e: unknown) =>
-    setError(e instanceof GateApiError ? e.message : '문제가 생겼습니다.');
+  // 버튼은 진행 중에 막히지만 키보드의 완료 키(onSubmitEditing)는 그대로라
+  // 같은 요청이 두 번 나갈 수 있다. 코드 요청이 두 번 나가면 먼저 도착한 메일의
+  // 코드가 무효가 된다. state는 다음 렌더 전까지 안 바뀌어 ref로 막는다
+  const busy = useRef(false);
 
-  const requestCode = async () => {
+  const run = async (task: () => Promise<void>) => {
+    if (busy.current) return;
+    busy.current = true;
+    setPending(true);
+    setError(null);
+    try {
+      await task();
+    } catch (e) {
+      setError(e instanceof GateApiError ? e.message : '문제가 생겼습니다.');
+    } finally {
+      busy.current = false;
+      setPending(false);
+    }
+  };
+
+  const requestCode = () => {
     const parsed = requestCodeBody.safeParse({ email });
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? '이메일을 확인해주세요.');
       return;
     }
-    setPending(true);
-    setError(null);
-    try {
+    run(async () => {
       const res = await api<RequestCodeResponse>('/auth/request-code', {
         method: 'POST',
         body: parsed.data,
       });
       setChallengeId(res.challengeId);
       setCode('');
-    } catch (e) {
-      fail(e);
-    } finally {
-      setPending(false);
-    }
+    });
   };
 
-  const verify = async () => {
+  const verify = () => {
     if (!challengeId) return;
     const parsed = verifyCodeBody.safeParse({ email, challengeId, code });
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? '코드를 확인해주세요.');
       return;
     }
-    setPending(true);
-    setError(null);
-    try {
+    run(async () => {
       const res = await api<VerifyCodeResponse>('/auth/verify', {
         method: 'POST',
         body: parsed.data,
       });
       await signIn({ token: res.token, staff: res.staff });
-    } catch (e) {
-      fail(e);
-      setPending(false);
-    }
+    });
   };
 
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        // Android는 edge-to-edge라 창이 키보드만큼 줄지 않는다 — 직접 줄인다
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
       >
         <View style={styles.header}>

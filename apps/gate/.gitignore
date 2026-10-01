@@ -42,5 +42,5 @@ example
 /ios
 /android
 
-# 루트 .gitignore가 *.png를 막는다 — 앱 아이콘·스플래시는 네이티브 빌드에 필요
-!*.png
+# 루트 .gitignore가 *.png(임시 스크린샷)를 막는다 — 앱 아이콘·스플래시만 푼다
+!/assets/**/*.png
