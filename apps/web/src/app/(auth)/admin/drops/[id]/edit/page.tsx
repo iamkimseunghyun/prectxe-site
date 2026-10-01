@@ -13,7 +13,7 @@ export default async function Page({ params }: PageProps) {
   const [drop, venues] = await Promise.all([getDrop(id), getVenueOptions()]);
   // getDrop이 어드민이 아니면 null — 스태프 목록은 그 확인을 통과한 뒤에만 읽는다
   if (!drop) notFound();
-  const staff = await getDropStaff(id);
+  const staff = drop.type === 'ticket' ? await getDropStaff(id) : [];
 
   return (
     <DropFormView

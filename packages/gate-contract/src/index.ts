@@ -17,8 +17,14 @@ const email = z
 export const requestCodeBody = z.object({ email });
 export type RequestCodeBody = z.infer<typeof requestCodeBody>;
 
+/**
+ * `challengeId`는 request-code 응답으로 받은 값. 코드는 이 요청에 묶여 있어,
+ * 다른 사람이 같은 이메일로 코드를 요청하거나 틀린 코드를 넣어도 내 요청의
+ * 코드와 시도 횟수에는 영향이 없다.
+ */
 export const verifyCodeBody = z.object({
   email,
+  challengeId: z.uuid(),
   code: z.string().regex(/^\d{6}$/, '6자리 숫자를 입력해주세요.'),
 });
 export type VerifyCodeBody = z.infer<typeof verifyCodeBody>;
@@ -34,10 +40,20 @@ export const checkInBody = z.object({
 });
 export type CheckInBody = z.infer<typeof checkInBody>;
 
-export const undoBody = checkInBody;
-export type UndoBody = CheckInBody;
+/**
+ * 입장 취소는 되돌릴 입장 기록의 clientId(`undoes`)를 함께 보낸다. 토큰만
+ * 보내면 이 기기가 처리하지 않은 다른 입구의 정상 입장까지 취소된다 —
+ * 예를 들어 "이미 입장"이 뜬 캡처 QR을 자기 실수로 알고 취소하면 먼저 들어간
+ * 사람의 입장이 지워진다. 그래서 앱은 자기가 `entered`를 받은 입장만 취소한다.
+ */
+export const undoBody = checkInBody.extend({ undoes: z.uuid() });
+export type UndoBody = z.infer<typeof undoBody>;
 
-/** `since`를 주면 그 시각 이후 바뀐 티켓만 돌려준다 (다른 입구 반영용 폴링) */
+/**
+ * `since`를 주면 그 시각 이후 바뀐 티켓만 돌려준다 (다른 입구 반영용 폴링).
+ * 놓치지 않으려고 서버가 1분 겹치게 조회하므로 이미 받은 티켓이 다시 올 수
+ * 있다 — 토큰 기준으로 덮어쓰면 된다.
+ */
 export const ticketsQuery = z.object({
   since: z.iso.datetime({ offset: true }).optional(),
 });
@@ -54,7 +70,11 @@ export type StaffProfile = {
   name: string | null;
 };
 
-export type RequestCodeResponse = { ok: true };
+/**
+ * 등록된 스태프인지와 무관하게 항상 같은 형태다. `challengeId`를 보관했다가
+ * verify에 함께 보낸다.
+ */
+export type RequestCodeResponse = { ok: true; challengeId: string };
 
 export type VerifyCodeResponse = {
   /** 이후 요청의 `Authorization: Bearer <token>`. 다시 받을 수 없으니 안전하게 보관할 것 */

@@ -31,18 +31,33 @@ export async function addDropStaff(
       error: '티켓 드랍에만 스태프를 배정할 수 있습니다.',
     } as const;
 
-  const staff = await prisma.staff.upsert({
-    where: { email },
-    create: { email, name: name || null },
-    // 이름을 비워 보내면 기존 이름을 지우지 않는다
-    update: name ? { name } : {},
-    select: { id: true },
-  });
-  await prisma.dropStaff.upsert({
-    where: { dropId_staffId: { dropId, staffId: staff.id } },
-    create: { dropId, staffId: staff.id },
-    update: {},
-  });
+  const assign = async () => {
+    const staff = await prisma.staff.upsert({
+      where: { email },
+      create: { email, name: name || null },
+      // 이름을 비워 보내면 기존 이름을 지우지 않는다
+      update: name ? { name } : {},
+      select: { id: true },
+    });
+    await prisma.dropStaff.upsert({
+      where: { dropId_staffId: { dropId, staffId: staff.id } },
+      create: { dropId, staffId: staff.id },
+      update: {},
+    });
+  };
+  try {
+    await assign();
+  } catch (error) {
+    // upsert는 원자적이지 않아 같은 주소를 동시에 추가하면 한쪽이 고유키에
+    // 걸린다. 그 사이 상대가 행을 만들었으니 한 번 더 하면 update 경로로 끝난다.
+    const unique =
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'P2002';
+    if (!unique) throw error;
+    await assign();
+  }
 
   revalidatePath(`/admin/drops/${dropId}/edit`);
   return { success: true } as const;

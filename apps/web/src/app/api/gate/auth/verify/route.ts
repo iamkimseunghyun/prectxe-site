@@ -18,7 +18,11 @@ export async function POST(request: Request) {
   const body = await parseBody(request, verifyCodeBody);
   if (!body.ok) return body.response;
 
-  const session = await verifyLoginCode(body.data.email, body.data.code);
+  const session = await verifyLoginCode(
+    body.data.email,
+    body.data.challengeId,
+    body.data.code
+  );
   if (!session)
     return apiError(
       '코드가 맞지 않거나 만료됐습니다. 새 코드를 요청해주세요.',

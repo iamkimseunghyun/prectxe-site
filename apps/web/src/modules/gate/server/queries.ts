@@ -9,6 +9,8 @@ import { prisma } from '@/lib/db/prisma';
 // 있게 하고, 종료(없으면 시작) 후 반나절까지는 늦은 입장·정리를 위해 남긴다.
 const SHOW_BEFORE_MS = 24 * 60 * 60 * 1000;
 const SHOW_AFTER_MS = 12 * 60 * 60 * 1000;
+// 변경분 조회를 앞당기는 폭. 트랜잭션 지연·인스턴스 간 시계 차보다 넉넉하게
+const SINCE_OVERLAP_MS = 60 * 1000;
 
 const gateDropSelect = {
   id: true,
@@ -79,13 +81,18 @@ export async function getDropTickets(
   });
   if (!drop) return null;
 
+  // updatedAt은 갱신 문장을 실행할 때(커밋 전) 함수 인스턴스의 시계로 찍힌다.
+  // 그 사이에 폴링하면 아직 안 보이던 행이 since보다 이른 시각으로 커밋돼 영영
+  // 빠지므로 since를 앞당겨 겹치게 받는다. 응답은 티켓의 현재 상태 전체라 같은
+  // 티켓을 두 번 받아도 앱은 덮어쓰기만 하면 된다.
+  const from = since && new Date(since.getTime() - SINCE_OVERLAP_MS);
   const tickets = await prisma.ticket.findMany({
     where: {
       order: { dropId },
-      ...(since && {
+      ...(from && {
         OR: [
-          { updatedAt: { gte: since } },
-          { order: { updatedAt: { gte: since } } },
+          { updatedAt: { gte: from } },
+          { order: { updatedAt: { gte: from } } },
         ],
       }),
     },

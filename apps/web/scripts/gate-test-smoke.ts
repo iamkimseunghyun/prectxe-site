@@ -7,7 +7,8 @@
  *   bun run dev                            # 다른 터미널에서 서버 (또는 next start)
  *   bun scripts/gate-test-smoke.ts         # GATE_BASE_URL로 서버 주소 변경 가능
  *
- * 로그인 코드는 메일 대신 issueLoginCode로 직접 받아 실제 /auth/verify를 통과한다.
+ * 로그인 코드는 메일 대신 issueLoginCode로 직접 받아 실제 /auth/verify를 통과한다
+ * (등록된 주소로 request-code를 부르면 실제 메일이 나가므로 부르지 않는다).
  * 실행 후 티켓 상태가 바뀌므로 다시 돌리려면 시드부터 다시 실행할 것.
  */
 
@@ -17,6 +18,7 @@ import type {
   GateDropsResponse,
   GateTicketsResponse,
   MeResponse,
+  RequestCodeResponse,
   VerifyCodeResponse,
 } from '@prectxe/gate-contract';
 import { prisma } from '@/lib/db/prisma';
@@ -91,27 +93,56 @@ async function main() {
   });
 
   console.log('로그인');
-  const issued = await issueLoginCode(STAFF_EMAIL);
-  if (!issued) throw new Error('로그인 코드를 발급하지 못했습니다.');
-  const wrong = issued.code === '000000' ? '111111' : '000000';
-  const bad = await call('POST', '/auth/verify', undefined, {
-    email: STAFF_EMAIL,
-    code: wrong,
-  });
-  check('틀린 코드 → 401', bad.status === 401, bad);
-  const ok = await call<VerifyCodeResponse>('POST', '/auth/verify', undefined, {
-    email: STAFF_EMAIL.toUpperCase(),
-    code: issued.code,
-  });
+  // 실제 스태프 주소로 request-code를 부르면 메일이 나가므로 미등록 주소로 형태만 본다
+  const req = await call<RequestCodeResponse>(
+    'POST',
+    '/auth/request-code',
+    undefined,
+    { email: 'nobody-smoke@example.com' }
+  );
   check(
-    '맞는 코드(대문자 이메일) → 200 + 토큰',
+    '미등록 주소 request-code → 200 + challengeId',
+    req.status === 200 && /^[0-9a-f-]{36}$/.test(req.data.challengeId ?? ''),
+    req
+  );
+  const verify = (challengeId: string, code: string, email = STAFF_EMAIL) =>
+    call<VerifyCodeResponse>('POST', '/auth/verify', undefined, {
+      email,
+      challengeId,
+      code,
+    });
+  const wrongOf = (code: string) => (code === '000000' ? '111111' : '000000');
+
+  // 코드는 메일 대신 같은 발급 함수로 직접 받는다
+  const mine = randomUUID();
+  const issued = await issueLoginCode(STAFF_EMAIL, mine);
+  if (!issued) throw new Error('로그인 코드를 발급하지 못했습니다.');
+  // 남이 같은 주소로 만든 요청에서 틀린 코드를 한도까지 넣는다
+  const theirs = randomUUID();
+  const otherIssued = await issueLoginCode(STAFF_EMAIL, theirs);
+  if (!otherIssued) throw new Error('로그인 코드를 발급하지 못했습니다.');
+  for (let i = 0; i < 5; i++) await verify(theirs, wrongOf(otherIssued.code));
+  const locked = await verify(theirs, otherIssued.code);
+  check(
+    '틀린 코드 5회 뒤 그 요청은 맞는 코드도 거절 → 401',
+    locked.status === 401,
+    locked
+  );
+  const bad = await verify(mine, wrongOf(issued.code));
+  check('틀린 코드 → 401', bad.status === 401, bad);
+  const stranger = await verify(mine, issued.code, 'someone@example.com');
+  check(
+    '남의 요청 ID를 다른 이메일로 → 401',
+    stranger.status === 401,
+    stranger
+  );
+  const ok = await verify(mine, issued.code, STAFF_EMAIL.toUpperCase());
+  check(
+    '남의 요청이 잠겨도 내 요청 코드(대문자 이메일) → 200 + 토큰',
     ok.status === 200 && !!ok.data.token,
     ok
   );
-  const reuse = await call('POST', '/auth/verify', undefined, {
-    email: STAFF_EMAIL,
-    code: issued.code,
-  });
+  const reuse = await verify(mine, issued.code);
   check('같은 코드 재사용 → 401', reuse.status === 401, reuse);
   const token = ok.data.token;
 
@@ -167,26 +198,45 @@ async function main() {
     gate: 'A',
   });
   check('같은 clientId 재전송 → entered', e1r.data.result === 'entered', e1r);
+  const c2 = randomUUID();
   const e2 = await call<CheckInResponse>('POST', `${D}/check-in`, token, {
     token: A.token,
-    clientId: randomUUID(),
+    clientId: c2,
     gate: 'B',
   });
   check('다른 입구에서 같은 티켓 → already', e2.data.result === 'already', e2);
+  // B 입구가 '이미 입장'을 자기 실수로 알고 취소해도 A 입구의 입장은 남아야 한다
+  const wrongUndo = await call('POST', `${D}/undo`, token, {
+    token: A.token,
+    clientId: randomUUID(),
+    undoes: c2,
+  });
+  const aStill = await prisma.ticket.findUnique({
+    where: { token: A.token },
+    select: { status: true },
+  });
+  check(
+    "'이미 입장' 받은 요청을 취소 → 422, 다른 입구 입장 유지",
+    wrongUndo.status === 422 && aStill?.status === 'checked_in',
+    { wrongUndo, aStill }
+  );
   const mis = await call('POST', `${D}/undo`, token, {
     token: A.token,
     clientId: c1,
+    undoes: c1,
   });
   check('입장에 쓴 clientId로 취소 → 422', mis.status === 422, mis);
   const u1 = randomUUID();
   const undo = await call('POST', `${D}/undo`, token, {
     token: A.token,
     clientId: u1,
+    undoes: c1,
   });
   check('입장 취소 → 200', undo.status === 200, undo);
   const undoR = await call('POST', `${D}/undo`, token, {
     token: A.token,
     clientId: u1,
+    undoes: c1,
   });
   check('취소 재전송 → 200', undoR.status === 200, undoR);
   const e3 = await call<CheckInResponse>('POST', `${D}/check-in`, token, {
@@ -243,11 +293,13 @@ async function main() {
     `${D}/tickets?since=${encodeURIComponent(syncedAt)}`,
     token
   );
-  const changed = new Set(delta.data.tickets?.map((t) => t.token));
+  // 서버가 1분 겹치게 조회하므로 방금 시드한 다른 티켓이 섞여 올 수 있다 —
+  // 바뀐 티켓이 빠짐없이 오는지와 그 상태가 최신인지를 본다
+  const changed = new Map(delta.data.tickets?.map((t) => [t.token, t]));
   check(
-    'since 이후 변경분 = A·B·C',
-    changed.size === 3 && [A, B, C].every((t) => changed.has(t.token)),
-    [...changed]
+    'since 이후 변경분에 A·B·C가 입장 상태로 포함',
+    [A, B, C].every((t) => changed.get(t.token)?.status === 'checked_in'),
+    [...changed.keys()]
   );
   await prisma.drop.update({
     where: { id: drop.id },

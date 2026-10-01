@@ -107,7 +107,9 @@ export function DropStaffCard({
           <Label htmlFor="staff-email">이메일</Label>
           <Input
             id="staff-email"
-            type="email"
+            // type="email"이면 덜 쓴 주소가 남았을 때 바깥 드랍 폼의 브라우저
+            // 검증에 걸려 드랍 저장이 막힌다 — 형식 검증은 서버 액션이 한다
+            type="text"
             inputMode="email"
             autoComplete="off"
             value={email}

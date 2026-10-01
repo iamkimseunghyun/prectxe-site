@@ -33,8 +33,11 @@ type LogInput = {
   at: Date;
 };
 
+// Ticket.checkedInBy는 FK 없는 문자열이라 어느 테이블의 ID인지 구분되게 둔다.
+// 기존 값(웹 스캐너 = User.id)은 접두사 없이 그대로다. 처리자의 정확한 기록은
+// CheckIn.userId/staffId에 있다.
 function actorId(actor: CheckInActor): string {
-  return 'userId' in actor ? actor.userId : actor.staffId;
+  return 'userId' in actor ? actor.userId : `staff:${actor.staffId}`;
 }
 
 function logData(input: LogInput): Prisma.CheckInUncheckedCreateInput {
@@ -144,8 +147,13 @@ export async function checkInByToken(input: {
     };
   };
 
-  const early = await replayed();
-  if (early) return early;
+  // 미입장 티켓의 첫 스캔이 대부분이라 그때는 재전송 조회를 건너뛴다 — 입장
+  // 판정은 DB 왕복 하나하나가 응답 시간이다. 미입장 티켓에서의 재전송·ID 충돌은
+  // 아래 갱신 0건·고유키 충돌 지점에서 다시 확인하므로 놓치지 않는다.
+  if (ticket.status !== 'active') {
+    const early = await replayed();
+    if (early) return early;
+  }
 
   if (ticket.status === 'cancelled')
     return { success: false, error: '취소된 티켓입니다.' };
@@ -301,6 +309,93 @@ export async function undoCheckInByToken(input: {
     const late = await replayed();
     if (late) return late;
     return { success: false, error: '체크인된 티켓이 아닙니다.' };
+  } catch (error) {
+    if (!isClientIdConflict(error)) throw error;
+    const late = await replayed();
+    if (late) return late;
+    throw error;
+  }
+}
+
+export type UndoEntryOutcome =
+  /** 취소 기록을 남겼다 (그 입장이 현재 상태를 만든 기록이면 티켓도 되돌렸다) */
+  | { status: 'applied' }
+  /** 되돌릴 입장 기록이 서버에 없다 (거절됐거나 아직 안 올라옴) */
+  | { status: 'not_found' }
+  | { status: 'rejected'; error: string };
+
+/**
+ * 특정 입장 기록(`undoes`)을 취소한다 — 게이트 앱의 온라인·오프라인 취소가
+ * 쓴다. 토큰 기준으로 현재 상태를 되돌리는 `undoCheckInByToken`과 달리, 그
+ * 입장이 지금의 입장 상태를 만든 기록일 때만 티켓을 되돌린다. 재입장 기록이나
+ * 이미 취소된 뒤 다른 입구에서 다시 들어온 경우의 옛 입장은 현재 상태와 무관해
+ * 되돌리면 다른 사람의 입장을 지운다 — 그때는 취소 기록만 남긴다.
+ * (입장 기록의 scannedAt과 그 입장이 만든 티켓 checkedInAt은 같은 시각이다)
+ */
+export async function undoEntry(input: {
+  dropId: string;
+  actor: CheckInActor;
+  token: string;
+  clientId: string;
+  undoes: string;
+  gate?: string;
+  at: Date;
+}): Promise<UndoEntryOutcome> {
+  const { dropId, actor, token, clientId, undoes, gate, at } = input;
+
+  const ticket = await prisma.ticket.findUnique({
+    where: { token },
+    select: { id: true, order: { select: { dropId: true } } },
+  });
+  if (!ticket)
+    return { status: 'rejected', error: '유효하지 않은 티켓입니다.' };
+  if (ticket.order.dropId !== dropId)
+    return { status: 'rejected', error: '다른 공연의 입장권입니다.' };
+
+  const replayed = async (): Promise<UndoEntryOutcome | null> => {
+    const replay = await findReplay(clientId, ticket.id, 'undo');
+    if (replay === 'same') return { status: 'applied' };
+    if (replay === 'mismatch')
+      return { status: 'rejected', error: CLIENT_ID_MISMATCH };
+    return null;
+  };
+  const early = await replayed();
+  if (early) return early;
+
+  const target = await prisma.checkIn.findUnique({
+    where: { clientId: undoes },
+    select: { ticketId: true, kind: true, scannedAt: true },
+  });
+  if (!target || target.kind !== 'entry') return { status: 'not_found' };
+  if (target.ticketId !== ticket.id)
+    return {
+      status: 'rejected',
+      error: '다른 티켓의 입장은 취소할 수 없습니다.',
+    };
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.ticket.updateMany({
+        where: {
+          id: ticket.id,
+          status: 'checked_in',
+          checkedInAt: target.scannedAt,
+        },
+        data: { status: 'active', checkedInAt: null, checkedInBy: null },
+      });
+      await tx.checkIn.create({
+        data: logData({
+          kind: 'undo',
+          ticketId: ticket.id,
+          dropId,
+          actor,
+          gate,
+          clientId,
+          at,
+        }),
+      });
+    });
+    return { status: 'applied' };
   } catch (error) {
     if (!isClientIdConflict(error)) throw error;
     const late = await replayed();

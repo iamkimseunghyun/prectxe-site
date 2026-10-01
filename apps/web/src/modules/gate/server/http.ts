@@ -1,8 +1,8 @@
 import type { ApiError } from '@prectxe/gate-contract';
 import type { z } from 'zod';
 import {
+  getStaffForDrop,
   getStaffFromRequest,
-  isStaffAssigned,
   type StaffIdentity,
 } from './auth';
 
@@ -61,12 +61,13 @@ export async function requireStaffForDrop(
 ): Promise<
   { ok: true; staff: StaffIdentity } | { ok: false; response: Response }
 > {
-  const auth = await requireStaff(request);
-  if (!auth.ok) return auth;
-  if (!(await isStaffAssigned(auth.staff.id, dropId)))
+  const auth = await getStaffForDrop(request, dropId);
+  if (!auth)
+    return { ok: false, response: apiError('로그인이 필요합니다.', 401) };
+  if (!auth.assigned)
     return {
       ok: false,
       response: apiError('이 행사에 배정되지 않았습니다.', 403),
     };
-  return auth;
+  return { ok: true, staff: auth.staff };
 }
