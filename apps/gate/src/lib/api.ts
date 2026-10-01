@@ -43,7 +43,9 @@ export async function api<T>(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const abort = () => controller.abort();
-  signal?.addEventListener('abort', abort);
+  // 이미 끊긴 signal에는 abort 이벤트가 다시 오지 않는다
+  if (signal?.aborted) controller.abort();
+  else signal?.addEventListener('abort', abort);
 
   let res: Response;
   let data: unknown;

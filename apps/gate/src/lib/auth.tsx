@@ -61,7 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (token !== currentToken.current) return;
       currentToken.current = null;
       setState({ status: 'signedOut' });
-      // 다음에 로그인한 사람에게 이전 계정의 행사 목록이 보이면 안 된다
+      // 다음에 로그인한 사람에게 이전 계정의 행사 목록이 보이면 안 된다.
+      // 진행 중인 요청도 끊는다 (요청에 signal이 넘어가 있다)
+      void queryClient.cancelQueries();
       queryClient.clear();
       await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
     },
