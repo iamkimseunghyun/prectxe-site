@@ -51,7 +51,7 @@ export function VerdictOverlay({
           {note ? <Text style={[styles.note, text]}>{note}</Text> : null}
           {reason ? <Text style={[styles.reason, text]}>{reason}</Text> : null}
         </View>
-        {verdict.color === 'yellow' ? (
+        {verdict.color === 'yellow' && verdict.pending ? (
           <View style={styles.actions}>
             <Pressable
               accessibilityRole="button"
@@ -68,6 +68,14 @@ export function VerdictOverlay({
               <Text style={[styles.denyLabel, text]}>들여보내지 않음</Text>
             </Pressable>
           </View>
+        ) : verdict.color === 'yellow' ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={onDismiss}
+            style={[styles.action, styles.deny]}
+          >
+            <Text style={[styles.denyLabel, text]}>확인</Text>
+          </Pressable>
         ) : (
           <Text style={[styles.hint, text]}>화면을 누르면 바로 다음 스캔</Text>
         )}

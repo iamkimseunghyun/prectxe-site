@@ -29,5 +29,6 @@ export function getOrderTicketsUrl(accessToken: string): string {
   return `${getSiteUrl()}/tickets/order/${accessToken}`;
 }
 
-// QR 파서는 게이트 앱과 같이 쓰므로 계약 패키지에 있다
-export { extractTicketToken } from '@prectxe/gate-contract';
+// QR 파서는 게이트 앱과 같이 쓰므로 계약 패키지에 있다. 스캐너가 클라이언트
+// 컴포넌트라 zod 스키마까지 딸려 오지 않게 의존성 없는 하위 경로로 가져온다
+export { extractTicketToken } from '@prectxe/gate-contract/qr';

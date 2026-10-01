@@ -5,7 +5,7 @@ import type {
   GateTicketStatus,
   GateTicketsResponse,
 } from '@prectxe/gate-contract';
-import { GateApiError, type RequestOptions } from './api';
+import { isUnreachable, type RequestOptions } from './api';
 import { db, kvGet, kvSet } from './db';
 
 // 기기에 내려받은 행사·명단과, 서버에 아직 올리지 않은 입장 기록(큐).
@@ -15,13 +15,20 @@ export type AuthedRequest = <T>(
   options?: Omit<RequestOptions, 'token'>
 ) => Promise<T>;
 
+/** 명단 밖 QR을 수동 승인했을 때 기기 명단에 남기는 자리표시 */
+export const PLACEHOLDER_NAME = '명단 밖 입장';
+export const PLACEHOLDER_TIER = '수동 승인';
+
 const DROPS_KEY = 'drops';
 const dropKey = (dropId: string) => `drop:${dropId}`;
 const syncedKey = (dropId: string) => `syncedAt:${dropId}`;
 const gateKey = (dropId: string) => `gate:${dropId}`;
 
-// 명단 전체 다운로드는 수천 건일 수 있어 기본 타임아웃보다 넉넉히 준다
-const ROSTER_TIMEOUT_MS = 20_000;
+// 명단 전체 다운로드는 수천 건일 수 있어 기본 타임아웃보다 넉넉히 준다.
+// 변경분 폴링은 작으니 기본값 — 길게 잡으면 오프라인 감지가 늦어진다
+const FULL_ROSTER_TIMEOUT_MS = 20_000;
+// 서버 목록과 같은 기준: 행사 종료 12시간 뒤까지만 둔다 (web gate/server/queries.ts)
+const KEEP_AFTER_END_MS = 12 * 60 * 60 * 1000;
 
 // ─── 행사 ────────────────────────────────────────────
 
@@ -42,12 +49,21 @@ export async function loadDrops(
     });
     return { drops, offline: false };
   } catch (error) {
-    if (error instanceof GateApiError && error.status === 0) {
+    if (isUnreachable(error)) {
       const cached = kvGet<GateDrop[]>(DROPS_KEY);
-      if (cached) return { drops: cached, offline: true };
+      if (cached) {
+        const drops = cached.filter((drop) => !hasEnded(drop, Date.now()));
+        purgeEndedDrops();
+        return { drops, offline: true };
+      }
     }
     throw error;
   }
+}
+
+function hasEnded(drop: GateDrop, now: number): boolean {
+  const end = drop.eventEndDate ?? drop.eventDate;
+  return end !== null && Date.parse(end) + KEEP_AFTER_END_MS < now;
 }
 
 export function getDrop(dropId: string): GateDrop | null {
@@ -62,22 +78,51 @@ export function setGate(dropId: string, gate: string) {
   kvSet(gateKey(dropId), gate);
 }
 
+export function clearGate(dropId: string) {
+  db.runSync('DELETE FROM kv WHERE key = ?', gateKey(dropId));
+}
+
+function removeDrop(dropId: string) {
+  db.runSync('DELETE FROM tickets WHERE drop_id = ?', dropId);
+  for (const key of [dropKey(dropId), syncedKey(dropId), gateKey(dropId)])
+    db.runSync('DELETE FROM kv WHERE key = ?', key);
+}
+
+/**
+ * 끝난 행사의 명단을 기기 시계 기준으로 지운다 (PRD 6장: 행사 종료 후 기기
+ * 목록 자동 삭제). 온라인이면 서버 목록 기준으로도 지우지만, 행사 뒤 앱을
+ * 오프라인으로만 열면 그 경로를 타지 않는다.
+ */
+export function purgeEndedDrops() {
+  const now = Date.now();
+  const rows = db.getAllSync<{ value: string }>(
+    "SELECT value FROM kv WHERE key LIKE 'drop:%'"
+  );
+  db.withTransactionSync(() => {
+    for (const { value } of rows) {
+      try {
+        const drop = JSON.parse(value) as GateDrop;
+        if (hasEnded(drop, now)) removeDrop(drop.id);
+      } catch {
+        // 깨진 값은 다음 온라인 목록 동기화 때 정리된다
+      }
+    }
+  });
+}
+
 /**
  * 목록에서 빠진 행사(종료 후 12시간이 지났거나 배정이 풀린 행사)의 명단을
  * 지운다 — 기기에는 진행 중인 행사의 개인정보만 둔다. 큐는 지우지 않는다:
  * 아직 올리지 않은 입장 기록은 사라지면 안 된다.
  */
 function purgeDropsExcept(keep: string[]) {
-  const placeholders = keep.map(() => '?').join(', ');
-  const notKept = keep.length ? `NOT IN (${placeholders})` : 'IS NOT NULL';
-  db.runSync(`DELETE FROM tickets WHERE drop_id ${notKept}`, ...keep);
-  const keys = db.getAllSync<{ key: string }>(
-    "SELECT key FROM kv WHERE key LIKE 'drop:%' OR key LIKE 'syncedAt:%' OR key LIKE 'gate:%'"
+  const stored = db.getAllSync<{ drop_id: string }>(
+    `SELECT DISTINCT drop_id FROM tickets
+     UNION SELECT substr(key, instr(key, ':') + 1) FROM kv
+     WHERE key LIKE 'drop:%' OR key LIKE 'syncedAt:%' OR key LIKE 'gate:%'`
   );
-  for (const { key } of keys) {
-    const dropId = key.slice(key.indexOf(':') + 1);
-    if (!keep.includes(dropId)) db.runSync('DELETE FROM kv WHERE key = ?', key);
-  }
+  for (const { drop_id } of stored)
+    if (!keep.includes(drop_id)) removeDrop(drop_id);
 }
 
 /** 로그아웃: 명단·행사 정보를 지운다. 큐는 남긴다 (다시 로그인하면 올린다) */
@@ -103,7 +148,7 @@ export async function syncRoster(
   const query = since ? `?since=${encodeURIComponent(since)}` : '';
   const res = await request<GateTicketsResponse>(
     `/drops/${dropId}/tickets${query}`,
-    { signal, timeoutMs: ROSTER_TIMEOUT_MS }
+    { signal, timeoutMs: since ? undefined : FULL_ROSTER_TIMEOUT_MS }
   );
 
   db.withTransactionSync(() => {
@@ -119,15 +164,33 @@ export async function syncRoster(
          phone_last4 = excluded.phone_last4,
          checked_in_at = excluded.checked_in_at,
          note = excluded.note,
-         local_only = 0`
+         local_only = 0
+       -- 서버가 이 응답을 만든 뒤에 이 기기가 온라인으로 입장시킨 티켓은
+       -- 응답이 늦게 와도 미입장으로 되돌리지 않는다 (시각은 둘 다 서버 ISO 문자열)
+       WHERE NOT (tickets.status = 'checked_in' AND excluded.status = 'active'
+                  AND COALESCE(tickets.checked_in_at, '') >= ?)`
     );
     try {
-      for (const t of res.tickets) upsert.executeSync(ticketParams(dropId, t));
+      for (const t of res.tickets)
+        upsert.executeSync([...ticketParams(dropId, t), res.syncedAt]);
     } finally {
       upsert.finalizeSync();
     }
     // 아직 올리지 않은 오프라인 입장은 서버가 모른다. 서버 값으로 덮인 채
-    // 미입장으로 돌아가면 같은 티켓이 이 기기에서 또 초록을 받는다
+    // 미입장으로 돌아가면 같은 티켓이 이 기기에서 또 초록을 받는다.
+    // 명단 밖 QR을 수동 승인한 자리표시 행도 큐에서 다시 만든다 — 전체를 새로
+    // 받으면(재로그인 등) 지워지는데, 그러면 같은 QR이 또 노랑이 된다
+    db.runSync(
+      `INSERT INTO tickets (drop_id, token, status, buyer_name, tier_name, checked_in_at, note, local_only)
+       SELECT drop_id, token, 'checked_in', ?, ?, MIN(scanned_at), NULL, 1
+       FROM queue WHERE drop_id = ? AND kind = 'entry'
+         AND token NOT IN (SELECT token FROM tickets WHERE drop_id = ?)
+       GROUP BY drop_id, token`,
+      PLACEHOLDER_NAME,
+      PLACEHOLDER_TIER,
+      dropId,
+      dropId
+    );
     db.runSync(
       `UPDATE tickets SET
          status = 'checked_in',
@@ -219,6 +282,7 @@ export function markEntered(dropId: string, token: string, at: string) {
 
 export type QueuedEntry = {
   dropId: string;
+  staffId: string;
   clientId: string;
   token: string;
   gate: string;
@@ -236,21 +300,24 @@ export type QueuedEntry = {
 export function enqueueEntry(entry: QueuedEntry) {
   db.withTransactionSync(() => {
     db.runSync(
-      `INSERT INTO queue (client_id, drop_id, kind, token, gate, scanned_at)
-       VALUES (?, ?, 'entry', ?, ?, ?)
+      `INSERT INTO queue (client_id, drop_id, staff_id, kind, token, gate, scanned_at)
+       VALUES (?, ?, ?, 'entry', ?, ?, ?)
        ON CONFLICT (client_id) DO NOTHING`,
       entry.clientId,
       entry.dropId,
+      entry.staffId,
       entry.token,
       entry.gate,
       entry.scannedAt
     );
     db.runSync(
       `INSERT INTO tickets (drop_id, token, status, buyer_name, tier_name, checked_in_at, note, local_only)
-       VALUES (?, ?, 'checked_in', '명단 밖 입장', '확인 후 승인', ?, NULL, 1)
+       VALUES (?, ?, 'checked_in', ?, ?, ?, NULL, 1)
        ON CONFLICT (drop_id, token) DO NOTHING`,
       entry.dropId,
       entry.token,
+      PLACEHOLDER_NAME,
+      PLACEHOLDER_TIER,
       entry.scannedAt
     );
     markEntered(entry.dropId, entry.token, entry.scannedAt);

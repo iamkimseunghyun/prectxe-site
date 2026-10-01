@@ -4,7 +4,7 @@ import {
   type GateDrop,
 } from '@prectxe/gate-contract';
 import * as Crypto from 'expo-crypto';
-import { GateApiError } from './api';
+import { GateApiError, isUnreachable } from './api';
 import {
   type AuthedRequest,
   enqueueEntry,
@@ -13,12 +13,14 @@ import {
 } from './roster';
 
 // 판정은 세 가지뿐이다 — 스태프가 글자를 읽지 않고 색만 보고 움직일 수 있게.
-// 초록: 들여보낸다 / 빨강: 들여보내지 않는다 / 노랑: 구매 내역을 확인하고 판단한다
+// 초록: 들여보낸다 / 빨강: 들여보내지 않는다 / 노랑: 들여보내기 전에 확인한다
 
 /** 이 시간 안에 서버가 답하지 않으면 기기 명단으로 판정한다 (PRD FR-3) */
 export const SERVER_DECISION_MS = 800;
 
 type Person = { name: string; tier: string; note?: string | null };
+
+type Pending = { token: string; clientId: string; scannedAt: string };
 
 export type Verdict =
   | ({ color: 'green'; title: string; offline: boolean } & Person)
@@ -32,25 +34,35 @@ export type Verdict =
       color: 'yellow';
       title: string;
       reason: string;
-      offline: true;
-      /** 수동 승인하면 이 값으로 큐에 넣는다 — 서버 요청에 쓴 clientId 그대로 */
-      pending: { token: string; clientId: string; scannedAt: string };
+      offline: boolean;
+      /**
+       * 명단에 없는 QR — 수동 승인하면 이 값으로 큐에 넣는다(서버 요청에 쓴
+       * clientId 그대로). 없으면 티켓이 아니라 앱 쪽 문제로 판정을 못 한 것이라
+       * 승인 버튼 없이 닫기만 있다.
+       */
+      pending?: Pending;
     };
 
 export type JudgeInput = {
   request: AuthedRequest;
   drop: GateDrop;
   gate: string;
+  /** 기기 판정을 큐에 넣을 때 남긴다 — 공용 기기에서 남의 기록을 올리지 않게 */
+  staffId: string;
   data: string;
   /** false면 서버를 건너뛰고 바로 기기 명단으로 판정한다 */
   tryServer: boolean;
 };
 
-export type JudgeOutcome = {
-  verdict: Verdict;
-  /** 서버에 닿았는지 — 오프라인 표시에 쓴다. 서버를 시도하지 않았으면 null */
-  reachedServer: boolean | null;
-};
+/**
+ * - `ok`: 서버가 답했다(입장·거절 모두)
+ * - `slow`: 연결은 되는데 0.8초 안에 답이 없었다 — 이번 스캔만 기기로 판정
+ * - `down`: 연결 실패·서버 오류 — 잠시 서버를 건너뛰고 오프라인으로 표시
+ * - `skipped`: 서버를 시도하지 않았다
+ */
+export type ServerState = 'ok' | 'slow' | 'down' | 'skipped';
+
+export type JudgeOutcome = { verdict: Verdict; server: ServerState };
 
 const timeFormat = new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul',
@@ -67,15 +79,26 @@ function describeEntry(at: string | null, gate?: string | null): string {
   return parts.join(' · ');
 }
 
-/** 서버가 판정을 못 한 경우 — 네트워크·타임아웃·서버 오류. 기기 명단으로 넘어간다 */
-function unreachable(error: unknown): boolean {
-  return (
-    error instanceof GateApiError && (error.status === 0 || error.status >= 500)
-  );
+/**
+ * 티켓이 아니라 앱·권한 쪽 문제로 판정하지 못했을 때. 빨강으로 띄우면
+ * 스태프가 색만 보고 정상 관객을 돌려보낸다.
+ */
+export function cannotJudge(reason: string): Verdict {
+  return { color: 'yellow', title: '판정 불가', reason, offline: false };
+}
+
+/** 기기 명단 쓰기는 판정 결과를 바꾸지 않는다 — 실패해도 화면은 서버 판정대로 */
+function quietly<T>(work: () => T): T | undefined {
+  try {
+    return work();
+  } catch (error) {
+    console.warn('[gate] 기기 명단 갱신 실패', error);
+    return undefined;
+  }
 }
 
 export async function judge(input: JudgeInput): Promise<JudgeOutcome> {
-  const { request, drop, gate, data, tryServer } = input;
+  const { request, drop, gate, staffId, data, tryServer } = input;
 
   const token = extractTicketToken(data);
   if (!token)
@@ -86,21 +109,53 @@ export async function judge(input: JudgeInput): Promise<JudgeOutcome> {
         reason: 'PRECTXE 입장권 QR이 아닙니다.',
         offline: false,
       },
-      reachedServer: null,
+      server: 'skipped',
     };
 
   const clientId = Crypto.randomUUID();
   const scannedAt = new Date().toISOString();
+  let server: ServerState = 'skipped';
 
   if (tryServer) {
+    let res: CheckInResponse | null = null;
     try {
-      const res = await request<CheckInResponse>(`/drops/${drop.id}/check-in`, {
+      res = await request<CheckInResponse>(`/drops/${drop.id}/check-in`, {
         method: 'POST',
         body: { token, clientId, gate },
         timeoutMs: SERVER_DECISION_MS,
       });
+    } catch (error) {
+      if (isUnreachable(error)) {
+        server = error.timedOut ? 'slow' : 'down';
+      } else if (
+        error instanceof GateApiError &&
+        (error.status === 401 || error.status === 403)
+      ) {
+        // 로그인 만료·배정 해제는 관객의 티켓과 무관하다
+        return {
+          verdict: cannotJudge(
+            `${error.message} 관리자에게 확인하고, 그동안은 구매 내역으로 확인해주세요.`
+          ),
+          server: 'ok',
+        };
+      } else {
+        // 서버가 내린 거절(다른 행사·취소·없는 티켓 등)은 그대로 보여준다
+        const reason =
+          error instanceof GateApiError
+            ? error.message
+            : '판정하지 못했습니다.';
+        return {
+          verdict: { color: 'red', title: '입장 불가', reason, offline: false },
+          server: 'ok',
+        };
+      }
+    }
+
+    if (res) {
       const { ticket } = res;
-      markEntered(drop.id, token, ticket.checkedInAt ?? scannedAt);
+      quietly(() =>
+        markEntered(drop.id, token, ticket.checkedInAt ?? scannedAt)
+      );
       const person = { name: ticket.buyerName, tier: ticket.tierName };
       if (res.result === 'already')
         return {
@@ -111,7 +166,7 @@ export async function judge(input: JudgeInput): Promise<JudgeOutcome> {
             offline: false,
             ...person,
           },
-          reachedServer: true,
+          server: 'ok',
         };
       return {
         verdict: {
@@ -119,33 +174,16 @@ export async function judge(input: JudgeInput): Promise<JudgeOutcome> {
           title: res.result === 'reentered' ? '재입장' : '입장',
           offline: false,
           ...person,
-          note: findTicket(drop.id, token)?.note,
+          note: quietly(() => findTicket(drop.id, token)?.note),
         },
-        reachedServer: true,
+        server: 'ok',
       };
-    } catch (error) {
-      if (!unreachable(error)) {
-        // 서버가 내린 거절(다른 행사·취소·없는 티켓 등)은 그대로 보여준다
-        const message =
-          error instanceof GateApiError
-            ? error.message
-            : '판정하지 못했습니다.';
-        return {
-          verdict: {
-            color: 'red',
-            title: '입장 불가',
-            reason: message,
-            offline: false,
-          },
-          reachedServer: true,
-        };
-      }
     }
   }
 
   return {
-    verdict: judgeLocally({ drop, gate, token, clientId, scannedAt }),
-    reachedServer: tryServer ? false : null,
+    verdict: judgeLocally({ drop, gate, staffId, token, clientId, scannedAt }),
+    server,
   };
 }
 
@@ -157,11 +195,12 @@ export async function judge(input: JudgeInput): Promise<JudgeOutcome> {
 function judgeLocally(args: {
   drop: GateDrop;
   gate: string;
+  staffId: string;
   token: string;
   clientId: string;
   scannedAt: string;
 }): Verdict {
-  const { drop, gate, token, clientId, scannedAt } = args;
+  const { drop, gate, staffId, token, clientId, scannedAt } = args;
   const ticket = findTicket(drop.id, token);
 
   if (!ticket)
@@ -196,7 +235,7 @@ function judgeLocally(args: {
       ...person,
     };
 
-  enqueueEntry({ dropId: drop.id, clientId, token, gate, scannedAt });
+  enqueueEntry({ dropId: drop.id, staffId, clientId, token, gate, scannedAt });
   return {
     color: 'green',
     title: ticket.status === 'checked_in' ? '재입장' : '입장',
@@ -206,10 +245,16 @@ function judgeLocally(args: {
 }
 
 /** 노랑(명단에 없음)을 스태프가 확인하고 들여보낸 경우 */
-export function approvePending(
-  drop: GateDrop,
-  gate: string,
-  pending: { token: string; clientId: string; scannedAt: string }
-) {
-  enqueueEntry({ dropId: drop.id, gate, ...pending });
+export function approvePending(args: {
+  drop: GateDrop;
+  gate: string;
+  staffId: string;
+  pending: Pending;
+}) {
+  enqueueEntry({
+    dropId: args.drop.id,
+    gate: args.gate,
+    staffId: args.staffId,
+    ...args.pending,
+  });
 }

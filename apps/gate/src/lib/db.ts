@@ -37,6 +37,9 @@ const MIGRATIONS = [
   `,
   // 명단 밖 QR을 수동 승인하면 기기에만 있는 자리표시 행이 생긴다 — 발권 수에서 뺀다
   'ALTER TABLE tickets ADD COLUMN local_only INTEGER NOT NULL DEFAULT 0;',
+  // 큐는 로그아웃해도 남는다 — 공용 기기에서 다음 사람이 남의 기록을 자기
+  // 이름으로 올리지 않게 누가 판정했는지 남긴다
+  'ALTER TABLE queue ADD COLUMN staff_id TEXT;',
 ];
 
 function migrate() {

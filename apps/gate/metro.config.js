@@ -22,7 +22,12 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   // 계약 패키지가 import하는 것(zod)은 이 앱의 node_modules에서 찾는다. 그대로
   // 두면 위로 올라가 레포 루트(웹 워크스페이스)의 것을 집거나, 루트 설치가 없는
   // 빌드 서버에서 못 찾는다.
-  if (context.originModulePath.startsWith(contractDir)) {
+  // 계약 안의 상대 경로(./qr 등)는 그대로 계약 폴더 기준으로 찾는다
+  const isPackage = !moduleName.startsWith('.') && !path.isAbsolute(moduleName);
+  if (
+    isPackage &&
+    context.originModulePath.startsWith(contractDir + path.sep)
+  ) {
     return resolve(
       { ...context, originModulePath: path.join(projectRoot, 'package.json') },
       moduleName,

@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useKeepAwake } from 'expo-keep-awake';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
@@ -16,10 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
 import { VerdictOverlay } from '@/components/verdict-overlay';
 import { colors, space } from '@/constants/theme';
-import { GateApiError } from '@/lib/api';
+import { isUnreachable } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { vibrate } from '@/lib/feedback';
-import { approvePending, judge, type Verdict } from '@/lib/judge';
+import { approvePending, cannotJudge, judge, type Verdict } from '@/lib/judge';
 import { useNetworkUp } from '@/lib/online';
 import { getDrop, getGate } from '@/lib/roster';
 import { useRoster } from '@/lib/use-roster';
@@ -29,19 +29,21 @@ import { useRoster } from '@/lib/use-roster';
 const SHOW_MS = { green: 1500, red: 3000 } as const;
 // 판정 화면이 닫힌 뒤에도 같은 QR이 카메라 앞에 있으면 "이미 입장"이 또 뜬다
 const SAME_QR_PAUSE_MS = 3000;
-// 서버가 한 번 답하지 않으면 잠시 기기 명단으로만 판정한다 — 매 스캔마다
-// 0.8초씩 기다리면 줄이 밀린다
+// 서버에 연결되지 않으면 잠시 기기 명단으로만 판정한다 — 매 스캔마다
+// 0.8초씩 기다리면 줄이 밀린다. 느린 응답에는 적용하지 않는다: 그 스캔만
+// 기기로 판정하고 다음 스캔은 다시 서버에 묻는다. 서버 판정만이 다른 입구와의
+// 중복 입장을 막기 때문이다
 const SERVER_RETRY_MS = 5000;
 
 export default function ScanScreen() {
   useKeepAwake();
   const { id } = useLocalSearchParams<{ id: string }>();
   const auth = useAuth();
-  const [title] = useState(() => getDrop(id)?.title ?? '');
+  const staffId = auth.status === 'signedIn' ? auth.staff.id : null;
   const [gate] = useState(() => getGate(id));
   const [permission, requestPermission] = useCameraPermissions();
   const networkUp = useNetworkUp();
-  const { stats, refreshStats, sync } = useRoster(id, { poll: true });
+  const { stats, drop, refreshStats, sync } = useRoster(id, { poll: true });
 
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [judging, setJudging] = useState(false);
@@ -56,16 +58,16 @@ export default function ScanScreen() {
     if (sync.dataUpdatedAt) setServerReachable(true);
   }, [sync.dataUpdatedAt]);
   useEffect(() => {
-    if (sync.error instanceof GateApiError && sync.error.status === 0)
-      setServerReachable(false);
+    if (isUnreachable(sync.error)) setServerReachable(false);
   }, [sync.error]);
 
   const offline = !networkUp || !serverReachable;
 
   const handle = useCallback(
     async (data: string) => {
+      // 재입장 허용 같은 설정이 명단 동기화로 바뀌었을 수 있어 매번 읽는다
       const drop = getDrop(id);
-      if (busy.current || !drop || !gate) return;
+      if (busy.current || !drop || !gate || !staffId) return;
       const now = Date.now();
       if (recent.current?.data === data && now < recent.current.until) return;
 
@@ -75,29 +77,38 @@ export default function ScanScreen() {
         const tryServer =
           networkUp &&
           (serverReachable || now - lastFailureAt.current > SERVER_RETRY_MS);
-        const outcome = await judge({
-          request: auth.request,
-          drop,
-          gate,
-          data,
-          tryServer,
-        });
-        if (outcome.reachedServer === true) setServerReachable(true);
-        if (outcome.reachedServer === false) {
-          setServerReachable(false);
-          lastFailureAt.current = Date.now();
+        let result: Verdict;
+        try {
+          const outcome = await judge({
+            request: auth.request,
+            drop,
+            gate,
+            staffId,
+            data,
+            tryServer,
+          });
+          if (outcome.server === 'ok') setServerReachable(true);
+          if (outcome.server === 'down') {
+            setServerReachable(false);
+            lastFailureAt.current = Date.now();
+          }
+          result = outcome.verdict;
+        } catch (error) {
+          // 기기 저장소 오류 등 — 아무 반응이 없으면 스태프가 판단할 수 없다
+          console.warn('[gate] 판정 실패', error);
+          result = cannotJudge('판정 중 문제가 생겼습니다. 다시 스캔해주세요.');
         }
         recent.current = { data, until: Number.POSITIVE_INFINITY };
-        vibrate(outcome.verdict.color);
-        AccessibilityInfo.announceForAccessibility(outcome.verdict.title);
-        setVerdict(outcome.verdict);
+        vibrate(result.color);
+        AccessibilityInfo.announceForAccessibility(result.title);
+        setVerdict(result);
         refreshStats();
       } finally {
         busy.current = false;
         setJudging(false);
       }
     },
-    [id, gate, networkUp, serverReachable, auth.request, refreshStats]
+    [id, gate, staffId, networkUp, serverReachable, auth.request, refreshStats]
   );
 
   const dismiss = useCallback(() => {
@@ -111,8 +122,15 @@ export default function ScanScreen() {
 
   const approve = useCallback(() => {
     const drop = getDrop(id);
-    if (!drop || !gate || verdict?.color !== 'yellow') return;
-    approvePending(drop, gate, verdict.pending);
+    if (!drop || !gate || !staffId) return;
+    if (verdict?.color !== 'yellow' || !verdict.pending) return;
+    try {
+      approvePending({ drop, gate, staffId, pending: verdict.pending });
+    } catch (error) {
+      console.warn('[gate] 수동 승인 기록 실패', error);
+      setVerdict(cannotJudge('기록하지 못했습니다. 다시 스캔해주세요.'));
+      return;
+    }
     vibrate('green');
     setVerdict({
       color: 'green',
@@ -122,7 +140,7 @@ export default function ScanScreen() {
       offline: true,
     });
     refreshStats();
-  }, [id, gate, verdict, refreshStats]);
+  }, [id, gate, staffId, verdict, refreshStats]);
 
   useEffect(() => {
     if (!verdict || verdict.color === 'yellow') return;
@@ -131,6 +149,9 @@ export default function ScanScreen() {
   }, [verdict, dismiss]);
 
   const scanning = permission?.granted && !verdict && !judging;
+
+  // 입구를 고르지 않았거나(딥링크·정리된 행사) 행사 정보가 없으면 행사 홈으로
+  if (!gate || !drop) return <Redirect href={`/drops/${id}`} />;
 
   return (
     <View style={styles.root}>
@@ -156,7 +177,7 @@ export default function ScanScreen() {
           </Pressable>
           <View style={styles.titleBox}>
             <Text style={styles.title} numberOfLines={1}>
-              {title}
+              {drop.title}
             </Text>
             <Text style={styles.gate}>{gate} 입구</Text>
           </View>

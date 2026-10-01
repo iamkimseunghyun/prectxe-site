@@ -9,7 +9,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, ErrorText, Field } from '@/components/ui';
 import { colors, space } from '@/constants/theme';
 import { formatEventTime } from '@/lib/format';
-import { getDrop, getGate, setGate } from '@/lib/roster';
+import { clearGate, getGate, setGate } from '@/lib/roster';
 import { useRoster } from '@/lib/use-roster';
 
 // 입구는 서버에 따로 등록하지 않는다 — 기록에 이름만 남는다(최대 20자)
@@ -25,7 +25,6 @@ const clock = new Intl.DateTimeFormat('ko-KR', {
 
 export default function DropHomeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const drop = getDrop(id);
   const [gate, setGateState] = useState(() => getGate(id));
   const [customOpen, setCustomOpen] = useState(
     () => gate !== null && !GATE_PRESETS.includes(gate)
@@ -33,7 +32,7 @@ export default function DropHomeScreen() {
   const [customGate, setCustomGate] = useState(() =>
     gate && !GATE_PRESETS.includes(gate) ? gate : ''
   );
-  const { stats, refreshStats, sync } = useRoster(id, { poll: false });
+  const { stats, drop, refreshStats, sync } = useRoster(id, { poll: false });
 
   // 스캐너에서 돌아오면 그사이 입장한 수를 다시 읽는다
   useFocusEffect(refreshStats);
@@ -41,9 +40,9 @@ export default function DropHomeScreen() {
   const chooseGate = useCallback(
     (value: string) => {
       const name = value.trim().slice(0, 20);
-      if (!name) return;
-      setGate(id, name);
-      setGateState(name);
+      if (name) setGate(id, name);
+      else clearGate(id);
+      setGateState(name || null);
     },
     [id]
   );
@@ -86,7 +85,11 @@ export default function DropHomeScreen() {
           <Chip
             label="직접 입력"
             selected={customOpen}
-            onPress={() => setCustomOpen(true)}
+            onPress={() => {
+              setCustomOpen(true);
+              // 이전에 고른 A~D가 남으면 화면은 직접 입력인데 기록은 A로 쌓인다
+              chooseGate(customGate);
+            }}
           />
         </View>
         {customOpen && (

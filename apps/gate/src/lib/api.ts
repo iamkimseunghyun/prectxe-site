@@ -14,11 +14,24 @@ const NETWORK_ERROR = '서버에 연결할 수 없습니다. 네트워크를 확
 /** `status`가 0이면 서버에 닿지 못했거나 응답을 읽지 못했다 (오프라인으로 취급) */
 export class GateApiError extends Error {
   readonly status: number;
+  /** 연결은 됐는데 제한 시간 안에 답이 없었다 — 서버가 꺼진 게 아니라 느린 것 */
+  readonly timedOut: boolean;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, timedOut = false) {
     super(message);
     this.status = status;
+    this.timedOut = timedOut;
   }
+}
+
+/**
+ * 서버가 판정·응답을 못 한 경우 — 네트워크·타임아웃·서버 오류(5xx). 이때는
+ * 기기에 저장된 것(행사 목록·명단)으로 계속 일한다. 4xx는 서버가 내린 답이다.
+ */
+export function isUnreachable(error: unknown): error is GateApiError {
+  return (
+    error instanceof GateApiError && (error.status === 0 || error.status >= 500)
+  );
 }
 
 export type RequestOptions = {
@@ -41,7 +54,11 @@ export async function api<T>(
   }: RequestOptions = {}
 ): Promise<T> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
   const abort = () => controller.abort();
   // 이미 끊긴 signal에는 abort 이벤트가 다시 오지 않는다
   if (signal?.aborted) controller.abort();
@@ -61,12 +78,16 @@ export async function api<T>(
     });
     data = await res.json().catch(() => null);
   } catch {
-    throw new GateApiError(0, NETWORK_ERROR);
+    throw timedOut
+      ? new GateApiError(0, '서버 응답이 늦습니다.', true)
+      : new GateApiError(0, NETWORK_ERROR);
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener('abort', abort);
   }
 
+  // 본문을 읽는 도중 시간이 다 된 경우도 느린 응답이다
+  if (timedOut) throw new GateApiError(0, '서버 응답이 늦습니다.', true);
   if (!res.ok)
     throw new GateApiError(
       res.status,

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './auth';
-import { rosterStats, syncRoster } from './roster';
+import { getDrop, rosterStats, syncRoster } from './roster';
 
 /** 스캔 중에 다른 입구의 입장을 받아오는 간격 (PRD 6장: 몇 초 간격) */
 const ROSTER_POLL_MS = 15_000;
@@ -12,9 +12,10 @@ const ROSTER_POLL_MS = 15_000;
  */
 export function useRoster(dropId: string, { poll }: { poll: boolean }) {
   const auth = useAuth();
-  const [stats, setStats] = useState(() => rosterStats(dropId));
+  // 행사 정보(재입장 허용 등)도 명단 동기화 때 바뀌므로 집계와 같이 다시 읽는다
+  const [snapshot, setSnapshot] = useState(() => readSnapshot(dropId));
   const refreshStats = useCallback(
-    () => setStats(rosterStats(dropId)),
+    () => setSnapshot(readSnapshot(dropId)),
     [dropId]
   );
 
@@ -33,5 +34,9 @@ export function useRoster(dropId: string, { poll }: { poll: boolean }) {
     if (sync.dataUpdatedAt || sync.errorUpdatedAt) refreshStats();
   }, [sync.dataUpdatedAt, sync.errorUpdatedAt, refreshStats]);
 
-  return { stats, refreshStats, sync };
+  return { stats: snapshot.stats, drop: snapshot.drop, refreshStats, sync };
+}
+
+function readSnapshot(dropId: string) {
+  return { stats: rosterStats(dropId), drop: getDrop(dropId) };
 }
