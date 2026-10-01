@@ -4,6 +4,20 @@
 
 ## 2026-10-01
 
+### 모노레포 전환: 웹 사이트를 `apps/web`으로 (repo)
+
+체크인 앱(게이트, Expo)을 같은 저장소에 두고 웹과 API·타입을 공유하기 위한 준비. 게이트 코드보다 먼저, 이전만 하는 단독 PR로 분리했다 — 결제가 라이브인 사이트의 빌드 경로가 바뀌는 변경이라 다른 변경과 섞으면 원인 추적이 어렵다.
+
+- `git mv`로 웹 앱 전체(src·public·prisma·messages·scripts·각종 config·`vercel.json`)를 `apps/web/`으로 옮겼다. 파일 내용은 그대로라 히스토리가 이어진다.
+- 루트 `package.json`은 워크스페이스(`apps/*`) + turbo 위임 스크립트만 갖는다. Biome·Husky·lint-staged는 저장소 전체에 걸리므로 루트에 남기고, 나머지 의존성은 `apps/web`으로 갔다. 주요 패키지 해석 버전(next·react·prisma·zod·typescript 등)은 이전 lockfile과 동일.
+- `turbo.json`은 `envMode: loose` — Next가 `.env`를 직접 읽고 Vercel은 `vercel.json` 빌드 명령을 쓰므로 turbo의 엄격 환경변수 필터가 줄 이득이 없다.
+- **`.gitignore`의 루트 고정 패턴(`/node_modules`, `/.next/`)이 `apps/web` 아래를 못 잡아서** 고정을 풀었다. 그대로 두면 `apps/web/.next`가 커밋 대상이 된다.
+- 코드에 `process.cwd()`·`__dirname` 의존이 없고 번역 파일은 상대 import라 경로 수정은 없었다.
+
+**배포 전환**: Vercel 프로젝트 Root Directory를 `apps/web`으로 바꿔야 한다(대시보드 설정, `vercel.json`으로는 못 바꾼다). 바꾸기 전에는 이 브랜치의 프리뷰가 실패하는 게 정상이다.
+
+**검증**: turbo 경유 type-check·biome 통과. `apps/web`에서 Vercel과 같은 빌드 명령(`prisma generate && next build`) 성공. 빌드 결과물을 `next start`로 띄워 `/`·`/drops`·`/programs`·`/journal` 200, 없는 드랍 404, `/admin/drops` 307, 서버 로그 에러 없음.
+
 ### 동시 스캔 시 같은 티켓이 두 번 입장되던 레이스 (tickets)
 
 체크인 앱(게이트) PRD를 현재 코드와 대조하다 나온 것. 앱과 무관하게 지금 웹 스캐너에도 해당된다.
