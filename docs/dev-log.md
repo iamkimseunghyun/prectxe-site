@@ -2,6 +2,24 @@
 
 > 이전 기록은 [dev-log-archive.md](dev-log-archive.md) 참조
 
+## 2026-10-01
+
+### 동시 스캔 시 같은 티켓이 두 번 입장되던 레이스 (tickets)
+
+체크인 앱(게이트) PRD를 현재 코드와 대조하다 나온 것. 앱과 무관하게 지금 웹 스캐너에도 해당된다.
+
+**`checkInTicket`이 조회 후 무조건 `update`였다.** 두 입구가 캡처된 같은 QR을 거의 동시에 찍으면 둘 다 `status: 'active'`를 읽고 둘 다 갱신해 **양쪽 모두 "입장"** 응답을 받는다. 캡처 QR 공유를 막는 유일한 장치가 "첫 입장만 유효"인데, 그게 입구가 둘 이상일 때 정확히 뚫리는 구조였다.
+
+- 갱신을 `updateMany({ where: { id, status: 'active' } })` + `count` 확인으로 바꿨다. Postgres가 행 잠금 후 WHERE를 재평가하므로 동시 요청 중 한쪽만 1건을 갱신한다 — 재고 차감(`ticketTier.updateMany`)과 같은 패턴.
+- `count === 0`이면 다시 읽어 판정한다: `checked_in`이면 진 쪽에 "이미 입장"(이긴 쪽의 입장 시각 포함), `cancelled`면 취소 안내. `cancelOrder`가 같은 행을 `cancelled`로 바꾸므로 **입장과 취소가 겹치는 경우도 같은 조건에서 걸린다.**
+- 반환 형태는 그대로라 스캐너 UI는 수정 없음.
+
+**남겨둔 것**: `undoCheckIn`이 `checkedInAt/By`를 null로 덮어써 입장 이력이 사라지는 문제. 게이트 PRD의 CheckIn 기록 테이블(삭제 없이 누적)에서 해결할 범위라 이번엔 건드리지 않았다.
+
+**검증**: type-check·biome 통과. 동시성 자체는 Prisma 문서의 낙관적 동시성 패턴(`updateMany` + `count`)과 동일한 구조로, DB에 테스트 행을 만드는 실측은 하지 않았다.
+
+---
+
 ## 2026-09-09
 
 ### 끝난 공연이 계속 '매진'으로 남던 문제 (drops)

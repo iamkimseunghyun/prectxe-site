@@ -1155,21 +1155,23 @@ export async function checkInTicket(token: string, dropId: string) {
       error: '결제가 완료되지 않은 티켓입니다.',
     } as const;
 
+  const buyerName = ticket.order.buyerName;
+  const tierName = ticket.ticketTier?.name ?? '티켓';
+
   if (ticket.status === 'checked_in') {
     return {
       success: true,
       alreadyCheckedIn: true,
-      data: {
-        buyerName: ticket.order.buyerName,
-        tierName: ticket.ticketTier?.name ?? '티켓',
-        checkedInAt: ticket.checkedInAt,
-      },
+      data: { buyerName, tierName, checkedInAt: ticket.checkedInAt },
     } as const;
   }
 
+  // 조회와 갱신 사이에 다른 입구가 같은 QR을 먼저 찍을 수 있다. active일 때만
+  // 갱신해야 동시 스캔에서 한쪽만 입장으로 판정된다 (cancelOrder도 같은 행을
+  // cancelled로 바꾸므로 취소와 겹쳐도 이 조건에서 걸린다)
   const now = new Date();
-  await prisma.ticket.update({
-    where: { id: ticket.id },
+  const updated = await prisma.ticket.updateMany({
+    where: { id: ticket.id, status: 'active' },
     data: {
       status: 'checked_in',
       checkedInAt: now,
@@ -1177,14 +1179,29 @@ export async function checkInTicket(token: string, dropId: string) {
     },
   });
 
+  if (updated.count === 0) {
+    const current = await prisma.ticket.findUnique({
+      where: { id: ticket.id },
+      select: { status: true, checkedInAt: true },
+    });
+    if (current?.status === 'checked_in')
+      return {
+        success: true,
+        alreadyCheckedIn: true,
+        data: { buyerName, tierName, checkedInAt: current.checkedInAt },
+      } as const;
+    if (current?.status === 'cancelled')
+      return { success: false, error: '취소된 티켓입니다.' } as const;
+    return {
+      success: false,
+      error: '티켓 상태가 바뀌었습니다. 다시 스캔해주세요.',
+    } as const;
+  }
+
   return {
     success: true,
     alreadyCheckedIn: false,
-    data: {
-      buyerName: ticket.order.buyerName,
-      tierName: ticket.ticketTier?.name ?? '티켓',
-      checkedInAt: now,
-    },
+    data: { buyerName, tierName, checkedInAt: now },
   } as const;
 }
 
