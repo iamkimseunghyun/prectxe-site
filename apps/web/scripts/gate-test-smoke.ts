@@ -25,6 +25,7 @@ import type {
 } from '@prectxe/gate-contract';
 import { prisma } from '@/lib/db/prisma';
 import { issueLoginCode } from '@/modules/gate/server/auth';
+import { getDropCheckInLog } from '@/modules/tickets/server/queries';
 import { assertNotProduction } from './gate-test-guard';
 
 const BASE = `${process.env.GATE_BASE_URL ?? 'http://localhost:3000'}/api/gate`;
@@ -76,9 +77,9 @@ async function main() {
   });
   const active = tickets.filter((t) => t.status === 'active');
   const cancelled = tickets.find((t) => t.status === 'cancelled');
-  if (active.length < 6 || !cancelled)
+  if (active.length < 8 || !cancelled)
     throw new Error('티켓 상태가 초기값이 아닙니다. 시드를 다시 실행하세요.');
-  const [A, B, C, T4, T5, T6] = active;
+  const [A, B, C, T4, T5, T6, T7, T8] = active;
   const D = `/drops/${drop.id}`;
 
   // 스모크 전용 스태프를 이 드랍에 배정
@@ -499,6 +500,72 @@ async function main() {
   );
   const empty = await call('POST', `${D}/sync`, token, { records: [] });
   check('빈 배치 → 400', empty.status === 400, empty);
+  const dupId = id();
+  const dupBatch = await call('POST', `${D}/sync`, token, {
+    records: [
+      { kind: 'entry', clientId: dupId, token: T7.token, scannedAt: ago(5) },
+      { kind: 'entry', clientId: dupId, token: T8.token, scannedAt: ago(4) },
+    ],
+  });
+  check(
+    '한 배치에 같은 clientId 두 번 → 400',
+    dupBatch.status === 400,
+    dupBatch
+  );
+
+  // 기기가 중복 입장을 취소했으면 '확인 필요'에서 빠진다 (d2는 위에서 d3로 취소됨)
+  const review = await getDropCheckInLog(drop.id);
+  check(
+    '취소된 중복 입장은 취소됨 표시, 확인 필요 = 남은 2건',
+    review.flagged.find((f) => f.clientId === ids.d2)?.voided === true &&
+      review.counts.needsReview === 2,
+    {
+      needsReview: review.counts.needsReview,
+      flagged: review.flagged.map((f) => [f.flag, f.voided]),
+    }
+  );
+
+  // 기기 시계가 뒤로 보정돼 취소가 자기 입장보다 이른 시각으로 와도 보낸 순서대로
+  const o1 = id();
+  const ordered = await call<SyncResponse>('POST', `${D}/sync`, token, {
+    records: [
+      { kind: 'entry', clientId: o1, token: T7.token, scannedAt: ago(10) },
+      {
+        kind: 'undo',
+        clientId: id(),
+        token: T7.token,
+        scannedAt: ago(40),
+        undoes: o1,
+      },
+    ],
+  });
+  const t7 = await prisma.ticket.findUnique({
+    where: { token: T7.token },
+    select: { status: true },
+  });
+  check(
+    '취소 시각이 입장보다 일러도 보낸 순서대로 → 입장 후 취소',
+    ordered.data.results?.every((r) => r.status === 'applied') &&
+      t7?.status === 'active',
+    { results: ordered.data.results, t7 }
+  );
+
+  // 두 기기가 같은 티켓을 동시에 올리면 한쪽만 정상, 다른 쪽은 중복
+  const both = await Promise.all(
+    [ago(30), ago(20)].map((at) =>
+      call<SyncResponse>('POST', `${D}/sync`, token, {
+        records: [
+          { kind: 'entry', clientId: id(), token: T8.token, scannedAt: at },
+        ],
+      })
+    )
+  );
+  const bothStatus = both.map((r) => r.data.results?.[0]?.status).sort();
+  check(
+    'T8을 두 기기가 동시에 동기화 → applied 1, duplicate 1',
+    bothStatus.join() === 'applied,duplicate',
+    bothStatus
+  );
 
   // 취소 대상이 지금의 입장 상태를 만든 기록이 아니면 티켓을 되돌리지 않는다
   await prisma.drop.update({

@@ -68,7 +68,9 @@ const offlineBase = {
 
 /**
  * 오프라인 동안 기기에 쌓인 기록 1건. `scannedAt`은 기기가 실제로 판정한
- * 시각 — 서버는 티켓별로 이 순서대로 적용하고, 입장 시각도 이 값으로 남긴다.
+ * 시각으로 입장 시각에 쓰인다. 적용 순서는 `scannedAt`이 아니라 **배열 순서**다 —
+ * 기기 시계가 중간에 보정되면 시각 순서가 실제 순서와 어긋나므로, 앱은 기록이
+ * 생긴 순서 그대로 보내야 한다.
  *
  * 취소(`undo`)는 되돌릴 입장 기록의 clientId(`undoes`)를 함께 보낸다. 토큰만
  * 보내면, 이 기기의 입장이 중복으로 표시됐을 때 다른 입구의 정상 입장을
@@ -85,7 +87,16 @@ export type OfflineRecord = z.infer<typeof offlineRecord>;
 export const SYNC_BATCH_LIMIT = 200;
 
 export const syncBody = z.object({
-  records: z.array(offlineRecord).min(1).max(SYNC_BATCH_LIMIT),
+  records: z
+    .array(offlineRecord)
+    .min(1)
+    .max(SYNC_BATCH_LIMIT)
+    // 결과를 clientId로 돌려주므로 한 배치 안에서 겹치면 어느 결과인지 모른다
+    .refine(
+      (records) =>
+        new Set(records.map((r) => r.clientId)).size === records.length,
+      '같은 clientId가 한 배치에 두 번 들어 있습니다.'
+    ),
 });
 export type SyncBody = z.infer<typeof syncBody>;
 

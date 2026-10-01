@@ -51,8 +51,12 @@ function LogTable({ entries }: { entries: CheckInLogEntry[] }) {
               <TableCell className="whitespace-nowrap">
                 {entry.kind === 'entry' ? '입장' : '입장 취소'}
                 {entry.flag && (
-                  <Badge variant="destructive" className="ml-2">
+                  <Badge
+                    variant={entry.voided ? 'outline' : 'destructive'}
+                    className="ml-2"
+                  >
                     {FLAG_LABEL[entry.flag]}
+                    {entry.voided && ' · 취소됨'}
                   </Badge>
                 )}
               </TableCell>
@@ -115,7 +119,7 @@ export function CheckInLogView({
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">확인 필요</p>
             <p className="text-2xl font-semibold tabular-nums">
-              {flagged.length}
+              {counts.needsReview}
             </p>
           </CardContent>
         </Card>
@@ -127,7 +131,9 @@ export function CheckInLogView({
           <p className="text-sm text-muted-foreground">
             오프라인 상태에서 들여보낸 뒤 동기화해 보니 이미 입장한 티켓이었거나
             취소된 티켓이었던 경우입니다. 이미 입장한 뒤라 되돌릴 수는 없고,
-            같은 티켓의 다른 기록과 시각·입구를 비교해 확인하세요.
+            같은 티켓의 다른 기록과 시각·입구를 비교해 확인하세요. 스태프가
+            앱에서 취소한 입장은 &apos;취소됨&apos;으로 표시되고 확인 필요
+            수에서 빠집니다.
           </p>
           <Card>
             <CardContent className="p-0">

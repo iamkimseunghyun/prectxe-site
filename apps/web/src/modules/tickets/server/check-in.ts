@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { OfflineRecord } from '@prectxe/gate-contract';
 import type { CheckInKind, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db/prisma';
 
@@ -30,6 +31,8 @@ type LogInput = {
   actor: CheckInActor;
   gate?: string;
   clientId?: string;
+  /** 취소 기록이 되돌린 입장의 clientId */
+  undoes?: string;
   at: Date;
 };
 
@@ -50,6 +53,7 @@ function logData(input: LogInput): Prisma.CheckInUncheckedCreateInput {
     gate: input.gate ?? null,
     userId: 'userId' in input.actor ? input.actor.userId : null,
     staffId: 'staffId' in input.actor ? input.actor.staffId : null,
+    undoes: input.undoes ?? null,
     scannedAt: input.at,
   };
 }
@@ -393,6 +397,7 @@ export async function undoEntry(input: {
           actor,
           gate,
           clientId,
+          undoes,
           at,
         }),
       });
@@ -408,23 +413,11 @@ export async function undoEntry(input: {
 
 // ─── 오프라인 기록 동기화 ─────────────────────────────
 
-export type OfflineRecordInput =
-  | {
-      kind: 'entry';
-      clientId: string;
-      token: string;
-      gate?: string;
-      scannedAt: Date;
-    }
-  | {
-      kind: 'undo';
-      clientId: string;
-      token: string;
-      gate?: string;
-      scannedAt: Date;
-      /** 되돌릴 입장 기록의 clientId */
-      undoes: string;
-    };
+// 계약의 기록 형태에서 scannedAt만 Date로 바꾼 것. 유니언을 유지하려고 분배한다
+type WithDate<T> = T extends unknown
+  ? Omit<T, 'scannedAt'> & { scannedAt: Date }
+  : never;
+export type OfflineRecordInput = WithDate<OfflineRecord>;
 
 export type OfflineOutcome =
   | {
@@ -438,7 +431,8 @@ export type OfflineOutcome =
   | { status: 'rejected'; error: string };
 
 // 상태를 읽은 뒤 조건부 갱신 사이에 다른 입구가 끼면 다시 읽는다. 그 이상
-// 계속 바뀌면 사람이 확인해야 하는 상황이라 거절로 돌려준다.
+// 계속 바뀌면 retry로 돌려 앱이 다음 동기화 때 다시 보내게 한다 (거절하면
+// 앱이 기록을 버린다).
 const OFFLINE_MAX_ATTEMPTS = 3;
 
 /**
@@ -475,8 +469,13 @@ export async function applyOfflineRecord(input: {
     where: { token: record.token },
     select: {
       id: true,
+      status: true,
       order: {
-        select: { dropId: true, drop: { select: { allowReentry: true } } },
+        select: {
+          status: true,
+          dropId: true,
+          drop: { select: { allowReentry: true } },
+        },
       },
     },
   });
@@ -496,15 +495,16 @@ export async function applyOfflineRecord(input: {
     return { status: prev.flag ?? 'applied' };
   };
 
-  const early = await replayed();
-  if (early) return early;
+  // 미입장 티켓이면 재전송 조회를 건너뛴다 (온라인 입장과 같은 이유). 그
+  // 경우의 재전송·ID 충돌은 아래 갱신 0건·고유키 충돌 지점에서 다시 확인한다.
+  if (ticket.status !== 'active') {
+    const early = await replayed();
+    if (early) return early;
+  }
 
-  const log = (
-    kind: CheckInKind,
-    flag: 'duplicate' | 'cancelled_ticket' | null
-  ) => ({
+  const entryLog = (flag: 'duplicate' | 'cancelled_ticket' | null) => ({
     ...logData({
-      kind,
+      kind: 'entry',
       ticketId: ticket.id,
       dropId,
       actor,
@@ -517,19 +517,20 @@ export async function applyOfflineRecord(input: {
 
   try {
     const allowReentry = ticket.order.drop?.allowReentry ?? false;
+    // 첫 시도는 위에서 읽은 상태를 쓰고, 경합으로 갱신이 0건이면 다시 읽는다
+    let current: { status: string; order: { status: string } } | null = ticket;
     for (let attempt = 0; attempt < OFFLINE_MAX_ATTEMPTS; attempt++) {
-      const current = await prisma.ticket.findUnique({
-        where: { id: ticket.id },
-        select: { status: true, order: { select: { status: true } } },
-      });
+      if (attempt > 0)
+        current = await prisma.ticket.findUnique({
+          where: { id: ticket.id },
+          select: { status: true, order: { select: { status: true } } },
+        });
       if (!current)
         return { status: 'rejected', error: '유효하지 않은 티켓입니다.' };
 
       // 목록을 받은 뒤 취소·환불된 티켓 — 티켓 상태는 그대로 두고 표시만
       if (current.status === 'cancelled' || current.order.status !== 'paid') {
-        await prisma.checkIn.create({
-          data: log('entry', 'cancelled_ticket'),
-        });
+        await prisma.checkIn.create({ data: entryLog('cancelled_ticket') });
         return { status: 'cancelled_ticket' };
       }
 
@@ -545,10 +546,12 @@ export async function applyOfflineRecord(input: {
             },
           });
           if (count === 0) return false;
-          await tx.checkIn.create({ data: log('entry', null) });
+          await tx.checkIn.create({ data: entryLog(null) });
           return true;
         });
         if (entered) return { status: 'applied' };
+        const late = await replayed();
+        if (late) return late;
         continue;
       }
 
@@ -561,12 +564,11 @@ export async function applyOfflineRecord(input: {
           data: { updatedAt: new Date() },
         });
         if (count === 0) return false;
-        await tx.checkIn.create({ data: log('entry', flag) });
+        await tx.checkIn.create({ data: entryLog(flag) });
         return true;
       });
       if (recorded) return { status: flag ?? 'applied' };
     }
-    // 거절하면 앱이 기록을 버린다 — 일시적인 상황이니 다음 동기화에 다시 보내게
     return { status: 'retry' };
   } catch (error) {
     if (!isClientIdConflict(error)) throw error;

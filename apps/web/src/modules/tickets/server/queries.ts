@@ -6,6 +6,7 @@ const CHECK_IN_LOG_LIMIT = 3000;
 
 const logSelect = {
   id: true,
+  clientId: true,
   kind: true,
   flag: true,
   gate: true,
@@ -23,7 +24,7 @@ const logSelect = {
 
 /** 어드민 입장 기록 화면. 스캔 시각 최신순 */
 export async function getDropCheckInLog(dropId: string) {
-  const [rows, flagged, byKind] = await Promise.all([
+  const [rows, flaggedRows, byKind, voids] = await Promise.all([
     // 한 건 더 읽어 실제로 잘렸는지 판단한다
     prisma.checkIn.findMany({
       where: { dropId },
@@ -41,17 +42,36 @@ export async function getDropCheckInLog(dropId: string) {
       where: { dropId },
       _count: true,
     }),
+    // 게이트 앱의 취소는 어느 입장을 되돌렸는지 남긴다 — 표시된 입장이 이미
+    // 취소로 무효가 됐으면 '확인 필요'에서 뺀다
+    prisma.checkIn.findMany({
+      where: { dropId, kind: 'undo', undoes: { not: null } },
+      select: { undoes: true },
+    }),
   ]);
+
+  const voided = new Set(voids.map((v) => v.undoes));
+  const withVoided = <T extends { clientId: string }>(row: T) => ({
+    ...row,
+    voided: voided.has(row.clientId),
+  });
 
   const truncated = rows.length > CHECK_IN_LOG_LIMIT;
   const count = (kind: 'entry' | 'undo') =>
     byKind.find((g) => g.kind === kind)?._count ?? 0;
+  const flagged = flaggedRows.map(withVoided);
 
   return {
-    entries: truncated ? rows.slice(0, CHECK_IN_LOG_LIMIT) : rows,
+    entries: (truncated ? rows.slice(0, CHECK_IN_LOG_LIMIT) : rows).map(
+      withVoided
+    ),
     truncated,
     flagged,
-    counts: { entry: count('entry'), undo: count('undo') },
+    counts: {
+      entry: count('entry'),
+      undo: count('undo'),
+      needsReview: flagged.filter((f) => !f.voided).length,
+    },
   };
 }
 

@@ -38,9 +38,10 @@ export async function POST(
     group.push(record);
     byTicket.set(record.token, group);
   }
-  const queue = [...byTicket.values()].map((group) =>
-    group.sort((a, b) => Date.parse(a.scannedAt) - Date.parse(b.scannedAt))
-  );
+  // 같은 티켓의 기록은 기기가 보낸 순서(= 기록이 생긴 순서)대로 적용한다.
+  // scannedAt으로 다시 정렬하면 오프라인 중 기기 시계가 뒤로 보정됐을 때 취소가
+  // 자기 입장보다 먼저 처리돼 '대상 없음'으로 버려지고 잘못된 입장만 남는다.
+  const queue = [...byTicket.values()];
 
   const results = new Map<string, Result>();
   const worker = async () => {
