@@ -4,16 +4,25 @@
 Always prefer Serena's symbolic tools (find_symbol, get_symbols_overview, replace_symbol_body, etc.) over grep, read_file, and text-based edits for code search and modification.
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Monorepo (Turborepo + Bun workspaces)
+
+- 웹 사이트는 **`apps/web/`** 에 있다. 이 문서의 `src/`, `prisma/`, `messages/` 경로는 전부 `apps/web/` 기준이다.
+- 루트에는 워크스페이스 설정(`package.json`, `turbo.json`, `bun.lock`), Biome·Husky, `docs/`, 이 문서만 둔다.
+- 로컬 `.env`는 `apps/web/.env` (Next와 `prisma.config.ts`가 앱 폴더에서 읽는다).
+- Vercel 프로젝트의 Root Directory는 `apps/web`. `vercel.json`도 그 안에 있다.
+- 체크인 앱(게이트, Expo)은 `apps/gate/`로 추가 예정.
+
 ## Build & Dev Commands
 
-- `bun run dev` — Next.js dev server (Turbopack)
+루트에서 실행 (turbo가 워크스페이스로 위임):
+- `bun run dev` — 웹 dev server (Turbopack)
 - `bun run build` — `prisma generate` + `next build`
 - `bun run type-check` — `tsc --noEmit`
 - `bun run check` — Biome lint + format combined
 - `bun run check:fix` — Auto-fix Biome issues
 - Before pushing: `bun run type-check && bun run check`
-- Prisma: `bunx prisma migrate dev -n "<msg>"`, `bunx prisma generate`, `bunx prisma studio`
-- Pre-commit hook (Husky): `biome check --write --no-errors-on-unmatched` via lint-staged
+- Prisma는 `apps/web`에서: `bunx prisma migrate dev -n "<msg>"`, `bunx prisma generate`, `bunx prisma studio`
+- Pre-commit hook (Husky): `bun run type-check` + `bun run format`
 - **No test framework** — no unit/integration test setup exists yet
 
 ## Tech Stack

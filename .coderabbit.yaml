@@ -25,7 +25,7 @@ reviews:
     - '!**/bun.lock'
     - '!**/*.lock'
     - '!**/node_modules/**'
-    - '!src/generated/**'
+    - '!apps/web/src/generated/**'
     - '!**/*.min.js'
   # 프로젝트는 Biome로 lint/format 통일 — CodeRabbit이 중복 지적하지 않도록
   # 코드 품질 지적은 버그·로직 중심으로 한정.
