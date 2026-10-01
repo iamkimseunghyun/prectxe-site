@@ -40,6 +40,10 @@ import {
   deleteDrop,
   updateDrop,
 } from '@/modules/drops/server/actions';
+import {
+  DropStaffCard,
+  type DropStaffMember,
+} from '@/modules/gate/ui/components/drop-staff-card';
 import { VenueSelect } from '@/modules/venues/ui/components/venue-select';
 
 type DropMediaInit = {
@@ -92,6 +96,8 @@ type VenueOption = {
 interface DropFormViewProps {
   drop?: DropData;
   venues: VenueOption[];
+  /** 편집 모드에서만 — 게이트 앱 스태프 배정 */
+  staff?: DropStaffMember[];
 }
 
 /**
@@ -121,7 +127,7 @@ function uploadFileWithProgress(
   });
 }
 
-export function DropFormView({ drop, venues }: DropFormViewProps) {
+export function DropFormView({ drop, venues, staff }: DropFormViewProps) {
   const router = useRouter();
   const { toast } = useToast();
   const isEdit = !!drop;
@@ -684,6 +690,10 @@ export function DropFormView({ drop, venues }: DropFormViewProps) {
                   </div>
                 </CardContent>
               </Card>
+            )}
+
+            {isEdit && type === 'ticket' && (
+              <DropStaffCard dropId={drop.id} staff={staff ?? []} />
             )}
           </div>
         </div>

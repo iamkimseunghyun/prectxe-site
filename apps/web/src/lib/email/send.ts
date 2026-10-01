@@ -7,6 +7,7 @@ import FormNotification from './templates/form-notification';
 import Newsletter from './templates/newsletter';
 import OrderAdminNotification from './templates/order-admin-notification';
 import OrderConfirmation from './templates/order-confirmation';
+import StaffLoginCode from './templates/staff-login-code';
 import {
   buildUnsubscribeHeaders,
   getUnsubscribePageUrl,
@@ -19,7 +20,8 @@ export type EmailTemplateData =
   | Parameters<typeof Newsletter>[0]
   | Parameters<typeof OrderConfirmation>[0]
   | Parameters<typeof BankTransferPending>[0]
-  | Parameters<typeof OrderAdminNotification>[0];
+  | Parameters<typeof OrderAdminNotification>[0]
+  | Parameters<typeof StaffLoginCode>[0];
 
 /** Resend batch API 1회 요청당 최대 수신자 수 */
 const BATCH_SIZE = 100;
@@ -40,7 +42,8 @@ export interface SendEmailParams {
     | 'newsletter'
     | 'order-confirmation'
     | 'bank-transfer-pending'
-    | 'order-admin-notification';
+    | 'order-admin-notification'
+    | 'staff-login-code';
   data: EmailTemplateData;
   /**
    * 지정하면 청크마다 `${idempotencyKey}:${index}` 형태의 Idempotency-Key를
@@ -89,6 +92,8 @@ function getTemplate(template: string, data: EmailTemplateData): ReactElement {
       return OrderAdminNotification(
         data as Parameters<typeof OrderAdminNotification>[0]
       );
+    case 'staff-login-code':
+      return StaffLoginCode(data as Parameters<typeof StaffLoginCode>[0]);
     default:
       return FormNotification(data as Parameters<typeof FormNotification>[0]);
   }

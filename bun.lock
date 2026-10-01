@@ -22,6 +22,7 @@
         "@next/third-parties": "^16.2.4",
         "@portone/browser-sdk": "0.1.3",
         "@portone/server-sdk": "^0.19.0",
+        "@prectxe/gate-contract": "workspace:*",
         "@prisma/adapter-neon": "^7.8.0",
         "@prisma/client": "^7.8.0",
         "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -94,6 +95,16 @@
         "prisma": "^7.8.0",
         "tailwindcss": "^4.3.0",
         "ts-node": "^10.9.2",
+        "typescript": "5.7.3",
+      },
+    },
+    "packages/gate-contract": {
+      "name": "@prectxe/gate-contract",
+      "version": "0.0.0",
+      "dependencies": {
+        "zod": "^4",
+      },
+      "devDependencies": {
         "typescript": "5.7.3",
       },
     },
@@ -346,6 +357,8 @@
     "@portone/browser-sdk": ["@portone/browser-sdk@0.1.3", "", {}, "sha512-GRmXb8gBLs/23CES1YRvzMggbL8+tFeH5WS9YSA6WUPu5/9kgRKKZLeC25N2raq3zVJd9OfDTeSf0tUr27vF1Q=="],
 
     "@portone/server-sdk": ["@portone/server-sdk@0.19.0", "", {}, "sha512-JIbD9HEEqaYuuW0zKU/sapqH1HQBf/Len+8ZPnMRb7E7tHnqRGrKPLS+fom34xUTiF3ZVKTrDjHeQHQ2YZc2og=="],
+
+    "@prectxe/gate-contract": ["@prectxe/gate-contract@workspace:packages/gate-contract"],
 
     "@prisma/adapter-neon": ["@prisma/adapter-neon@7.8.0", "", { "dependencies": { "@neondatabase/serverless": ">0.6.0 <2", "@prisma/driver-adapter-utils": "7.8.0", "postgres-array": "3.0.4" } }, "sha512-9MoOjRuY53sQNyji87u1NivsK0tIacoUE3PqTxdG95b7ORn1pzwribH2z83j4Vh3eb9nQ/UC+MTfVW7jCFnXlA=="],
 

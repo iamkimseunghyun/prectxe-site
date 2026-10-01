@@ -53,6 +53,9 @@ const nextConfig: NextConfig = {
   // external로 지정하면 번들 대상에서 제외되고 패키지 전체가 lambda에 포함된다.
   serverExternalPackages: ['aligoapi', 'solapi', 'exceljs'],
 
+  // 워크스페이스 패키지는 TS 소스를 그대로 내보내므로 Next가 트랜스파일해야 한다
+  transpilePackages: ['@prectxe/gate-contract'],
+
   images: {
     // Cloudflare Images flexible variants로 폭별 리사이즈를 위임한다.
     // unoptimized:true였을 때는 srcset 자체가 생성되지 않아 코드 전반의

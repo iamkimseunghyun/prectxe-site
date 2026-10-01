@@ -61,3 +61,19 @@ export const dropUpdateSchema = z.object({
 });
 
 export type DropUpdateInput = z.infer<typeof dropUpdateSchema>;
+
+// 게이트 앱 스태프 배정. 이메일은 로그인 식별자라 소문자로 정규화한다.
+export const dropStaffAddSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .pipe(z.email('이메일 형식이 아닙니다.')),
+  name: z
+    .string()
+    .trim()
+    .max(50, '이름은 50자 이내로 입력해주세요.')
+    .optional(),
+});
+
+export type DropStaffAddInput = z.infer<typeof dropStaffAddSchema>;
