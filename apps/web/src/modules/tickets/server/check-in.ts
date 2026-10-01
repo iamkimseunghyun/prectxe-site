@@ -364,7 +364,7 @@ export async function undoEntry(input: {
 
   const target = await prisma.checkIn.findUnique({
     where: { clientId: undoes },
-    select: { ticketId: true, kind: true, scannedAt: true },
+    select: { ticketId: true, kind: true, flag: true, scannedAt: true },
   });
   if (!target || target.kind !== 'entry') return { status: 'not_found' };
   if (target.ticketId !== ticket.id)
@@ -375,14 +375,16 @@ export async function undoEntry(input: {
 
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.ticket.updateMany({
-        where: {
-          id: ticket.id,
-          status: 'checked_in',
-          checkedInAt: target.scannedAt,
-        },
-        data: { status: 'active', checkedInAt: null, checkedInBy: null },
-      });
+      // 중복·취소 티켓으로 표시된 입장은 애초에 티켓 상태를 바꾼 적이 없다
+      if (!target.flag)
+        await tx.ticket.updateMany({
+          where: {
+            id: ticket.id,
+            status: 'checked_in',
+            checkedInAt: target.scannedAt,
+          },
+          data: { status: 'active', checkedInAt: null, checkedInBy: null },
+        });
       await tx.checkIn.create({
         data: logData({
           kind: 'undo',
@@ -454,6 +456,21 @@ export async function applyOfflineRecord(input: {
   // 기기 시계가 앞서 있으면 미래 시각이 들어온다 — 서버 시각을 넘지 않게
   const at = new Date(Math.min(record.scannedAt.getTime(), Date.now()));
 
+  // 취소는 온라인 취소와 같은 규칙(대상 입장 지정)을 그대로 쓴다
+  if (record.kind === 'undo') {
+    const outcome = await undoEntry({
+      dropId,
+      actor,
+      token: record.token,
+      clientId: record.clientId,
+      undoes: record.undoes,
+      gate: record.gate,
+      at,
+    });
+    // 되돌릴 입장이 서버에 없다 (거절됐거나 아직 안 올라옴) — 반영할 것 없음
+    return outcome.status === 'not_found' ? { status: 'skipped' } : outcome;
+  }
+
   const ticket = await prisma.ticket.findUnique({
     where: { token: record.token },
     select: {
@@ -499,38 +516,6 @@ export async function applyOfflineRecord(input: {
   });
 
   try {
-    if (record.kind === 'undo') {
-      const target = await prisma.checkIn.findUnique({
-        where: { clientId: record.undoes },
-        select: { ticketId: true, kind: true, flag: true, scannedAt: true },
-      });
-      // 되돌릴 입장이 서버에 없다 (거절됐거나 아직 안 올라옴) — 반영할 것 없음
-      if (!target || target.kind !== 'entry') return { status: 'skipped' };
-      if (target.ticketId !== ticket.id)
-        return {
-          status: 'rejected',
-          error: '다른 티켓의 입장은 취소할 수 없습니다.',
-        };
-      // 대상 입장이 지금의 입장 상태를 만든 기록일 때만 티켓을 되돌린다.
-      // 중복으로 표시된 입장, 재입장 기록, 이미 취소된 뒤 다른 입구에서 다시
-      // 들어온 경우의 옛 입장은 현재 상태와 무관하다 — 되돌리면 다른 입장을
-      // 지운다. 그때는 취소 기록만 남겨 그 입장을 무효로 표시한다.
-      // (입장 기록의 scannedAt과 티켓의 checkedInAt은 같은 시각으로 남는다)
-      await prisma.$transaction(async (tx) => {
-        if (!target.flag)
-          await tx.ticket.updateMany({
-            where: {
-              id: ticket.id,
-              status: 'checked_in',
-              checkedInAt: target.scannedAt,
-            },
-            data: { status: 'active', checkedInAt: null, checkedInBy: null },
-          });
-        await tx.checkIn.create({ data: log('undo', null) });
-      });
-      return { status: 'applied' };
-    }
-
     const allowReentry = ticket.order.drop?.allowReentry ?? false;
     for (let attempt = 0; attempt < OFFLINE_MAX_ATTEMPTS; attempt++) {
       const current = await prisma.ticket.findUnique({
