@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 루트에는 워크스페이스 설정(`package.json`, `turbo.json`, `bun.lock`), Biome·Husky, `docs/`, 이 문서만 둔다.
 - 로컬 `.env`는 `apps/web/.env` (Next와 `prisma.config.ts`가 앱 폴더에서 읽는다).
 - Vercel 프로젝트의 Root Directory는 `apps/web`. `vercel.json`도 그 안에 있다.
-- 체크인 앱(게이트, Expo)은 `apps/gate/`로 추가 예정.
+- 스태프 체크인 앱(게이트, Expo SDK 57)은 **`apps/gate/`** — **Bun 워크스페이스 밖**이다(Expo가 `react` 19.2.3 고정, 웹은 19.2.5). 자기 `bun.lock`·`node_modules`를 쓰고, 의존성은 `apps/gate`에서 `bunx expo install`로 추가. `packages/gate-contract`는 설치하지 않고 Metro `resolveRequest` + tsconfig `paths`로 소스를 직접 가리킨다. 루트에서 `bun run gate`, `bun run gate:type-check`.
 
 ## Build & Dev Commands
 
@@ -145,7 +145,7 @@ src/
 - `CheckIn`은 입장·취소를 지우지 않고 쌓는 기록, `Ticket.status/checkedInAt`은 현재 상태 캐시. `clientId`(unique)로 앱 재전송 멱등. `Drop.allowReentry`가 켜지면 이미 입장한 티켓도 `reentered`
 
 ### 게이트 앱 API (`/api/gate/*`)
-- 스태프용 체크인 앱(Expo, `apps/gate` 예정)이 부르는 Route Handler. 요청 zod 스키마·응답 타입은 **`packages/gate-contract`** 에 두고 웹·앱이 같이 import한다(런타임 의존은 zod만)
+- 스태프용 체크인 앱(`apps/gate`)이 부르는 Route Handler. 요청 zod 스키마·응답 타입은 **`packages/gate-contract`** 에 두고 웹·앱이 같이 import한다(런타임 의존은 zod만)
 - 인증: `Staff`(어드민 세션과 별개) — 이메일 6자리 코드(`/auth/request-code` → `/auth/verify`) → `Authorization: Bearer <token>`. 코드·토큰은 해시만 저장. 세션 30일(개인 휴대폰 기준)
 - 권한: 행사별 API는 매 요청 `DropStaff` 배정 확인(`requireStaffForDrop`). 배정은 어드민 드랍 편집 사이드바 "게이트 스태프"
 - `/drops/[id]/tickets?since=` — 처음엔 전체, 이후 `syncedAt`부터 바뀐 것만(다른 입구 반영). 주문이 결제 상태가 아니면 `cancelled`로 내려간다

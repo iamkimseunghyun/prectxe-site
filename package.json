@@ -3,11 +3,13 @@
   "private": true,
   "packageManager": "bun@1.4.0",
   "workspaces": [
-    "apps/*",
+    "apps/web",
     "packages/*"
   ],
   "scripts": {
     "dev": "turbo run dev --filter=web",
+    "gate": "bun --cwd apps/gate run start",
+    "gate:type-check": "bun --cwd apps/gate run type-check",
     "build": "turbo run build",
     "type-check": "turbo run type-check",
     "lint": "biome lint .",

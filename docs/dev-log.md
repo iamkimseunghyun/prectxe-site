@@ -4,6 +4,23 @@
 
 ## 2026-10-01
 
+### 게이트 앱 기반 (apps/gate)
+
+스태프용 체크인 앱의 첫 단계. Expo SDK 57 + expo-router. 이메일 코드 로그인과 내 행사 목록까지 — 스캐너·오프라인 큐는 다음 PR.
+
+**Bun 워크스페이스에 넣지 않았다.** Expo SDK 57은 `react` 19.2.3을 정확히 요구하는데 웹은 19.2.5다. 한 워크스페이스에 두면 호이스팅된 React가 둘 중 하나와 어긋난다. 그래서 `apps/gate`는 자기 `bun.lock`·`node_modules`를 따로 갖고, 루트 워크스페이스 목록(`apps/web`, `packages/*`)에 없다. 덤으로 Vercel 웹 빌드가 RN 의존성을 설치하지 않는다.
+- 공유 계약(`packages/gate-contract`)은 패키지로 설치하지 않고 **소스를 직접 가리킨다** — Metro는 `resolveRequest`로, TypeScript는 `paths`로. 계약 파일 안의 `zod` import는 게이트 앱의 `node_modules`에서 풀리게 Metro에서 출발 경로를 바꿔준다.
+- 루트에서 `bun run gate`(Metro), `bun run gate:type-check`.
+
+**화면**
+- **로그인** — 이메일 → 6자리 코드. `request-code`가 준 `challengeId`를 들고 있다가 `verify`에 같이 보낸다(#98). 코드 입력칸은 iOS 메일 코드 자동 채움(`oneTimeCode`).
+- **행사 목록** — 내가 배정된, 행사 24시간 전 ~ 종료 12시간 후 드랍. 당겨서 새로고침. 시각은 기기 시간대와 무관하게 KST.
+- **행사 화면** — 자리만. 다음 PR에서 입구 선택·명단 다운로드·스캐너가 붙는다.
+
+**세션**: 토큰은 `expo-secure-store`(키체인/Keystore)에 저장. 앱을 열 때 `/me`로 확인하되 **네트워크 오류면 저장된 세션을 그대로 쓴다** — 공연장에서 통신이 안 될 때 앱이 로그아웃되면 안 된다. 401일 때만 지운다(만료·관리자 해제).
+
+**로컬 테스트**: `next dev`에서는 로그인 코드 메일 대신 터미널에 코드를 찍는다(`[gate] … 로그인 코드: 123456`). 시뮬레이터용 가짜 주소로 메일을 보내면 반송이 쌓여 발신 평판이 깎인다. `next start`·Vercel은 production이라 그대로 메일을 보낸다. 테스트 계정은 `bun scripts/gate-test-seed.ts --staff <email>`로 테스트 드랍에 배정, 앱은 `EXPO_PUBLIC_API_URL=http://localhost:3000 bun run gate`.
+
 ### 게스트리스트 (tickets, gate)
 
 PRD 열린 질문 3번 답("게스트는 Ticket으로 통일")의 구현. QR 없이 이름만 받는 게스트도 같은 판정·기록 경로를 타게 한다.

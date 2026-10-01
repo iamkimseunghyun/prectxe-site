@@ -38,6 +38,12 @@ export async function POST(request: Request) {
   after(async () => {
     const issued = await issueLoginCode(email, challengeId);
     if (!issued) return;
+    // 로컬 개발 서버(next dev)에서는 메일 대신 터미널에 찍는다 — 시뮬레이터
+    // 테스트용 가짜 주소로 메일을 보내면 반송이 쌓여 발신 평판만 깎인다
+    if (process.env.NODE_ENV === 'development') {
+      console.info(`[gate] ${issued.staff.email} 로그인 코드: ${issued.code}`);
+      return;
+    }
     const sent = await sendEmail({
       to: issued.staff.email,
       subject: `[PRECTXE 게이트] 로그인 코드 ${issued.code}`,
