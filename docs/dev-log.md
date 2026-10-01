@@ -27,7 +27,7 @@
 - **성공 응답인데 JSON이 아니면 오프라인 취급** — 공연장 와이파이 로그인 페이지(캡티브 포털)가 200 HTML을 돌려주면 `null`이 응답으로 넘어가 화면에 영문 TypeError가 떴다.
 - **로그아웃 확인 창** — 다시 들어오려면 메일 코드가 필요해, 인터넷이 안 되는 입구에서 잘못 누르면 입장 처리를 못 한다.
 - 로그인 요청 중복 방지(키보드 완료 키로 코드 요청이 두 번 나가면 먼저 온 메일의 코드가 무효), 로그아웃·401 때 쿼리 캐시 비우기(다음 계정에 이전 계정의 행사가 보였다), 늦게 온 옛 토큰의 401이 새 로그인을 지우지 않게, Android 키보드가 로그인 버튼을 가리지 않게(`behavior="height"`).
-- 루트 `type-check`(pre-commit 훅)에 게이트 앱 포함, 쓰지 않는 템플릿 의존성 제거(`expo-image`·`expo-web-browser`·`expo-device`·`react-native-web`·`react-dom` — `@expo/ui`·`expo-glass-effect`·`expo-symbols`는 expo-router가 직접 의존해 유지), PNG 예외를 `assets/`로 좁힘.
+- 루트 `type-check`(pre-commit 훅)에 게이트 앱 포함 — 이때 루트 `gate`·`gate:type-check` 스크립트가 `bun --cwd <dir> run …` 순서라 **실행되지 않고 Bun 도움말만 찍은 뒤 0으로 끝나던** 것을 발견해 `bun run --cwd <dir> …`로 고쳤다(일부러 넣은 타입 에러로 훅이 실패하는 것까지 확인). 쓰지 않는 템플릿 의존성 제거(`expo-image`·`expo-web-browser`·`expo-device`·`react-native-web`·`react-dom` — `@expo/ui`·`expo-glass-effect`·`expo-symbols`는 expo-router가 직접 의존해 유지), PNG 예외를 `assets/`로 좁힘.
 - **남은 것**: 오프라인으로 열면 로그인은 유지되지만 행사 목록이 없어 행사 화면에 못 들어간다 — 다음 PR에서 명단 저장과 함께 행사 목록도 기기에 저장한다.
 
 ### 게스트리스트 (tickets, gate)
