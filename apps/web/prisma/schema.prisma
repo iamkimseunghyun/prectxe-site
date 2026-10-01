@@ -442,6 +442,7 @@ model Drop {
   variants     GoodsVariant[]
   orders       Order[]
   checkIns     CheckIn[]
+  staff        DropStaff[]
 
   @@index([isFeatured, updatedAt])
   @@index([publishedAt])
@@ -622,14 +623,72 @@ model CheckIn {
   gate      String?
   /// 웹 스캐너에서 처리한 어드민 User.id
   userId    String?
+  /// 게이트 앱에서 처리한 스태프
+  staffId   String?
   /// 스캔한 시각 (기기 기준). 서버 수신 시각은 createdAt
   scannedAt DateTime
   createdAt DateTime    @default(now())
   ticket    Ticket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   drop      Drop        @relation(fields: [dropId], references: [id], onDelete: Cascade)
+  staff     Staff?      @relation(fields: [staffId], references: [id], onDelete: SetNull)
 
   @@index([ticketId])
   @@index([dropId, createdAt])
+  @@index([staffId])
+}
+
+/// 게이트 앱으로 입장을 처리하는 현장 스태프. 비밀번호 없이 이메일로 받은
+/// 일회용 코드로 로그인한다. 어떤 행사를 볼 수 있는지는 DropStaff가 정한다.
+model Staff {
+  id         String           @id @default(cuid())
+  /// 소문자로 정규화해 저장한다
+  email      String           @unique
+  name       String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  drops      DropStaff[]
+  loginCodes StaffLoginCode[]
+  sessions   StaffSession[]
+  checkIns   CheckIn[]
+}
+
+/// 스태프 ↔ 행사 배정. 배정이 지워지면 다음 요청부터 그 행사에 접근할 수 없다
+model DropStaff {
+  dropId    String
+  staffId   String
+  createdAt DateTime @default(now())
+  drop      Drop     @relation(fields: [dropId], references: [id], onDelete: Cascade)
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@id([dropId, staffId])
+  @@index([staffId])
+}
+
+/// 로그인용 6자리 코드. 원문은 저장하지 않고 해시만 둔다
+model StaffLoginCode {
+  id        String    @id @default(cuid())
+  staffId   String
+  codeHash  String
+  expiresAt DateTime
+  /// 틀린 횟수. 한도를 넘으면 그 코드는 더 이상 쓸 수 없다
+  attempts  Int       @default(0)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  staff     Staff     @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, createdAt])
+}
+
+/// 앱 로그인 세션. 토큰 원문은 앱에만 있고 서버에는 해시만 둔다
+model StaffSession {
+  id        String   @id @default(cuid())
+  staffId   String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
 }
 
 enum DropType {

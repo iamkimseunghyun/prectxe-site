@@ -141,6 +141,15 @@ src/
 - 어드민 스캐너: `/admin/drops/[id]/scanner` — html5-qrcode 풀스크린, `fixed inset-0 z-100`로 admin layout 위에 덮음. `extractTicketToken`이 URL/raw 둘 다 인식
 - 1.5초 디바운스로 동일 QR 중복 스캔 방지, sound feedback (Web Audio API)
 - Fallback `/scan/[token]` — 외부 카메라 앱이 인식했을 때 도달, 어드민이면 스캐너 페이지 안내, 일반 사용자에겐 운영자 안내
+- **입장 판정은 `modules/tickets/server/check-in.ts` 단일 경로** (`checkInByToken`·`undoCheckInByToken`). 웹 스캐너 액션과 게이트 API가 같이 쓴다. `'use server'` 밖이라 인증은 호출 쪽 책임. 상태 갱신은 `status` 조건부 `updateMany` + `CheckIn` 기록을 한 트랜잭션으로 — 동시 스캔 중 한쪽만 입장
+- `CheckIn`은 입장·취소를 지우지 않고 쌓는 기록, `Ticket.status/checkedInAt`은 현재 상태 캐시. `clientId`(unique)로 앱 재전송 멱등. `Drop.allowReentry`가 켜지면 이미 입장한 티켓도 `reentered`
+
+### 게이트 앱 API (`/api/gate/*`)
+- 스태프용 체크인 앱(Expo, `apps/gate` 예정)이 부르는 Route Handler. 요청 zod 스키마·응답 타입은 **`packages/gate-contract`** 에 두고 웹·앱이 같이 import한다(런타임 의존은 zod만)
+- 인증: `Staff`(어드민 세션과 별개) — 이메일 6자리 코드(`/auth/request-code` → `/auth/verify`) → `Authorization: Bearer <token>`. 코드·토큰은 해시만 저장. 세션 30일(개인 휴대폰 기준)
+- 권한: 행사별 API는 매 요청 `DropStaff` 배정 확인(`requireStaffForDrop`). 배정은 어드민 드랍 편집 사이드바 "게이트 스태프"
+- `/drops/[id]/tickets?since=` — 처음엔 전체, 이후 `syncedAt`부터 바뀐 것만(다른 입구 반영). 주문이 결제 상태가 아니면 `cancelled`로 내려간다
+- 스키마 변경은 `prisma/manual-migrations/`의 SQL을 **배포 전에** dev → prod 순서로 적용
 
 ### Email Templates
 - Available templates in `src/lib/email/templates/`: `form-notification`, `newsletter`, `order-confirmation`, `bank-transfer-pending`, `order-admin-notification`
