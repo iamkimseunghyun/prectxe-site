@@ -13,6 +13,7 @@ import {
 import { ORDERS } from '@/lib/constants/constants';
 import { getSalesTerms, SALES_TERMS } from '@/lib/constants/sales-terms';
 import { prisma } from '@/lib/db/prisma';
+import { salesOrderWhere } from '@/lib/db/sales-order';
 import { sendEmail } from '@/lib/email/send';
 import portone, { PortOneError } from '@/lib/payment/portone';
 import {
@@ -1161,9 +1162,11 @@ export async function getOrders(page = 1, pageSize = 20) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;
 
+  // 게스트는 판매 주문이 아니다 — 드랍별 게스트 페이지에서 따로 관리
   const [total, items] = await Promise.all([
-    prisma.order.count(),
+    prisma.order.count({ where: salesOrderWhere }),
     prisma.order.findMany({
+      where: salesOrderWhere,
       include: {
         drop: { select: { title: true, slug: true, type: true } },
         items: {

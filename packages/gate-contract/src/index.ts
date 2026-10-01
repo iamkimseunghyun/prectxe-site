@@ -148,6 +148,8 @@ export type GateTicket = {
   /** 명단 검색용 전화번호 뒷자리. 전화번호 전체는 기기에 내려보내지 않는다 */
   phoneLast4: string | null;
   checkedInAt: string | null;
+  /** 게스트 메모 (누구의 게스트인지 등). 판매 주문은 null */
+  note: string | null;
 };
 
 export type GateTicketsResponse = {

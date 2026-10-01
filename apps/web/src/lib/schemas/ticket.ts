@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ORDERS } from '@/lib/constants/constants';
 
 // 전화번호 — 국내(010…) + 해외(+국가코드, 공백·하이픈·괄호 허용) 모두 수용.
 // 숫자만 추출해 7~15자리(E.164) 검증.
@@ -99,3 +100,41 @@ export const bankTransferOrderFormSchema = z.object({
 export type BankTransferOrderFormInput = z.infer<
   typeof bankTransferOrderFormSchema
 >;
+
+// ─── 게스트 (어드민 발급) ─────────────────────────────
+
+export const guestAddSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, '이름을 입력해주세요.')
+    .max(50, '이름은 50자 이내로 입력해주세요.'),
+  // 본인 포함 인원. "홍길동 +1"이면 2
+  count: z.coerce
+    .number()
+    .int()
+    .min(1, '인원은 1명 이상이어야 합니다.')
+    .max(
+      ORDERS.GUEST_MAX_COUNT,
+      `한 번에 최대 ${ORDERS.GUEST_MAX_COUNT}명까지 추가할 수 있습니다.`
+    ),
+  // 게스트는 이름만 받는 경우가 많다 — 연락처·이메일은 비워도 된다
+  phone: z
+    .string()
+    .trim()
+    .pipe(z.union([z.literal(''), phoneSchema]))
+    .optional(),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .pipe(z.union([z.literal(''), z.email('이메일 형식이 아닙니다.')]))
+    .optional(),
+  note: z
+    .string()
+    .trim()
+    .max(100, '메모는 100자 이내로 입력해주세요.')
+    .optional(),
+});
+
+export type GuestAddInput = z.infer<typeof guestAddSchema>;

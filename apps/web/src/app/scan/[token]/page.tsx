@@ -31,10 +31,12 @@ export default async function ScanFallbackPage({
   if (isAdmin) {
     const ticket = await prisma.ticket.findUnique({
       where: { token },
-      select: { ticketTier: { select: { dropId: true } } },
+      // 드랍은 주문 기준으로 찾는다 — 게스트 티켓은 등급이 없고, 등급이 삭제되면
+      // 일반 티켓도 등급 연결이 끊긴다(SetNull)
+      select: { order: { select: { dropId: true } } },
     });
-    if (ticket?.ticketTier?.dropId) {
-      scannerHref = `/admin/drops/${ticket.ticketTier.dropId}/scanner`;
+    if (ticket?.order.dropId) {
+      scannerHref = `/admin/drops/${ticket.order.dropId}/scanner`;
     }
   }
 

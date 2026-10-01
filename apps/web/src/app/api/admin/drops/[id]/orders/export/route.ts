@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { prisma } from '@/lib/db/prisma';
+import { salesOrderWhere } from '@/lib/db/sales-order';
 import { buildOrdersAoa, toOrdersXlsx } from '@/lib/drops/orders-export';
 import {
   asciiFilename,
@@ -45,7 +46,8 @@ export async function GET(
     }
 
     const orders = await prisma.order.findMany({
-      where: { dropId: id },
+      // 게스트는 판매 주문이 아니라 내보내기에서 뺀다
+      where: { dropId: id, ...salesOrderWhere },
       select: {
         orderNo: true,
         createdAt: true,

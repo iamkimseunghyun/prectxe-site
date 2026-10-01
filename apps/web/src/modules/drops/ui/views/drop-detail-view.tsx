@@ -11,6 +11,7 @@ import {
   QrCode,
   ShoppingCart,
   Ticket,
+  UserPlus,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -220,6 +221,14 @@ export function DropDetailView({ dropId }: { dropId: string }) {
               <Link href={`/admin/drops/${drop.id}/check-ins`}>
                 <History className="mr-1 h-4 w-4" />
                 입장 기록
+              </Link>
+            </Button>
+          )}
+          {drop.type === 'ticket' && (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/admin/drops/${drop.id}/guests`}>
+                <UserPlus className="mr-1 h-4 w-4" />
+                게스트
               </Link>
             </Button>
           )}

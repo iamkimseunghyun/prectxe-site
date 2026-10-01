@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { OfflineRecord } from '@prectxe/gate-contract';
 import type { CheckInKind, Prisma } from '@prisma/client';
+import { ORDERS } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 
 // 입장 판정·기록. 웹 스캐너(server action)와 게이트 앱 API가 같은 함수를 쓴다.
@@ -111,6 +112,7 @@ export async function checkInByToken(input: {
           status: true,
           buyerName: true,
           dropId: true,
+          isGuest: true,
           drop: { select: { title: true, allowReentry: true } },
         },
       },
@@ -129,7 +131,9 @@ export async function checkInByToken(input: {
     };
 
   const buyerName = ticket.order.buyerName;
-  const tierName = ticket.ticketTier?.name ?? '티켓';
+  const tierName =
+    ticket.ticketTier?.name ??
+    (ticket.order.isGuest ? ORDERS.GUEST_TIER_LABEL : '티켓');
 
   // 이 요청이 이미 처리된 재전송이면 처음 결과를, 아니면 null. 처음 들어올
   // 때뿐 아니라 갱신이 0건이거나 고유키에 걸렸을 때도 다시 본다 — 같은 요청이

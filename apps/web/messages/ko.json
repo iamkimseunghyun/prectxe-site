@@ -83,6 +83,7 @@
     "admitted": "입장 완료",
     "waiting": "입장 대기",
     "tierFallback": "티켓",
+    "guestTier": "게스트",
     "admittedAt": "{time}에 입장",
     "notice": "안내사항",
     "footerShowQr": "입장 시 위 QR 코드를 운영자에게 보여주세요.",

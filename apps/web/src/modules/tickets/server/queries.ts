@@ -16,7 +16,7 @@ const logSelect = {
   staff: { select: { name: true, email: true } },
   ticket: {
     select: {
-      order: { select: { buyerName: true, orderNo: true } },
+      order: { select: { buyerName: true, orderNo: true, isGuest: true } },
       ticketTier: { select: { name: true } },
     },
   },
@@ -77,3 +77,26 @@ export async function getDropCheckInLog(dropId: string) {
 
 export type CheckInLog = Awaited<ReturnType<typeof getDropCheckInLog>>;
 export type CheckInLogEntry = CheckInLog['entries'][number];
+
+/** 어드민 게스트 화면. 취소(삭제)된 게스트는 빼고 최근 추가순 */
+export async function getDropGuests(dropId: string) {
+  return prisma.order.findMany({
+    where: { dropId, isGuest: true, status: 'paid' },
+    select: {
+      id: true,
+      buyerName: true,
+      buyerPhone: true,
+      buyerEmail: true,
+      note: true,
+      accessToken: true,
+      createdAt: true,
+      tickets: {
+        select: { token: true, status: true, checkedInAt: true },
+        orderBy: { createdAt: 'asc' },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export type DropGuest = Awaited<ReturnType<typeof getDropGuests>>[number];

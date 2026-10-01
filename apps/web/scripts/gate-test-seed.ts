@@ -5,7 +5,7 @@
  *
  * - 비공개(publishedAt null) 티켓 드랍 `gate-test`. 행사 시각은 실행 시점 +2시간 —
  *   게이트 앱 행사 목록의 시간 창에 들어오도록 실행할 때마다 갱신한다.
- * - 결제 완료 주문 7건(티켓 8장) + 취소 주문 1건.
+ * - 결제 완료 주문 7건(티켓 8장) + 취소 주문 1건 + 게스트 1팀(2장, 등급 없음).
  * - 다시 실행하면 이 드랍의 주문·티켓·입장 기록만 지우고 새로 만든다.
  * - `--staff`를 주면 그 이메일을 이 드랍의 게이트 스태프로 배정한다.
  * - QR 시트(HTML)를 임시 폴더에 만든다 — 다른 기기 화면에 띄워 스캐너로 찍는다.
@@ -149,6 +149,35 @@ async function main() {
         status: cancelled ? 'cancelled' : 'active',
       });
     }
+  }
+
+  // 게스트 1팀(본인 +1) — 어드민 addGuest와 같은 형태: 0원·등급 없음·isGuest
+  const guest = await prisma.order.create({
+    data: {
+      orderNo: generateOrderNo(),
+      accessToken: generateAccessToken(),
+      dropId: drop.id,
+      buyerName: '게스트 홍길동',
+      buyerEmail: '',
+      buyerPhone: '',
+      totalAmount: 0,
+      status: 'paid',
+      isGuest: true,
+      note: '아티스트 게스트',
+      items: { create: { quantity: 2, unitPrice: 0, subtotal: 0 } },
+    },
+    select: { id: true, items: { select: { id: true } } },
+  });
+  for (let n = 0; n < 2; n++) {
+    const token = generateTicketToken();
+    await prisma.ticket.create({
+      data: { token, orderId: guest.id, orderItemId: guest.items[0].id },
+    });
+    created.push({
+      buyer: `게스트 홍길동 (${n + 1})`,
+      token,
+      status: 'active',
+    });
   }
 
   const staffEmail = staffArg();
