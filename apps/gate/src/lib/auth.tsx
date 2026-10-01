@@ -12,6 +12,7 @@ import {
   useState,
 } from 'react';
 import { api, GateApiError, type RequestOptions } from './api';
+import { clearRoster } from './roster';
 
 // 토큰과 스태프 정보를 함께 둔다 — 오프라인으로 앱을 열어도 누구로 로그인했는지
 // 보여줘야 한다. SecureStore는 큰 값을 거부할 수 있어 필요한 것만 담는다.
@@ -65,6 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 진행 중인 요청도 끊는다 (요청에 signal이 넘어가 있다)
       void queryClient.cancelQueries();
       queryClient.clear();
+      // 기기 명단(개인정보)도 지운다. 올리지 않은 입장 기록 큐는 남긴다
+      clearRoster();
       await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
     },
     [queryClient]

@@ -37,6 +37,7 @@ export async function POST(
       buyerName: outcome.data.buyerName,
       tierName: outcome.data.tierName,
       checkedInAt: outcome.data.checkedInAt?.toISOString() ?? null,
+      checkedInGate: outcome.data.checkedInGate ?? null,
     },
   });
 }

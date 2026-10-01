@@ -152,6 +152,7 @@ src/
 - `/drops/[id]/sync` — 오프라인 기록 일괄 반영(`applyOfflineRecord`). 이미 들여보낸 입장은 거절하지 않고 기록하되 `CheckIn.flag`(`duplicate`·`cancelled_ticket`)로 표시. 오프라인 취소는 `undoes`(대상 입장의 clientId) 필수 — 토큰 기준 취소는 다른 입구의 정상 입장을 지운다. `retry` 외 결과는 최종
 - 어드민 `/admin/drops/[id]/check-ins` — 입장 기록·확인 필요 입장
 - **게스트리스트** — 어드민 `/admin/drops/[id]/guests`(`addGuest`). 게스트는 0원·결제 없음·**등급 없음** 주문(`Order.isGuest`, `note`)으로 발급해 공개 판매 등급·재고·판매 상태와 섞이지 않고, 입장 처리는 일반 티켓과 같은 경로. 표시 등급은 `ORDERS.GUEST_TIER_LABEL`. **주문을 집계·나열하는 쿼리는 반드시 `...salesOrderWhere`(`lib/db/sales-order.ts`)를 spread** (대시보드·드랍 매출·주문 목록·export에 적용됨). 게스트 주문의 `buyerEmail`·`buyerPhone`은 빈 문자열일 수 있다. 게스트 입장은 `checkInGuest`(일행 중 다음 미입장 1명), 삭제는 `cancelOrder`
+- **앱 판정 흐름**(`apps/gate/src/lib/judge.ts`): 온라인이면 서버 판정, **0.8초 안에 답이 없거나 0·5xx면 기기 명단(SQLite)으로 판정**하고 같은 clientId로 큐에 넣는다(나중에 올릴 때 재전송으로 1회만 반영). 노랑은 "기기 명단에 없음"일 때만. 명단 동기화가 큐의 미전송 입장을 덮지 않게 `syncRoster`가 다시 입장 상태로 되돌린다
 - 테스트: `apps/web/scripts/gate-test-seed.ts`(dev에 비공개 테스트 드랍 생성·초기화) → 서버 실행 → `gate-test-smoke.ts`(API 시나리오 전체). prod DB 호스트면 실행 거부
 - 스키마 변경은 `prisma/manual-migrations/`의 SQL을 **배포 전에** dev → prod 순서로 적용
 

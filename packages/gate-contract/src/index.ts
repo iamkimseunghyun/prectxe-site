@@ -6,6 +6,19 @@ import { z } from 'zod';
 
 export const GATE_API_PREFIX = '/api/gate';
 
+/**
+ * QR 데이터(URL 또는 raw token)에서 티켓 토큰만 꺼낸다. 입장권 QR은
+ * `${SITE_URL}/scan/{token}` URL이라 외부 카메라 앱으로 찍어도 안내 페이지가
+ * 열리고, 웹 스캐너·게이트 앱은 여기서 토큰만 뽑는다. 아니면 null.
+ */
+export function extractTicketToken(qrData: string): string | null {
+  const trimmed = qrData.trim();
+  const urlMatch = trimmed.match(/\/scan\/([A-Za-z0-9_]+)/);
+  if (urlMatch) return urlMatch[1];
+  if (/^tk_[A-Za-z0-9]+$/.test(trimmed)) return trimmed;
+  return null;
+}
+
 const email = z
   .string()
   .trim()
@@ -167,6 +180,8 @@ export type CheckInResponse = {
     buyerName: string;
     tierName: string;
     checkedInAt: string | null;
+    /** `already`일 때 먼저 입장한 입구 — 거절 화면에 "언제·어디서"를 보여준다 */
+    checkedInGate: string | null;
   };
 };
 

@@ -29,16 +29,5 @@ export function getOrderTicketsUrl(accessToken: string): string {
   return `${getSiteUrl()}/tickets/order/${accessToken}`;
 }
 
-/**
- * 스캐너에서 인식한 QR 데이터(URL 또는 raw token)에서 토큰만 추출.
- * 외부 카메라 앱 fallback 흐름과 자체 스캐너가 같은 QR 페이로드(URL)를 공유함.
- */
-export function extractTicketToken(qrData: string): string | null {
-  const trimmed = qrData.trim();
-  // URL 형태: https://.../scan/{token}
-  const urlMatch = trimmed.match(/\/scan\/([A-Za-z0-9_]+)/);
-  if (urlMatch) return urlMatch[1];
-  // raw token (tk_ 접두사)
-  if (/^tk_[A-Za-z0-9]+$/.test(trimmed)) return trimmed;
-  return null;
-}
+// QR 파서는 게이트 앱과 같이 쓰므로 계약 패키지에 있다
+export { extractTicketToken } from '@prectxe/gate-contract';

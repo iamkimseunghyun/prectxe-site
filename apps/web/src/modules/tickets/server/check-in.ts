@@ -15,6 +15,8 @@ type TicketView = {
   buyerName: string;
   tierName: string;
   checkedInAt: Date | null;
+  /** `already`일 때만 — 먼저 입장한 입구 */
+  checkedInGate?: string | null;
 };
 
 export type CheckInOutcome =
@@ -226,7 +228,20 @@ export async function checkInByToken(input: {
       };
 
     const view = { buyerName, tierName, checkedInAt: current.checkedInAt };
-    if (!allowReentry) return { success: true, result: 'already', data: view };
+    if (!allowReentry) {
+      // 거절 화면에 "언제·어디서 들어갔는지"를 보여준다. 거절 때만 조회한다 —
+      // 중복 표시된 입장은 상태를 만든 기록이 아니라 뺀다
+      const last = await prisma.checkIn.findFirst({
+        where: { ticketId: ticket.id, kind: 'entry', flag: null },
+        orderBy: { scannedAt: 'desc' },
+        select: { gate: true },
+      });
+      return {
+        success: true,
+        result: 'already',
+        data: { ...view, checkedInGate: last?.gate ?? null },
+      };
+    }
 
     // 재입장 허용 행사: 상태는 그대로 두고 입장 기록만 남긴다 (입구별 유입 집계용).
     // 확인과 기록 사이에 입장 취소·주문 취소가 끼면 기록과 상태가 어긋나므로,
