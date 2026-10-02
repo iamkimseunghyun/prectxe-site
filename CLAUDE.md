@@ -147,6 +147,7 @@ src/
 ### 게이트 앱 API (`/api/gate/*`)
 - 스태프용 체크인 앱(`apps/gate`)이 부르는 Route Handler. 요청 zod 스키마·응답 타입은 **`packages/gate-contract`** 에 두고 웹·앱이 같이 import한다(런타임 의존은 zod만)
 - 인증: `Staff`(어드민 세션과 별개) — 이메일 6자리 코드(`/auth/request-code` → `/auth/verify`) → `Authorization: Bearer <token>`. 코드·토큰은 해시만 저장. 세션 30일(개인 휴대폰 기준)
+- **리전**: `/api/gate/*` 라우트는 `preferredRegion = 'sin1'` — DB(Neon ap-southeast-1) 옆에서 실행한다. 요청 하나에 DB 왕복이 여러 번(체크인 6~7번)이라 서울(icn1)에서 실행하면 왕복마다 ~75ms가 붙어 0.8초 판정 예산을 넘보게 된다. 앱→싱가포르는 요청당 한 번만 멀다. 웹 페이지·서버 액션은 `vercel.json` 기본값 icn1 그대로. 새 게이트 라우트를 만들면 같은 줄을 넣을 것(route segment config는 파일마다 리터럴이어야 해서 공용 모듈에서 re-export할 수 없다)
 - 권한: 행사별 API는 매 요청 `DropStaff` 배정 확인(`requireStaffForDrop`). 배정은 어드민 드랍 편집 사이드바 "게이트 스태프"
 - `/drops/[id]/tickets?since=` — 처음엔 전체, 이후 `syncedAt`부터 바뀐 것만(다른 입구 반영). 주문이 결제 상태가 아니면 `cancelled`로 내려간다
 - `/drops/[id]/sync` — 오프라인 기록 일괄 반영(`applyOfflineRecord`). 이미 들여보낸 입장은 거절하지 않고 기록하되 `CheckIn.flag`(`duplicate`·`cancelled_ticket`)로 표시. 오프라인 취소는 `undoes`(대상 입장의 clientId) 필수 — 토큰 기준 취소는 다른 입구의 정상 입장을 지운다. `retry` 외 결과는 최종
