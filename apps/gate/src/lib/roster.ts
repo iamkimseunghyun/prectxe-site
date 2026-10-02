@@ -1,11 +1,15 @@
-import type {
-  GateDrop,
-  GateDropsResponse,
-  GateTicket,
-  GateTicketStatus,
-  GateTicketsResponse,
+import {
+  type GateDrop,
+  type GateDropsResponse,
+  type GateTicket,
+  type GateTicketStatus,
+  type GateTicketsResponse,
+  type OfflineRecord,
+  SYNC_BATCH_LIMIT,
+  type SyncResponse,
 } from '@prectxe/gate-contract';
-import { isUnreachable, type RequestOptions } from './api';
+import * as Crypto from 'expo-crypto';
+import { GateApiError, isUnreachable, type RequestOptions } from './api';
 import { db, kvGet, kvSet } from './db';
 
 // 기기에 내려받은 행사·명단과, 서버에 아직 올리지 않은 입장 기록(큐).
@@ -18,6 +22,11 @@ export type AuthedRequest = <T>(
 /** 명단 밖 QR을 수동 승인했을 때 기기 명단에 남기는 자리표시 */
 export const PLACEHOLDER_NAME = '명단 밖 입장';
 export const PLACEHOLDER_TIER = '수동 승인';
+
+// 큐에 있는 입장 중 같은 큐에 취소가 뒤따르지 않는 것 — 취소한 입장을 명단
+// 동기화가 다시 '입장'으로 되돌리면 안 된다 (쿼리에서 큐를 q로 부를 것)
+const NOT_UNDONE =
+  "NOT EXISTS (SELECT 1 FROM queue u WHERE u.kind = 'undo' AND u.undoes = q.client_id)";
 
 const DROPS_KEY = 'drops';
 const dropKey = (dropId: string) => `drop:${dropId}`;
@@ -183,7 +192,7 @@ export async function syncRoster(
     db.runSync(
       `INSERT INTO tickets (drop_id, token, status, buyer_name, tier_name, checked_in_at, note, local_only)
        SELECT drop_id, token, 'checked_in', ?, ?, MIN(scanned_at), NULL, 1
-       FROM queue WHERE drop_id = ? AND kind = 'entry'
+       FROM queue q WHERE drop_id = ? AND kind = 'entry' AND ${NOT_UNDONE}
          AND token NOT IN (SELECT token FROM tickets WHERE drop_id = ?)
        GROUP BY drop_id, token`,
       PLACEHOLDER_NAME,
@@ -195,9 +204,10 @@ export async function syncRoster(
       `UPDATE tickets SET
          status = 'checked_in',
          checked_in_at = (SELECT MIN(q.scanned_at) FROM queue q
-                          WHERE q.drop_id = tickets.drop_id AND q.token = tickets.token AND q.kind = 'entry')
+                          WHERE q.drop_id = tickets.drop_id AND q.token = tickets.token
+                            AND q.kind = 'entry' AND ${NOT_UNDONE})
        WHERE drop_id = ? AND status = 'active'
-         AND token IN (SELECT token FROM queue WHERE drop_id = ? AND kind = 'entry')`,
+         AND token IN (SELECT token FROM queue q WHERE drop_id = ? AND kind = 'entry' AND ${NOT_UNDONE})`,
       dropId,
       dropId
     );
@@ -223,12 +233,17 @@ export type RosterStats = {
   /** 취소된 티켓은 뺀 발권 수 */
   total: number;
   entered: number;
-  /** 서버에 아직 올리지 않은 기록 수 */
+  /** 서버에 아직 올리지 않은 내 기록 수 */
   pending: number;
+  /** 이 기기에 남은 다른 스태프의 기록 — 그 스태프가 다시 로그인해야 올라간다 */
+  pendingOthers: number;
   syncedAt: string | null;
 };
 
-export function rosterStats(dropId: string): RosterStats {
+export function rosterStats(
+  dropId: string,
+  staffId: string | null
+): RosterStats {
   // 발권 수는 서버 명단 기준, 입장 수는 수동 승인까지 실제로 들어간 사람 수
   const row = db.getFirstSync<{ total: number | null; entered: number | null }>(
     `SELECT SUM(CASE WHEN local_only = 0 THEN 1 ELSE 0 END) AS total,
@@ -236,14 +251,22 @@ export function rosterStats(dropId: string): RosterStats {
      FROM tickets WHERE drop_id = ? AND status != 'cancelled'`,
     dropId
   );
-  const queued = db.getFirstSync<{ n: number }>(
-    'SELECT COUNT(*) AS n FROM queue WHERE drop_id = ?',
+  const queued = db.getFirstSync<{
+    mine: number | null;
+    others: number | null;
+  }>(
+    `SELECT SUM(CASE WHEN staff_id = ? THEN 1 ELSE 0 END) AS mine,
+            SUM(CASE WHEN staff_id = ? THEN 0 ELSE 1 END) AS others
+     FROM queue WHERE drop_id = ?`,
+    staffId,
+    staffId,
     dropId
   );
   return {
     total: row?.total ?? 0,
     entered: row?.entered ?? 0,
-    pending: queued?.n ?? 0,
+    pending: queued?.mine ?? 0,
+    pendingOthers: queued?.others ?? 0,
     syncedAt: kvGet<string>(syncedKey(dropId)),
   };
 }
@@ -322,4 +345,184 @@ export function enqueueEntry(entry: QueuedEntry) {
     );
     markEntered(entry.dropId, entry.token, entry.scannedAt);
   });
+}
+
+/**
+ * 입장 취소를 큐에 넣고 기기 명단도 되돌린다. 취소는 언제나 큐를 거쳐 서버로
+ * 간다 — 대상 입장이 아직 큐에 있으면 입장 → 취소 순서로 함께 올라가고, 서버가
+ * 이미 아는 입장이면 취소만 올라간다. 큐에서 입장을 그냥 지우지 않는 이유는,
+ * 서버 응답이 늦어 기기로 판정한 입장은 서버가 사실 이미 처리했을 수 있어서다.
+ *
+ * 재입장의 취소는 첫 입장을 되돌리지 않는다 (서버 undoEntry와 같은 규칙).
+ */
+export function enqueueUndo(args: {
+  dropId: string;
+  staffId: string;
+  gate: string;
+  token: string;
+  /** 취소할 입장의 clientId */
+  undoes: string;
+  reentry: boolean;
+}) {
+  db.withTransactionSync(() => {
+    db.runSync(
+      `INSERT INTO queue (client_id, drop_id, staff_id, kind, token, gate, scanned_at, undoes)
+       VALUES (?, ?, ?, 'undo', ?, ?, ?, ?)`,
+      Crypto.randomUUID(),
+      args.dropId,
+      args.staffId,
+      args.token,
+      args.gate,
+      new Date().toISOString(),
+      args.undoes
+    );
+    if (args.reentry) return;
+    db.runSync(
+      'DELETE FROM tickets WHERE drop_id = ? AND token = ? AND local_only = 1',
+      args.dropId,
+      args.token
+    );
+    db.runSync(
+      `UPDATE tickets SET status = 'active', checked_in_at = NULL
+       WHERE drop_id = ? AND token = ? AND status = 'checked_in'`,
+      args.dropId,
+      args.token
+    );
+  });
+}
+
+type QueueRow = {
+  client_id: string;
+  kind: OfflineRecord['kind'];
+  token: string;
+  gate: string | null;
+  scanned_at: string;
+  undoes: string | null;
+};
+
+function toRecord(row: QueueRow): OfflineRecord {
+  const base = {
+    clientId: row.client_id,
+    token: row.token,
+    gate: row.gate ?? undefined,
+    scannedAt: row.scanned_at,
+  };
+  return row.kind === 'undo' && row.undoes
+    ? { ...base, kind: 'undo', undoes: row.undoes }
+    : { ...base, kind: 'entry' };
+}
+
+export type UploadResult = {
+  /** 이번에 서버가 최종 처리한 기록 수 (반영·중복 표시·거절 모두) */
+  sent: number;
+  /** 올리지 못하게 막힌 사유 — 배정 해제 등. 오프라인은 사유가 아니다(나중에 다시 올린다) */
+  problem: string | null;
+};
+
+/**
+ * 큐에 쌓인 **내** 기록을 순서대로 올린다(`/sync`). `retry`가 아닌 결과는 최종이라
+ * 큐에서 지운다. 다른 스태프의 기록은 그 스태프가 로그인했을 때 올린다 — 공용
+ * 기기에서 남의 입장을 내 이름으로 남기지 않는다.
+ */
+export async function uploadQueue(
+  request: AuthedRequest,
+  dropId: string,
+  staffId: string,
+  signal?: AbortSignal
+): Promise<UploadResult> {
+  let sent = 0;
+  // 한 번에 최대 200건 — 더 쌓였으면 나눠 보낸다(몇 번까지만, 나머지는 다음 폴링)
+  for (let round = 0; round < 5; round++) {
+    const rows = db.getAllSync<QueueRow>(
+      `SELECT client_id, kind, token, gate, scanned_at, undoes FROM queue
+       WHERE drop_id = ? AND staff_id = ? ORDER BY seq LIMIT ?`,
+      dropId,
+      staffId,
+      SYNC_BATCH_LIMIT
+    );
+    if (rows.length === 0) break;
+
+    let res: SyncResponse;
+    try {
+      res = await request<SyncResponse>(`/drops/${dropId}/sync`, {
+        method: 'POST',
+        body: { records: rows.map(toRecord) },
+        signal,
+      });
+    } catch (error) {
+      if (isUnreachable(error)) return { sent, problem: null };
+      return {
+        sent,
+        problem:
+          error instanceof GateApiError
+            ? error.message
+            : '기록을 올리지 못했습니다.',
+      };
+    }
+
+    const done = res.results
+      .filter((result) => result.status !== 'retry')
+      .map((result) => result.clientId);
+    db.withTransactionSync(() => {
+      for (const clientId of done)
+        db.runSync('DELETE FROM queue WHERE client_id = ?', clientId);
+    });
+    sent += done.length;
+    // 서버가 일시적으로 못 받은 기록(retry)이 앞에 남았다 — 다음 폴링 때 다시
+    if (done.length < rows.length) break;
+  }
+  return { sent, problem: null };
+}
+
+/** 로그아웃 안내용 — 이 스태프가 아직 올리지 않은 기록 (모든 행사) */
+export function pendingForStaff(staffId: string): number {
+  return (
+    db.getFirstSync<{ n: number }>(
+      'SELECT COUNT(*) AS n FROM queue WHERE staff_id = ?',
+      staffId
+    )?.n ?? 0
+  );
+}
+
+/**
+ * 목록에서 빠진 행사(배정 해제·종료)에 묶인 내 미전송 기록 수. 기록은 행사
+ * 화면을 열어야 올라가는데 그 행사를 열 수 없으니 저절로는 올라가지 않는다.
+ */
+export function strandedForStaff(staffId: string, listed: string[]): number {
+  const rows = db.getAllSync<{ drop_id: string; n: number }>(
+    'SELECT drop_id, COUNT(*) AS n FROM queue WHERE staff_id = ? GROUP BY drop_id',
+    staffId
+  );
+  return rows
+    .filter((row) => !listed.includes(row.drop_id))
+    .reduce((sum, row) => sum + row.n, 0);
+}
+
+export type RosterRow = LocalTicket & { phoneLast4: string | null };
+
+/**
+ * 명단 검색 — 이름·메모(게스트의 "누구 게스트")·전화번호 뒷자리 4자리. 기기
+ * 명단에서 찾으므로 오프라인에서도 된다. 이메일은 기기에 내려받지 않는다.
+ */
+export function searchRoster(dropId: string, query: string): RosterRow[] {
+  const term = query.trim();
+  if (!term) return [];
+  const like = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+  const digits = term.replace(/\D/g, '');
+  return db.getAllSync<RosterRow>(
+    `SELECT token, status, buyer_name AS buyerName, tier_name AS tierName,
+            checked_in_at AS checkedInAt, note, phone_last4 AS phoneLast4
+     FROM tickets
+     WHERE drop_id = ? AND local_only = 0
+       AND (buyer_name LIKE ? ESCAPE '\\' OR note LIKE ? ESCAPE '\\'
+            OR (? <> '' AND phone_last4 = ?))
+     ORDER BY CASE status WHEN 'active' THEN 0 WHEN 'checked_in' THEN 1 ELSE 2 END,
+              buyer_name
+     LIMIT 50`,
+    dropId,
+    like,
+    like,
+    digits.length === 4 ? digits : '',
+    digits
+  );
 }

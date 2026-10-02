@@ -32,7 +32,9 @@ export default function DropHomeScreen() {
   const [customGate, setCustomGate] = useState(() =>
     gate && !GATE_PRESETS.includes(gate) ? gate : ''
   );
-  const { stats, drop, refreshStats, sync } = useRoster(id, { poll: false });
+  const { stats, drop, uploadProblem, refreshStats, sync } = useRoster(id, {
+    poll: false,
+  });
 
   // 스캐너에서 돌아오면 그사이 입장한 수를 다시 읽는다
   useFocusEffect(refreshStats);
@@ -127,7 +129,17 @@ export default function DropHomeScreen() {
         )}
         {stats.pending > 0 && (
           <Text style={styles.pending}>
-            서버에 아직 올리지 않은 입장 기록 {stats.pending}건
+            서버에 아직 올리지 않은 입장 기록 {stats.pending}건 — 연결되면
+            자동으로 올라갑니다
+          </Text>
+        )}
+        {uploadProblem && (
+          <ErrorText>{`기록을 올리지 못했습니다: ${uploadProblem}`}</ErrorText>
+        )}
+        {stats.pendingOthers > 0 && (
+          <Text style={styles.meta}>
+            이 기기에 다른 스태프의 기록 {stats.pendingOthers}건이 남아
+            있습니다. 그 스태프가 이 기기로 다시 로그인하면 올라갑니다.
           </Text>
         )}
         <Button
@@ -141,6 +153,12 @@ export default function DropHomeScreen() {
       <Button
         label="스캔 시작"
         onPress={() => router.push(`/drops/${id}/scan`)}
+        disabled={!canScan}
+      />
+      <Button
+        label="명단에서 찾아 입장 처리"
+        variant="ghost"
+        onPress={() => router.push(`/drops/${id}/search`)}
         disabled={!canScan}
       />
       {!canScan && (
