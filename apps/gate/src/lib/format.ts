@@ -11,3 +11,15 @@ const dateTime = new Intl.DateTimeFormat('ko-KR', {
 export function formatEventTime(iso: string | null): string | null {
   return iso ? dateTime.format(new Date(iso)) : null;
 }
+
+const clock = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+/** 입장 시각 등 — "13:05" */
+export function formatClock(iso: string): string {
+  return clock.format(new Date(iso));
+}

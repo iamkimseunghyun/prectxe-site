@@ -33,13 +33,23 @@ export const verifyCodeBody = z.object({
 export type VerifyCodeBody = z.infer<typeof verifyCodeBody>;
 
 /**
+ * 길이 제한 — 앱도 같은 값으로 미리 막는다. 넘는 값이 오프라인 큐에 들어가면
+ * 그 기록이 든 배치가 통째로 400을 받아 뒤의 기록까지 영영 올라가지 못한다.
+ */
+export const TICKET_TOKEN_MAX = 200;
+export const GATE_NAME_MAX = 20;
+
+const ticketToken = z.string().min(1).max(TICKET_TOKEN_MAX);
+const gateName = z.string().trim().min(1).max(GATE_NAME_MAX);
+
+/**
  * 입장·입장 취소 요청. `clientId`는 앱이 기록마다 만드는 UUID —
  * 응답을 못 받아 같은 요청을 다시 보내도 서버는 한 번만 처리한다.
  */
 export const checkInBody = z.object({
-  token: z.string().min(1).max(200),
+  token: ticketToken,
   clientId: z.uuid(),
-  gate: z.string().trim().min(1).max(20).optional(),
+  gate: gateName.optional(),
 });
 export type CheckInBody = z.infer<typeof checkInBody>;
 
@@ -64,8 +74,8 @@ export type TicketsQuery = z.infer<typeof ticketsQuery>;
 
 const offlineBase = {
   clientId: z.uuid(),
-  token: z.string().min(1).max(200),
-  gate: z.string().trim().min(1).max(20).optional(),
+  token: ticketToken,
+  gate: gateName.optional(),
   scannedAt: z.iso.datetime({ offset: true }),
 };
 

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './auth';
 import { getDrop, rosterStats, syncRoster, uploadQueue } from './roster';
@@ -24,33 +25,37 @@ export function useRoster(dropId: string, { poll }: { poll: boolean }) {
     [dropId, staffId]
   );
 
-  // 쿼리 결과가 아니라 따로 둔다 — 배정이 풀리면(403) 올리기와 명단 받기가
-  // 같이 실패하는데, 결과로 넘기면 명단 실패에 묻혀 경고가 사라진다
-  const [uploadProblem, setUploadProblem] = useState<string | null>(null);
+  // 스캔 위에 검색을 띄우면 두 화면이 다 마운트돼 있다 — 보이는 화면만
+  // 폴링해야 요청이 두 배가 되지 않는다
+  const focused = useIsFocused();
 
   const sync = useQuery({
     queryKey: ['roster', dropId],
     queryFn: async ({ signal }) => {
-      if (staffId) {
-        const upload = await uploadQueue(auth.request, dropId, staffId, signal);
-        setUploadProblem(upload.problem);
-      }
+      // 결과(막힌 사유·거절 건수)는 기기 DB에 남는다 — 쿼리 결과로 넘기면
+      // 배정 해제(403)처럼 명단 받기까지 실패할 때 같이 버려지고, 이 쿼리를
+      // 같이 쓰는 다른 화면에는 전해지지 않는다
+      if (staffId) await uploadQueue(auth.request, dropId, staffId, signal);
       await syncRoster(auth.request, dropId, signal);
       return Date.now();
     },
-    refetchInterval: poll ? ROSTER_POLL_MS : false,
+    refetchInterval: poll && focused ? ROSTER_POLL_MS : false,
     retry: false,
   });
 
-  // 동기화가 끝날 때마다(성공·실패 모두) 기기 집계를 다시 읽는다
+  // 동기화가 끝날 때마다(성공·실패 모두), 그리고 화면으로 돌아올 때(다른
+  // 화면에서 입장·취소했을 수 있다) 기기 집계를 다시 읽는다
   useEffect(() => {
     if (sync.dataUpdatedAt || sync.errorUpdatedAt) refreshStats();
   }, [sync.dataUpdatedAt, sync.errorUpdatedAt, refreshStats]);
+  useEffect(() => {
+    if (focused) refreshStats();
+  }, [focused, refreshStats]);
 
   return {
     stats: snapshot.stats,
     drop: snapshot.drop,
-    uploadProblem,
+    uploadProblem: snapshot.stats.uploadProblem,
     refreshStats,
     sync,
   };

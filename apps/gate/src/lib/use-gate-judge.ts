@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, Alert } from 'react-native';
 import { isUnreachable } from './api';
 import { useAuth } from './auth';
 import { vibrate } from './feedback';
@@ -57,6 +57,7 @@ export function useGateJudge(args: {
   const [serverReachable, setServerReachable] = useState(true);
   const [lastEntry, setLastEntry] = useState<LastEntry | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const busy = useRef(false);
   const lastFailureAt = useRef(0);
   // 마지막으로 판정한 QR — 판정 화면이 닫힌 뒤 잠시 같은 QR을 무시한다
@@ -75,17 +76,34 @@ export function useGateJudge(args: {
     vibrate(result.color);
     AccessibilityInfo.announceForAccessibility(result.title);
     setVerdict(result);
-    if (result.color === 'green')
+    if (result.color === 'green') {
       setLastEntry({ ...result.entry, name: result.name });
+      // 직전 취소 안내가 새 입장의 취소 버튼을 가리지 않게
+      setNotice(null);
+    }
   }, []);
 
+  /**
+   * `manual`: 명단에서 직접 고른 입장. 카메라는 같은 QR을 계속 보내므로 판정
+   * 중·직후의 같은 QR을 조용히 무시하지만, 사람이 확인까지 누른 건 무시하면
+   * 안 된다.
+   */
   const handle = useCallback(
-    async (data: string) => {
+    async (data: string, { manual = false }: { manual?: boolean } = {}) => {
       // 재입장 허용 같은 설정이 명단 동기화로 바뀌었을 수 있어 매번 읽는다
       const drop = getDrop(dropId);
-      if (busy.current || !drop || !gate || !staffId) return;
+      if (!drop || !gate || !staffId) return;
+      if (busy.current) {
+        if (manual) setNotice('앞 판정이 끝난 뒤 다시 눌러주세요');
+        return;
+      }
       const now = Date.now();
-      if (recent.current?.data === data && now < recent.current.until) return;
+      if (
+        !manual &&
+        recent.current?.data === data &&
+        now < recent.current.until
+      )
+        return;
 
       busy.current = true;
       setJudging(true);
@@ -157,31 +175,64 @@ export function useGateJudge(args: {
     onChange();
   }, [dropId, gate, staffId, verdict, show, onChange]);
 
-  const undoLast = useCallback(() => {
-    if (!lastEntry || !gate || !staffId) return;
-    try {
-      enqueueUndo({
-        dropId,
-        staffId,
-        gate,
-        token: lastEntry.token,
-        undoes: lastEntry.clientId,
-        reentry: lastEntry.reentry,
-      });
-    } catch (error) {
-      console.warn('[gate] 입장 취소 기록 실패', error);
-      setNotice('입장을 취소하지 못했습니다. 다시 시도해주세요.');
-      return;
-    }
-    setLastEntry(null);
-    setNotice(`${lastEntry.name} 입장을 취소했습니다`);
-    vibrate('yellow');
-    AccessibilityInfo.announceForAccessibility('입장을 취소했습니다');
-    onChange();
-    // 온라인이면 바로 올린다 — 다음 폴링(15초)까지 두면 그 사이 다른 입구에서
-    // 이 관객이 '이미 입장'으로 막힌다
-    sync.refetch();
-  }, [dropId, gate, staffId, lastEntry, onChange, sync]);
+  const undo = useCallback(
+    (entry: LastEntry) => {
+      if (!gate || !staffId) return;
+      try {
+        enqueueUndo({
+          dropId,
+          staffId,
+          gate,
+          token: entry.token,
+          undoes: entry.clientId,
+          reentry: entry.reentry,
+        });
+      } catch (error) {
+        console.warn('[gate] 입장 취소 기록 실패', error);
+        setNotice('입장을 취소하지 못했습니다. 다시 시도해주세요.');
+        return;
+      }
+      // 확인창이 떠 있던 사이 다른 사람이 입장했으면 그 사람의 취소 버튼은 남긴다
+      setLastEntry((current) =>
+        current?.clientId === entry.clientId ? null : current
+      );
+      setNotice(`${entry.name} 입장을 취소했습니다`);
+      vibrate('yellow');
+      AccessibilityInfo.announceForAccessibility('입장을 취소했습니다');
+      onChange();
+      // 온라인이면 바로 올린다 — 다음 폴링(15초)까지 두면 그 사이 다른 입구에서
+      // 이 관객이 '이미 입장'으로 막힌다
+      sync.refetch();
+    },
+    [dropId, gate, staffId, onChange, sync]
+  );
+
+  /** 직전 입장 취소 — 확인창이 떠 있는 동안은 스캔을 멈춘다(`paused`) */
+  const requestUndo = useCallback(() => {
+    const entry = lastEntry;
+    if (!entry) return;
+    setConfirming(true);
+    const close = () => setConfirming(false);
+    Alert.alert(
+      `${entry.name} 입장을 취소할까요?`,
+      entry.reentry
+        ? '이번 재입장 기록만 취소됩니다. 처음 입장은 그대로입니다.'
+        : '잘못 스캔했을 때만 취소하세요. 취소한 기록도 남습니다.',
+      [
+        { text: '닫기', style: 'cancel', onPress: close },
+        {
+          text: '입장 취소',
+          style: 'destructive',
+          onPress: () => {
+            close();
+            undo(entry);
+          },
+        },
+      ],
+      // Android는 바깥을 눌러 닫을 수 있다
+      { cancelable: true, onDismiss: close }
+    );
+  }, [lastEntry, undo]);
 
   useEffect(() => {
     if (!verdict || verdict.color === 'yellow') return;
@@ -202,8 +253,10 @@ export function useGateJudge(args: {
     handle,
     dismiss,
     approve,
+    /** 취소 확인창이 떠 있다 — 그 사이 들어온 입장과 헷갈리지 않게 스캔을 멈춘다 */
+    paused: confirming,
     lastEntry,
     notice,
-    undoLast,
+    requestUndo,
   };
 }

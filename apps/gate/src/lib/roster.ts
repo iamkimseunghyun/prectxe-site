@@ -32,6 +32,12 @@ const DROPS_KEY = 'drops';
 const dropKey = (dropId: string) => `drop:${dropId}`;
 const syncedKey = (dropId: string) => `syncedAt:${dropId}`;
 const gateKey = (dropId: string) => `gate:${dropId}`;
+// 기록 올리기 결과는 기기 DB에 둔다 — 행사 홈·스캔·검색이 명단 쿼리 하나를
+// 같이 쓰는데, 컴포넌트 상태에 두면 그 쿼리를 돌린 화면에만 반영된다
+const uploadProblemKey = (dropId: string) => `uploadProblem:${dropId}`;
+// 서버가 받지 않은 기록 — 행사 명단을 지워도 남긴다(개인정보 없이 건수·사유만).
+// 행사가 목록에서 빠진 뒤에 올린 기록의 거절도 알려야 해서다
+const rejectedKey = (dropId: string) => `rejected:${dropId}`;
 
 // 명단 전체 다운로드는 수천 건일 수 있어 기본 타임아웃보다 넉넉히 준다.
 // 변경분 폴링은 작으니 기본값 — 길게 잡으면 오프라인 감지가 늦어진다
@@ -93,7 +99,12 @@ export function clearGate(dropId: string) {
 
 function removeDrop(dropId: string) {
   db.runSync('DELETE FROM tickets WHERE drop_id = ?', dropId);
-  for (const key of [dropKey(dropId), syncedKey(dropId), gateKey(dropId)])
+  for (const key of [
+    dropKey(dropId),
+    syncedKey(dropId),
+    gateKey(dropId),
+    uploadProblemKey(dropId),
+  ])
     db.runSync('DELETE FROM kv WHERE key = ?', key);
 }
 
@@ -128,7 +139,8 @@ function purgeDropsExcept(keep: string[]) {
   const stored = db.getAllSync<{ drop_id: string }>(
     `SELECT DISTINCT drop_id FROM tickets
      UNION SELECT substr(key, instr(key, ':') + 1) FROM kv
-     WHERE key LIKE 'drop:%' OR key LIKE 'syncedAt:%' OR key LIKE 'gate:%'`
+     WHERE key LIKE 'drop:%' OR key LIKE 'syncedAt:%' OR key LIKE 'gate:%'
+        OR key LIKE 'uploadProblem:%'`
   );
   for (const { drop_id } of stored)
     if (!keep.includes(drop_id)) removeDrop(drop_id);
@@ -237,8 +249,14 @@ export type RosterStats = {
   pending: number;
   /** 이 기기에 남은 다른 스태프의 기록 — 그 스태프가 다시 로그인해야 올라간다 */
   pendingOthers: number;
+  /** 마지막으로 기록을 올리려다 서버에 막힌 사유 (배정 해제 등) */
+  uploadProblem: string | null;
+  /** 서버가 받지 않은 기록 (명단 밖 수동 입장이 위조 QR이었던 경우 등) */
+  rejected: Rejected | null;
   syncedAt: string | null;
 };
+
+export type Rejected = { count: number; reason: string };
 
 export function rosterStats(
   dropId: string,
@@ -267,6 +285,8 @@ export function rosterStats(
     entered: row?.entered ?? 0,
     pending: queued?.mine ?? 0,
     pendingOthers: queued?.others ?? 0,
+    uploadProblem: kvGet<string>(uploadProblemKey(dropId)),
+    rejected: kvGet<Rejected>(rejectedKey(dropId)),
     syncedAt: kvGet<string>(syncedKey(dropId)),
   };
 }
@@ -400,37 +420,45 @@ type QueueRow = {
   undoes: string | null;
 };
 
-function toRecord(row: QueueRow): OfflineRecord {
+/**
+ * 큐 행을 계약의 기록으로. 대상이 없는 취소는 null — 입장으로 바꿔 보내면
+ * 취소하려던 사람이 입장 처리된다.
+ */
+function toRecord(row: QueueRow): OfflineRecord | null {
   const base = {
     clientId: row.client_id,
     token: row.token,
     gate: row.gate ?? undefined,
     scannedAt: row.scanned_at,
   };
-  return row.kind === 'undo' && row.undoes
-    ? { ...base, kind: 'undo', undoes: row.undoes }
-    : { ...base, kind: 'entry' };
+  if (row.kind === 'undo')
+    return row.undoes ? { ...base, kind: 'undo', undoes: row.undoes } : null;
+  return { ...base, kind: 'entry' };
 }
 
-export type UploadResult = {
-  /** 이번에 서버가 최종 처리한 기록 수 (반영·중복 표시·거절 모두) */
-  sent: number;
-  /** 올리지 못하게 막힌 사유 — 배정 해제 등. 오프라인은 사유가 아니다(나중에 다시 올린다) */
-  problem: string | null;
-};
+function setUploadProblem(dropId: string, problem: string | null) {
+  if (problem) kvSet(uploadProblemKey(dropId), problem);
+  else db.runSync('DELETE FROM kv WHERE key = ?', uploadProblemKey(dropId));
+}
+
+function addRejected(dropId: string, count: number, reason: string) {
+  const prev = kvGet<Rejected>(rejectedKey(dropId));
+  kvSet(rejectedKey(dropId), { count: (prev?.count ?? 0) + count, reason });
+}
 
 /**
  * 큐에 쌓인 **내** 기록을 순서대로 올린다(`/sync`). `retry`가 아닌 결과는 최종이라
  * 큐에서 지운다. 다른 스태프의 기록은 그 스태프가 로그인했을 때 올린다 — 공용
  * 기기에서 남의 입장을 내 이름으로 남기지 않는다.
+ *
+ * 결과(막힌 사유·거절 건수)는 기기 DB에 남기고 `rosterStats`로 읽는다.
  */
 export async function uploadQueue(
   request: AuthedRequest,
   dropId: string,
   staffId: string,
   signal?: AbortSignal
-): Promise<UploadResult> {
-  let sent = 0;
+): Promise<void> {
   // 한 번에 최대 200건 — 더 쌓였으면 나눠 보낸다(몇 번까지만, 나머지는 다음 폴링)
   for (let round = 0; round < 5; round++) {
     const rows = db.getAllSync<QueueRow>(
@@ -442,36 +470,74 @@ export async function uploadQueue(
     );
     if (rows.length === 0) break;
 
+    const records: OfflineRecord[] = [];
+    for (const row of rows) {
+      const record = toRecord(row);
+      if (record) records.push(record);
+      else {
+        console.warn('[gate] 대상 없는 취소 기록을 버림', row.client_id);
+        db.runSync('DELETE FROM queue WHERE client_id = ?', row.client_id);
+      }
+    }
+    if (records.length === 0) continue;
+
     let res: SyncResponse;
     try {
       res = await request<SyncResponse>(`/drops/${dropId}/sync`, {
         method: 'POST',
-        body: { records: rows.map(toRecord) },
+        body: { records },
         signal,
       });
     } catch (error) {
-      if (isUnreachable(error)) return { sent, problem: null };
-      return {
-        sent,
-        problem:
-          error instanceof GateApiError
-            ? error.message
-            : '기록을 올리지 못했습니다.',
-      };
+      // 연결이 안 되면 사유를 모른다 — 이전 판단을 그대로 둔다(오프라인 배너가 대신 뜬다)
+      if (isUnreachable(error)) return;
+      setUploadProblem(
+        dropId,
+        error instanceof GateApiError
+          ? error.message
+          : '기록을 올리지 못했습니다.'
+      );
+      return;
     }
 
-    const done = res.results
-      .filter((result) => result.status !== 'retry')
-      .map((result) => result.clientId);
+    const done = res.results.filter((result) => result.status !== 'retry');
+    const rejected = done.filter((result) => result.status === 'rejected');
     db.withTransactionSync(() => {
-      for (const clientId of done)
+      for (const { clientId } of done)
         db.runSync('DELETE FROM queue WHERE client_id = ?', clientId);
+      // 거절된 기록은 다시 보내도 결과가 같아 지우지만, 그 사람은 이미 들어갔다
+      // — 스태프가 알고 주최자에게 전할 수 있게 건수·사유를 남긴다
+      if (rejected.length > 0)
+        addRejected(
+          dropId,
+          rejected.length,
+          rejected[rejected.length - 1].error ?? '서버가 받지 않았습니다.'
+        );
     });
-    sent += done.length;
     // 서버가 일시적으로 못 받은 기록(retry)이 앞에 남았다 — 다음 폴링 때 다시
-    if (done.length < rows.length) break;
+    if (done.length < records.length) break;
   }
-  return { sent, problem: null };
+  setUploadProblem(dropId, null);
+}
+
+/** 서버가 받지 않은 기록 안내를 스태프가 확인했다 (행사를 지정하지 않으면 전부) */
+export function clearRejected(dropId?: string) {
+  if (dropId) db.runSync('DELETE FROM kv WHERE key = ?', rejectedKey(dropId));
+  else db.runSync("DELETE FROM kv WHERE key LIKE 'rejected:%'");
+}
+
+/** 모든 행사에서 서버가 받지 않은 기록 수 — 행사 목록 화면 안내용 */
+export function rejectedTotal(): number {
+  const rows = db.getAllSync<{ value: string }>(
+    "SELECT value FROM kv WHERE key LIKE 'rejected:%'"
+  );
+  return rows.reduce((sum, { value }) => {
+    try {
+      return sum + ((JSON.parse(value) as Rejected).count ?? 0);
+    } catch {
+      return sum;
+    }
+  }, 0);
 }
 
 /** 로그아웃 안내용 — 이 스태프가 아직 올리지 않은 기록 (모든 행사) */
@@ -484,18 +550,39 @@ export function pendingForStaff(staffId: string): number {
   );
 }
 
+function strandedCounts(staffId: string, listed: string[]) {
+  return db
+    .getAllSync<{ drop_id: string; n: number }>(
+      'SELECT drop_id, COUNT(*) AS n FROM queue WHERE staff_id = ? GROUP BY drop_id',
+      staffId
+    )
+    .filter((row) => !listed.includes(row.drop_id));
+}
+
+export type Stranded = { count: number; problem: string | null };
+
 /**
- * 목록에서 빠진 행사(배정 해제·종료)에 묶인 내 미전송 기록 수. 기록은 행사
- * 화면을 열어야 올라가는데 그 행사를 열 수 없으니 저절로는 올라가지 않는다.
+ * 목록에서 빠진 행사(종료 12시간 경과·배정 해제)에 묶인 내 미전송 기록을
+ * 올린다. 기록은 행사 화면의 명단 동기화로 올라가는데 그 행사는 열 수 없으니
+ * 행사 목록이 대신 올린다. 종료된 행사는 여기서 올라가고, 배정이 풀린 행사의
+ * 기록만 남아 사유와 함께 안내된다.
  */
-export function strandedForStaff(staffId: string, listed: string[]): number {
-  const rows = db.getAllSync<{ drop_id: string; n: number }>(
-    'SELECT drop_id, COUNT(*) AS n FROM queue WHERE staff_id = ? GROUP BY drop_id',
-    staffId
+export async function uploadStranded(
+  request: AuthedRequest,
+  staffId: string,
+  listed: string[],
+  signal?: AbortSignal
+): Promise<Stranded> {
+  let problem: string | null = null;
+  for (const { drop_id } of strandedCounts(staffId, listed)) {
+    await uploadQueue(request, drop_id, staffId, signal);
+    problem ??= kvGet<string>(uploadProblemKey(drop_id));
+  }
+  const count = strandedCounts(staffId, listed).reduce(
+    (sum, row) => sum + row.n,
+    0
   );
-  return rows
-    .filter((row) => !listed.includes(row.drop_id))
-    .reduce((sum, row) => sum + row.n, 0);
+  return { count, problem: count > 0 ? problem : null };
 }
 
 export type RosterRow = LocalTicket & { phoneLast4: string | null };

@@ -1,18 +1,14 @@
-import {
-  router,
-  Stack,
-  useFocusEffect,
-  useLocalSearchParams,
-} from 'expo-router';
+import { GATE_NAME_MAX } from '@prectxe/gate-contract';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, ErrorText, Field } from '@/components/ui';
 import { colors, space } from '@/constants/theme';
 import { formatEventTime } from '@/lib/format';
-import { clearGate, getGate, setGate } from '@/lib/roster';
+import { clearGate, clearRejected, getGate, setGate } from '@/lib/roster';
 import { useRoster } from '@/lib/use-roster';
 
-// 입구는 서버에 따로 등록하지 않는다 — 기록에 이름만 남는다(최대 20자)
+// 입구는 서버에 따로 등록하지 않는다 — 기록에 이름만 남는다
 const GATE_PRESETS = ['A', 'B', 'C', 'D'];
 
 const clock = new Intl.DateTimeFormat('ko-KR', {
@@ -32,16 +28,16 @@ export default function DropHomeScreen() {
   const [customGate, setCustomGate] = useState(() =>
     gate && !GATE_PRESETS.includes(gate) ? gate : ''
   );
+  // 스캐너에서 돌아오면 useRoster가 그사이 입장한 수를 다시 읽는다
   const { stats, drop, uploadProblem, refreshStats, sync } = useRoster(id, {
     poll: false,
   });
-
-  // 스캐너에서 돌아오면 그사이 입장한 수를 다시 읽는다
-  useFocusEffect(refreshStats);
+  const syncError =
+    sync.isError && !sync.isFetching ? sync.error.message : null;
 
   const chooseGate = useCallback(
     (value: string) => {
-      const name = value.trim().slice(0, 20);
+      const name = value.trim().slice(0, GATE_NAME_MAX);
       if (name) setGate(id, name);
       else clearGate(id);
       setGateState(name || null);
@@ -101,7 +97,7 @@ export default function DropHomeScreen() {
             onChangeText={setCustomGate}
             onEndEditing={() => chooseGate(customGate)}
             onSubmitEditing={() => chooseGate(customGate)}
-            maxLength={20}
+            maxLength={GATE_NAME_MAX}
             placeholder="예: 정문, 2층"
             returnKeyType="done"
           />
@@ -120,21 +116,39 @@ export default function DropHomeScreen() {
               ? `마지막 동기화 ${clock.format(new Date(stats.syncedAt))}`
               : '아직 명단을 받지 못했습니다'}
         </Text>
-        {sync.isError && !sync.isFetching && (
+        {syncError && (
           <ErrorText>
             {stats.syncedAt
-              ? `명단을 새로 받지 못했습니다(${sync.error.message}). 이전에 받은 명단으로 판정합니다.`
-              : sync.error.message}
+              ? `명단을 새로 받지 못했습니다(${syncError}). 이전에 받은 명단으로 판정합니다.`
+              : syncError}
           </ErrorText>
         )}
-        {stats.pending > 0 && (
-          <Text style={styles.pending}>
-            서버에 아직 올리지 않은 입장 기록 {stats.pending}건 — 연결되면
-            자동으로 올라갑니다
-          </Text>
-        )}
-        {uploadProblem && (
-          <ErrorText>{`기록을 올리지 못했습니다: ${uploadProblem}`}</ErrorText>
+        {stats.pending > 0 &&
+          (uploadProblem ? (
+            // 배정 해제(403)면 명단 받기도 같은 사유로 실패한다 — 사유는 한 번만
+            <ErrorText>
+              {`서버에 올리지 못한 입장 기록 ${stats.pending}건${uploadProblem === syncError ? '' : ` · ${uploadProblem}`}`}
+            </ErrorText>
+          ) : (
+            <Text style={styles.pending}>
+              서버에 아직 올리지 않은 입장 기록 {stats.pending}건 — 연결되면
+              자동으로 올라갑니다
+            </Text>
+          ))}
+        {stats.rejected && (
+          <View style={styles.rejected}>
+            <ErrorText>
+              {`서버가 받지 않은 입장 기록 ${stats.rejected.count}건 · ${stats.rejected.reason} 이미 들여보낸 관객이라면(명단 밖 수동 입장 등) 주최자에게 알려주세요.`}
+            </ErrorText>
+            <Button
+              label="확인했습니다"
+              variant="ghost"
+              onPress={() => {
+                clearRejected(id);
+                refreshStats();
+              }}
+            />
+          </View>
         )}
         {stats.pendingOthers > 0 && (
           <Text style={styles.meta}>
@@ -203,6 +217,7 @@ const styles = StyleSheet.create({
   heading: { color: colors.text, fontSize: 20, fontWeight: '700' },
   count: { color: colors.text, fontSize: 28, fontWeight: '700' },
   pending: { color: colors.warning, fontSize: 15 },
+  rejected: { gap: space.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {
     minWidth: 56,

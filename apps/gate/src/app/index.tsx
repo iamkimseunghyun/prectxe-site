@@ -14,7 +14,13 @@ import { ErrorText } from '@/components/ui';
 import { colors, space } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { formatEventTime } from '@/lib/format';
-import { loadDrops, pendingForStaff, strandedForStaff } from '@/lib/roster';
+import {
+  clearRejected,
+  loadDrops,
+  pendingForStaff,
+  rejectedTotal,
+  uploadStranded,
+} from '@/lib/roster';
 
 export default function DropsScreen() {
   const auth = useAuth();
@@ -23,14 +29,18 @@ export default function DropsScreen() {
     queryKey: ['drops'],
     queryFn: async ({ signal }) => {
       const result = await loadDrops(auth.request, signal);
-      // 기록이 갈 곳을 잃는 건 행사가 목록에서 빠질 때뿐이라 목록과 같이 센다
-      const stranded = staffId
-        ? strandedForStaff(
-            staffId,
-            result.drops.map((drop) => drop.id)
-          )
-        : 0;
-      return { ...result, stranded };
+      // 목록에서 빠진 행사의 기록은 그 행사 화면을 열 수 없어 여기서 올린다
+      // (오프라인이면 다음에)
+      const stranded =
+        staffId && !result.offline
+          ? await uploadStranded(
+              auth.request,
+              staffId,
+              result.drops.map((drop) => drop.id),
+              signal
+            )
+          : null;
+      return { ...result, stranded, rejected: rejectedTotal() };
     },
   });
 
@@ -64,12 +74,32 @@ export default function DropsScreen() {
           오프라인 · 마지막으로 받은 목록입니다
         </Text>
       )}
-      {!!drops.data?.stranded && (
-        <Text accessibilityRole="alert" style={styles.stranded}>
-          올리지 못한 입장 기록 {drops.data.stranded}건이 이 기기에 있습니다.
-          목록에서 빠진 행사(배정 해제·종료)의 기록이라 저절로 올라가지
-          않습니다. 주최자에게 다시 배정을 요청하세요.
+      {!!drops.data?.stranded?.count && (
+        <Text accessibilityRole="alert" style={styles.warning}>
+          목록에서 빠진 행사의 입장 기록 {drops.data.stranded.count}건을 서버에
+          올리지 못했습니다
+          {drops.data.stranded.problem
+            ? ` · ${drops.data.stranded.problem} 주최자에게 다시 배정을 요청하면 올라갑니다.`
+            : '. 목록을 새로고침하면 다시 올립니다.'}
         </Text>
+      )}
+      {!!drops.data?.rejected && (
+        <View style={styles.warningBox}>
+          <Text accessibilityRole="alert" style={styles.warning}>
+            서버가 받지 않은 입장 기록 {drops.data.rejected}건이 있습니다. 이미
+            들여보낸 관객이라면(명단 밖 수동 입장 등) 주최자에게 알려주세요.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              clearRejected();
+              drops.refetch();
+            }}
+            style={styles.ack}
+          >
+            <Text style={styles.headerAction}>확인했습니다</Text>
+          </Pressable>
+        </View>
       )}
       <FlatList
         data={drops.data?.drops ?? []}
@@ -161,11 +191,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingBottom: space.sm,
   },
-  stranded: {
+  warning: {
     color: colors.danger,
     fontSize: 15,
     lineHeight: 21,
     paddingHorizontal: space.lg,
     paddingBottom: space.sm,
+  },
+  warningBox: { alignItems: 'flex-start', paddingBottom: space.sm },
+  ack: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: space.lg,
   },
 });

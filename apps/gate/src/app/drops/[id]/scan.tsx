@@ -1,6 +1,12 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useKeepAwake } from 'expo-keep-awake';
-import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
+import {
+  Redirect,
+  router,
+  Stack,
+  useIsFocused,
+  useLocalSearchParams,
+} from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -36,7 +42,12 @@ export default function ScanScreen() {
     onChange: refreshStats,
   });
 
-  const scanning = permission?.granted && !judge.verdict && !judge.judging;
+  // 검색 화면을 위에 띄워도 이 화면은 마운트된 채라, 카메라를 내리지 않으면
+  // 안 보이는 곳에서 QR을 판정한다 (expo-camera도 포커스를 잃으면 내리라고 한다)
+  const focused = useIsFocused();
+  const cameraOn = permission?.granted && focused;
+  const scanning =
+    cameraOn && !judge.verdict && !judge.judging && !judge.paused;
 
   // 입구를 고르지 않았거나(딥링크·정리된 행사) 행사 정보가 없으면 행사 홈으로
   if (!gate || !drop) return <Redirect href={`/drops/${id}`} />;
@@ -44,7 +55,7 @@ export default function ScanScreen() {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
-      {permission?.granted && (
+      {cameraOn && (
         <CameraView
           style={StyleSheet.absoluteFill}
           facing="back"
@@ -103,7 +114,7 @@ export default function ScanScreen() {
         <LastEntryBar
           lastEntry={judge.lastEntry}
           notice={judge.notice}
-          onUndo={judge.undoLast}
+          onUndo={judge.requestUndo}
         />
         <View style={styles.actions}>
           <Pressable

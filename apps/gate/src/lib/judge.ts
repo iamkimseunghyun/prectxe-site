@@ -2,9 +2,11 @@ import {
   type CheckInResponse,
   extractTicketToken,
   type GateDrop,
+  TICKET_TOKEN_MAX,
 } from '@prectxe/gate-contract';
 import * as Crypto from 'expo-crypto';
 import { GateApiError, isUnreachable } from './api';
+import { formatClock } from './format';
 import {
   type AuthedRequest,
   enqueueEntry,
@@ -74,17 +76,8 @@ export type ServerState = 'ok' | 'slow' | 'down' | 'skipped';
 
 export type JudgeOutcome = { verdict: Verdict; server: ServerState };
 
-const timeFormat = new Intl.DateTimeFormat('ko-KR', {
-  timeZone: 'Asia/Seoul',
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false,
-});
-
 function describeEntry(at: string | null, gate?: string | null): string {
-  const parts = [
-    at ? `${timeFormat.format(new Date(at))} 입장` : '입장 기록 있음',
-  ];
+  const parts = [at ? `${formatClock(at)} 입장` : '입장 기록 있음'];
   if (gate) parts.push(`${gate} 입구`);
   return parts.join(' · ');
 }
@@ -110,9 +103,9 @@ function quietly<T>(work: () => T): T | undefined {
 export async function judge(input: JudgeInput): Promise<JudgeOutcome> {
   const { request, drop, gate, staffId, data, tryServer } = input;
 
-  // 서버 계약상 토큰은 200자까지 — 넘는 값을 큐에 넣으면 그 배치가 영영 거절된다
+  // 계약의 길이 제한을 넘는 값을 큐에 넣으면 그 배치가 영영 거절된다
   const parsed = extractTicketToken(data);
-  const token = parsed && parsed.length <= 200 ? parsed : null;
+  const token = parsed && parsed.length <= TICKET_TOKEN_MAX ? parsed : null;
   if (!token)
     return {
       verdict: {

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import {
   Alert,
   FlatList,
+  Keyboard,
   Pressable,
   StyleSheet,
   Text,
@@ -14,16 +15,10 @@ import { GateStatusBanner } from '@/components/gate-status-banner';
 import { LastEntryBar } from '@/components/last-entry-bar';
 import { VerdictOverlay } from '@/components/verdict-overlay';
 import { colors, space } from '@/constants/theme';
+import { formatClock } from '@/lib/format';
 import { getGate, type RosterRow, searchRoster } from '@/lib/roster';
 import { useGateJudge } from '@/lib/use-gate-judge';
 import { useRoster } from '@/lib/use-roster';
-
-const time = new Intl.DateTimeFormat('ko-KR', {
-  timeZone: 'Asia/Seoul',
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false,
-});
 
 /**
  * QR 없이 명단에서 찾아 입장 처리 (PRD FR-4) — 휴대폰을 못 꺼내는 관객, 깨진
@@ -52,16 +47,22 @@ export default function SearchScreen() {
 
   if (!gate || !drop) return <Redirect href={`/drops/${id}`} />;
 
-  const enter = (row: RosterRow) =>
+  const enter = (row: RosterRow) => {
+    // 키보드가 떠 있으면 판정 뒤 화면 아래 '입장 취소' 막대를 가린다
+    Keyboard.dismiss();
     Alert.alert(
       `${row.buyerName} 입장 처리할까요?`,
       [row.tierName, row.note].filter(Boolean).join(' · ') ||
         '본인 확인 후 처리하세요.',
       [
         { text: '닫기', style: 'cancel' },
-        { text: '입장 처리', onPress: () => judge.handle(row.token) },
+        {
+          text: '입장 처리',
+          onPress: () => judge.handle(row.token, { manual: true }),
+        },
       ]
     );
+  };
 
   return (
     <SafeAreaView style={styles.root} edges={['bottom']}>
@@ -106,7 +107,7 @@ export default function SearchScreen() {
       <LastEntryBar
         lastEntry={judge.lastEntry}
         notice={judge.notice}
-        onUndo={judge.undoLast}
+        onUndo={judge.requestUndo}
       />
 
       {judge.verdict && (
@@ -125,7 +126,7 @@ function RosterItem({ row, onEnter }: { row: RosterRow; onEnter: () => void }) {
     row.status === 'cancelled'
       ? '취소'
       : row.status === 'checked_in'
-        ? `입장 ${row.checkedInAt ? time.format(new Date(row.checkedInAt)) : ''}`
+        ? `입장 ${row.checkedInAt ? formatClock(row.checkedInAt) : ''}`
         : '미입장';
   const meta = [row.tierName, row.note, row.phoneLast4 && `··${row.phoneLast4}`]
     .filter(Boolean)

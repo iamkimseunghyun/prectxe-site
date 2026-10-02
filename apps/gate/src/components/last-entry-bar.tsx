@@ -1,10 +1,11 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, space } from '@/constants/theme';
 import type { LastEntry } from '@/lib/use-gate-judge';
 
 /**
  * 직전 입장과 취소 버튼 (PRD FR-5: 잘못 스캔한 입장은 취소할 수 있다). 취소는
- * 기록을 지우지 않고 '취소' 기록을 하나 더 남긴다.
+ * 기록을 지우지 않고 '취소' 기록을 하나 더 남긴다. 확인창은 `onUndo`
+ * (useGateJudge.requestUndo)가 띄운다 — 떠 있는 동안 스캔을 멈춰야 해서.
  */
 export function LastEntryBar({
   lastEntry,
@@ -23,18 +24,6 @@ export function LastEntryBar({
     );
   if (!lastEntry) return null;
 
-  const confirm = () =>
-    Alert.alert(
-      `${lastEntry.name} 입장을 취소할까요?`,
-      lastEntry.reentry
-        ? '이번 재입장 기록만 취소됩니다. 처음 입장은 그대로입니다.'
-        : '잘못 스캔했을 때만 취소하세요. 취소한 기록도 남습니다.',
-      [
-        { text: '닫기', style: 'cancel' },
-        { text: '입장 취소', style: 'destructive', onPress: onUndo },
-      ]
-    );
-
   return (
     <View style={styles.bar}>
       <View style={styles.info}>
@@ -48,7 +37,7 @@ export function LastEntryBar({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${lastEntry.name} 입장 취소`}
-        onPress={confirm}
+        onPress={onUndo}
         style={({ pressed }) => [styles.undo, pressed && { opacity: 0.7 }]}
       >
         <Text style={styles.undoLabel}>입장 취소</Text>
