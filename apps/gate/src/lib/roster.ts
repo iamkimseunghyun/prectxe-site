@@ -471,13 +471,18 @@ export const countAll = (counts: Record<string, number> | undefined) =>
  * 기기에서 남의 입장을 내 이름으로 남기지 않는다.
  *
  * 결과(막힌 사유·거절 건수)는 기기 DB에 남기고 `rosterStats`로 읽는다.
+ *
+ * @returns 내 기록을 다 올렸는지. 남았으면(서버가 막음·일시 거절·건수 초과)
+ *   이번엔 명단을 받지 말아야 한다 — 방금 취소한 입장이 서버엔 아직 '입장'이라
+ *   받은 명단이 기기의 취소를 덮는다. 연결이 안 되면 예외를 그대로 던진다
+ *   (명단도 어차피 못 받으니 동기화 전체를 오프라인 실패로 둔다).
  */
 export async function uploadQueue(
   request: AuthedRequest,
   dropId: string,
   staffId: string,
   signal?: AbortSignal
-): Promise<void> {
+): Promise<boolean> {
   // 한 번에 최대 200건 — 더 쌓였으면 나눠 보낸다(몇 번까지만, 나머지는 다음 폴링)
   for (let round = 0; round < 5; round++) {
     const rows = db.getAllSync<QueueRow>(
@@ -508,15 +513,16 @@ export async function uploadQueue(
         signal,
       });
     } catch (error) {
-      // 연결이 안 되면 사유를 모른다 — 이전 판단을 그대로 둔다(오프라인 배너가 대신 뜬다)
-      if (isUnreachable(error)) return;
+      // 연결이 안 되면 사유를 모른다 — 이전 판단을 그대로 두고, 호출한 쪽이
+      // 오프라인으로 처리한다
+      if (isUnreachable(error)) throw error;
       setUploadProblem(
         dropId,
         error instanceof GateApiError
           ? error.message
           : '기록을 올리지 못했습니다.'
       );
-      return;
+      return false;
     }
 
     const kindOf = new Map(records.map((r) => [r.clientId, r.kind]));
@@ -538,10 +544,16 @@ export async function uploadQueue(
       setUploadProblem(dropId, null);
     });
     // 서버가 일시적으로 못 받은 기록(retry)이 앞에 남았다 — 다음 폴링 때 다시
-    if (done.length < records.length) break;
+    if (done.length < records.length) return false;
   }
   // 올릴 기록이 없었던 경우도 여기서 지운다
   setUploadProblem(dropId, null);
+  const left = db.getFirstSync<{ n: number }>(
+    'SELECT COUNT(*) AS n FROM queue WHERE drop_id = ? AND staff_id = ?',
+    dropId,
+    staffId
+  );
+  return (left?.n ?? 0) === 0;
 }
 
 /** 서버가 받지 않은 기록 안내를 스태프가 확인했다 (행사를 지정하지 않으면 전부) */
@@ -608,7 +620,13 @@ export async function uploadStranded(
 ): Promise<Stranded> {
   let problem: string | null = null;
   for (const { drop_id } of strandedCounts(staffId, listed)) {
-    await uploadQueue(request, drop_id, staffId, signal);
+    try {
+      await uploadQueue(request, drop_id, staffId, signal);
+    } catch (error) {
+      // 연결이 끊겼다 — 남은 행사는 다음에 목록을 받을 때
+      if (isUnreachable(error)) break;
+      throw error;
+    }
     problem ??= kvGet<string>(uploadProblemKey(drop_id));
   }
   const count = strandedCounts(staffId, listed).reduce(

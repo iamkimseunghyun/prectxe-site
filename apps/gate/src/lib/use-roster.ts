@@ -34,8 +34,15 @@ export function useRoster(dropId: string, { poll }: { poll: boolean }) {
     queryFn: async ({ signal }) => {
       // 결과(막힌 사유·거절 건수)는 기기 DB에 남는다 — 쿼리 결과로 넘기면
       // 배정 해제(403)처럼 명단 받기까지 실패할 때 같이 버려지고, 이 쿼리를
-      // 같이 쓰는 다른 화면에는 전해지지 않는다
-      if (staffId) await uploadQueue(auth.request, dropId, staffId, signal);
+      // 같이 쓰는 다른 화면에는 전해지지 않는다.
+      // 내 기록이 다 올라가지 않았으면 명단은 이번엔 받지 않는다 — 방금 취소한
+      // 입장이 서버엔 아직 '입장'이라 받은 명단이 기기의 취소를 덮는다. 서버는
+      // 답했으니(막힘·일시 거절) 성공으로 끝내고 다음 폴링 때 다시 올린다
+      if (
+        staffId &&
+        !(await uploadQueue(auth.request, dropId, staffId, signal))
+      )
+        return Date.now();
       await syncRoster(auth.request, dropId, signal);
       return Date.now();
     },
