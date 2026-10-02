@@ -7,6 +7,9 @@ import {
 } from '@/modules/gate/server/http';
 import { checkInByToken } from '@/modules/tickets/server/check-in';
 
+// DB 옆(싱가포르)에서 실행 — 이유는 CLAUDE.md '게이트 앱 API' 리전 항목
+export const preferredRegion = 'sin1';
+
 /**
  * 온라인 입장 판정. 서버가 최종 판정한다 — 여러 입구에서 같은 QR을 동시에
  * 찍어도 한 곳만 `entered`를 받는다. 거절 사유는 422 + `error`로 내려간다.
