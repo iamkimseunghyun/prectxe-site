@@ -7,9 +7,6 @@ import { checkRateLimit } from '@/lib/rate-limit/memory';
 import { verifyLoginCode } from '@/modules/gate/server/auth';
 import { apiError, json, parseBody } from '@/modules/gate/server/http';
 
-// DB 옆(싱가포르)에서 실행 — 이유는 CLAUDE.md '게이트 앱 API' 리전 항목
-export const preferredRegion = 'sin1';
-
 const TEN_MINUTES = 10 * 60 * 1000;
 
 export async function POST(request: Request) {

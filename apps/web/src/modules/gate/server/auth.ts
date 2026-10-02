@@ -145,22 +145,31 @@ function bearerToken(request: Request): string | null {
   return match?.[1] ?? null;
 }
 
+// 로그인 세션이 살아 있는 스태프. 세션을 select로 따라가면 Prisma가 관계마다
+// 쿼리를 따로 보낸다(세션 → 스태프 → 배정 = DB 왕복 3번, 왕복마다 ~75ms).
+// where의 관계 조건은 SQL 안의 서브쿼리가 되므로 한 번에 끝난다
+function withLiveSession(token: string) {
+  return {
+    sessions: {
+      some: { tokenHash: sha256(token), expiresAt: { gt: new Date() } },
+    },
+  };
+}
+
 export async function getStaffFromRequest(
   request: Request
 ): Promise<StaffIdentity | null> {
   const token = bearerToken(request);
   if (!token) return null;
-  const session = await prisma.staffSession.findUnique({
-    where: { tokenHash: sha256(token) },
-    select: { expiresAt: true, staff: { select: staffSelect } },
+  return prisma.staff.findFirst({
+    where: withLiveSession(token),
+    select: staffSelect,
   });
-  if (!session || session.expiresAt <= new Date()) return null;
-  return session.staff;
 }
 
 /**
- * 세션 확인과 행사 배정 확인을 한 번에. 입장 판정 경로는 DB 왕복 하나하나가
- * 응답 시간이라(서울 함수 ↔ 싱가포르 DB) 조회를 나누지 않는다.
+ * 세션 확인과 행사 배정 확인을 쿼리 하나로. 게이트 API의 모든 요청(15초 명단
+ * 폴링 포함)이 거치는 길이라 왕복 수가 그대로 응답 시간이다.
  */
 export async function getStaffForDrop(
   request: Request,
@@ -168,21 +177,16 @@ export async function getStaffForDrop(
 ): Promise<{ staff: StaffIdentity; assigned: boolean } | null> {
   const token = bearerToken(request);
   if (!token) return null;
-  const session = await prisma.staffSession.findUnique({
-    where: { tokenHash: sha256(token) },
+  const row = await prisma.staff.findFirst({
+    where: withLiveSession(token),
     select: {
-      expiresAt: true,
-      staff: {
-        select: {
-          ...staffSelect,
-          drops: { where: { dropId }, select: { dropId: true } },
-        },
-      },
+      ...staffSelect,
+      _count: { select: { drops: { where: { dropId } } } },
     },
   });
-  if (!session || session.expiresAt <= new Date()) return null;
-  const { drops, ...staff } = session.staff;
-  return { staff, assigned: drops.length > 0 };
+  if (!row) return null;
+  const { _count, ...staff } = row;
+  return { staff, assigned: _count.drops > 0 };
 }
 
 export async function revokeStaffSession(request: Request): Promise<void> {

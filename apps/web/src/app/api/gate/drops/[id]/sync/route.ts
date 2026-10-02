@@ -10,9 +10,6 @@ import {
 } from '@/modules/gate/server/http';
 import { applyOfflineRecord } from '@/modules/tickets/server/check-in';
 
-// DB 옆(싱가포르)에서 실행 — 이유는 CLAUDE.md '게이트 앱 API' 리전 항목
-export const preferredRegion = 'sin1';
-
 // 기록 1건당 DB 왕복이 여러 번이라 순서대로만 돌면 수백 건에 수십 초가 걸린다.
 // 같은 티켓의 기록끼리만 순서가 의미 있으므로 티켓별로 묶어 동시에 처리한다.
 const CONCURRENCY = 5;
