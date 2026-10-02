@@ -147,14 +147,14 @@ src/
 ### 게이트 앱 API (`/api/gate/*`)
 - 스태프용 체크인 앱(`apps/gate`)이 부르는 Route Handler. 요청 zod 스키마·응답 타입은 **`packages/gate-contract`** 에 두고 웹·앱이 같이 import한다(런타임 의존은 zod만)
 - 인증: `Staff`(어드민 세션과 별개) — 이메일 6자리 코드(`/auth/request-code` → `/auth/verify`) → `Authorization: Bearer <token>`. 코드·토큰은 해시만 저장. 세션 30일(개인 휴대폰 기준)
-- **리전**: `/api/gate/*` 라우트는 `preferredRegion = 'sin1'` — DB(Neon ap-southeast-1) 옆에서 실행한다. 요청 하나에 DB 왕복이 여러 번(체크인 6~7번)이라 서울(icn1)에서 실행하면 왕복마다 ~75ms가 붙어 0.8초 판정 예산을 넘보게 된다. 앱→싱가포르는 요청당 한 번만 멀다. 웹 페이지·서버 액션은 `vercel.json` 기본값 icn1 그대로. 새 게이트 라우트를 만들면 같은 줄을 넣을 것(route segment config는 파일마다 리터럴이어야 해서 공용 모듈에서 re-export할 수 없다)
+- **DB 왕복**: 함수는 서울(icn1), DB는 Neon 싱가포르라 **쿼리 하나가 왕복 ~75ms**다. Prisma는 `select`로 관계를 따라가면 **관계마다 쿼리를 따로 보낸다**(join 아님 — `relationJoins`는 프리뷰라 켜면 사이트 전체 기본값이 바뀐다). 왕복이 쌓이는 게이트 경로에서는 관계 조건을 `where`(SQL 서브쿼리)와 `_count`로 옮겨 쿼리 하나로 만든다(`getStaffForDrop`). Hobby 플랜은 함수 리전이 하나뿐이라 게이트 API만 싱가포르로 보내는 `preferredRegion`은 무시된다(2026-10-02 확인, #103 되돌림)
 - 권한: 행사별 API는 매 요청 `DropStaff` 배정 확인(`requireStaffForDrop`). 배정은 어드민 드랍 편집 사이드바 "게이트 스태프"
 - `/drops/[id]/tickets?since=` — 처음엔 전체, 이후 `syncedAt`부터 바뀐 것만(다른 입구 반영). 주문이 결제 상태가 아니면 `cancelled`로 내려간다
 - `/drops/[id]/sync` — 오프라인 기록 일괄 반영(`applyOfflineRecord`). 이미 들여보낸 입장은 거절하지 않고 기록하되 `CheckIn.flag`(`duplicate`·`cancelled_ticket`)로 표시. 오프라인 취소는 `undoes`(대상 입장의 clientId) 필수 — 토큰 기준 취소는 다른 입구의 정상 입장을 지운다. `retry` 외 결과는 최종
 - 어드민 `/admin/drops/[id]/check-ins` — 입장 기록·확인 필요 입장
 - **게스트리스트** — 어드민 `/admin/drops/[id]/guests`(`addGuest`). 게스트는 0원·결제 없음·**등급 없음** 주문(`Order.isGuest`, `note`)으로 발급해 공개 판매 등급·재고·판매 상태와 섞이지 않고, 입장 처리는 일반 티켓과 같은 경로. 표시 등급은 `ORDERS.GUEST_TIER_LABEL`. **주문을 집계·나열하는 쿼리는 반드시 `...salesOrderWhere`(`lib/db/sales-order.ts`)를 spread** (대시보드·드랍 매출·주문 목록·export에 적용됨). 게스트 주문의 `buyerEmail`·`buyerPhone`은 빈 문자열일 수 있다. 게스트 입장은 `checkInGuest`(일행 중 다음 미입장 1명), 삭제는 `cancelOrder`
 - **앱 판정 흐름**(`apps/gate/src/lib/judge.ts`): 온라인이면 서버 판정, **0.8초 안에 답이 없거나 0·5xx면 기기 명단(SQLite)으로 판정**하고 같은 clientId로 큐에 넣는다(나중에 올릴 때 재전송으로 1회만 반영). 노랑은 "기기 명단에 없음"일 때만. 명단 동기화가 큐의 미전송 입장을 덮지 않게 `syncRoster`가 다시 입장 상태로 되돌린다
-- 테스트: `apps/web/scripts/gate-test-seed.ts`(dev에 비공개 테스트 드랍 생성·초기화) → 서버 실행 → `gate-test-smoke.ts`(API 시나리오 전체). prod DB 호스트면 실행 거부
+- 테스트: `apps/web/scripts/gate-test-seed.ts`(dev에 비공개 테스트 드랍 생성·초기화) → 서버 실행 → `gate-test-smoke.ts`(API 시나리오 전체). `gate-query-count.ts`는 입장 1건의 DB 쿼리 수·시간을 센다(왕복 줄이는 작업 전후 비교용). prod DB 호스트면 실행 거부
 - 스키마 변경은 `prisma/manual-migrations/`의 SQL을 **배포 전에** dev → prod 순서로 적용
 
 ### Email Templates

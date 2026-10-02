@@ -7,9 +7,6 @@ import {
 } from '@/modules/gate/server/http';
 import { undoEntry } from '@/modules/tickets/server/check-in';
 
-// DB 옆(싱가포르)에서 실행 — 이유는 CLAUDE.md '게이트 앱 API' 리전 항목
-export const preferredRegion = 'sin1';
-
 /**
  * 앱이 방금 처리한 입장(`undoes`)을 취소한다. 토큰 기준으로 취소하면 다른
  * 입구의 정상 입장까지 지울 수 있어서 대상 입장을 지정받는다.
