@@ -10,7 +10,7 @@ import {
 } from '@prectxe/gate-contract';
 import * as Crypto from 'expo-crypto';
 import { GateApiError, isUnreachable, type RequestOptions } from './api';
-import { db, kvGet, kvSet } from './db';
+import { db, kvDelete, kvGet, kvSet } from './db';
 
 // 기기에 내려받은 행사·명단과, 서버에 아직 올리지 않은 입장 기록(큐).
 
@@ -94,7 +94,7 @@ export function setGate(dropId: string, gate: string) {
 }
 
 export function clearGate(dropId: string) {
-  db.runSync('DELETE FROM kv WHERE key = ?', gateKey(dropId));
+  kvDelete(gateKey(dropId));
 }
 
 function removeDrop(dropId: string) {
@@ -105,7 +105,7 @@ function removeDrop(dropId: string) {
     gateKey(dropId),
     uploadProblemKey(dropId),
   ])
-    db.runSync('DELETE FROM kv WHERE key = ?', key);
+    kvDelete(key);
 }
 
 /**
@@ -256,7 +256,13 @@ export type RosterStats = {
   syncedAt: string | null;
 };
 
-export type Rejected = { count: number; reason: string };
+/** 서버가 받지 않은 기록 — 종류별로 사유 → 건수 */
+export type Rejected = {
+  /** 입장: 이미 들여보냈는데 서버에 기록이 남지 않았다 */
+  entries: Record<string, number>;
+  /** 취소: 서버엔 아직 입장으로 남아 있을 수 있다 */
+  undos: Record<string, number>;
+};
 
 export function rosterStats(
   dropId: string,
@@ -438,13 +444,26 @@ function toRecord(row: QueueRow): OfflineRecord | null {
 
 function setUploadProblem(dropId: string, problem: string | null) {
   if (problem) kvSet(uploadProblemKey(dropId), problem);
-  else db.runSync('DELETE FROM kv WHERE key = ?', uploadProblemKey(dropId));
+  else kvDelete(uploadProblemKey(dropId));
 }
 
-function addRejected(dropId: string, count: number, reason: string) {
-  const prev = kvGet<Rejected>(rejectedKey(dropId));
-  kvSet(rejectedKey(dropId), { count: (prev?.count ?? 0) + count, reason });
+function addRejected(
+  dropId: string,
+  items: { kind: OfflineRecord['kind']; reason: string }[]
+) {
+  const next = kvGet<Rejected>(rejectedKey(dropId)) ?? {
+    entries: {},
+    undos: {},
+  };
+  for (const { kind, reason } of items) {
+    const bucket = kind === 'undo' ? next.undos : next.entries;
+    bucket[reason] = (bucket[reason] ?? 0) + 1;
+  }
+  kvSet(rejectedKey(dropId), next);
 }
+
+export const countAll = (counts: Record<string, number> | undefined) =>
+  Object.values(counts ?? {}).reduce((total, n) => total + n, 0);
 
 /**
  * 큐에 쌓인 **내** 기록을 순서대로 올린다(`/sync`). `retry`가 아닌 결과는 최종이라
@@ -500,44 +519,58 @@ export async function uploadQueue(
       return;
     }
 
+    const kindOf = new Map(records.map((r) => [r.clientId, r.kind]));
     const done = res.results.filter((result) => result.status !== 'retry');
-    const rejected = done.filter((result) => result.status === 'rejected');
+    const rejected = done
+      .filter((result) => result.status === 'rejected')
+      .map((result) => ({
+        kind: kindOf.get(result.clientId) ?? 'entry',
+        reason: result.error ?? '서버가 받지 않았습니다.',
+      }));
     db.withTransactionSync(() => {
       for (const { clientId } of done)
         db.runSync('DELETE FROM queue WHERE client_id = ?', clientId);
-      // 거절된 기록은 다시 보내도 결과가 같아 지우지만, 그 사람은 이미 들어갔다
-      // — 스태프가 알고 주최자에게 전할 수 있게 건수·사유를 남긴다
-      if (rejected.length > 0)
-        addRejected(
-          dropId,
-          rejected.length,
-          rejected[rejected.length - 1].error ?? '서버가 받지 않았습니다.'
-        );
+      // 거절된 기록은 다시 보내도 결과가 같아 지우지만, 입장이면 그 사람은
+      // 이미 들어갔고 취소면 서버엔 아직 입장으로 남았다 — 스태프가 알고
+      // 주최자에게 전할 수 있게 종류·사유별 건수를 남긴다
+      if (rejected.length > 0) addRejected(dropId, rejected);
+      // 서버가 받아줬다 — 이전에 막혔던 사유는 더 이상 맞지 않는다
+      setUploadProblem(dropId, null);
     });
     // 서버가 일시적으로 못 받은 기록(retry)이 앞에 남았다 — 다음 폴링 때 다시
     if (done.length < records.length) break;
   }
+  // 올릴 기록이 없었던 경우도 여기서 지운다
   setUploadProblem(dropId, null);
 }
 
 /** 서버가 받지 않은 기록 안내를 스태프가 확인했다 (행사를 지정하지 않으면 전부) */
 export function clearRejected(dropId?: string) {
-  if (dropId) db.runSync('DELETE FROM kv WHERE key = ?', rejectedKey(dropId));
+  if (dropId) kvDelete(rejectedKey(dropId));
   else db.runSync("DELETE FROM kv WHERE key LIKE 'rejected:%'");
 }
 
-/** 모든 행사에서 서버가 받지 않은 기록 수 — 행사 목록 화면 안내용 */
-export function rejectedTotal(): number {
+export type RejectedTotal = { entries: number; undos: number };
+
+/**
+ * 모든 행사에서 서버가 받지 않은 기록 수 — 행사 목록·로그아웃 안내용. 행사
+ * 명단을 지워도 남아 있어(목록에서 빠진 행사 포함) 여기서만 보일 수 있다.
+ */
+export function rejectedTotal(): RejectedTotal {
+  const total: RejectedTotal = { entries: 0, undos: 0 };
   const rows = db.getAllSync<{ value: string }>(
     "SELECT value FROM kv WHERE key LIKE 'rejected:%'"
   );
-  return rows.reduce((sum, { value }) => {
+  for (const { value } of rows) {
     try {
-      return sum + ((JSON.parse(value) as Rejected).count ?? 0);
+      const rejected = JSON.parse(value) as Rejected;
+      total.entries += countAll(rejected.entries);
+      total.undos += countAll(rejected.undos);
     } catch {
-      return sum;
+      // 깨진 값은 건너뛴다 — 안내용이라 판정에는 영향이 없다
     }
-  }, 0);
+  }
+  return total;
 }
 
 /** 로그아웃 안내용 — 이 스태프가 아직 올리지 않은 기록 (모든 행사) */

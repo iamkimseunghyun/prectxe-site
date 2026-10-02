@@ -4,8 +4,14 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, ErrorText, Field } from '@/components/ui';
 import { colors, space } from '@/constants/theme';
-import { formatEventTime } from '@/lib/format';
-import { clearGate, clearRejected, getGate, setGate } from '@/lib/roster';
+import { formatEventTime, formatReasons } from '@/lib/format';
+import {
+  clearGate,
+  clearRejected,
+  countAll,
+  getGate,
+  setGate,
+} from '@/lib/roster';
 import { useRoster } from '@/lib/use-roster';
 
 // 입구는 서버에 따로 등록하지 않는다 — 기록에 이름만 남는다
@@ -137,9 +143,16 @@ export default function DropHomeScreen() {
           ))}
         {stats.rejected && (
           <View style={styles.rejected}>
-            <ErrorText>
-              {`서버가 받지 않은 입장 기록 ${stats.rejected.count}건 · ${stats.rejected.reason} 이미 들여보낸 관객이라면(명단 밖 수동 입장 등) 주최자에게 알려주세요.`}
-            </ErrorText>
+            {countAll(stats.rejected.entries) > 0 && (
+              <ErrorText>
+                {`서버가 받지 않은 입장 기록 ${countAll(stats.rejected.entries)}건 — ${formatReasons(stats.rejected.entries)}. 이미 들여보낸 관객이라면(명단 밖 수동 입장 등) 주최자에게 알려주세요.`}
+              </ErrorText>
+            )}
+            {countAll(stats.rejected.undos) > 0 && (
+              <ErrorText>
+                {`서버가 받지 않은 입장 취소 ${countAll(stats.rejected.undos)}건 — ${formatReasons(stats.rejected.undos)}. 서버에는 입장으로 남아 있을 수 있으니 주최자에게 알려주세요.`}
+              </ErrorText>
+            )}
             <Button
               label="확인했습니다"
               variant="ghost"
