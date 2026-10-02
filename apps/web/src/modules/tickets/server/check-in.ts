@@ -229,17 +229,24 @@ export async function checkInByToken(input: {
 
     const view = { buyerName, tierName, checkedInAt: current.checkedInAt };
     if (!allowReentry) {
-      // 거절 화면에 "언제·어디서 들어갔는지"를 보여준다. 거절 때만 조회한다 —
-      // 중복 표시된 입장은 상태를 만든 기록이 아니라 뺀다
-      const last = await prisma.checkIn.findFirst({
-        where: { ticketId: ticket.id, kind: 'entry', flag: null },
+      // 거절 화면에 "언제·어디서 들어갔는지"를 보여준다. 거절 때만 조회한다.
+      // 지금의 입장 상태를 만든 기록을 찾는다 — 입장 시각(checkedInAt)과 스캔
+      // 시각이 같은 기록이다(undoEntry와 같은 기준). 취소된 옛 입장이나 중복
+      // 표시된 입장의 입구를 보여주면 안 된다
+      const settledBy = await prisma.checkIn.findFirst({
+        where: {
+          ticketId: ticket.id,
+          kind: 'entry',
+          flag: null,
+          ...(current.checkedInAt && { scannedAt: current.checkedInAt }),
+        },
         orderBy: { scannedAt: 'desc' },
         select: { gate: true },
       });
       return {
         success: true,
         result: 'already',
-        data: { ...view, checkedInGate: last?.gate ?? null },
+        data: { ...view, checkedInGate: settledBy?.gate ?? null },
       };
     }
 

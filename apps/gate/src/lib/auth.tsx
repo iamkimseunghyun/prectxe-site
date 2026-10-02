@@ -66,8 +66,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 진행 중인 요청도 끊는다 (요청에 signal이 넘어가 있다)
       void queryClient.cancelQueries();
       queryClient.clear();
-      // 기기 명단(개인정보)도 지운다. 올리지 않은 입장 기록 큐는 남긴다
-      clearRoster();
+      // 기기 명단(개인정보)도 지운다. 올리지 않은 입장 기록 큐는 남긴다.
+      // 명단 정리가 실패해도 세션 토큰은 반드시 지운다 — 아니면 다음 실행 때
+      // 이전 로그인이 되살아난다
+      try {
+        clearRoster();
+      } catch (error) {
+        console.warn('[gate] 기기 명단 정리 실패', error);
+      }
       await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
     },
     [queryClient]

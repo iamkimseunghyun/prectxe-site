@@ -277,8 +277,18 @@ async function main() {
   const e3 = await call<CheckInResponse>('POST', `${D}/check-in`, token, {
     token: A.token,
     clientId: randomUUID(),
+    gate: 'B',
   });
   check('취소 후 다시 입장 → entered', e3.data.result === 'entered', e3);
+  const e3a = await call<CheckInResponse>('POST', `${D}/check-in`, token, {
+    token: A.token,
+    clientId: randomUUID(),
+  });
+  check(
+    'A 입장 취소 후 B로 재입장 → already 입구는 B (취소된 A 아님)',
+    e3a.data.result === 'already' && e3a.data.ticket?.checkedInGate === 'B',
+    e3a
+  );
   const cx = await call('POST', `${D}/check-in`, token, {
     token: cancelled.token,
     clientId: randomUUID(),
