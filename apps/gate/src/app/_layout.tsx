@@ -25,6 +25,7 @@ function RootNavigator() {
         headerStyle: { backgroundColor: colors.bg },
         headerTintColor: colors.text,
         headerShadowVisible: false,
+        headerBackTitle: '뒤로',
         contentStyle: { backgroundColor: colors.bg },
       }}
     >
@@ -37,6 +38,10 @@ function RootNavigator() {
         <Stack.Screen
           name="drops/[id]/scan"
           options={{ headerShown: false, animation: 'fade' }}
+        />
+        <Stack.Screen
+          name="drops/[id]/search"
+          options={{ title: '명단 검색' }}
         />
       </Stack.Protected>
     </Stack>

@@ -2,14 +2,18 @@ import {
   type CheckInResponse,
   extractTicketToken,
   type GateDrop,
+  TICKET_TOKEN_MAX,
 } from '@prectxe/gate-contract';
 import * as Crypto from 'expo-crypto';
 import { GateApiError, isUnreachable } from './api';
+import { formatClock } from './format';
 import {
   type AuthedRequest,
   enqueueEntry,
   findTicket,
   markEntered,
+  PLACEHOLDER_NAME,
+  PLACEHOLDER_TIER,
 } from './roster';
 
 // 판정은 세 가지뿐이다 — 스태프가 글자를 읽지 않고 색만 보고 움직일 수 있게.
@@ -22,8 +26,16 @@ type Person = { name: string; tier: string; note?: string | null };
 
 type Pending = { token: string; clientId: string; scannedAt: string };
 
+/** 초록 판정을 취소할 때 필요한 것 — 서버·큐에 남은 그 입장의 clientId */
+export type EntryRef = { token: string; clientId: string; reentry: boolean };
+
 export type Verdict =
-  | ({ color: 'green'; title: string; offline: boolean } & Person)
+  | ({
+      color: 'green';
+      title: string;
+      offline: boolean;
+      entry: EntryRef;
+    } & Person)
   | ({
       color: 'red';
       title: string;
@@ -64,17 +76,8 @@ export type ServerState = 'ok' | 'slow' | 'down' | 'skipped';
 
 export type JudgeOutcome = { verdict: Verdict; server: ServerState };
 
-const timeFormat = new Intl.DateTimeFormat('ko-KR', {
-  timeZone: 'Asia/Seoul',
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false,
-});
-
 function describeEntry(at: string | null, gate?: string | null): string {
-  const parts = [
-    at ? `${timeFormat.format(new Date(at))} 입장` : '입장 기록 있음',
-  ];
+  const parts = [at ? `${formatClock(at)} 입장` : '입장 기록 있음'];
   if (gate) parts.push(`${gate} 입구`);
   return parts.join(' · ');
 }
@@ -100,7 +103,9 @@ function quietly<T>(work: () => T): T | undefined {
 export async function judge(input: JudgeInput): Promise<JudgeOutcome> {
   const { request, drop, gate, staffId, data, tryServer } = input;
 
-  const token = extractTicketToken(data);
+  // 계약의 길이 제한을 넘는 값을 큐에 넣으면 그 배치가 영영 거절된다
+  const parsed = extractTicketToken(data);
+  const token = parsed && parsed.length <= TICKET_TOKEN_MAX ? parsed : null;
   if (!token)
     return {
       verdict: {
@@ -168,11 +173,13 @@ export async function judge(input: JudgeInput): Promise<JudgeOutcome> {
           },
           server: 'ok',
         };
+      const reentry = res.result === 'reentered';
       return {
         verdict: {
           color: 'green',
-          title: res.result === 'reentered' ? '재입장' : '입장',
+          title: reentry ? '재입장' : '입장',
           offline: false,
+          entry: { token, clientId, reentry },
           ...person,
           note: quietly(() => findTicket(drop.id, token)?.note),
         },
@@ -236,10 +243,12 @@ function judgeLocally(args: {
     };
 
   enqueueEntry({ dropId: drop.id, staffId, clientId, token, gate, scannedAt });
+  const reentry = ticket.status === 'checked_in';
   return {
     color: 'green',
-    title: ticket.status === 'checked_in' ? '재입장' : '입장',
+    title: reentry ? '재입장' : '입장',
     offline: true,
+    entry: { token, clientId, reentry },
     ...person,
   };
 }
@@ -250,11 +259,23 @@ export function approvePending(args: {
   gate: string;
   staffId: string;
   pending: Pending;
-}) {
+}): Verdict {
   enqueueEntry({
     dropId: args.drop.id,
     gate: args.gate,
     staffId: args.staffId,
     ...args.pending,
   });
+  return {
+    color: 'green',
+    title: '입장',
+    name: PLACEHOLDER_NAME,
+    tier: PLACEHOLDER_TIER,
+    offline: true,
+    entry: {
+      token: args.pending.token,
+      clientId: args.pending.clientId,
+      reentry: false,
+    },
+  };
 }

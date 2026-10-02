@@ -76,3 +76,7 @@ export function kvSet(key: string, value: unknown) {
     JSON.stringify(value)
   );
 }
+
+export function kvDelete(key: string) {
+  db.runSync('DELETE FROM kv WHERE key = ?', key);
+}

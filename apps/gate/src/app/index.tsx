@@ -1,6 +1,7 @@
 import type { GateDrop } from '@prectxe/gate-contract';
 import { useQuery } from '@tanstack/react-query';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -14,14 +15,49 @@ import { ErrorText } from '@/components/ui';
 import { colors, space } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { formatEventTime } from '@/lib/format';
-import { loadDrops } from '@/lib/roster';
+import {
+  clearRejected,
+  loadDrops,
+  pendingForStaff,
+  type RejectedTotal,
+  rejectedTotal,
+  uploadStranded,
+} from '@/lib/roster';
 
 export default function DropsScreen() {
   const auth = useAuth();
+  const staffId = auth.status === 'signedIn' ? auth.staff.id : null;
   const drops = useQuery({
     queryKey: ['drops'],
     queryFn: ({ signal }) => loadDrops(auth.request, signal),
   });
+
+  // 목록에서 빠진 행사의 기록은 그 행사 화면을 열 수 없어 여기서 올린다.
+  // 목록과 따로 돈다 — 기다리게 하면 느린 망에서 입구 앞 스태프가 목록을 못
+  // 본다. 목록을 받을 때마다(그 뒤에 — 목록이 빠진 행사를 정리한 다음) 한 번
+  const listed = drops.data && !drops.data.offline ? drops.data.drops : null;
+  const stranded = useQuery({
+    queryKey: ['stranded', staffId, drops.dataUpdatedAt],
+    queryFn: ({ signal }) =>
+      uploadStranded(
+        auth.request,
+        staffId as string,
+        (listed ?? []).map((drop) => drop.id),
+        signal
+      ),
+    enabled: staffId !== null && listed !== null,
+    retry: false,
+  });
+
+  // 서버가 받지 않은 기록은 행사 화면에서도 생기고 거기서 확인할 수도 있다 —
+  // 이 화면으로 돌아올 때마다 기기 DB에서 다시 읽는다
+  const [rejected, setRejected] = useState(rejectedTotal);
+  const refreshRejected = useCallback(() => setRejected(rejectedTotal()), []);
+  useFocusEffect(refreshRejected);
+  useEffect(() => {
+    if (stranded.dataUpdatedAt) refreshRejected();
+  }, [stranded.dataUpdatedAt, refreshRejected]);
+  const rejectedCount = rejected.entries + rejected.undos;
 
   return (
     <View style={styles.container}>
@@ -30,7 +66,15 @@ export default function DropsScreen() {
           headerRight: () => (
             <Pressable
               accessibilityRole="button"
-              onPress={() => confirmSignOut(auth.signOut)}
+              onPress={() =>
+                confirmSignOut(
+                  auth.signOut,
+                  auth.status === 'signedIn'
+                    ? pendingForStaff(auth.staff.id)
+                    : 0,
+                  rejectedTotal()
+                )
+              }
               hitSlop={12}
             >
               <Text style={styles.headerAction}>로그아웃</Text>
@@ -45,6 +89,37 @@ export default function DropsScreen() {
         <Text style={styles.offline}>
           오프라인 · 마지막으로 받은 목록입니다
         </Text>
+      )}
+      {!!stranded.data?.count && (
+        <Text accessibilityRole="alert" style={styles.warning}>
+          목록에서 빠진 행사의 입장 기록 {stranded.data.count}건을 서버에 올리지
+          못했습니다
+          {stranded.data.problem
+            ? ` · ${stranded.data.problem} 주최자에게 다시 배정을 요청하면 올라갑니다.`
+            : '. 목록을 새로고침하면 다시 올립니다.'}
+        </Text>
+      )}
+      {rejectedCount > 0 && (
+        <View style={styles.warningBox}>
+          <Text accessibilityRole="alert" style={styles.warning}>
+            서버가 받지 않은 기록 {rejectedCount}건이 있습니다
+            {rejected.undos > 0
+              ? `(입장 ${rejected.entries}건 · 취소 ${rejected.undos}건)`
+              : ''}
+            . 이미 들여보낸 관객이거나(명단 밖 수동 입장 등) 서버에 입장으로
+            남은 관객일 수 있으니 주최자에게 알려주세요.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              clearRejected();
+              refreshRejected();
+            }}
+            style={styles.ack}
+          >
+            <Text style={styles.headerAction}>확인했습니다</Text>
+          </Pressable>
+        </View>
       )}
       <FlatList
         data={drops.data?.drops ?? []}
@@ -75,10 +150,26 @@ export default function DropsScreen() {
 
 // 다시 들어오려면 메일로 코드를 받아야 해서, 인터넷이 안 되는 입구에서 잘못
 // 누르면 그 자리에서 입장 처리를 못 한다
-function confirmSignOut(signOut: () => Promise<void>) {
+function confirmSignOut(
+  signOut: () => Promise<void>,
+  pending: number,
+  rejected: RejectedTotal
+) {
+  const rejectedCount = rejected.entries + rejected.undos;
   Alert.alert(
     '로그아웃할까요?',
-    '다시 로그인하려면 이메일로 코드를 받아야 합니다. 인터넷이 안 되는 곳에서는 다시 들어올 수 없습니다.',
+    [
+      '다시 로그인하려면 이메일로 코드를 받아야 합니다. 인터넷이 안 되는 곳에서는 다시 들어올 수 없습니다.',
+      // 큐는 로그아웃해도 남지만, 다른 사람이 이 기기로 로그인하면 올라가지 않는다
+      pending > 0 &&
+        `아직 서버에 올리지 않은 입장 기록이 ${pending}건 있습니다. 기기에 남아 있다가 이 계정으로 다시 로그인하면 올라갑니다.`,
+      // 로그아웃하면 기기 DB의 안내가 지워진다 — 서버에도 남지 않은 기록이라
+      // 이게 마지막 흔적이다
+      rejectedCount > 0 &&
+        `서버가 받지 않은 기록 ${rejectedCount}건 안내가 지워집니다. 주최자에게 먼저 알려주세요.`,
+    ]
+      .filter(Boolean)
+      .join('\n\n'),
     [
       { text: '취소', style: 'cancel' },
       { text: '로그아웃', style: 'destructive', onPress: () => signOut() },
@@ -128,5 +219,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     paddingHorizontal: space.lg,
     paddingBottom: space.sm,
+  },
+  warning: {
+    color: colors.danger,
+    fontSize: 15,
+    lineHeight: 21,
+    paddingHorizontal: space.lg,
+    paddingBottom: space.sm,
+  },
+  warningBox: { alignItems: 'flex-start', paddingBottom: space.sm },
+  ack: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: space.lg,
   },
 });
