@@ -6,6 +6,9 @@ import { z } from 'zod';
 
 export const GATE_API_PREFIX = '/api/gate';
 
+// QR 파서는 의존성이 없어 웹 클라이언트 번들이 zod 없이 쓸 수 있게 따로 둔다
+export { extractTicketToken } from './qr';
+
 const email = z
   .string()
   .trim()
@@ -167,6 +170,12 @@ export type CheckInResponse = {
     buyerName: string;
     tierName: string;
     checkedInAt: string | null;
+    /**
+     * `already`일 때, 지금의 입장 상태를 만든 입장 기록의 입구 — 거절 화면에
+     * "언제·어디서"를 보여준다. 입장을 취소한 뒤 다른 입구로 다시 들어왔으면
+     * 취소된 옛 입구가 아니라 다시 들어온 입구다
+     */
+    checkedInGate: string | null;
   };
 };
 

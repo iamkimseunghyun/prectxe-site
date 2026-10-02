@@ -235,6 +235,11 @@ async function main() {
     gate: 'B',
   });
   check('다른 입구에서 같은 티켓 → already', e2.data.result === 'already', e2);
+  check(
+    'already 응답에 먼저 들어간 입구(A)',
+    e2.data.ticket?.checkedInGate === 'A',
+    e2
+  );
   // B 입구가 '이미 입장'을 자기 실수로 알고 취소해도 A 입구의 입장은 남아야 한다
   const wrongUndo = await call('POST', `${D}/undo`, token, {
     token: A.token,
@@ -272,8 +277,18 @@ async function main() {
   const e3 = await call<CheckInResponse>('POST', `${D}/check-in`, token, {
     token: A.token,
     clientId: randomUUID(),
+    gate: 'B',
   });
   check('취소 후 다시 입장 → entered', e3.data.result === 'entered', e3);
+  const e3a = await call<CheckInResponse>('POST', `${D}/check-in`, token, {
+    token: A.token,
+    clientId: randomUUID(),
+  });
+  check(
+    'A 입장 취소 후 B로 재입장 → already 입구는 B (취소된 A 아님)',
+    e3a.data.result === 'already' && e3a.data.ticket?.checkedInGate === 'B',
+    e3a
+  );
   const cx = await call('POST', `${D}/check-in`, token, {
     token: cancelled.token,
     clientId: randomUUID(),

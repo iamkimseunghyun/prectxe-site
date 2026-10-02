@@ -33,7 +33,11 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="index" options={{ title: '행사' }} />
-        <Stack.Screen name="drops/[id]" options={{ title: '' }} />
+        <Stack.Screen name="drops/[id]/index" options={{ title: '' }} />
+        <Stack.Screen
+          name="drops/[id]/scan"
+          options={{ headerShown: false, animation: 'fade' }}
+        />
       </Stack.Protected>
     </Stack>
   );

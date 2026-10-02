@@ -1,4 +1,4 @@
-import type { GateDrop, GateDropsResponse } from '@prectxe/gate-contract';
+import type { GateDrop } from '@prectxe/gate-contract';
 import { useQuery } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
 import {
@@ -14,14 +14,13 @@ import { ErrorText } from '@/components/ui';
 import { colors, space } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { formatEventTime } from '@/lib/format';
+import { loadDrops } from '@/lib/roster';
 
 export default function DropsScreen() {
   const auth = useAuth();
   const drops = useQuery({
     queryKey: ['drops'],
-    queryFn: ({ signal }) =>
-      auth.request<GateDropsResponse>('/drops', { signal }),
-    select: (res) => res.drops,
+    queryFn: ({ signal }) => loadDrops(auth.request, signal),
   });
 
   return (
@@ -42,8 +41,13 @@ export default function DropsScreen() {
       {auth.status === 'signedIn' && (
         <Text style={styles.staff}>{auth.staff.name ?? auth.staff.email}</Text>
       )}
+      {drops.data?.offline && (
+        <Text style={styles.offline}>
+          오프라인 · 마지막으로 받은 목록입니다
+        </Text>
+      )}
       <FlatList
-        data={drops.data ?? []}
+        data={drops.data?.drops ?? []}
         keyExtractor={(drop) => drop.id}
         renderItem={({ item }) => <DropRow drop={item} />}
         contentContainerStyle={styles.list}
@@ -119,4 +123,10 @@ const styles = StyleSheet.create({
   rowMeta: { color: colors.muted, fontSize: 15 },
   empty: { color: colors.muted, fontSize: 16, lineHeight: 22 },
   headerAction: { color: colors.muted, fontSize: 16 },
+  offline: {
+    color: colors.warning,
+    fontSize: 14,
+    paddingHorizontal: space.lg,
+    paddingBottom: space.sm,
+  },
 });
