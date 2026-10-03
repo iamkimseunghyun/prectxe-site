@@ -16,6 +16,8 @@ const logSelect = {
   staff: { select: { name: true, email: true } },
   ticket: {
     select: {
+      status: true,
+      checkedInAt: true,
       order: { select: { buyerName: true, orderNo: true, isGuest: true } },
       ticketTier: { select: { name: true } },
     },
@@ -51,9 +53,26 @@ export async function getDropCheckInLog(dropId: string) {
   ]);
 
   const voided = new Set(voids.map((v) => v.undoes));
-  const withVoided = <T extends { clientId: string }>(row: T) => ({
+  const withVoided = <
+    T extends {
+      clientId: string;
+      kind: string;
+      flag: string | null;
+      scannedAt: Date;
+      ticket: { status: string; checkedInAt: Date | null };
+    },
+  >(
+    row: T
+  ) => ({
     ...row,
     voided: voided.has(row.clientId),
+    // 지금의 입장 상태를 만든 기록 — 이 입장을 취소해야 티켓이 미입장으로
+    // 돌아간다(undoEntry와 같은 기준). 입장 기록 화면의 '취소' 버튼은 이것만
+    current:
+      row.kind === 'entry' &&
+      !row.flag &&
+      row.ticket.status === 'checked_in' &&
+      row.ticket.checkedInAt?.getTime() === row.scannedAt.getTime(),
   });
 
   const truncated = rows.length > CHECK_IN_LOG_LIMIT;

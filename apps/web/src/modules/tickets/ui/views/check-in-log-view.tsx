@@ -18,6 +18,8 @@ import type {
   CheckInLogEntry,
 } from '@/modules/tickets/server/queries';
 import { LiveCheckInStats } from '@/modules/tickets/ui/components/live-check-in-stats';
+import { LogRefreshButton } from '@/modules/tickets/ui/components/log-refresh-button';
+import { UndoEntryButton } from '@/modules/tickets/ui/components/undo-entry-button';
 
 const FLAG_LABEL = {
   duplicate: '중복 입장',
@@ -30,7 +32,13 @@ function actorLabel(entry: CheckInLogEntry): string {
   return '-';
 }
 
-function LogTable({ entries }: { entries: CheckInLogEntry[] }) {
+function LogTable({
+  dropId,
+  entries,
+}: {
+  dropId: string;
+  entries: CheckInLogEntry[];
+}) {
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -42,6 +50,9 @@ function LogTable({ entries }: { entries: CheckInLogEntry[] }) {
             <TableHead>권종</TableHead>
             <TableHead>입구</TableHead>
             <TableHead>처리</TableHead>
+            <TableHead>
+              <span className="sr-only">입장 취소</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -52,7 +63,7 @@ function LogTable({ entries }: { entries: CheckInLogEntry[] }) {
               </TableCell>
               <TableCell className="whitespace-nowrap">
                 {entry.kind === 'entry' ? '입장' : '입장 취소'}
-                {entry.flag && (
+                {entry.flag ? (
                   <Badge
                     variant={entry.voided ? 'outline' : 'destructive'}
                     className="ml-2"
@@ -60,6 +71,12 @@ function LogTable({ entries }: { entries: CheckInLogEntry[] }) {
                     {FLAG_LABEL[entry.flag]}
                     {entry.voided && ' · 취소됨'}
                   </Badge>
+                ) : (
+                  entry.voided && (
+                    <Badge variant="outline" className="ml-2">
+                      취소됨
+                    </Badge>
+                  )
                 )}
               </TableCell>
               <TableCell>
@@ -74,6 +91,16 @@ function LogTable({ entries }: { entries: CheckInLogEntry[] }) {
               </TableCell>
               <TableCell>{entry.gate ?? '-'}</TableCell>
               <TableCell>{actorLabel(entry)}</TableCell>
+              <TableCell className="text-right">
+                {entry.current && (
+                  <UndoEntryButton
+                    dropId={dropId}
+                    entryClientId={entry.clientId}
+                    buyerName={entry.ticket.order.buyerName}
+                    gate={entry.gate}
+                  />
+                )}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -85,9 +112,12 @@ function LogTable({ entries }: { entries: CheckInLogEntry[] }) {
 export function CheckInLogView({
   drop,
   log,
+  loadedAt,
 }: {
   drop: { id: string; title: string };
   log: CheckInLog;
+  /** 기록 표를 읽은 시각 — 표는 실시간이 아니라 이 시점 기준이다 */
+  loadedAt: Date;
 }) {
   const { entries, truncated, flagged, counts } = log;
 
@@ -144,20 +174,27 @@ export function CheckInLogView({
           </p>
           <Card>
             <CardContent className="p-0">
-              <LogTable entries={flagged} />
+              <LogTable dropId={drop.id} entries={flagged} />
             </CardContent>
           </Card>
         </section>
       )}
 
       <section className="space-y-2">
-        <h2 className="text-base font-semibold">전체 기록</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-base font-semibold">전체 기록</h2>
+          <LogRefreshButton loadedAt={loadedAt} />
+        </div>
+        <p className="text-sm text-muted-foreground">
+          실수로 들여보낸 입장은 &apos;취소&apos;로 되돌릴 수 있습니다(지금 입장
+          상태를 만든 기록에만 버튼이 있습니다).
+        </p>
         {entries.length === 0 ? (
           <p className="text-sm text-muted-foreground">아직 기록이 없습니다.</p>
         ) : (
           <Card>
             <CardContent className="p-0">
-              <LogTable entries={entries} />
+              <LogTable dropId={drop.id} entries={entries} />
             </CardContent>
           </Card>
         )}

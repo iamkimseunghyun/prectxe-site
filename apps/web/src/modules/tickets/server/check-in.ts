@@ -348,8 +348,12 @@ export async function undoCheckInByToken(input: {
 }
 
 export type UndoEntryOutcome =
-  /** 취소 기록을 남겼다 (그 입장이 현재 상태를 만든 기록이면 티켓도 되돌렸다) */
-  | { status: 'applied' }
+  /**
+   * 취소 기록을 남겼다. `reverted`: 그 입장이 지금의 입장 상태를 만든 기록이라
+   * 티켓도 미입장으로 되돌렸는지 — 재입장·중복 표시 기록이거나 이미 다른
+   * 상태로 바뀐 뒤면 false(기록만 남음). 같은 취소의 재전송이면 false
+   */
+  | { status: 'applied'; reverted: boolean }
   /** 되돌릴 입장 기록이 서버에 없다 (거절됐거나 아직 안 올라옴) */
   | { status: 'not_found' }
   | { status: 'rejected'; error: string };
@@ -384,7 +388,7 @@ export async function undoEntry(input: {
 
   const replayed = async (): Promise<UndoEntryOutcome | null> => {
     const replay = await findReplay(clientId, ticket.id, 'undo');
-    if (replay === 'same') return { status: 'applied' };
+    if (replay === 'same') return { status: 'applied', reverted: false };
     if (replay === 'mismatch')
       return { status: 'rejected', error: CLIENT_ID_MISMATCH };
     return null;
@@ -404,17 +408,18 @@ export async function undoEntry(input: {
     };
 
   try {
-    await prisma.$transaction(async (tx) => {
+    const reverted = await prisma.$transaction(async (tx) => {
       // 중복·취소 티켓으로 표시된 입장은 애초에 티켓 상태를 바꾼 적이 없다
-      if (!target.flag)
-        await tx.ticket.updateMany({
-          where: {
-            id: ticket.id,
-            status: 'checked_in',
-            checkedInAt: target.scannedAt,
-          },
-          data: { status: 'active', checkedInAt: null, checkedInBy: null },
-        });
+      const { count } = target.flag
+        ? { count: 0 }
+        : await tx.ticket.updateMany({
+            where: {
+              id: ticket.id,
+              status: 'checked_in',
+              checkedInAt: target.scannedAt,
+            },
+            data: { status: 'active', checkedInAt: null, checkedInBy: null },
+          });
       await tx.checkIn.create({
         data: logData({
           kind: 'undo',
@@ -427,8 +432,9 @@ export async function undoEntry(input: {
           at,
         }),
       });
+      return count > 0;
     });
-    return { status: 'applied' };
+    return { status: 'applied', reverted };
   } catch (error) {
     if (!isClientIdConflict(error)) throw error;
     const late = await replayed();
@@ -488,7 +494,10 @@ export async function applyOfflineRecord(input: {
       at,
     });
     // 되돌릴 입장이 서버에 없다 (거절됐거나 아직 안 올라옴) — 반영할 것 없음
-    return outcome.status === 'not_found' ? { status: 'skipped' } : outcome;
+    // 동기화 응답은 계약의 상태만 내려보낸다 (reverted는 웹 화면용)
+    if (outcome.status === 'not_found') return { status: 'skipped' };
+    if (outcome.status === 'applied') return { status: 'applied' };
+    return outcome;
   }
 
   const ticket = await prisma.ticket.findUnique({

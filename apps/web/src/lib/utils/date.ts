@@ -31,6 +31,15 @@ export const formatKstDateTime = (date: Date, withYear = true): string => {
   return `${formatKstDate(date, withYear)} (${wd}) ${ampm} ${hh}:${mm}`;
 };
 
+/** KST 기준 'HH:mm:ss'(24시간) — 갱신 시각 같은 짧은 표시용. */
+export const formatKstTime = (date: Date): string => {
+  if (Number.isNaN(date.getTime())) return '';
+  const kst = toKst(date);
+  return [kst.getUTCHours(), kst.getUTCMinutes(), kst.getUTCSeconds()]
+    .map((n) => String(n).padStart(2, '0'))
+    .join(':');
+};
+
 /** KST 기준 두 날짜가 같은 날인지. */
 export const isSameDay = (a: Date, b: Date): boolean => {
   const ka = toKst(a);

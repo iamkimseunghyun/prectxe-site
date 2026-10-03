@@ -21,5 +21,5 @@ export default async function CheckInLogPage({
   if (!drop || drop.type !== 'ticket') notFound();
 
   const log = await getDropCheckInLog(id);
-  return <CheckInLogView drop={drop} log={log} />;
+  return <CheckInLogView drop={drop} log={log} loadedAt={new Date()} />;
 }

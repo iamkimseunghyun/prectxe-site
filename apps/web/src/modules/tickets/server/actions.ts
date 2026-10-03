@@ -1154,6 +1154,22 @@ export async function undoScannerEntry(
   if (!auth.success) return { success: false, error: auth.error } as const;
   if (!z.uuid().safeParse(undoes).success)
     return { success: false, error: '잘못된 요청입니다.' } as const;
+  // 화면의 제한(이 스캐너가 처리한 입장만)을 서버도 지킨다 — 같은 어드민
+  // 계정이 웹에서 처리한 입장만. 다른 기기의 입장 정정은 입장 기록 화면에서
+  const target = await prisma.checkIn.findUnique({
+    where: { clientId: undoes },
+    select: { dropId: true, kind: true, userId: true },
+  });
+  if (
+    !target ||
+    target.dropId !== dropId ||
+    target.kind !== 'entry' ||
+    target.userId !== auth.userId
+  )
+    return {
+      success: false,
+      error: '이 스캐너에서 처리한 입장만 취소할 수 있습니다.',
+    } as const;
   const outcome = await undoEntry({
     dropId,
     actor: { userId: auth.userId },
@@ -1162,12 +1178,45 @@ export async function undoScannerEntry(
     undoes,
     at: new Date(),
   });
-  if (outcome.status === 'applied') return { success: true } as const;
+  if (outcome.status === 'applied')
+    return { success: true, reverted: outcome.reverted } as const;
   if (outcome.status === 'not_found')
     return {
       success: false,
       error: '취소할 입장 기록을 찾지 못했습니다.',
     } as const;
+  return { success: false, error: outcome.error } as const;
+}
+
+/**
+ * 입장 기록 화면에서 주최자가 고른 입장을 취소한다 — 다른 기기·입구의 실수
+ * 입장을 바로잡는 관리 도구(게이트 앱은 직전 입장만, 웹 스캐너는 자기 입장만
+ * 취소할 수 있다). 그 입장이 지금의 입장 상태를 만든 기록일 때만 티켓이
+ * 미입장으로 돌아간다(`undoEntry` 규칙).
+ */
+export async function undoLoggedEntry(dropId: string, entryClientId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error } as const;
+  if (!z.uuid().safeParse(entryClientId).success)
+    return { success: false, error: '잘못된 요청입니다.' } as const;
+  const target = await prisma.checkIn.findUnique({
+    where: { clientId: entryClientId },
+    select: { dropId: true, kind: true, ticket: { select: { token: true } } },
+  });
+  if (!target || target.dropId !== dropId || target.kind !== 'entry')
+    return { success: false, error: '입장 기록을 찾지 못했습니다.' } as const;
+  const outcome = await undoEntry({
+    dropId,
+    actor: { userId: auth.userId },
+    token: target.ticket.token,
+    clientId: randomUUID(),
+    undoes: entryClientId,
+    at: new Date(),
+  });
+  if (outcome.status === 'applied')
+    return { success: true, reverted: outcome.reverted } as const;
+  if (outcome.status === 'not_found')
+    return { success: false, error: '입장 기록을 찾지 못했습니다.' } as const;
   return { success: false, error: outcome.error } as const;
 }
 
