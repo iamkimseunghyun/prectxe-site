@@ -1,4 +1,4 @@
-import { VenueAdminListView } from '@/modules/venues/ui/views/venue-admin-list-view';
+import { VenueAdminListView } from '@/modules/venues/ui/admin/venue-admin-list-view';
 
 interface PageProps {
   searchParams: Promise<{ page?: string }>;

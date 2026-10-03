@@ -1,4 +1,4 @@
-import { ArtworkAdminListView } from '@/modules/artworks/ui/views/artwork-admin-list-view';
+import { ArtworkAdminListView } from '@/modules/artworks/ui/admin/artwork-admin-list-view';
 
 interface PageProps {
   searchParams: Promise<{ page?: string }>;

@@ -1,7 +1,7 @@
 import { AdminHeader } from '@/components/admin/admin-header';
 import { AdminPagination } from '@/components/admin/admin-pagination';
 import { listProgramsPaged } from '@/modules/programs/server/actions';
-import { ProgramTable } from '../components/program-table';
+import { ProgramTable } from './program-table';
 
 interface ProgramAdminListViewProps {
   page: number;

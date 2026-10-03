@@ -1,7 +1,7 @@
 import { AdminHeader } from '@/components/admin/admin-header';
 import { AdminPagination } from '@/components/admin/admin-pagination';
 import { listArticlesPaged } from '@/modules/journal/server/actions';
-import { ArticleTable } from '../components/article-table';
+import { ArticleTable } from './article-table';
 
 interface JournalAdminListViewProps {
   page: number;
