@@ -11,7 +11,8 @@
 **판정 경로 왕복 8 → 2**: 함수(서울)↔DB(싱가포르) 왕복이 ~75ms라 왕복 수가 곧 응답 시간이다.
 - 티켓 조회: Prisma가 관계마다 쿼리를 따로 보내 티켓·주문·드랍·등급에 4번, 거절이면 재전송 확인·입구 조회로 2번 더 → `loadCheckInTicket`이 raw SQL **한 번**으로(현재 입장 입구·clientId 재전송 여부까지 서브쿼리/조인으로).
 - 기록: 대화형 트랜잭션(BEGIN·UPDATE·INSERT·COMMIT) → `recordEntry`의 **CTE 한 문장**(`WITH upd AS (UPDATE … WHERE status='active' RETURNING id) INSERT … SELECT FROM upd`). 갱신된 행이 있을 때만 기록이 들어가고 한 문장이라 원자적. 재입장도 같은 방식.
-- 게이트 API는 로그인 확인과 티켓 조회를 **동시에**(조회는 읽기만, 인증 실패면 버림).
+- 게이트 API는 로그인 확인과 티켓 조회를 **동시에**(조회는 읽기만, 인증 실패면 버림). 로그인 헤더조차 없는 요청은 조회하지 않는다. 웹 스캐너 액션도 같은 방식(로그인 쿠키가 없으면 조회 안 함) — 이미 입장 응답 ~90ms.
+- 리뷰 반영: 입장 기록 CTE는 UPDATE 부분만 `Prisma.sql` 조각으로 갈라 INSERT를 하나로 합쳤고, `createdAt`을 DB 기본값(세션 시간대를 탐)이 아니라 직접 넣는다. raw SQL은 컬럼·enum 이름이 바뀌어도 type-check·빌드가 못 잡으므로 해당 테이블 스키마를 바꾸면 게이트 스모크를 돌릴 것(코드 주석·CLAUDE.md에 명시).
 - dev 측정(`gate-query-count.ts`): 첫 입장 쿼리 8개·596~786ms → **3개(왕복 2)·153~388ms**, 이미 입장 7개·454ms → **2개(왕복 1)·77ms**. 게이트 스모크 55항목 통과(동시 5곳 → entered 1, 같은 clientId 동시 3번 → 기록 1건 포함).
 
 **prod 스키마 drift(게스트 추가 실패)**: 리허설 준비 중 prod에서 게스트 추가가 P2011(Null constraint, OrderItem)로 실패. prod만 `OrderItem.ticketTierId`가 NOT NULL + FK ON DELETE CASCADE로 남아 있었다(schema·dev는 nullable + SET NULL) — 등급 없는 주문(게스트·굿즈)을 못 만들고, 판매가 모두 취소된 등급을 지우면 취소 주문의 항목·티켓까지 지워질 구조였다. `manual-migrations/2026-10-03_order_item_tier_nullable.sql`을 prod에 적용(완화만, 기존 98건 호환). 테이블별 컬럼 정의 해시로 prod/dev 전체를 비교해 나머지 차이(Artist/Venue.tags, Program.status 기본값)는 무해함을 확인. dev에서 스모크가 다 통과해 못 잡았던 것 — 새 기능이 nullable·관계 규칙에 기대면 prod 컬럼 정의를 직접 확인할 것.

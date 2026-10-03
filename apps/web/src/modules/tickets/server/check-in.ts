@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { OfflineRecord } from '@prectxe/gate-contract';
-import type { CheckInKind, Prisma } from '@prisma/client';
+import { type CheckInKind, Prisma } from '@prisma/client';
 import { ORDERS } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 
@@ -118,6 +118,10 @@ export type CheckInTicket = {
  * 보내 티켓·주문·드랍·등급에 네 번, 거절이면 재전송·입구 조회로 두 번 더
  * 왕복했다(서울 함수 ↔ 싱가포르 DB 왕복 ~75ms). 읽기만 하므로 게이트 API는
  * 로그인 확인과 동시에 부른다.
+ *
+ * 이 함수와 `recordEntry`는 raw SQL이라 컬럼·enum 이름이 바뀌어도 type-check·
+ * 빌드가 통과하고 현장 첫 스캔에서야 터진다. Ticket·Order·Drop·TicketTier·
+ * CheckIn 스키마를 바꾸면 `scripts/gate-test-smoke.ts`를 돌릴 것.
  */
 export async function loadCheckInTicket(
   token: string,
@@ -163,37 +167,32 @@ async function recordEntry(args: {
   const staffId = 'staffId' in actor ? actor.staffId : null;
   // 앱은 기록마다 UUID를 붙여 보낸다. 웹 스캐너처럼 없으면 서버가 만든다
   const clientId = args.clientId ?? randomUUID();
-  const rows =
+  const update =
     from === 'active'
-      ? await prisma.$queryRaw<{ id: string }[]>`
-          WITH upd AS (
-            UPDATE "Ticket"
-               SET status = 'checked_in'::"TicketStatus", "checkedInAt" = ${at},
-                   "checkedInBy" = ${actorId(actor)}, "updatedAt" = ${at}
-             WHERE id = ${ticketId} AND status = 'active'::"TicketStatus"
-            RETURNING id)
-          INSERT INTO "CheckIn"
-                 (id, "clientId", kind, "ticketId", "dropId", gate, "userId",
-                  "staffId", "scannedAt")
-          SELECT ${randomUUID()}, ${clientId}, 'entry'::"CheckInKind", upd.id,
-                 ${dropId}, ${gate ?? null}, ${userId}, ${staffId}, ${at}
-            FROM upd
+      ? Prisma.sql`
+          UPDATE "Ticket"
+             SET status = 'checked_in'::"TicketStatus", "checkedInAt" = ${at},
+                 "checkedInBy" = ${actorId(actor)}, "updatedAt" = ${at}
+           WHERE id = ${ticketId} AND status = 'active'::"TicketStatus"
           RETURNING id`
       : // 재입장: 상태는 그대로 두고 기록만 남긴다. 확인과 기록 사이에 입장
         // 취소·주문 취소가 끼면 기록과 상태가 어긋나므로 조건부 갱신으로 행을
         // 잠근다(바꿀 값이 없으면 갱신이 생략될 수 있어 updatedAt을 실제로 바꾼다)
-        await prisma.$queryRaw<{ id: string }[]>`
-          WITH upd AS (
-            UPDATE "Ticket" SET "updatedAt" = ${at}
-             WHERE id = ${ticketId} AND status = 'checked_in'::"TicketStatus"
-            RETURNING id)
-          INSERT INTO "CheckIn"
-                 (id, "clientId", kind, "ticketId", "dropId", gate, "userId",
-                  "staffId", "scannedAt")
-          SELECT ${randomUUID()}, ${clientId}, 'entry'::"CheckInKind", upd.id,
-                 ${dropId}, ${gate ?? null}, ${userId}, ${staffId}, ${at}
-            FROM upd
+        Prisma.sql`
+          UPDATE "Ticket" SET "updatedAt" = ${at}
+           WHERE id = ${ticketId} AND status = 'checked_in'::"TicketStatus"
           RETURNING id`;
+  // createdAt(서버 수신 시각)도 직접 넣는다 — DB 기본값은 세션 시간대를 타서
+  // Prisma가 UTC로 쓰는 다른 경로와 어긋날 수 있다
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    WITH upd AS (${update})
+    INSERT INTO "CheckIn"
+           (id, "clientId", kind, "ticketId", "dropId", gate, "userId",
+            "staffId", "scannedAt", "createdAt")
+    SELECT ${randomUUID()}, ${clientId}, 'entry'::"CheckInKind", upd.id,
+           ${dropId}, ${gate ?? null}, ${userId}, ${staffId}, ${at}, ${at}
+      FROM upd
+    RETURNING id`;
   return rows.length > 0;
 }
 

@@ -139,7 +139,7 @@ export async function verifyLoginCode(
   return { token, expiresAt, staff: challenge.staff };
 }
 
-function bearerToken(request: Request): string | null {
+export function bearerToken(request: Request): string | null {
   const header = request.headers.get('authorization');
   const match = header?.match(/^Bearer\s+(\S+)$/i);
   return match?.[1] ?? null;
