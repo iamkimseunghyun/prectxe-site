@@ -1,4 +1,4 @@
-import { DropFormView } from '@/modules/drops/ui/views/drop-form-view';
+import { DropFormView } from '@/modules/drops/ui/admin/drop-form-view';
 import { getVenueOptions } from '@/modules/venues/server/actions';
 
 export default async function Page() {

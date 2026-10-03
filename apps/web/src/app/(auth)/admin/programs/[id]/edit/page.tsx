@@ -3,7 +3,7 @@ import getSession from '@/lib/auth/session';
 import { prisma } from '@/lib/db/prisma';
 import type { ProgramCreateInput } from '@/lib/schemas/program';
 import { updateProgram } from '@/modules/programs/server/actions';
-import { ProgramFormView } from '@/modules/programs/ui/views/program-form-view';
+import { ProgramFormView } from '@/modules/programs/ui/admin/program-form-view';
 import { getVenueOptions } from '@/modules/venues/server/actions';
 
 type ProgramFormPayload = Partial<ProgramCreateInput> & {

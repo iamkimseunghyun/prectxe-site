@@ -5,7 +5,7 @@ import { createArticle } from '@/modules/journal/server/actions';
 import {
   type JournalFormPayload,
   JournalFormView,
-} from '@/modules/journal/ui/views/journal-form-view';
+} from '@/modules/journal/ui/admin/journal-form-view';
 
 export default async function Page() {
   const programs = await prisma.program.findMany({

@@ -1,4 +1,4 @@
-import { DropDetailView } from '@/modules/drops/ui/views/drop-detail-view';
+import { DropDetailView } from '@/modules/drops/ui/admin/drop-detail-view';
 
 interface PageProps {
   params: Promise<{ id: string }>;

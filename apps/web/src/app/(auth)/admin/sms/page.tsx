@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
 import { prisma } from '@/lib/db/prisma';
-import { SMSDashboard } from '@/modules/sms/ui/views/sms-dashboard';
+import { SMSDashboard } from '@/modules/sms/ui/admin/sms-dashboard';
 
 export default async function SMSPage() {
   const session = await getSession();

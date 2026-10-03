@@ -17,9 +17,9 @@ import type {
   CheckInLog,
   CheckInLogEntry,
 } from '@/modules/tickets/server/queries';
-import { LiveCheckInStats } from '@/modules/tickets/ui/components/live-check-in-stats';
-import { LogRefreshButton } from '@/modules/tickets/ui/components/log-refresh-button';
-import { UndoEntryButton } from '@/modules/tickets/ui/components/undo-entry-button';
+import { LiveCheckInStats } from '@/modules/tickets/ui/admin/live-check-in-stats';
+import { LogRefreshButton } from '@/modules/tickets/ui/admin/log-refresh-button';
+import { UndoEntryButton } from '@/modules/tickets/ui/admin/undo-entry-button';
 
 const FLAG_LABEL = {
   duplicate: '중복 입장',

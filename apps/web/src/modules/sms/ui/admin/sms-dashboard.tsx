@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FormRecipientsSender } from '../components/form-recipients-sender';
-import { IndependentSender } from '../components/independent-sender';
-import { PersonalizedSMSSender } from '../components/personalized-sms-sender';
-import { SMSCampaignList } from '../components/sms-campaign-list';
-import { SMSStats } from '../components/sms-stats';
+import { FormRecipientsSender } from './form-recipients-sender';
+import { IndependentSender } from './independent-sender';
+import { PersonalizedSMSSender } from './personalized-sms-sender';
+import { SMSCampaignList } from './sms-campaign-list';
+import { SMSStats } from './sms-stats';
 
 export function SMSDashboard() {
   const [activeTab, setActiveTab] = useState('stats');

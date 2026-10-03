@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { EmailCampaignList } from '../components/email-campaign-list';
-import { EmailStats } from '../components/email-stats';
-import { FormRecipientsEmailSender } from '../components/form-recipients-email-sender';
-import { IndependentEmailSender } from '../components/independent-email-sender';
-import { NewsletterBroadcastSender } from '../components/newsletter-broadcast-sender';
+import { EmailCampaignList } from './email-campaign-list';
+import { EmailStats } from './email-stats';
+import { FormRecipientsEmailSender } from './form-recipients-email-sender';
+import { IndependentEmailSender } from './independent-email-sender';
+import { NewsletterBroadcastSender } from './newsletter-broadcast-sender';
 
 export function EmailDashboard() {
   const [activeTab, setActiveTab] = useState('newsletter');

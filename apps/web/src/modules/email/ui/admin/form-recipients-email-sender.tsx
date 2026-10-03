@@ -34,15 +34,15 @@ import { stripHtml } from '@/lib/utils';
 import {
   EmailEditor,
   getEmailHTML,
-} from '@/modules/email/ui/components/email-editor';
+} from '@/modules/email/ui/admin/email-editor';
 import {
   createAndSendEmailCampaign,
   getFormRespondentsSummary,
   getFormsWithEmailFields,
 } from '../../server/actions';
-import { useEmailDraft } from '../hooks/use-email-draft';
 import { DraftRestoredNotice } from './draft-restored-notice';
 import { SendControls } from './send-controls';
+import { useEmailDraft } from './use-email-draft';
 
 const formSchema = z.object({
   formId: z.string().min(1, 'Form을 선택해주세요'),

@@ -29,9 +29,9 @@ import {
   getDropWithStats,
   updateDrop,
 } from '@/modules/drops/server/actions';
-import { GoodsVariantList } from '@/modules/drops/ui/components/goods-variant-list';
-import { DropStatusBadge } from '@/modules/drops/ui/components/status-badges';
-import { TicketTierList } from '@/modules/tickets/ui/components/ticket-tier-list';
+import { GoodsVariantList } from '@/modules/drops/ui/admin/goods-variant-list';
+import { DropStatusBadge } from '@/modules/drops/ui/admin/status-badges';
+import { TicketTierList } from '@/modules/tickets/ui/admin/ticket-tier-list';
 
 type DropData = {
   id: string;

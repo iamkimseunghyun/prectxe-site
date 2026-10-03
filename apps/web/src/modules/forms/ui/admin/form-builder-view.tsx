@@ -45,7 +45,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { FormFieldInput, FormInput } from '@/lib/schemas/form';
 import { formSchema } from '@/lib/schemas/form';
 import { getImageUrl, uploadImage } from '@/lib/utils';
-import { FormFieldEditor } from '../components/form-field-editor';
+import { FormFieldEditor } from './form-field-editor';
 
 /** 빌더에서 새로 추가한(아직 DB에 없는) 필드의 임시 id 접두사. */
 export const TEMP_FIELD_ID_PREFIX = 'field-';

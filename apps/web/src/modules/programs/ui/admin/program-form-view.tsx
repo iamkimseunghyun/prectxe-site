@@ -41,7 +41,7 @@ import {
   uploadImage,
 } from '@/lib/utils';
 import ArtistSelect from '@/modules/artists/ui/components/artist-select';
-import { VenueSelect } from '@/modules/venues/ui/components/venue-select';
+import { VenueSelect } from '@/modules/venues/ui/admin/venue-select';
 
 function Label({
   children,
