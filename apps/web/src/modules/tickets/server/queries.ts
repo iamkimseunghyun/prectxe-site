@@ -114,4 +114,52 @@ export async function getDropGuests(dropId: string) {
   });
 }
 
+/**
+ * 어드민 입장 현황 명단 — 결제된 주문의 티켓(게스트 포함) 한 장이 한 행.
+ * 집계 기준은 `getCheckInStats`와 같다(active·checked_in). 입구는 지금의 입장
+ * 상태를 만든 기록(`isCurrentEntry`)에서 가져오므로, 취소 후 다시 입장해도
+ * 마지막 입구가 나온다. 폴링으로 반복 호출되니 토큰·연락처는 내려보내지 않는다.
+ */
+export async function getDropRoster(dropId: string) {
+  const tickets = await prisma.ticket.findMany({
+    where: {
+      status: { in: ['active', 'checked_in'] },
+      order: { dropId, status: 'paid' },
+    },
+    select: {
+      id: true,
+      status: true,
+      checkedInAt: true,
+      order: {
+        select: { buyerName: true, orderNo: true, isGuest: true, note: true },
+      },
+      ticketTier: { select: { name: true } },
+      checkIns: {
+        where: { kind: 'entry' },
+        select: { kind: true, flag: true, gate: true, scannedAt: true },
+        orderBy: { scannedAt: 'desc' },
+        take: 3,
+      },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  return tickets.map((t) => ({
+    id: t.id,
+    entered: t.status === 'checked_in',
+    checkedInAt: t.checkedInAt,
+    buyerName: t.order.buyerName,
+    orderNo: t.order.orderNo,
+    isGuest: t.order.isGuest,
+    note: t.order.note,
+    tierName: t.ticketTier?.name ?? null,
+    gate:
+      t.status === 'checked_in'
+        ? (t.checkIns.find((c) => isCurrentEntry(c, t))?.gate ?? null)
+        : null,
+  }));
+}
+
+export type RosterEntry = Awaited<ReturnType<typeof getDropRoster>>[number];
+
 export type DropGuest = Awaited<ReturnType<typeof getDropGuests>>[number];
