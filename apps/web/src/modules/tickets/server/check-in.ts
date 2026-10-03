@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { OfflineRecord } from '@prectxe/gate-contract';
-import type { CheckInKind, Prisma } from '@prisma/client';
+import { type CheckInKind, Prisma } from '@prisma/client';
 import { ORDERS } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 
@@ -94,53 +94,154 @@ async function findReplay(
 
 const CLIENT_ID_MISMATCH = '같은 요청 ID가 다른 요청에 이미 쓰였습니다.';
 
+/** 입장 판정에 필요한 티켓 정보 — `loadCheckInTicket`이 쿼리 하나로 읽는다 */
+export type CheckInTicket = {
+  id: string;
+  status: 'active' | 'checked_in' | 'cancelled';
+  checkedInAt: Date | null;
+  orderStatus: string;
+  buyerName: string;
+  dropId: string | null;
+  isGuest: boolean;
+  dropTitle: string | null;
+  allowReentry: boolean | null;
+  tierName: string | null;
+  /** 지금의 입장 상태를 만든 기록의 입구 — "이미 입장" 화면용 */
+  currentGate: string | null;
+  /** 요청 clientId가 이미 쓰인 기록 — 재전송 판별용 */
+  replayTicketId: string | null;
+  replayKind: string | null;
+};
+
+/**
+ * 입장 판정에 필요한 것을 **쿼리 하나로** 읽는다. Prisma는 관계마다 쿼리를 따로
+ * 보내 티켓·주문·드랍·등급에 네 번, 거절이면 재전송·입구 조회로 두 번 더
+ * 왕복했다(서울 함수 ↔ 싱가포르 DB 왕복 ~75ms). 읽기만 하므로 게이트 API는
+ * 로그인 확인과 동시에 부른다.
+ *
+ * 이 함수와 `recordEntry`는 raw SQL이라 컬럼·enum 이름이 바뀌어도 type-check·
+ * 빌드가 통과하고 현장 첫 스캔에서야 터진다. Ticket·Order·Drop·TicketTier·
+ * CheckIn 스키마를 바꾸면 `scripts/gate-test-smoke.ts`를 돌릴 것.
+ */
+export async function loadCheckInTicket(
+  token: string,
+  clientId?: string
+): Promise<CheckInTicket | null> {
+  const rows = await prisma.$queryRaw<CheckInTicket[]>`
+    SELECT t.id, t.status::text AS status, t."checkedInAt",
+           o.status::text AS "orderStatus", o."buyerName", o."dropId",
+           o."isGuest", d.title AS "dropTitle", d."allowReentry",
+           tt.name AS "tierName",
+           (SELECT c.gate FROM "CheckIn" c
+             WHERE c."ticketId" = t.id AND c.kind = 'entry'
+               AND c.flag IS NULL AND c."scannedAt" = t."checkedInAt"
+             ORDER BY c."createdAt" DESC LIMIT 1) AS "currentGate",
+           r."ticketId" AS "replayTicketId", r.kind::text AS "replayKind"
+      FROM "Ticket" t
+      JOIN "Order" o ON o.id = t."orderId"
+      LEFT JOIN "Drop" d ON d.id = o."dropId"
+      LEFT JOIN "TicketTier" tt ON tt.id = t."ticketTierId"
+      LEFT JOIN "CheckIn" r ON r."clientId" = ${clientId ?? null}
+     WHERE t.token = ${token}`;
+  return rows[0] ?? null;
+}
+
+/**
+ * 조건부 갱신과 입장 기록을 **한 문장**으로 — 갱신된 행이 있을 때만 기록이
+ * 들어가고, 한 문장이라 그 자체로 원자적이다(대화형 트랜잭션은 BEGIN·UPDATE·
+ * INSERT·COMMIT 왕복이 따로 든다). 갱신이 0건이면(그 사이 다른 입구가 찍음
+ * 등) 아무것도 쓰지 않고 false.
+ */
+async function recordEntry(args: {
+  ticketId: string;
+  /** 이 상태일 때만 갱신한다 — 첫 입장은 active, 재입장은 checked_in */
+  from: 'active' | 'checked_in';
+  dropId: string;
+  actor: CheckInActor;
+  gate?: string;
+  clientId?: string;
+  at: Date;
+}): Promise<boolean> {
+  const { ticketId, from, dropId, actor, gate, at } = args;
+  const userId = 'userId' in actor ? actor.userId : null;
+  const staffId = 'staffId' in actor ? actor.staffId : null;
+  // 앱은 기록마다 UUID를 붙여 보낸다. 웹 스캐너처럼 없으면 서버가 만든다
+  const clientId = args.clientId ?? randomUUID();
+  const update =
+    from === 'active'
+      ? Prisma.sql`
+          UPDATE "Ticket"
+             SET status = 'checked_in'::"TicketStatus", "checkedInAt" = ${at},
+                 "checkedInBy" = ${actorId(actor)}, "updatedAt" = ${at}
+           WHERE id = ${ticketId} AND status = 'active'::"TicketStatus"
+          RETURNING id`
+      : // 재입장: 상태는 그대로 두고 기록만 남긴다. 확인과 기록 사이에 입장
+        // 취소·주문 취소가 끼면 기록과 상태가 어긋나므로 조건부 갱신으로 행을
+        // 잠근다(바꿀 값이 없으면 갱신이 생략될 수 있어 updatedAt을 실제로 바꾼다)
+        Prisma.sql`
+          UPDATE "Ticket" SET "updatedAt" = ${at}
+           WHERE id = ${ticketId} AND status = 'checked_in'::"TicketStatus"
+          RETURNING id`;
+  // createdAt(서버 수신 시각)도 직접 넣는다 — DB 기본값은 세션 시간대를 타서
+  // Prisma가 UTC로 쓰는 다른 경로와 어긋날 수 있다
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    WITH upd AS (${update})
+    INSERT INTO "CheckIn"
+           (id, "clientId", kind, "ticketId", "dropId", gate, "userId",
+            "staffId", "scannedAt", "createdAt")
+    SELECT ${randomUUID()}, ${clientId}, 'entry'::"CheckInKind", upd.id,
+           ${dropId}, ${gate ?? null}, ${userId}, ${staffId}, ${at}, ${at}
+      FROM upd
+    RETURNING id`;
+  return rows.length > 0;
+}
+
 export async function checkInByToken(input: {
   token: string;
   dropId: string;
   actor: CheckInActor;
   gate?: string;
   clientId?: string;
+  /**
+   * 미리 읽은 티켓(`loadCheckInTicket(token, clientId)`) — 게이트 API가 로그인
+   * 확인과 동시에 읽어 넘긴다. 없으면 여기서 읽는다.
+   */
+  preloaded?: CheckInTicket | null;
 }): Promise<CheckInOutcome> {
   const { token, dropId, actor, gate, clientId } = input;
 
-  const ticket = await prisma.ticket.findUnique({
-    where: { token },
-    select: {
-      id: true,
-      status: true,
-      checkedInAt: true,
-      order: {
-        select: {
-          status: true,
-          buyerName: true,
-          dropId: true,
-          isGuest: true,
-          drop: { select: { title: true, allowReentry: true } },
-        },
-      },
-      ticketTier: { select: { name: true } },
-    },
-  });
+  const ticket =
+    input.preloaded !== undefined
+      ? input.preloaded
+      : await loadCheckInTicket(token, clientId);
 
   if (!ticket) return { success: false, error: '유효하지 않은 티켓입니다.' };
-  if (ticket.order.dropId !== dropId)
+  if (ticket.dropId !== dropId)
     return {
       success: false,
       // 어느 공연 것인지 알려줘야 입장구에서 바로 안내할 수 있다
       error: `다른 공연의 입장권입니다${
-        ticket.order.drop ? ` (${ticket.order.drop.title})` : ''
+        ticket.dropTitle ? ` (${ticket.dropTitle})` : ''
       }.`,
     };
 
-  const buyerName = ticket.order.buyerName;
+  const buyerName = ticket.buyerName;
   const tierName =
-    ticket.ticketTier?.name ??
-    (ticket.order.isGuest ? ORDERS.GUEST_TIER_LABEL : '티켓');
+    ticket.tierName ?? (ticket.isGuest ? ORDERS.GUEST_TIER_LABEL : '티켓');
 
-  // 이 요청이 이미 처리된 재전송이면 처음 결과를, 아니면 null. 처음 들어올
-  // 때뿐 아니라 갱신이 0건이거나 고유키에 걸렸을 때도 다시 본다 — 같은 요청이
-  // 동시에 두 번 오면 둘 다 처음엔 'none'을 보고, 늦은 쪽은 먼저 커밋된 기록에
-  // 막힌 뒤에야 재전송이었다는 걸 알 수 있다.
+  // 이 요청이 이미 처리된 재전송이면 처음 결과를 준다. 티켓뿐 아니라 작업
+  // 종류까지 같아야 같은 요청이다(입장에 쓴 ID로 취소를 보내는 등은 거절)
+  if (ticket.replayTicketId)
+    return ticket.replayTicketId === ticket.id && ticket.replayKind === 'entry'
+      ? {
+          success: true,
+          result: 'entered',
+          data: { buyerName, tierName, checkedInAt: ticket.checkedInAt },
+        }
+      : { success: false, error: CLIENT_ID_MISMATCH };
+
+  // 쓰는 도중 같은 요청이 동시에 두 번 오면 둘 다 위에서 재전송이 아니라고
+  // 보고, 늦은 쪽은 먼저 커밋된 기록에 막힌 뒤에야 재전송이었다는 걸 안다
   const replayed = async (): Promise<CheckInOutcome | null> => {
     const replay = await findReplay(clientId, ticket.id, 'entry');
     if (replay === 'none') return null;
@@ -157,51 +258,21 @@ export async function checkInByToken(input: {
     };
   };
 
-  // 미입장 티켓의 첫 스캔이 대부분이라 그때는 재전송 조회를 건너뛴다 — 입장
-  // 판정은 DB 왕복 하나하나가 응답 시간이다. 미입장 티켓에서의 재전송·ID 충돌은
-  // 아래 갱신 0건·고유키 충돌 지점에서 다시 확인하므로 놓치지 않는다.
-  if (ticket.status !== 'active') {
-    const early = await replayed();
-    if (early) return early;
-  }
-
   if (ticket.status === 'cancelled')
     return { success: false, error: '취소된 티켓입니다.' };
-  if (ticket.order.status !== 'paid')
+  if (ticket.orderStatus !== 'paid')
     return { success: false, error: '결제가 완료되지 않은 티켓입니다.' };
 
-  const allowReentry = ticket.order.drop?.allowReentry ?? false;
-  const log = (at: Date) =>
-    logData({
-      kind: 'entry',
-      ticketId: ticket.id,
-      dropId,
-      actor,
-      gate,
-      clientId,
-      at,
-    });
+  const allowReentry = ticket.allowReentry ?? false;
+  const entry = { ticketId: ticket.id, dropId, actor, gate, clientId };
 
   try {
     if (ticket.status === 'active') {
+      // 조회와 갱신 사이에 다른 입구가 같은 QR을 먼저 찍을 수 있다. active일
+      // 때만 갱신해야 동시 스캔에서 한쪽만 입장으로 판정된다 (cancelOrder도
+      // 같은 행을 cancelled로 바꾸므로 취소와 겹쳐도 이 조건에서 걸린다)
       const now = new Date();
-      const entered = await prisma.$transaction(async (tx) => {
-        // 조회와 갱신 사이에 다른 입구가 같은 QR을 먼저 찍을 수 있다. active일
-        // 때만 갱신해야 동시 스캔에서 한쪽만 입장으로 판정된다 (cancelOrder도
-        // 같은 행을 cancelled로 바꾸므로 취소와 겹쳐도 이 조건에서 걸린다)
-        const { count } = await tx.ticket.updateMany({
-          where: { id: ticket.id, status: 'active' },
-          data: {
-            status: 'checked_in',
-            checkedInAt: now,
-            checkedInBy: actorId(actor),
-          },
-        });
-        if (count === 0) return false;
-        await tx.checkIn.create({ data: log(now) });
-        return true;
-      });
-      if (entered)
+      if (await recordEntry({ ...entry, from: 'active', at: now }))
         return {
           success: true,
           result: 'entered',
@@ -211,14 +282,12 @@ export async function checkInByToken(input: {
       if (late) return late;
     }
 
-    // 이미 입장한 티켓 — 처음부터 그랬거나, 방금 다른 입구가 먼저 찍었거나
+    // 이미 입장한 티켓 — 처음부터 그랬으면 읽어 둔 값을 쓰고, 방금 다른 입구가
+    // 먼저 찍었으면(드묾) 지금 상태와 그 입장의 입구를 다시 읽는다
     const current =
       ticket.status === 'active'
-        ? await prisma.ticket.findUnique({
-            where: { id: ticket.id },
-            select: { status: true, checkedInAt: true },
-          })
-        : ticket;
+        ? await loadCheckInTicket(token)
+        : { ...ticket };
     if (current?.status === 'cancelled')
       return { success: false, error: '취소된 티켓입니다.' };
     if (current?.status !== 'checked_in')
@@ -228,52 +297,26 @@ export async function checkInByToken(input: {
       };
 
     const view = { buyerName, tierName, checkedInAt: current.checkedInAt };
-    if (!allowReentry) {
-      // 거절 화면에 "언제·어디서 들어갔는지"를 보여준다. 거절 때만 조회한다.
-      // 지금의 입장 상태를 만든 기록을 찾는다 — 입장 시각(checkedInAt)과 스캔
-      // 시각이 같은 기록이다(undoEntry와 같은 기준). 취소된 옛 입장이나 중복
-      // 표시된 입장의 입구를 보여주면 안 된다
-      const settledBy = await prisma.checkIn.findFirst({
-        where: {
-          ticketId: ticket.id,
-          kind: 'entry',
-          flag: null,
-          ...(current.checkedInAt && { scannedAt: current.checkedInAt }),
-        },
-        orderBy: { scannedAt: 'desc' },
-        select: { gate: true },
-      });
+    if (!allowReentry)
+      // 거절 화면에 "언제·어디서 들어갔는지" — 지금의 입장 상태를 만든 기록의
+      // 입구(입장 시각과 스캔 시각이 같은 기록, undoEntry와 같은 기준)
       return {
         success: true,
         result: 'already',
-        data: { ...view, checkedInGate: settledBy?.gate ?? null },
+        data: { ...view, checkedInGate: current.currentGate },
       };
-    }
 
-    // 재입장 허용 행사: 상태는 그대로 두고 입장 기록만 남긴다 (입구별 유입 집계용).
-    // 확인과 기록 사이에 입장 취소·주문 취소가 끼면 기록과 상태가 어긋나므로,
-    // 조건부 갱신으로 행을 잠그고 같은 트랜잭션에서 기록한다. 바꿀 값이 없으면
-    // UPDATE 자체가 생략될 수 있어 updatedAt을 실제로 갱신한다.
     const now = new Date();
-    const reentered = await prisma.$transaction(async (tx) => {
-      const { count } = await tx.ticket.updateMany({
-        where: { id: ticket.id, status: 'checked_in' },
-        data: { updatedAt: now },
-      });
-      if (count === 0) return false;
-      await tx.checkIn.create({ data: log(now) });
-      return true;
-    });
-    if (!reentered)
+    if (!(await recordEntry({ ...entry, from: 'checked_in', at: now })))
       return {
         success: false,
         error: '티켓 상태가 바뀌었습니다. 다시 스캔해주세요.',
       };
     return { success: true, result: 'reentered', data: view };
   } catch (error) {
-    // 고유키 충돌 — 같은 요청의 동시 재전송이면 먼저 들어간 쪽 결과를 준다.
-    // 다른 요청이 같은 ID를 썼다면 트랜잭션이 롤백됐으므로 입장된 게 아니다
-    if (!isClientIdConflict(error)) throw error;
+    // 쓰다가 막혔다 — 같은 요청의 동시 재전송(고유키 충돌)이면 먼저 들어간
+    // 쪽 결과를, 다른 요청이 같은 ID를 썼으면 거절을 준다. 한 문장이라 실패하면
+    // 갱신도 같이 되돌려졌다
     const late = await replayed();
     if (late) return late;
     throw error;

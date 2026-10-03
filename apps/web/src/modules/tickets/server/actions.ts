@@ -8,6 +8,7 @@ import { z } from 'zod';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { parseInput } from '@/lib/auth/server-action-helpers';
+import getSession from '@/lib/auth/session';
 import {
   BUSINESS_INFO,
   ORDER_NOTIFICATION_EMAILS,
@@ -44,6 +45,7 @@ import { getOrderTicketsUrl } from '@/lib/utils/ticket-url';
 import {
   checkInByToken,
   isCurrentEntry,
+  loadCheckInTicket,
   undoCurrentEntry,
   undoEntry,
 } from './check-in';
@@ -1132,15 +1134,24 @@ export async function checkInTicket(
   /** 스캐너가 입장마다 만드는 UUID — 이 입장만 골라 취소할 때 쓴다(`undoScannerEntry`) */
   clientId: string
 ) {
-  const auth = await requireAdmin();
+  const validId = z.uuid().safeParse(clientId).success;
+  // 로그인 확인과 티켓 조회를 동시에(게이트 API와 같은 이유 — DB 왕복 ~75ms
+  // 하나를 아낀다). 로그인 쿠키조차 없는 요청은 조회하지 않는다
+  const signedIn = Boolean((await getSession()).id);
+  const [auth, preloaded] = await Promise.all([
+    requireAdmin(),
+    signedIn && validId
+      ? loadCheckInTicket(token, clientId)
+      : Promise.resolve(null),
+  ]);
   if (!auth.success) return { success: false, error: auth.error } as const;
-  if (!z.uuid().safeParse(clientId).success)
-    return { success: false, error: '잘못된 요청입니다.' } as const;
+  if (!validId) return { success: false, error: '잘못된 요청입니다.' } as const;
   return checkInByToken({
     token,
     dropId,
     clientId,
     actor: { userId: auth.userId },
+    preloaded,
   });
 }
 
