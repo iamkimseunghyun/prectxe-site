@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
 import type { FormInput } from '@/lib/schemas/form';
 import { createForm } from '@/modules/forms/server/actions';
-import { FormBuilderView } from '@/modules/forms/ui/views/form-builder-view';
+import { FormBuilderView } from '@/modules/forms/ui/admin/form-builder-view';
 
 export default async function NewFormPage() {
   const session = await getSession();

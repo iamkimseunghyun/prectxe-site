@@ -43,8 +43,8 @@ import {
 import {
   DropStaffCard,
   type DropStaffMember,
-} from '@/modules/gate/ui/components/drop-staff-card';
-import { VenueSelect } from '@/modules/venues/ui/components/venue-select';
+} from '@/modules/gate/ui/admin/drop-staff-card';
+import { VenueSelect } from '@/modules/venues/ui/admin/venue-select';
 
 type DropMediaInit = {
   id: string;

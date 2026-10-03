@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
 import { prisma } from '@/lib/db/prisma';
 import { getDropCheckInLog } from '@/modules/tickets/server/queries';
-import { CheckInLogView } from '@/modules/tickets/ui/views/check-in-log-view';
+import { CheckInLogView } from '@/modules/tickets/ui/admin/check-in-log-view';
 
 export default async function CheckInLogPage({
   params,

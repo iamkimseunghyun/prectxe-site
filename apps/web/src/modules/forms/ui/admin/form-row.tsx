@@ -7,7 +7,7 @@ import { CopyUrlButton } from '@/components/shared/copy-url-button';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useFormActions } from '@/hooks/use-form-actions';
-import { FormPreviewDialog } from '@/modules/forms/ui/components/form-preview-dialog';
+import { FormPreviewDialog } from '@/modules/forms/ui/admin/form-preview-dialog';
 
 interface FormRowProps {
   form: {

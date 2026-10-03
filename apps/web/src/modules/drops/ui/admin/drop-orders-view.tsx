@@ -21,7 +21,7 @@ import { getDropOrders } from '@/modules/drops/server/actions';
 import {
   OrderStatusBadge,
   RemainingTimeIndicator,
-} from '@/modules/drops/ui/components/status-badges';
+} from '@/modules/drops/ui/admin/status-badges';
 import {
   cancelOrder,
   cleanupExpiredBankTransferOrders,

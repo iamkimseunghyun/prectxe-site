@@ -39,13 +39,13 @@ import { stripHtml } from '@/lib/utils';
 import {
   EmailEditor,
   getEmailHTML,
-} from '@/modules/email/ui/components/email-editor';
+} from '@/modules/email/ui/admin/email-editor';
 import {
   createAndSendNewsletterBroadcast,
   sendTestEmail,
 } from '../../server/actions';
-import { useEmailDraft } from '../hooks/use-email-draft';
 import { DraftRestoredNotice } from './draft-restored-notice';
+import { useEmailDraft } from './use-email-draft';
 
 const formSchema = z.object({
   title: z.string().min(1, '캠페인 제목을 입력해주세요'),

@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import getSession from '@/lib/auth/session';
 import { listForms } from '@/modules/forms/server/queries';
-import { FormCard } from '@/modules/forms/ui/components/form-card';
-import { FormRow } from '@/modules/forms/ui/components/form-row';
-import { FormStatusFilter } from '@/modules/forms/ui/components/form-status-filter';
-import { FormViewToggle } from '@/modules/forms/ui/components/form-view-toggle';
+import { FormCard } from '@/modules/forms/ui/admin/form-card';
+import { FormRow } from '@/modules/forms/ui/admin/form-row';
+import { FormStatusFilter } from '@/modules/forms/ui/admin/form-status-filter';
+import { FormViewToggle } from '@/modules/forms/ui/admin/form-view-toggle';
 
 const FORM_STATUSES = ['draft', 'published', 'closed'] as const;
 type FormStatus = (typeof FORM_STATUSES)[number];

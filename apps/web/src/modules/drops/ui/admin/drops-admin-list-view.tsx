@@ -13,7 +13,7 @@ import {
   listAdminDrops,
   toggleDropFeatured,
 } from '@/modules/drops/server/actions';
-import { DropStatusBadge } from '@/modules/drops/ui/components/status-badges';
+import { DropStatusBadge } from '@/modules/drops/ui/admin/status-badges';
 
 interface Drop {
   id: string;

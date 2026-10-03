@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
 import { getFormSubmissions } from '@/modules/forms/server/queries';
-import { SubmissionsView } from '@/modules/forms/ui/views/submissions-view';
+import { SubmissionsView } from '@/modules/forms/ui/admin/submissions-view';
 
 interface PageProps {
   params: Promise<{ id: string }>;

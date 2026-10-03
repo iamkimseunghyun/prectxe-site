@@ -52,8 +52,9 @@ src/
 ├── modules/<domain>/       # Feature modules
 │   ├── server/actions.ts   # Server actions ('use server')
 │   └── ui/
-│       ├── views/          # 페이지 단위 큰 컴포넌트 (DropDetailView, FormBuilderView 등)
-│       └── components/     # 작은 building block — form, card, list, section 등 모두 (※ 별도 section 폴더 없음, 통합됨)
+│       ├── views/          # 공개 페이지 단위 큰 컴포넌트 (TicketDropDetailView 등)
+│       ├── components/     # 공개 쪽 작은 building block — form, card, list, section 등 모두 (※ 별도 section 폴더 없음, 통합됨)
+│       └── admin/          # 어드민 전용 UI(폼 빌더·목록 뷰·테이블·대시보드 등). 공개 쪽에서 import 불가(아래 '어드민 import 경계')
 ├── components/             # 공용 UI
 │   ├── ui/                 # shadcn primitives (Button, Dialog, ConfirmDialog 등)
 │   ├── admin/              # admin 공통 (AdminNav, DeleteButton 등)
@@ -75,7 +76,7 @@ src/
 
 **`components/<topic>/` vs `modules/<x>/ui/components/`**:
 - 여러 모듈에서 공유하는 컴포넌트는 `components/<topic>/`. 단일 모듈 전용은 `modules/<x>/ui/components/`.
-- 예: `email-editor`는 email 모듈만 쓰니 `modules/email/ui/components/email-editor/`. `rich-editor`는 journal+drops 둘 다 쓰니 `components/rich-editor/`.
+- 예: `email-editor`는 email 모듈만 쓰니 `modules/email/ui/admin/email-editor/`. `rich-editor`는 journal+drops 둘 다 쓰니 `components/rich-editor/`.
 
 **`(content)` vs `(page)` 라우트 그룹**:
 - `(content)`: 사이트의 콘텐츠 흐름(브랜드 메인 동선) — programs, journal, drops, archive, discover.
@@ -145,7 +146,7 @@ src/
 - 어드민 스캐너: `/admin/drops/[id]/scanner` — html5-qrcode 풀스크린, `fixed inset-0 z-100`로 admin layout 위에 덮음. `extractTicketToken`이 URL/raw 둘 다 인식
 - 1.5초 디바운스로 동일 QR 중복 스캔 방지, sound feedback (Web Audio API)
 - **웹 스캐너 취소는 자기가 처리한 입장만**(`undoScannerEntry` — 입장마다 clientId를 붙여 보내고 탭 세션에 기억). "이미 입장"은 이 스캐너가 들여보낸 사람일 때만 취소 버튼이 뜬다 — 토큰 기준으로 되돌리면 다른 입구(게이트 앱)의 정상 입장이 캡처 QR 때문에 지워진다. 서버도 `undoScannerEntry`에서 같은 어드민 계정이 처리한 입장만 허용한다. 게스트 명단 화면의 되돌리기는 `undoGuestEntry` → `undoCurrentEntry`(그 티켓의 지금 입장 기록을 찾아 취소). **토큰 기준으로 상태만 되돌리는 취소는 없앴다** — 모든 취소가 대상 기록을 지정하는 `undoEntry` 하나로 간다. **다른 기기·입구의 실수 입장 정정은 입장 기록 화면의 행별 '취소'**(`undoLoggedEntry` — 지금 입장 상태를 만든 기록에만 버튼). `undoEntry`는 `reverted`로 티켓을 실제로 되돌렸는지 알려준다(재입장·이미 바뀐 상태면 기록만 남고 false)
-- 실시간 입장 현황(PRD FR-7): `useCheckInStats`(`modules/tickets/ui/components/live-check-in-stats.tsx`)가 "입장 N / 발권 M"을 10초마다 다시 읽는다. 탭이 가려지면 멈추고 다시 보이면 바로 읽는다. 입장 기록 화면 상단 카드와 웹 스캐너 헤더가 같이 쓴다
+- 실시간 입장 현황(PRD FR-7): `useCheckInStats`(`modules/tickets/ui/admin/live-check-in-stats.tsx`)가 "입장 N / 발권 M"을 10초마다 다시 읽는다. 탭이 가려지면 멈추고 다시 보이면 바로 읽는다. 입장 기록 화면 상단 카드와 웹 스캐너 헤더가 같이 쓴다
 - Fallback `/scan/[token]` — 외부 카메라 앱이 인식했을 때 도달, 어드민이면 스캐너 페이지 안내, 일반 사용자에겐 운영자 안내
 - **입장 판정은 `modules/tickets/server/check-in.ts` 단일 경로** (`checkInByToken`·`undoEntry`, 현재 입장 판별은 `isCurrentEntry`). 웹 스캐너 액션과 게이트 API가 같이 쓴다. `'use server'` 밖이라 인증은 호출 쪽 책임. 상태 갱신은 `status` 조건부 `updateMany` + `CheckIn` 기록을 한 트랜잭션으로 — 동시 스캔 중 한쪽만 입장
 - `CheckIn`은 입장·취소를 지우지 않고 쌓는 기록, `Ticket.status/checkedInAt`은 현재 상태 캐시. `clientId`(unique)로 앱 재전송 멱등. `Drop.allowReentry`가 켜지면 이미 입장한 티켓도 `reentered`

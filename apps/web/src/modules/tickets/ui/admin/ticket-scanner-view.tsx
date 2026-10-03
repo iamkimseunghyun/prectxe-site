@@ -10,7 +10,7 @@ import {
   checkInTicket,
   undoScannerEntry,
 } from '@/modules/tickets/server/actions';
-import { useCheckInStats } from '@/modules/tickets/ui/components/live-check-in-stats';
+import { useCheckInStats } from '@/modules/tickets/ui/admin/live-check-in-stats';
 
 type ScanResult =
   | {

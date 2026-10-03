@@ -3,8 +3,8 @@ import getSession from '@/lib/auth/session';
 import type { FormInput } from '@/lib/schemas/form';
 import { updateForm } from '@/modules/forms/server/actions';
 import { getForm } from '@/modules/forms/server/queries';
-import { FormEditHeader } from '@/modules/forms/ui/components/form-edit-header';
-import { FormBuilderView } from '@/modules/forms/ui/views/form-builder-view';
+import { FormBuilderView } from '@/modules/forms/ui/admin/form-builder-view';
+import { FormEditHeader } from '@/modules/forms/ui/admin/form-edit-header';
 
 export default async function FormEditPage({
   params,

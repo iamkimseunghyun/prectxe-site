@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db/prisma';
-import { TicketScannerView } from '@/modules/tickets/ui/views/ticket-scanner-view';
+import { TicketScannerView } from '@/modules/tickets/ui/admin/ticket-scanner-view';
 
 export default async function ScannerPage({
   params,

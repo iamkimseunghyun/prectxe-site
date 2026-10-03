@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
 import { prisma } from '@/lib/db/prisma';
-import { EmailDashboard } from '@/modules/email/ui/views/email-dashboard';
+import { EmailDashboard } from '@/modules/email/ui/admin/email-dashboard';
 
 export default async function EmailPage() {
   const session = await getSession();

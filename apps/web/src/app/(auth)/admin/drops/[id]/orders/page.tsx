@@ -1,4 +1,4 @@
-import { DropOrdersView } from '@/modules/drops/ui/views/drop-orders-view';
+import { DropOrdersView } from '@/modules/drops/ui/admin/drop-orders-view';
 
 interface PageProps {
   params: Promise<{ id: string }>;

@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import getSession from '@/lib/auth/session';
 import { prisma } from '@/lib/db/prisma';
 import { getDropGuests } from '@/modules/tickets/server/queries';
-import { GuestListView } from '@/modules/tickets/ui/views/guest-list-view';
+import { GuestListView } from '@/modules/tickets/ui/admin/guest-list-view';
 
 export default async function GuestsPage({
   params,

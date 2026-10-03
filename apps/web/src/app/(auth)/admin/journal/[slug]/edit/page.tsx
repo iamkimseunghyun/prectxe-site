@@ -8,7 +8,7 @@ import {
 import {
   type JournalFormPayload,
   JournalFormView,
-} from '@/modules/journal/ui/views/journal-form-view';
+} from '@/modules/journal/ui/admin/journal-form-view';
 
 export default async function Page({
   params,
