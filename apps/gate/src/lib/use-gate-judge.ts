@@ -127,6 +127,11 @@ export function useGateJudge(args: {
             lastFailureAt.current = Date.now();
           }
           result = outcome.verdict;
+          // 리허설 계측 (PRD 8장: 스캔 → 판정 1초 이내, 앱 내부 로그)
+          if (__DEV__)
+            console.log(
+              `[gate] 판정 ${Date.now() - now}ms · 서버 ${outcome.server} · ${result.color} ${result.title}${manual ? ' · 명단' : ''}`
+            );
         } catch (error) {
           // 기기 저장소 오류 등 — 아무 반응이 없으면 스태프가 판단할 수 없다
           console.warn('[gate] 판정 실패', error);

@@ -695,6 +695,13 @@ export function DropFormView({ drop, venues, staff }: DropFormViewProps) {
             {isEdit && type === 'ticket' && (
               <DropStaffCard dropId={drop.id} staff={staff ?? []} />
             )}
+            {/* 스태프 배정은 드랍이 있어야 한다 — 새 드랍에서 카드를 찾다 놓치지
+                않게 어디서 하는지 알려준다 (2026-10-03 리허설에서 실제로 헤맴) */}
+            {!isEdit && type === 'ticket' && (
+              <p className="px-1 text-xs text-muted-foreground">
+                게이트 스태프는 저장한 뒤 이 편집 화면에서 배정할 수 있습니다.
+              </p>
+            )}
           </div>
         </div>
       </form>

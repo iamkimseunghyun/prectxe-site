@@ -21,7 +21,9 @@ client.$on('query', (e) => log.push(e.query.replace(/\s+/g, ' ').slice(0, 90)));
 const { assertNotProduction } = await import('./gate-test-guard');
 assertNotProduction();
 const { requireStaffForDrop } = await import('@/modules/gate/server/http');
-const { checkInByToken } = await import('@/modules/tickets/server/check-in');
+const { checkInByToken, loadCheckInTicket } = await import(
+  '@/modules/tickets/server/check-in'
+);
 
 const drop = await client.drop.findFirstOrThrow({
   where: { slug: 'gate-test' },
@@ -49,14 +51,21 @@ async function measure(label: string, ticketToken: string) {
   const req = new Request('http://x', {
     headers: { authorization: `Bearer ${token}` },
   });
-  const auth = await requireStaffForDrop(req, drop.id);
+  // 라우트(/api/gate/drops/[id]/check-in)와 같은 순서 — 로그인 확인과 티켓
+  // 조회는 동시에, 그다음 기록. 동시에 나간 쿼리는 왕복 하나로 친다
+  const clientId = randomUUID();
+  const [auth, preloaded] = await Promise.all([
+    requireStaffForDrop(req, drop.id),
+    loadCheckInTicket(ticketToken, clientId),
+  ]);
   if (!auth.ok) throw new Error('auth 실패');
   const r = await checkInByToken({
     token: ticketToken,
     dropId: drop.id,
     actor: { staffId: auth.staff.id },
     gate: 'A',
-    clientId: randomUUID(),
+    clientId,
+    preloaded,
   });
   const ms = performance.now() - started;
   console.log(
