@@ -1,8 +1,10 @@
 'use server';
 
+import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { getLocale } from 'next-intl/server';
+import { z } from 'zod';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { parseInput } from '@/lib/auth/server-action-helpers';
@@ -39,7 +41,7 @@ import {
   generateTicketToken,
 } from '@/lib/utils/ticket-token';
 import { getOrderTicketsUrl } from '@/lib/utils/ticket-url';
-import { checkInByToken, undoCheckInByToken } from './check-in';
+import { checkInByToken, undoCheckInByToken, undoEntry } from './check-in';
 
 // ─── 티켓 발급 헬퍼 (paid 처리 시 호출) ──────────────
 
@@ -1119,13 +1121,61 @@ export async function cancelOrder(orderId: string) {
  * 집계되므로 숫자에도 안 잡힌다. 드랍 판별은 티어(삭제 시 SetNull로 끊길 수
  * 있다)가 아니라 `order.dropId`를 기준으로 한다.
  */
-export async function checkInTicket(token: string, dropId: string) {
+export async function checkInTicket(
+  token: string,
+  dropId: string,
+  /** 스캐너가 입장마다 만드는 UUID — 이 입장만 골라 취소할 때 쓴다(`undoScannerEntry`) */
+  clientId: string
+) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;
-  return checkInByToken({ token, dropId, actor: { userId: auth.userId } });
+  if (!z.uuid().safeParse(clientId).success)
+    return { success: false, error: '잘못된 요청입니다.' } as const;
+  return checkInByToken({
+    token,
+    dropId,
+    clientId,
+    actor: { userId: auth.userId },
+  });
 }
 
-/** 체크인 되돌리기. 다른 공연 스캐너에서 남의 티켓을 되돌리지 못하게 같은 스코프를 건다. */
+/**
+ * 웹 스캐너의 입장 취소 — **이 스캐너가 처리한 입장(`undoes`)만** 되돌린다.
+ * 토큰 기준으로 현재 상태를 되돌리면, 다른 입구(게이트 앱)에서 정상 입장한
+ * 관객의 캡처 QR에 "이미 입장"이 뜬 걸 스태프가 자기 실수로 알고 취소했을 때
+ * 그 정상 입장이 지워지고 캡처 QR로 또 들어올 수 있다.
+ */
+export async function undoScannerEntry(
+  token: string,
+  dropId: string,
+  undoes: string
+) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error } as const;
+  if (!z.uuid().safeParse(undoes).success)
+    return { success: false, error: '잘못된 요청입니다.' } as const;
+  const outcome = await undoEntry({
+    dropId,
+    actor: { userId: auth.userId },
+    token,
+    clientId: randomUUID(),
+    undoes,
+    at: new Date(),
+  });
+  if (outcome.status === 'applied') return { success: true } as const;
+  if (outcome.status === 'not_found')
+    return {
+      success: false,
+      error: '취소할 입장 기록을 찾지 못했습니다.',
+    } as const;
+  return { success: false, error: outcome.error } as const;
+}
+
+/**
+ * 게스트 명단 화면 전용 — 주최자가 고른 게스트의 입장을 토큰 기준으로
+ * 되돌린다(누가 처리한 입장이든). 스캐너는 `undoScannerEntry`를 쓸 것.
+ * 다른 공연 스캐너에서 남의 티켓을 되돌리지 못하게 같은 스코프를 건다.
+ */
 export async function undoCheckIn(token: string, dropId: string) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;

@@ -17,6 +17,7 @@ import type {
   CheckInLog,
   CheckInLogEntry,
 } from '@/modules/tickets/server/queries';
+import { LiveCheckInStats } from '@/modules/tickets/ui/components/live-check-in-stats';
 
 const FLAG_LABEL = {
   duplicate: '중복 입장',
@@ -104,10 +105,12 @@ export function CheckInLogView({
         </div>
       </div>
 
+      <LiveCheckInStats dropId={drop.id} />
+
       <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">입장 처리</p>
+            <p className="text-xs text-muted-foreground">입장 기록 수</p>
             <p className="text-2xl font-semibold tabular-nums">
               {counts.entry}
             </p>
@@ -115,7 +118,7 @@ export function CheckInLogView({
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">입장 취소</p>
+            <p className="text-xs text-muted-foreground">취소 기록 수</p>
             <p className="text-2xl font-semibold tabular-nums">{counts.undo}</p>
           </CardContent>
         </Card>
