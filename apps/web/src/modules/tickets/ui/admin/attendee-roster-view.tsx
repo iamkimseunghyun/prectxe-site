@@ -246,6 +246,11 @@ export function AttendeeRosterView({
                       <TableRow key={r.id}>
                         <TableCell>
                           {r.buyerName}
+                          {r.partySize > 1 && (
+                            <span className="ml-1 text-xs tabular-nums text-muted-foreground">
+                              ({r.partyIndex}/{r.partySize})
+                            </span>
+                          )}
                           {r.note && (
                             <span className="ml-1 text-xs text-muted-foreground">
                               {r.note}
