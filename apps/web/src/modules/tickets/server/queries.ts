@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db/prisma';
+import { isCurrentEntry } from './check-in';
 
 // 전체 기록 표에 보여줄 최대 행 수 (1,500명 행사 기준 여유분). 집계와 확인
 // 필요 목록은 이 제한과 별개로 전체를 기준으로 한다.
@@ -53,7 +54,7 @@ export async function getDropCheckInLog(dropId: string) {
   ]);
 
   const voided = new Set(voids.map((v) => v.undoes));
-  const withVoided = <
+  const annotateEntry = <
     T extends {
       clientId: string;
       kind: string;
@@ -66,23 +67,18 @@ export async function getDropCheckInLog(dropId: string) {
   ) => ({
     ...row,
     voided: voided.has(row.clientId),
-    // 지금의 입장 상태를 만든 기록 — 이 입장을 취소해야 티켓이 미입장으로
-    // 돌아간다(undoEntry와 같은 기준). 입장 기록 화면의 '취소' 버튼은 이것만
-    current:
-      row.kind === 'entry' &&
-      !row.flag &&
-      row.ticket.status === 'checked_in' &&
-      row.ticket.checkedInAt?.getTime() === row.scannedAt.getTime(),
+    // 지금의 입장 상태를 만든 기록 — 입장 기록 화면의 '취소' 버튼은 이것만
+    current: isCurrentEntry(row, row.ticket),
   });
 
   const truncated = rows.length > CHECK_IN_LOG_LIMIT;
   const count = (kind: 'entry' | 'undo') =>
     byKind.find((g) => g.kind === kind)?._count ?? 0;
-  const flagged = flaggedRows.map(withVoided);
+  const flagged = flaggedRows.map(annotateEntry);
 
   return {
     entries: (truncated ? rows.slice(0, CHECK_IN_LOG_LIMIT) : rows).map(
-      withVoided
+      annotateEntry
     ),
     truncated,
     flagged,

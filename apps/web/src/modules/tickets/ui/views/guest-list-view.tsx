@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ORDERS } from '@/lib/constants/constants';
 import { getOrderTicketsUrl } from '@/lib/utils/ticket-url';
-import { cancelOrder, undoCheckIn } from '@/modules/tickets/server/actions';
+import { cancelOrder, undoGuestEntry } from '@/modules/tickets/server/actions';
 import { addGuest, checkInGuest } from '@/modules/tickets/server/guest-actions';
 import type { DropGuest } from '@/modules/tickets/server/queries';
 
@@ -105,7 +105,7 @@ export function GuestListView({
       )[0];
     if (!last) return;
     run(async () => {
-      const r = await undoCheckIn(last.token, drop.id);
+      const r = await undoGuestEntry(last.token, drop.id);
       if (!r.success) toast({ title: r.error, variant: 'destructive' });
     });
   };

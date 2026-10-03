@@ -41,7 +41,12 @@ import {
   generateTicketToken,
 } from '@/lib/utils/ticket-token';
 import { getOrderTicketsUrl } from '@/lib/utils/ticket-url';
-import { checkInByToken, undoCheckInByToken, undoEntry } from './check-in';
+import {
+  checkInByToken,
+  isCurrentEntry,
+  undoCurrentEntry,
+  undoEntry,
+} from './check-in';
 
 // ─── 티켓 발급 헬퍼 (paid 처리 시 호출) ──────────────
 
@@ -1201,10 +1206,23 @@ export async function undoLoggedEntry(dropId: string, entryClientId: string) {
     return { success: false, error: '잘못된 요청입니다.' } as const;
   const target = await prisma.checkIn.findUnique({
     where: { clientId: entryClientId },
-    select: { dropId: true, kind: true, ticket: { select: { token: true } } },
+    select: {
+      dropId: true,
+      kind: true,
+      flag: true,
+      scannedAt: true,
+      ticket: { select: { token: true, status: true, checkedInAt: true } },
+    },
   });
   if (!target || target.dropId !== dropId || target.kind !== 'entry')
     return { success: false, error: '입장 기록을 찾지 못했습니다.' } as const;
+  // 화면은 연 시점 기준이다 — 그 사이 입장 상태가 바뀌었으면 아무것도 바꾸지
+  // 못하는 취소 기록만 쌓이므로 남기지 않는다
+  if (!isCurrentEntry(target, target.ticket))
+    return {
+      success: false,
+      error: '그 사이 입장 상태가 바뀌었습니다. 새로고침해주세요.',
+    } as const;
   const outcome = await undoEntry({
     dropId,
     actor: { userId: auth.userId },
@@ -1221,14 +1239,22 @@ export async function undoLoggedEntry(dropId: string, entryClientId: string) {
 }
 
 /**
- * 게스트 명단 화면 전용 — 주최자가 고른 게스트의 입장을 토큰 기준으로
- * 되돌린다(누가 처리한 입장이든). 스캐너는 `undoScannerEntry`를 쓸 것.
- * 다른 공연 스캐너에서 남의 티켓을 되돌리지 못하게 같은 스코프를 건다.
+ * 게스트 명단 화면 — 주최자가 고른 게스트 티켓의 지금 입장을 취소한다(누가
+ * 처리한 입장이든). 그 입장 기록을 지정해 취소하므로 입장 기록 화면에도
+ * 무엇이 취소됐는지 남는다. 다른 공연의 티켓은 되돌리지 못한다.
  */
-export async function undoCheckIn(token: string, dropId: string) {
+export async function undoGuestEntry(token: string, dropId: string) {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;
-  return undoCheckInByToken({ token, dropId, actor: { userId: auth.userId } });
+  const outcome = await undoCurrentEntry({
+    token,
+    dropId,
+    actor: { userId: auth.userId },
+  });
+  if (outcome.status === 'applied') return { success: true } as const;
+  if (outcome.status === 'not_found')
+    return { success: false, error: '입장 기록을 찾지 못했습니다.' } as const;
+  return { success: false, error: outcome.error } as const;
 }
 
 export async function getCheckInStats(dropId: string) {
