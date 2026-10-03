@@ -55,16 +55,11 @@
   "overrides": [
     {
       "includes": [
-        "apps/web/src/app/(content)/**",
-        "apps/web/src/app/(page)/**",
-        "apps/web/src/app/(home)/**",
-        "apps/web/src/app/scan/**",
-        "apps/web/src/app/api/**",
+        "apps/web/src/**",
+        "!apps/web/src/app/(auth)/admin/**",
         "!apps/web/src/app/api/admin/**",
-        "apps/web/src/components/**",
         "!apps/web/src/components/admin/**",
-        "apps/web/src/hooks/**",
-        "apps/web/src/lib/**"
+        "!apps/web/src/modules/**"
       ],
       "linter": {
         "rules": {
@@ -80,7 +75,31 @@
                       "**/modules/*/ui/views/*-admin-*",
                       "**/modules/*/ui/components/*-table"
                     ],
-                    "message": "어드민 전용 코드는 공개 라우트·공용 코드에서 import하지 않는다. 어드민 쪽(app/(auth)/admin, modules/*/ui의 *-admin-*·*-table)에서만 쓴다."
+                    "message": "어드민 전용 코드는 어드민 영역(app/(auth)/admin, app/api/admin, components/admin)과 modules의 어드민 파일(modules/*/ui/views/*-admin-*, modules/*/ui/components/*-table)에서만 import한다."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/web/src/modules/**",
+        "!apps/web/src/modules/*/ui/views/*-admin-*",
+        "!apps/web/src/modules/*/ui/components/*-table.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/components/admin/**", "**/(auth)/admin/**"],
+                    "message": "modules의 공개 코드는 어드민 전용 코드를 import하지 않는다. 어드민 전용 뷰·컴포넌트는 파일명을 *-admin-* 또는 *-table로 지으면 이 규칙에서 제외된다."
                   }
                 ]
               }
