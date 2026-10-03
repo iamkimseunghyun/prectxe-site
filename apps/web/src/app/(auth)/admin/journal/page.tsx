@@ -1,4 +1,4 @@
-import { JournalAdminListView } from '@/modules/journal/ui/views/journal-admin-list-view';
+import { JournalAdminListView } from '@/modules/journal/ui/admin/journal-admin-list-view';
 
 interface PageProps {
   searchParams: Promise<{ page?: string }>;

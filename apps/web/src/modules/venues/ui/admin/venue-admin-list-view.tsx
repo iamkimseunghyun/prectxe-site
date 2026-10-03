@@ -1,7 +1,7 @@
 import { AdminHeader } from '@/components/admin/admin-header';
 import { AdminPagination } from '@/components/admin/admin-pagination';
 import { getAllVenues } from '@/modules/venues/server/actions';
-import { VenueTable } from '../components/venue-table';
+import { VenueTable } from './venue-table';
 
 interface VenueAdminListViewProps {
   page: number;

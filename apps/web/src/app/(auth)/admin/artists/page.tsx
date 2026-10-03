@@ -1,4 +1,4 @@
-import { ArtistAdminListView } from '@/modules/artists/ui/views/artist-admin-list-view';
+import { ArtistAdminListView } from '@/modules/artists/ui/admin/artist-admin-list-view';
 
 interface PageProps {
   searchParams: Promise<{ page?: string }>;

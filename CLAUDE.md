@@ -87,9 +87,8 @@ src/
 - `index.ts`에서 모두 re-export → 호출자는 `@/lib/utils`로 import
 
 **어드민 import 경계** (`biome.json` `noRestrictedImports`, error):
-- 어드민 영역 = `app/(auth)/admin`, `app/api/admin`, `components/admin`. 그 밖의 코드(공개 라우트·`components`·`hooks`·`lib`·`middleware.ts` 등)는 어드민 영역을 import할 수 없다. 판정은 import 경로에 `admin` 폴더가 들어 있는지(`**/admin/**`)로 하므로 `@/`·상대경로 모두 잡힌다 — 어드민 전용 폴더는 이름을 `admin`으로 지을 것.
-- `modules/**`는 같은 폴더에 공개·어드민 UI가 섞여 있어 **파일명으로 구분**한다: 어드민 전용 뷰·컴포넌트는 `modules/<x>/ui/views/*-admin-*`, `modules/<x>/ui/components/*-table.tsx`로 짓는다. 이 이름의 파일만 어드민 영역을 import할 수 있고, 나머지 모듈 코드는 막힌다.
-- 이 이름 규칙을 안 따른 어드민 전용 파일은 공개 쪽에서 import해도 못 잡는다. 이름이 `-table`로 끝나는 공개 컴포넌트는 만들지 말 것(공개 쪽에서 import하면 막힌다).
+- 어드민 영역 = `app/(auth)/admin`, `app/api/admin`, `components/admin`, `modules/<x>/ui/admin`. 그 밖의 코드(공개 라우트·`components`·`hooks`·`lib`·`middleware.ts`·모듈의 공개 UI/서버 코드 등)는 어드민 영역을 import할 수 없다.
+- 판정은 import 경로에 `admin` 폴더가 들어 있는지(`**/admin/**`)로 하므로 `@/`·상대경로 모두 잡힌다. **어드민 전용 모듈 UI(목록 뷰·테이블 등)는 `modules/<x>/ui/admin/`에 둘 것** — 파일명 규칙이 아니라 폴더가 경계다.
 
 ### Modules
 

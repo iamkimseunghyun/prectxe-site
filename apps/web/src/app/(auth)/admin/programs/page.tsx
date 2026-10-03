@@ -1,4 +1,4 @@
-import { ProgramAdminListView } from '@/modules/programs/ui/views/program-admin-list-view';
+import { ProgramAdminListView } from '@/modules/programs/ui/admin/program-admin-list-view';
 
 interface PageProps {
   searchParams: Promise<{ page?: string }>;

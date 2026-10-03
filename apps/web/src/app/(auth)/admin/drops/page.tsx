@@ -1,4 +1,4 @@
-import { DropsAdminListView } from '@/modules/drops/ui/views/drops-admin-list-view';
+import { DropsAdminListView } from '@/modules/drops/ui/admin/drops-admin-list-view';
 
 interface PageProps {
   searchParams: Promise<{ page?: string }>;

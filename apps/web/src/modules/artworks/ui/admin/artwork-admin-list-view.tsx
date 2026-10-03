@@ -1,7 +1,7 @@
 import { AdminHeader } from '@/components/admin/admin-header';
 import { AdminPagination } from '@/components/admin/admin-pagination';
 import { listArtworksPaged } from '@/modules/artworks/server/actions';
-import { ArtworkTable } from '../components/artwork-table';
+import { ArtworkTable } from './artwork-table';
 
 interface ArtworkAdminListViewProps {
   page: number;
