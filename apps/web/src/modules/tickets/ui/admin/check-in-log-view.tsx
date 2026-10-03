@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ListChecks } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -123,16 +123,27 @@ export function CheckInLogView({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={`/admin/drops/${drop.id}`} aria-label="드랍으로 돌아가기">
-            <ArrowLeft className="h-4 w-4" />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" asChild>
+            <Link
+              href={`/admin/drops/${drop.id}`}
+              aria-label="드랍으로 돌아가기"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-xl font-semibold">입장 기록</h1>
+            <p className="text-sm text-muted-foreground">{drop.title}</p>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/admin/drops/${drop.id}/roster`}>
+            <ListChecks className="mr-1 h-4 w-4" />
+            입장 현황 (실시간 명단)
           </Link>
         </Button>
-        <div>
-          <h1 className="text-xl font-semibold">입장 기록</h1>
-          <p className="text-sm text-muted-foreground">{drop.title}</p>
-        </div>
       </div>
 
       <LiveCheckInStats dropId={drop.id} />

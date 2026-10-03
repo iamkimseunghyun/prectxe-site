@@ -49,6 +49,7 @@ import {
   undoCurrentEntry,
   undoEntry,
 } from './check-in';
+import { getDropRoster } from './queries';
 
 // ─── 티켓 발급 헬퍼 (paid 처리 시 호출) ──────────────
 
@@ -1290,6 +1291,14 @@ export async function getCheckInStats(dropId: string) {
   ]);
 
   return { success: true, data: { total, checkedIn } } as const;
+}
+
+/** 입장 현황 명단 폴링용 — 읽기 쿼리는 `queries.ts`에 두고 어드민만 부른다 */
+export async function getAttendeeRoster(dropId: string) {
+  const auth = await requireAdmin();
+  if (!auth.success) return { success: false, error: auth.error } as const;
+
+  return { success: true, data: await getDropRoster(dropId) } as const;
 }
 
 // ─── 주문 목록 조회 (Admin) ─────────────────────────
