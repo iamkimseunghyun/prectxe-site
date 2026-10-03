@@ -52,6 +52,44 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": [
+        "apps/web/src/app/(content)/**",
+        "apps/web/src/app/(page)/**",
+        "apps/web/src/app/(home)/**",
+        "apps/web/src/app/scan/**",
+        "apps/web/src/app/api/**",
+        "!apps/web/src/app/api/admin/**",
+        "apps/web/src/components/**",
+        "!apps/web/src/components/admin/**",
+        "apps/web/src/hooks/**",
+        "apps/web/src/lib/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/components/admin/**",
+                      "**/(auth)/admin/**",
+                      "**/modules/*/ui/views/*-admin-*",
+                      "**/modules/*/ui/components/*-table"
+                    ],
+                    "message": "어드민 전용 코드는 공개 라우트·공용 코드에서 import하지 않는다. 어드민 쪽(app/(auth)/admin, modules/*/ui의 *-admin-*·*-table)에서만 쓴다."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "single",
