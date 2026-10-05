@@ -277,7 +277,11 @@ function judgeLocally(args: {
     offline: true,
     entry: { token, clientId, reentry },
     ...person,
-    previous: reentry ? describePrevious(ticket.checkedInAt) : undefined,
+    // 기기 명단은 재입장을 기록하지 않아 '처음' 입장 시각만 안다 — '직전'이라
+    // 쓰면 두 번째 재입장부터 틀린 정보가 된다
+    previous: reentry
+      ? `처음 ${describeEntry(ticket.checkedInAt)} (기기 명단 기준)`
+      : undefined,
   };
 }
 
