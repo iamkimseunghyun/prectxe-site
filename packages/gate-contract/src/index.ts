@@ -179,11 +179,12 @@ export type CheckInResponse = {
   ticket: {
     buyerName: string;
     tierName: string;
+    /** `reentered`일 때는 이번 재입장 직전의 입장 시각 */
     checkedInAt: string | null;
     /**
-     * `already`일 때, 지금의 입장 상태를 만든 입장 기록의 입구 — 거절 화면에
-     * "언제·어디서"를 보여준다. 입장을 취소한 뒤 다른 입구로 다시 들어왔으면
-     * 취소된 옛 입구가 아니라 다시 들어온 입구다
+     * `already`·`reentered`일 때, 지금(재입장이면 직전)의 입장 상태를 만든 입장
+     * 기록의 입구 — 화면에 "언제·어디서"를 보여준다. 입장을 취소한 뒤 다른
+     * 입구로 다시 들어왔으면 취소된 옛 입구가 아니라 다시 들어온 입구다
      */
     checkedInGate: string | null;
   };

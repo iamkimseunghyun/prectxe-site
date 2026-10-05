@@ -35,6 +35,8 @@ export type Verdict =
       title: string;
       offline: boolean;
       entry: EntryRef;
+      /** 재입장일 때 직전 입장 — "직전 13:05 입장 (3분 전) · B 입구" */
+      previous?: string;
     } & Person)
   | ({
       color: 'red';
@@ -80,6 +82,28 @@ function describeEntry(at: string | null, gate?: string | null): string {
   const parts = [at ? `${formatClock(at)} 입장` : '입장 기록 있음'];
   if (gate) parts.push(`${gate} 입구`);
   return parts.join(' · ');
+}
+
+function agoLabel(iso: string): string {
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (minutes < 1) return '방금';
+  if (minutes < 60) return `${minutes}분 전`;
+  return `${Math.floor(minutes / 60)}시간 전`;
+}
+
+/**
+ * 재입장 화면용 — "직전 13:05 입장 (3분 전) · B 입구". 같은 QR이 방금 다른
+ * 입구로 들어갔다면 복제된 QR일 수 있어, 스태프가 알아볼 수 있게 보여준다
+ */
+function describePrevious(at: string | null, gate?: string | null): string {
+  const parts = [
+    at
+      ? `직전 ${formatClock(at)} 입장 (${agoLabel(at)})`
+      : '직전 입장 기록 있음',
+  ];
+  if (gate) parts.push(`${gate} 입구`);
+  // 두 줄로 — 한 줄이면 화면 폭에서 "입구"가 어색하게 갈라진다
+  return parts.join('\n');
 }
 
 /**
@@ -182,6 +206,9 @@ export async function judge(input: JudgeInput): Promise<JudgeOutcome> {
           entry: { token, clientId, reentry },
           ...person,
           note: quietly(() => findTicket(drop.id, token)?.note),
+          previous: reentry
+            ? describePrevious(ticket.checkedInAt, ticket.checkedInGate)
+            : undefined,
         },
         server: 'ok',
       };
@@ -250,6 +277,11 @@ function judgeLocally(args: {
     offline: true,
     entry: { token, clientId, reentry },
     ...person,
+    // 기기 명단은 재입장을 기록하지 않아 '처음' 입장 시각만 안다 — '직전'이라
+    // 쓰면 두 번째 재입장부터 틀린 정보가 된다
+    previous: reentry
+      ? `처음 ${describeEntry(ticket.checkedInAt)} (기기 명단 기준)`
+      : undefined,
   };
 }
 

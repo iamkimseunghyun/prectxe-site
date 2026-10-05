@@ -52,8 +52,10 @@ export default function SearchScreen() {
     Keyboard.dismiss();
     Alert.alert(
       `${row.buyerName} 입장 처리할까요?`,
-      [row.tierName, row.note].filter(Boolean).join(' · ') ||
-        '본인 확인 후 처리하세요.',
+      // 목록에서 같은 이름을 뒷자리로 구분해 골랐으니 확인창에도 같이 보여준다
+      [row.tierName, row.note, row.phoneLast4 && `··${row.phoneLast4}`]
+        .filter(Boolean)
+        .join(' · ') || '본인 확인 후 처리하세요.',
       [
         { text: '닫기', style: 'cancel' },
         {

@@ -31,6 +31,8 @@ export default function ScanScreen() {
   useKeepAwake();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [gate] = useState(() => getGate(id));
+  // 어두운 공연장에서는 조명 없이 QR을 못 읽는다
+  const [torch, setTorch] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const { stats, drop, uploadProblem, refreshStats, sync } = useRoster(id, {
     poll: true,
@@ -59,6 +61,7 @@ export default function ScanScreen() {
         <CameraView
           style={StyleSheet.absoluteFill}
           facing="back"
+          enableTorch={torch}
           barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
           onBarcodeScanned={
             scanning ? ({ data }) => judge.handle(data) : undefined
@@ -82,6 +85,20 @@ export default function ScanScreen() {
             </Text>
             <Text style={styles.gate}>{gate} 입구</Text>
           </View>
+          {cameraOn && (
+            <Pressable
+              accessibilityRole="switch"
+              accessibilityLabel="손전등"
+              accessibilityState={{ checked: torch }}
+              onPress={() => setTorch((on) => !on)}
+              hitSlop={8}
+              style={[styles.torch, torch && styles.torchOn]}
+            >
+              <Text style={[styles.torchLabel, torch && styles.torchLabelOn]}>
+                {torch ? '조명 끄기' : '조명 켜기'}
+              </Text>
+            </Pressable>
+          )}
           <Text
             style={styles.counter}
             accessibilityLabel={`입장 ${stats.entered}명, 발권 ${stats.total}장`}
@@ -103,7 +120,12 @@ export default function ScanScreen() {
               onRequest={requestPermission}
             />
           ) : (
-            <View style={styles.frame} pointerEvents="none">
+            // 초록 = 지금 찍으면 판정한다, 흐림 = 판정 중이거나 판정 화면·취소
+            // 확인 때문에 멈춰 있다
+            <View
+              style={[styles.frame, scanning && styles.frameReady]}
+              pointerEvents="none"
+            >
               {judge.judging && (
                 <ActivityIndicator color={colors.text} size="large" />
               )}
@@ -231,10 +253,22 @@ const styles = StyleSheet.create({
     height: 260,
     borderRadius: 24,
     borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.85)',
+    borderColor: 'rgba(255,255,255,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  frameReady: { borderColor: colors.success },
+  torch: {
+    minHeight: 44,
+    paddingHorizontal: space.md,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.text,
+    justifyContent: 'center',
+  },
+  torchOn: { backgroundColor: colors.warning, borderColor: colors.warning },
+  torchLabel: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  torchLabelOn: { color: '#111111' },
   permission: { padding: space.lg, gap: space.md, alignSelf: 'stretch' },
   permissionText: { color: colors.text, fontSize: 17, lineHeight: 24 },
   dev: {

@@ -15,7 +15,7 @@ type TicketView = {
   buyerName: string;
   tierName: string;
   checkedInAt: Date | null;
-  /** `already`일 때만 — 먼저 입장한 입구 */
+  /** `already`·`reentered`일 때만 — 먼저(직전에) 입장한 입구 */
   checkedInGate?: string | null;
 };
 
@@ -119,7 +119,7 @@ export type CheckInTicket = {
  * 왕복했다(서울 함수 ↔ 싱가포르 DB 왕복 ~75ms). 읽기만 하므로 게이트 API는
  * 로그인 확인과 동시에 부른다.
  *
- * 이 함수와 `recordEntry`는 raw SQL이라 컬럼·enum 이름이 바뀌어도 type-check·
+ * 이 함수와 `recordEntry`·`loadPreviousEntry`는 raw SQL이라 컬럼·enum 이름이 바뀌어도 type-check·
  * 빌드가 통과하고 현장 첫 스캔에서야 터진다. Ticket·Order·Drop·TicketTier·
  * CheckIn 스키마를 바꾸면 `scripts/gate-test-smoke.ts`를 돌릴 것.
  */
@@ -194,6 +194,29 @@ async function recordEntry(args: {
       FROM upd
     RETURNING id`;
   return rows.length > 0;
+}
+
+/**
+ * 티켓의 가장 최근 유효 입장 기록 — 첫 입장이든 재입장이든, 취소된 입장과
+ * 오프라인 동기화에서 표시된(flag) 입장은 뺀다. 재입장 화면의 "직전 입장"용.
+ * 재입장 때만 불러서 일반 입장 경로에는 쿼리가 늘지 않는다.
+ */
+async function loadPreviousEntry(
+  ticketId: string
+): Promise<{ scannedAt: Date; gate: string | null } | null> {
+  const rows = await prisma.$queryRaw<
+    { scannedAt: Date; gate: string | null }[]
+  >`
+    SELECT c."scannedAt", c.gate
+      FROM "CheckIn" c
+     WHERE c."ticketId" = ${ticketId}
+       AND c.kind = 'entry'::"CheckInKind" AND c.flag IS NULL
+       AND NOT EXISTS (
+         SELECT 1 FROM "CheckIn" u
+          WHERE u.kind = 'undo'::"CheckInKind" AND u.undoes = c."clientId")
+     ORDER BY c."scannedAt" DESC, c."createdAt" DESC
+     LIMIT 1`;
+  return rows[0] ?? null;
 }
 
 export async function checkInByToken(input: {
@@ -306,13 +329,26 @@ export async function checkInByToken(input: {
         data: { ...view, checkedInGate: current.currentGate },
       };
 
+    // 이번 재입장을 기록하기 전에 직전 입장을 읽는다. 재입장은 Ticket.checkedInAt
+    // 을 갱신하지 않아 current의 시각·입구는 늘 '처음' 입장이다 — 두 번째 재입장
+    // 부터는 가장 최근 입장 기록을 따로 찾아야 "방금 다른 입구로 들어간 QR"인지
+    // 스태프가 알아볼 수 있다
+    const previous = await loadPreviousEntry(ticket.id);
     const now = new Date();
     if (!(await recordEntry({ ...entry, from: 'checked_in', at: now })))
       return {
         success: false,
         error: '티켓 상태가 바뀌었습니다. 다시 스캔해주세요.',
       };
-    return { success: true, result: 'reentered', data: view };
+    return {
+      success: true,
+      result: 'reentered',
+      data: {
+        ...view,
+        checkedInAt: previous?.scannedAt ?? view.checkedInAt,
+        checkedInGate: previous ? previous.gate : current.currentGate,
+      },
+    };
   } catch (error) {
     // 쓰다가 막혔다 — 같은 요청의 동시 재전송(고유키 충돌)이면 먼저 들어간
     // 쪽 결과를, 다른 요청이 같은 ID를 썼으면 거절을 준다. 한 문장이라 실패하면

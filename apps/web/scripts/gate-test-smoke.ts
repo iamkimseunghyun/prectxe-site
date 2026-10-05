@@ -363,11 +363,30 @@ async function main() {
   const re = await call<CheckInResponse>('POST', `${D}/check-in`, token, {
     token: A.token,
     clientId: randomUUID(),
+    gate: 'R1',
   });
   check(
     '재입장 허용 시 A 다시 → reentered',
     re.data.result === 'reentered',
     re
+  );
+  check(
+    '재입장 응답에 직전 입장의 시각·입구가 담김',
+    !!re.data.ticket?.checkedInAt &&
+      typeof re.data.ticket?.checkedInGate === 'string',
+    re.data.ticket
+  );
+  // 재입장은 Ticket.checkedInAt을 갱신하지 않으므로 두 번째 재입장부터는 처음
+  // 입장이 아니라 바로 앞 재입장(R1)이 나와야 한다
+  const re2 = await call<CheckInResponse>('POST', `${D}/check-in`, token, {
+    token: A.token,
+    clientId: randomUUID(),
+    gate: 'R2',
+  });
+  check(
+    '두 번째 재입장 → 직전 입장은 첫 재입장(R1)',
+    re2.data.result === 'reentered' && re2.data.ticket?.checkedInGate === 'R1',
+    re2.data.ticket
   );
   await prisma.drop.update({
     where: { id: drop.id },
