@@ -369,6 +369,12 @@ async function main() {
     re.data.result === 'reentered',
     re
   );
+  check(
+    '재입장 응답에 직전 입장의 시각·입구가 담김',
+    !!re.data.ticket?.checkedInAt &&
+      typeof re.data.ticket?.checkedInGate === 'string',
+    re.data.ticket
+  );
   await prisma.drop.update({
     where: { id: drop.id },
     data: { allowReentry: false },

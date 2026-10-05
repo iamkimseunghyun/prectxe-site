@@ -15,7 +15,7 @@ type TicketView = {
   buyerName: string;
   tierName: string;
   checkedInAt: Date | null;
-  /** `already`일 때만 — 먼저 입장한 입구 */
+  /** `already`·`reentered`일 때만 — 먼저(직전에) 입장한 입구 */
   checkedInGate?: string | null;
 };
 
@@ -312,7 +312,13 @@ export async function checkInByToken(input: {
         success: false,
         error: '티켓 상태가 바뀌었습니다. 다시 스캔해주세요.',
       };
-    return { success: true, result: 'reentered', data: view };
+    // view.checkedInAt은 이번 재입장 직전의 입장 시각 — 입구도 같은 기록의 것을
+    // 돌려줘 스태프가 "방금 다른 입구로 들어간 QR"인지 알아볼 수 있게 한다
+    return {
+      success: true,
+      result: 'reentered',
+      data: { ...view, checkedInGate: current.currentGate },
+    };
   } catch (error) {
     // 쓰다가 막혔다 — 같은 요청의 동시 재전송(고유키 충돌)이면 먼저 들어간
     // 쪽 결과를, 다른 요청이 같은 ID를 썼으면 거절을 준다. 한 문장이라 실패하면
