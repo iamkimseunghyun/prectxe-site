@@ -22,6 +22,17 @@
 
 **남은 과제**: URL을 `/archive`로 옮길지는 반응을 보고 결정(sitemap·OG·홈 섹션·이메일 링크·301 필요). `status` → `publishedAt` 정리는 이번에 뺐다.
 
+### 어드민 폼 저장 UX 통일 (9개 폼, 공용 부품)
+
+프로그램 폼에 저장 버튼이 4개(`미리보기`·`저장 후 새로 작성`·`저장 후 계속 편집`·`저장`)라 과하고, 진행 표시·성공 토스트가 폼마다 달랐다. 전수 조사에서 확인한 불일치: Program은 진행 표시 자체가 없고 성공 토스트도 없음 / Journal은 버튼 3개가 전부 "저장 중..."으로 바뀜 / artist·venue·artwork는 성공 토스트 없이 에러를 폼 아래 인라인으로만 표시 / Program·Journal의 에러 토스트는 variant가 없어 중립색 / 티켓 등급·굿즈 옵션 다이얼로그는 서버 액션이 예외를 던지면 `setIsSubmitting(false)`가 호출되지 않아 **버튼이 영구 비활성화**.
+
+- 공용 부품 3개: `useFormSubmit`(중복 제출 ref 가드·진행 상태·성공/실패/검증 토스트·`useTransition` 이동 중 잠금), `FormActionBar`(`[취소] [미리보기] [저장 ▾]`), 기존 `FormSubmitButton` 보강(`ButtonProps` 상속, `aria-busy`, 기본 문구 "저장 중…"). 규칙은 CLAUDE.md "어드민 폼 규칙".
+- **버튼 4개 → `[미리보기] [저장 ▾]`**: 기능은 그대로 두고 "저장 후 계속 편집/새로 작성"을 ▾ 메뉴로 접었다(메뉴 항목은 `form.requestSubmit()`).
+- Journal 서버 액션이 `redirect()`를 던지던 것을 `{ success, redirect }` 반환으로 바꿔 `isRedirectError` 재throw 핵을 없앴다(서버 redirect로는 성공 토스트를 띄울 수 없다).
+- 같이 고친 기존 결함: ① Program 대표 이미지 업로드 실패를 무시하고 저장하던 것(`uploadImage`의 boolean 무시) ② Drop 폼이 업로드 `await` 뒤에 `e.currentTarget`을 읽던 것 ③ 다이얼로그가 저장 중 ESC로 닫히던 것 ④ 영어 예외 메시지(`Failed to upload main image`)가 그대로 노출되던 것.
+
+**검증**: 임시 페이지에서 공용 부품을 직접 확인(삭제함) — 저장 중 버튼 4개 전부 비활성화 + 눌린 버튼에만 스피너, 같은 틱 더블클릭은 작업 1회, 메뉴로 고른 `continue` 의도 전달과 ▾ 자리 스피너, 실패·예외·검증 실패 모두 destructive 토스트 후 버튼 복구. **미확인**: 로그인이 필요한 실제 어드민 폼 9개의 화면 동작.
+
 ## 2026-10-03
 
 ### 어드민 입장 현황 명단 — 판매 티켓별 실시간 입장 상태 (tickets, #111)

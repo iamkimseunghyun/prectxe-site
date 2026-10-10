@@ -57,8 +57,7 @@ export function DeleteButton({
       }
 
       toast({
-        title: '삭제 완료',
-        description: '성공적으로 삭제되었습니다.',
+        title: '삭제했습니다.',
       });
 
       if (onDeleted) {
@@ -70,7 +69,7 @@ export function DeleteButton({
       const message =
         e instanceof Error ? e.message : '삭제 중 오류가 발생했습니다.';
       toast({
-        title: '삭제 실패',
+        title: '삭제하지 못했습니다',
         description: message,
         variant: 'destructive',
       });

@@ -29,18 +29,21 @@ export default async function Page({
   async function onSubmit(formData: JournalFormPayload) {
     'use server';
     const session = await getSession();
-    if (!session.id) redirect('/');
+    if (!session.id) return { success: false, error: '인증이 필요합니다.' };
     const { intent, ...data } = formData;
     const res = await updateArticle(slug, data);
     if (res?.success) {
-      if (intent === 'continue')
-        redirect(`/admin/journal/${res.data?.slug}/edit`);
-      if (intent === 'new') redirect(`/admin/journal/new`);
-      redirect(`/admin/journal`);
+      let redirectTo = '/admin/journal';
+      if (intent === 'continue' && res.data?.slug) {
+        redirectTo = `/admin/journal/${res.data.slug}/edit`;
+      } else if (intent === 'new') {
+        redirectTo = '/admin/journal/new';
+      }
+      return { success: true, redirect: redirectTo };
     }
     return {
       success: false,
-      error: res.error ?? '저장에 실패했습니다.',
+      error: res?.error ?? '저장에 실패했습니다.',
     };
   }
 

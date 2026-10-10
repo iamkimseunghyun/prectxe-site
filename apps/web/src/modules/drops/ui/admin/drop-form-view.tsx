@@ -1,9 +1,10 @@
 'use client';
 
-import { ArrowLeft, Loader2, X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import FormSubmitButton from '@/components/layout/form-submit-button';
 import {
   type MediaItem,
   SortableMediaList,
@@ -23,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { useFormSubmit } from '@/hooks/use-form-submit';
 import { useToast } from '@/hooks/use-toast';
 import {
   getCloudflareImageUrl,
@@ -131,7 +133,7 @@ export function DropFormView({ drop, venues, staff }: DropFormViewProps) {
   const router = useRouter();
   const { toast } = useToast();
   const isEdit = !!drop;
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { run, isSubmitting } = useFormSubmit();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [description, setDescription] = useState(drop?.description ?? '');
@@ -260,84 +262,79 @@ export function DropFormView({ drop, venues, staff }: DropFormViewProps) {
     setMediaItems((prev) => prev.filter((m) => m.id !== id));
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (isSubmitting) return;
-    setIsSubmitting(true);
+    // currentTarget은 핸들러가 끝나면 null이 된다 — await 전에 폼 요소를 잡아 둔다
+    const formEl = e.currentTarget;
 
-    try {
-      // pending 미디어 업로드 (진행률 추적)
-      const pending = mediaItems.filter(
-        (m) => m.file && m.uploadURL && m.status !== 'done'
-      );
-      for (const item of pending) {
-        updateItem(item.id, { status: 'uploading', progress: 0 });
-        const ok = await uploadFileWithProgress(
-          item.uploadURL!,
-          item.file!,
-          (p) => updateItem(item.id, { progress: p })
+    return run(
+      async () => {
+        // pending 미디어 업로드 (진행률 추적)
+        const pending = mediaItems.filter(
+          (m) => m.file && m.uploadURL && m.status !== 'done'
         );
-        if (ok) {
-          updateItem(item.id, { status: 'done', progress: 100 });
-        } else {
-          updateItem(item.id, { status: 'error', error: '업로드 실패' });
-          toast({
-            title: `미디어 업로드에 실패했습니다.`,
-            variant: 'destructive',
-          });
-          setIsSubmitting(false);
-          return;
+        for (const item of pending) {
+          updateItem(item.id, { status: 'uploading', progress: 0 });
+          const ok = await uploadFileWithProgress(
+            item.uploadURL!,
+            item.file!,
+            (p) => updateItem(item.id, { progress: p })
+          );
+          if (ok) {
+            updateItem(item.id, { status: 'done', progress: 100 });
+          } else {
+            updateItem(item.id, { status: 'error', error: '업로드 실패' });
+            return { success: false, error: '미디어를 업로드하지 못했습니다.' };
+          }
         }
+
+        // media 배열 구성 (순서 = mediaItems 배열 순서)
+        const media = mediaItems
+          .filter((m) => m.url)
+          .map((m, idx) => ({
+            type: m.type,
+            url: m.url,
+            alt: m.alt,
+            order: idx,
+          }));
+
+        const fd = new FormData(formEl);
+        const payload = {
+          title: fd.get('title') as string,
+          slug: fd.get('slug') as string,
+          type: fd.get('type') as 'ticket' | 'goods',
+          summary: (fd.get('summary') as string) || undefined,
+          description: description || undefined,
+          eventDate: (fd.get('eventDate') as string) || undefined,
+          eventEndDate: (fd.get('eventEndDate') as string) || undefined,
+          venue: venue.venueText || undefined,
+          venueAddress: venue.venueAddress || undefined,
+          venueId: venue.venueId ?? undefined,
+          notice: (fd.get('notice') as string) || undefined,
+          published,
+          allowReentry,
+          media,
+          credits: credits.map((c) => ({ artistId: c.artistId, role: c.role })),
+        };
+
+        const result = isEdit
+          ? await updateDrop(drop.id, payload)
+          : await createDrop(payload);
+
+        if (!result.success) return { success: false, error: result.error };
+        const id = isEdit ? drop.id : result.data?.id;
+        return {
+          success: true,
+          redirect: id ? `/admin/drops/${id}` : '/admin/drops',
+        };
+      },
+      {
+        successMessage: isEdit
+          ? 'Drop을 수정했습니다.'
+          : 'Drop을 만들었습니다.',
       }
-
-      // media 배열 구성 (순서 = mediaItems 배열 순서)
-      const media = mediaItems
-        .filter((m) => m.url)
-        .map((m, idx) => ({
-          type: m.type,
-          url: m.url,
-          alt: m.alt,
-          order: idx,
-        }));
-
-      const fd = new FormData(e.currentTarget);
-      const payload = {
-        title: fd.get('title') as string,
-        slug: fd.get('slug') as string,
-        type: fd.get('type') as 'ticket' | 'goods',
-        summary: (fd.get('summary') as string) || undefined,
-        description: description || undefined,
-        eventDate: (fd.get('eventDate') as string) || undefined,
-        eventEndDate: (fd.get('eventEndDate') as string) || undefined,
-        venue: venue.venueText || undefined,
-        venueAddress: venue.venueAddress || undefined,
-        venueId: venue.venueId ?? undefined,
-        notice: (fd.get('notice') as string) || undefined,
-        published,
-        allowReentry,
-        media,
-        credits: credits.map((c) => ({ artistId: c.artistId, role: c.role })),
-      };
-
-      const result = isEdit
-        ? await updateDrop(drop.id, payload)
-        : await createDrop(payload);
-
-      if (result.success) {
-        toast({
-          title: isEdit ? 'Drop이 수정되었습니다.' : 'Drop이 생성되었습니다.',
-        });
-        if (isEdit) {
-          router.push(`/admin/drops/${drop.id}`);
-        } else if (result.data) {
-          router.push(`/admin/drops/${result.data.id}`);
-        }
-      } else {
-        toast({ title: result.error, variant: 'destructive' });
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
+    );
   }
 
   async function handleDelete() {
@@ -346,10 +343,14 @@ export function DropFormView({ drop, venues, staff }: DropFormViewProps) {
     setIsDeleting(true);
     const result = await deleteDrop(drop.id);
     if (result.success) {
-      toast({ title: 'Drop이 삭제되었습니다.' });
+      toast({ title: 'Drop을 삭제했습니다.' });
       router.push('/admin/drops');
     } else {
-      toast({ title: result.error, variant: 'destructive' });
+      toast({
+        title: '삭제하지 못했습니다',
+        description: result.error,
+        variant: 'destructive',
+      });
       setIsDeleting(false);
     }
   }
@@ -643,27 +644,27 @@ export function DropFormView({ drop, venues, staff }: DropFormViewProps) {
                   <Switch checked={published} onCheckedChange={setPublished} />
                 </div>
 
-                <Button
+                <FormSubmitButton
                   type="submit"
                   className="w-full"
-                  disabled={isSubmitting}
+                  loading={isSubmitting}
+                  disabled={isDeleting}
                 >
-                  {isSubmitting && (
-                    <Loader2 className="mr-2 h-4 w-4 motion-safe:animate-spin" />
-                  )}
                   {isEdit ? '저장' : '생성'}
-                </Button>
+                </FormSubmitButton>
 
                 {isEdit && (
-                  <Button
+                  <FormSubmitButton
                     type="button"
                     variant="destructive"
                     className="w-full"
                     onClick={() => setShowDeleteDialog(true)}
-                    disabled={isDeleting}
+                    loading={isDeleting}
+                    loadingText="삭제 중…"
+                    disabled={isSubmitting}
                   >
-                    {isDeleting ? '삭제 중...' : '삭제'}
-                  </Button>
+                    삭제
+                  </FormSubmitButton>
                 )}
               </CardContent>
             </Card>

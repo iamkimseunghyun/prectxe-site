@@ -40,15 +40,14 @@ export function useFormActions(formId: string) {
       const result = await deleteForm(formId);
       if (!result.success) throw new Error(result.error || '삭제 실패');
       toast({
-        title: '삭제 완료',
-        description: '폼이 성공적으로 삭제되었습니다.',
+        title: '폼을 삭제했습니다.',
       });
       router.refresh();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다.';
       toast({
-        title: '삭제 실패',
+        title: '삭제하지 못했습니다',
         description: message,
         variant: 'destructive',
       });

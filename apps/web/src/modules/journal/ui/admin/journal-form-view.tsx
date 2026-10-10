@@ -1,13 +1,15 @@
 'use client';
 
 import { X } from 'lucide-react';
-// onSubmit이 성공 시 서버 액션 내부에서 redirect()를 호출하는 구조라, catch에서 이 에러를
-// 실수로 삼키면 리다이렉트 자체가 깨짐 — isRedirectError로 구분해 다시 throw 해야 함
-import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import SingleImageBox from '@/components/image/single-image-box';
 import { RichEditor } from '@/components/rich-editor';
+import {
+  FormActionBar,
+  SAVE_AND_CONTINUE,
+  SAVE_AND_NEW,
+} from '@/components/shared/form-action-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +23,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  type SubmitIntent,
+  type SubmitResult,
+  useFormSubmit,
+} from '@/hooks/use-form-submit';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { toast } from '@/hooks/use-toast';
 import { containsKorean, getImageUrl, slugify, uploadImage } from '@/lib/utils';
@@ -64,7 +71,7 @@ type ProgramOption = {
 };
 
 export type JournalFormPayload = Initial & {
-  intent: 'default' | 'continue' | 'new';
+  intent: SubmitIntent;
 };
 
 export function JournalFormView({
@@ -73,9 +80,7 @@ export function JournalFormView({
   programs,
 }: {
   initial?: Initial;
-  onSubmit: (
-    data: JournalFormPayload
-  ) => Promise<{ success?: boolean; error?: string } | undefined>;
+  onSubmit: (data: JournalFormPayload) => Promise<SubmitResult | undefined>;
   programs?: ProgramOption[];
 }) {
   const [form, setForm] = useState<Initial>({
@@ -95,9 +100,6 @@ export function JournalFormView({
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [slugChecking, setSlugChecking] = useState(false);
   const slugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [intent, setIntent] = useState<'default' | 'continue' | 'new'>(
-    'default'
-  );
   // 슬러그 수동 편집 여부 추적 (편집 모드거나 사용자가 직접 수정한 경우)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(
     Boolean(initial?.slug)
@@ -106,8 +108,9 @@ export function JournalFormView({
   const titleHasKorean = containsKorean(form.title || '');
   // 미리보기 모달 상태
   const [showPreview, setShowPreview] = useState(false);
-  // 저장 진행 상태 — 버튼 중복 클릭 시 이미지 single-use 업로드 URL 재사용 에러 방지
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // 저장 진행 상태 — 중복 제출을 막는다(이미지 single-use 업로드 URL 재사용 에러 방지)
+  const { run, notifyInvalid, selectIntent, activeIntent, isSubmitting } =
+    useFormSubmit();
   // 업로드 재시도 진행 상태 — 저장 버튼과 별개 액션이라 동일한 이유로 자체 가드가 필요
   const [isRetryingUpload, setIsRetryingUpload] = useState(false);
 
@@ -158,58 +161,38 @@ export function JournalFormView({
     onImageUrlChange: (url) => handleChange('cover', url),
   });
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    if (slugAvailable === false) return;
+    if (isSubmitting || isRetryingUpload || slugAvailable === false) return;
     if (
       !String(form.title || '').trim() ||
       !String(form.slug || '').trim() ||
       !String(form.body || '').trim()
     ) {
-      toast({
-        title: '입력 값을 확인해주세요',
-        description: '제목/슬러그/본문은 필수입니다.',
-      });
+      notifyInvalid('제목/슬러그/본문은 필수입니다.');
       return;
     }
-    setIsSubmitting(true);
-    try {
-      if (imageFile) {
-        const uploadSuccess = await uploadImage(imageFile, uploadURL);
-        if (!uploadSuccess) {
-          toast({
-            title: '이미지 업로드 실패',
-            description: '이미지를 업로드하는 중 오류가 발생했습니다.',
-          });
-          return;
+    return run(
+      async (intent) => {
+        if (imageFile) {
+          const uploadSuccess = await uploadImage(imageFile, uploadURL);
+          if (!uploadSuccess) {
+            return {
+              success: false,
+              error: '커버 이미지를 업로드하지 못했습니다.',
+            };
+          }
+          finalizeUpload();
         }
-        finalizeUpload();
-      }
-      const payload = {
-        ...form,
-        tags: form.tags ?? [],
-        intent,
-      };
-      const res = await onSubmit(payload);
-      if (res?.success === false) {
-        toast({
-          title: '오류',
-          description: res.error || '저장 중 오류가 발생했습니다.',
-        });
-      }
-    } catch (error) {
-      // redirect()는 Next.js가 내부적으로 특수 에러를 던져 처리하는 방식 — 그대로 다시 throw해야
-      // 실제 리다이렉트가 진행됨. 그 외의 예외만 사용자에게 토스트로 알림
-      if (isRedirectError(error)) throw error;
-      toast({
-        title: '오류',
-        description:
-          '저장 중 예기치 못한 오류가 발생했습니다. 다시 시도해주세요.',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+        const payload: JournalFormPayload = {
+          ...form,
+          tags: form.tags ?? [],
+          intent,
+        };
+        return onSubmit(payload);
+      },
+      { successMessage: '글을 저장했습니다.' }
+    );
   };
 
   // Slug check
@@ -440,9 +423,9 @@ export function JournalFormView({
                       );
                       if (!uploadSuccess) {
                         toast({
-                          title: '이미지 업로드 실패',
-                          description:
-                            '이미지를 업로드하는 중 오류가 발생했습니다.',
+                          title: '이미지를 업로드하지 못했습니다',
+                          description: '네트워크를 확인하고 다시 시도해주세요.',
+                          variant: 'destructive',
                         });
                         return;
                       }
@@ -480,39 +463,14 @@ export function JournalFormView({
         </CardContent>
       </Card>
 
-      <div className="flex justify-end gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setShowPreview(true)}
-          disabled={isSubmitting}
-        >
-          미리보기
-        </Button>
-        <Button
-          type="submit"
-          variant="outline"
-          onClick={() => setIntent('new')}
-          disabled={slugAvailable === false || isSubmitting}
-        >
-          {isSubmitting ? '저장 중...' : '저장 후 새로 작성'}
-        </Button>
-        <Button
-          type="submit"
-          variant="outline"
-          onClick={() => setIntent('continue')}
-          disabled={slugAvailable === false || isSubmitting}
-        >
-          {isSubmitting ? '저장 중...' : '저장 후 계속 편집'}
-        </Button>
-        <Button
-          type="submit"
-          onClick={() => setIntent('default')}
-          disabled={slugAvailable === false || isSubmitting}
-        >
-          {isSubmitting ? '저장 중...' : '저장'}
-        </Button>
-      </div>
+      <FormActionBar
+        isSubmitting={isSubmitting}
+        activeIntent={activeIntent}
+        disabled={slugAvailable === false || isRetryingUpload}
+        extraIntents={[SAVE_AND_CONTINUE, SAVE_AND_NEW]}
+        onSelectIntent={selectIntent}
+        onPreview={() => setShowPreview(true)}
+      />
 
       {/* 미리보기 모달 */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
