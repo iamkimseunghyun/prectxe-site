@@ -22,6 +22,7 @@ export function ExpandableText({
   const [open, setOpen] = useState(false);
   const [overflowing, setOverflowing] = useState(false);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: text는 효과 안에서 읽지 않지만 바뀌면 다시 재야 한다 — 접힌 상자는 6줄로 고정이라 글이 바뀌어도(6줄 넘는 글 → 딱 6줄인 글) 크기가 같으면 ResizeObserver가 울리지 않는다
   useEffect(() => {
     const el = ref.current;
     // 펼친 상태에선 잘린 게 없어 잴 수 없다 — 접힌 상태의 마지막 측정값을 쓴다.
@@ -31,7 +32,7 @@ export function ExpandableText({
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [open]);
+  }, [open, text]);
 
   return (
     <div>

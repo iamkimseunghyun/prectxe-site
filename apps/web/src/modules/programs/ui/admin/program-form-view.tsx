@@ -191,6 +191,9 @@ export function ProgramFormView({
   useEffect(() => {
     if (!imageFile) return;
     let cancelled = false;
+    // 읽는 동안 이전 이미지의 크기가 새 이미지와 함께 제출되지 않도록 먼저 비운다
+    // (못 읽거나 아직 읽는 중이면 null → 4:3 폴백이, 틀린 비율보다 낫다).
+    setForm((f) => ({ ...f, heroWidth: null, heroHeight: null }));
     readImageSize(imageFile).then((size) => {
       if (cancelled) return;
       setForm((f) => ({
