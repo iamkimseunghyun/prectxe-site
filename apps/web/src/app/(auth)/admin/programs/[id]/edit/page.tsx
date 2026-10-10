@@ -69,12 +69,17 @@ export default async function Page({
           endAt: program.endAt?.toISOString().split('T')[0] ?? undefined,
           city: program.city ?? undefined,
           heroUrl: program.heroUrl ?? undefined,
+          heroWidth: program.heroWidth,
+          heroHeight: program.heroHeight,
           venue: program.venue ?? undefined,
           venueId: program.venueId ?? null,
           organizer: program.organizer ?? undefined,
           images: program.images.map((i) => ({
             imageUrl: i.imageUrl,
             alt: i.alt,
+            width: i.width,
+            height: i.height,
+            caption: i.caption,
             order: i.order,
           })),
           credits: program.credits.map((c) => ({

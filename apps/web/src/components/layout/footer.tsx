@@ -4,7 +4,7 @@ import { NewsletterForm } from './newsletter-form';
 
 const EXPLORE_LINKS = [
   { href: '/drops', label: 'Drops' },
-  { href: '/programs', label: 'Programs' },
+  { href: '/programs', label: 'Archive' },
   { href: '/journal', label: 'Journal' },
 ];
 

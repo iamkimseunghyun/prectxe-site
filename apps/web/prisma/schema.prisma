@@ -18,6 +18,8 @@ model Program {
   endAt       DateTime?
   city        String?
   heroUrl     String?
+  heroWidth   Int?
+  heroHeight  Int?
   venue       String?
   organizer   String?
   userId      String
@@ -32,12 +34,18 @@ model Program {
   articles    Article[]
 
   @@index([isFeatured, updatedAt])
+  @@index([startAt])
 }
 
 model ProgramImage {
   id        String   @id @default(cuid())
   imageUrl  String
   alt       String
+  // 원본 크기 — 갤러리가 이미지 비율대로 배치하려고 쓴다. 백필 전 행은 null(4:3 폴백).
+  width     Int?
+  height    Int?
+  // 사진 설명·촬영자 표기. 라이트박스에 보인다(alt는 접근성용이라 별도).
+  caption   String?
   order     Int      @default(0)
   programId String
   createdAt DateTime @default(now())

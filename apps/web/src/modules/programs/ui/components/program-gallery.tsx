@@ -1,7 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import {
+  imageRatio,
+  JustifiedGrid,
+  JustifiedItem,
+} from '@/components/image/justified-grid';
 import {
   Carousel,
   type CarouselApi,
@@ -18,53 +23,41 @@ import {
 } from '@/components/ui/dialog';
 import { getImageUrl } from '@/lib/utils';
 
-type GalleryImage = { id: string; imageUrl: string; alt: string };
+type GalleryImage = {
+  id: string;
+  imageUrl: string;
+  width: number | null;
+  height: number | null;
+  caption: string | null;
+};
 
-export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
+/**
+ * 프로그램 갤러리 — 이미지를 원본 비율대로 한 줄씩 채워 보여 주고,
+ * 클릭하면 전체 화면 라이트박스(캡션 표시)로 넘겨 본다.
+ */
+export default function ProgramGallery({
+  images,
+  title,
+}: {
+  images: GalleryImage[];
+  title: string;
+}) {
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
   const [modalApi, setModalApi] = useState<CarouselApi | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [isPaused, setIsPaused] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Drag state - use refs for values that change during drag
-  const [isDragging, setIsDragging] = useState(false);
-  const dragState = useRef({ startX: 0, scrollLeft: 0, hasDragged: false });
+  // 파일명이 들어 있던 alt 대신: 캡션이 있으면 캡션, 없으면 "제목 번호"
+  const altOf = (img: GalleryImage, i: number) =>
+    img.caption || `${title} ${i + 1}`;
 
-  // Auto-scroll effect
-  useEffect(() => {
-    const container = scrollRef.current;
-    if (!container || isPaused || open || isDragging) return;
-
-    const speed = 0.5; // pixels per frame
-    // overflow가 이 값보다 작으면 정지 — 살짝 넘칠 때 좁은 폭을 왕복하며 고장 난 듯 보이는 문제 방지
-    const MIN_OVERFLOW_PX = 240;
-    let animationId: number;
-
-    const scroll = () => {
-      const overflow = container.scrollWidth - container.clientWidth;
-      if (overflow < MIN_OVERFLOW_PX) {
-        if (container.scrollLeft !== 0) container.scrollLeft = 0;
-      } else if (container.scrollLeft >= overflow) {
-        container.scrollLeft = 0;
-      } else {
-        container.scrollLeft += speed;
-      }
-      animationId = requestAnimationFrame(scroll);
-    };
-
-    animationId = requestAnimationFrame(scroll);
-    return () => cancelAnimationFrame(animationId);
-  }, [isPaused, open, isDragging]);
-
-  // Modal carousel sync
+  // 열 때 클릭한 이미지로 이동
   useEffect(() => {
     if (!open || !modalApi) return;
     modalApi.scrollTo(index, true);
   }, [open, modalApi, index]);
 
-  // Track current slide index from modal carousel
-  const [currentSlide, setCurrentSlide] = useState(0);
+  // 라이트박스 현재 슬라이드 추적(캡션·카운터용)
   useEffect(() => {
     if (!modalApi) return;
     const onSelect = () => setCurrentSlide(modalApi.selectedScrollSnap());
@@ -75,99 +68,45 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
     };
   }, [modalApi]);
 
-  const handleImageClick = useCallback((i: number) => {
-    if (dragState.current.hasDragged) return; // Prevent click after drag
-    setIndex(i);
-    setOpen(true);
-  }, []);
-
-  // Drag handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
-    const container = scrollRef.current;
-    if (!container) return;
-    e.preventDefault(); // Prevent text selection
-    setIsDragging(true);
-    dragState.current = {
-      startX: e.clientX,
-      scrollLeft: container.scrollLeft,
-      hasDragged: false,
-    };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const container = scrollRef.current;
-    if (!container) return;
-    e.preventDefault();
-    const dx = e.clientX - dragState.current.startX;
-    container.scrollLeft = dragState.current.scrollLeft - dx;
-    if (Math.abs(dx) > 5) {
-      dragState.current.hasDragged = true;
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    // Reset hasDragged after a short delay
-    setTimeout(() => {
-      dragState.current.hasDragged = false;
-    }, 50);
-  };
-
-  const handleMouseLeave = () => {
-    if (isDragging) {
-      setIsDragging(false);
-      setTimeout(() => {
-        dragState.current.hasDragged = false;
-      }, 50);
-    }
-    setIsPaused(false);
-  };
+  const current = images[currentSlide];
 
   return (
     <div>
-      {/* Horizontal scroll gallery */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: drag-to-scroll container — mouse-only enhancement over native horizontal scroll; thumbnails inside are focusable buttons */}
-      <div
-        ref={scrollRef}
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={handleMouseLeave}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onTouchStart={() => setIsPaused(true)}
-        onTouchEnd={() => setIsPaused(false)}
-        className={`scrollbar-hide -mx-4 flex select-none gap-3 overflow-x-auto px-4 ${
-          isDragging ? 'cursor-grabbing' : 'cursor-grab'
-        }`}
-      >
-        {images.map((img, i) => (
-          <button
-            key={img.id}
-            type="button"
-            onClick={() => handleImageClick(i)}
-            className="group relative aspect-4/3 w-64 shrink-0 overflow-hidden sm:w-72"
-          >
-            <Image
-              src={getImageUrl(img.imageUrl, 'thumbnail')}
-              alt={img.alt}
-              fill
-              draggable={false}
-              sizes="(min-width: 640px) 288px, 256px"
-              className="pointer-events-none object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-          </button>
-        ))}
-      </div>
+      <JustifiedGrid className="gap-y-2">
+        {images.map((img, i) => {
+          const ratio = imageRatio(img.width, img.height);
+          return (
+            <JustifiedItem key={img.id} ratio={ratio} rowHeight="md">
+              <button
+                type="button"
+                aria-label={`${altOf(img, i)} 크게 보기`}
+                onClick={() => {
+                  setIndex(i);
+                  setOpen(true);
+                }}
+                className="group relative block w-full overflow-hidden bg-neutral-100"
+                style={{ aspectRatio: ratio }}
+              >
+                <Image
+                  src={getImageUrl(img.imageUrl, 'smaller')}
+                  alt={altOf(img, i)}
+                  fill
+                  sizes="(min-width: 1152px) 480px, (min-width: 640px) 50vw, 100vw"
+                  className="object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
+                />
+              </button>
+            </JustifiedItem>
+          );
+        })}
+      </JustifiedGrid>
 
-      {/* Fullscreen modal */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           showCloseButton={false}
           className="border-none bg-background/95 p-0 shadow-none backdrop-blur-sm supports-backdrop-filter:bg-background/80 sm:max-w-5xl sm:rounded-xl md:max-w-6xl"
         >
           <DialogHeader className="sr-only">
-            <DialogTitle>Gallery</DialogTitle>
+            <DialogTitle>{title} 갤러리</DialogTitle>
           </DialogHeader>
           <div className="relative">
             <Carousel
@@ -176,12 +115,12 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
               className="w-full bg-black"
             >
               <CarouselContent className="ml-0 rounded-none">
-                {images.map((img) => (
+                {images.map((img, i) => (
                   <CarouselItem key={img.id} className="pl-0">
                     <div className="relative aspect-16/10.5 w-full overflow-hidden bg-black">
                       <Image
                         src={getImageUrl(img.imageUrl, 'public')}
-                        alt={img.alt}
+                        alt={altOf(img, i)}
                         fill
                         sizes="100vw"
                         className="object-contain"
@@ -196,6 +135,7 @@ export default function ProgramGallery({ images }: { images: GalleryImage[] }) {
             </Carousel>
             <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 to-transparent p-4 text-white">
               <div className="mx-auto flex max-w-5xl items-end justify-between gap-3 text-xs sm:text-sm">
+                <span className="min-w-0 break-words">{current?.caption}</span>
                 <span className="shrink-0 rounded bg-white/10 px-2 py-0.5">
                   {currentSlide + 1} / {images.length}
                 </span>

@@ -37,6 +37,7 @@ import {
   formatDateForForm,
   formatKstDateRange,
   getImageUrl,
+  readImageSize,
   slugify,
   uploadImage,
 } from '@/lib/utils';
@@ -73,6 +74,9 @@ type Credit = {
 type ProgramImageInput = {
   imageUrl: string;
   alt: string;
+  width?: number | null;
+  height?: number | null;
+  caption?: string | null;
   order: number;
 };
 
@@ -123,6 +127,9 @@ export function ProgramFormView({
     endAt: initial?.endAt ? formatDateForForm(initial.endAt) : '',
     city: initial?.city ?? '',
     heroUrl: initial?.heroUrl ?? '',
+    // 대표 이미지를 바꾸지 않으면 기존 크기를 그대로 보낸다(저장이 null로 덮지 않게)
+    heroWidth: initial?.heroWidth ?? null,
+    heroHeight: initial?.heroHeight ?? null,
     venue: initial?.venue ?? '',
     venueId: initial?.venueId ?? null,
     organizer: initial?.organizer ?? '',
@@ -152,6 +159,7 @@ export function ProgramFormView({
     multiImagePreview,
     handleMultiImageChange,
     removeMultiImage,
+    updateCaption,
     error: galleryError,
     uploadPendingWithProgress,
     retryAtWithProgress,
@@ -175,6 +183,26 @@ export function ProgramFormView({
 
   const handleChange = (key: keyof ProgramCreateInput, value: string | null) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  // 대표 이미지를 새로 고르면 크기도 같이 읽는다. 읽지 못하면(HEIC 등) null →
+  // 목록은 4:3 폴백. 파일 선택 이벤트가 아니라 훅의 imageFile을 따라간다:
+  // imageFile은 검증을 통과한 파일만 담기므로, 거절된 파일(용량 초과 등)의 크기가
+  // 기존 대표 이미지에 붙는 일이 없고, 빠르게 다시 고르면 이전 읽기는 버려진다.
+  useEffect(() => {
+    if (!imageFile) return;
+    let cancelled = false;
+    readImageSize(imageFile).then((size) => {
+      if (cancelled) return;
+      setForm((f) => ({
+        ...f,
+        heroWidth: size?.width ?? null,
+        heroHeight: size?.height ?? null,
+      }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [imageFile]);
 
   // 공개/비공개 토글 핸들러
   const handlePublishToggle = (checked: boolean) => {
@@ -510,6 +538,7 @@ export function ProgramFormView({
               previews={multiImagePreview}
               handleMultiImageChange={handleMultiImageChange}
               removeMultiImage={removeMultiImage}
+              onCaptionChange={updateCaption}
               error={galleryError}
               onRetryUpload={async (idx) => {
                 await retryAtWithProgress(idx);

@@ -1,13 +1,17 @@
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 
 import { getCloudflareImageUrl } from '@/lib/cdn/cloudflare';
-import { validateImageFile } from '@/lib/utils';
+import { readImageSize, validateImageFile } from '@/lib/utils';
 
 // Base image type that represents the core image data
 interface BaseImage {
   imageUrl: string;
   alt: string;
   order: number;
+  // 갤러리 비율 배치용 원본 크기 / 사진 설명. 없으면 null·undefined.
+  width?: number | null;
+  height?: number | null;
+  caption?: string | null;
 }
 
 // Type for image preview with additional properties needed during upload
@@ -32,6 +36,7 @@ interface ImageUploadHookReturn {
   error: string;
   handleMultiImageChange: (e: ChangeEvent<HTMLInputElement>) => Promise<void>;
   removeMultiImage: (index: number) => void;
+  updateCaption: (index: number, caption: string) => void;
   markAllAsUploaded: () => void;
   retryAt: (
     index: number,
@@ -69,11 +74,16 @@ export function useMultiImageUpload({
 
   useEffect(() => {
     onGalleryChangeRef.current?.(
-      multiImagePreview.map(({ imageUrl, alt, order }) => ({
-        imageUrl,
-        alt,
-        order,
-      }))
+      multiImagePreview.map(
+        ({ imageUrl, alt, order, width, height, caption }) => ({
+          imageUrl,
+          alt,
+          order,
+          width,
+          height,
+          caption,
+        })
+      )
     );
   }, [multiImagePreview]);
 
@@ -86,6 +96,8 @@ export function useMultiImageUpload({
     const { uploadURL, imageUrl } = await getCloudflareImageUrl();
 
     const previewUrl = URL.createObjectURL(file);
+    // 읽지 못해도(HEIC 등) 업로드는 계속한다 — 크기 없이 저장하고 4:3 폴백
+    const size = await readImageSize(file);
 
     return {
       preview: previewUrl,
@@ -93,6 +105,9 @@ export function useMultiImageUpload({
       uploadURL: uploadURL,
       imageUrl: imageUrl,
       alt: file.name || 'No description',
+      width: size?.width ?? null,
+      height: size?.height ?? null,
+      caption: null,
       order: startIndex + index,
       status: 'idle',
       progress: 0,
@@ -146,6 +161,12 @@ export function useMultiImageUpload({
           order: i,
         }));
     });
+  };
+
+  const updateCaption = (index: number, caption: string) => {
+    setMultiImagePreview((prev) =>
+      prev.map((p, i) => (i === index ? { ...p, caption } : p))
+    );
   };
 
   const markAllAsUploaded = () => {
@@ -409,6 +430,9 @@ export function useMultiImageUpload({
     const images: BaseImage[] = multiImagePreview.map((item, i) => ({
       imageUrl: resolvedUrls[i] ?? item.imageUrl,
       alt: item.alt,
+      width: item.width ?? null,
+      height: item.height ?? null,
+      caption: item.caption?.trim() ? item.caption.trim() : null,
       order: item.order,
     }));
     return { successCount: success, failCount: fail, images };
@@ -418,6 +442,7 @@ export function useMultiImageUpload({
     error,
     handleMultiImageChange,
     removeMultiImage,
+    updateCaption,
     markAllAsUploaded,
     retryAt,
     uploadPending,
