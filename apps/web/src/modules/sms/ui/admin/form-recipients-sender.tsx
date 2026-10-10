@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
   Form,
   FormControl,
@@ -50,6 +51,8 @@ type FormValues = z.infer<typeof formSchema>;
 export function FormRecipientsSender() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  // 확인창에서 "발송"을 누르기 전까지 보류 중인 입력값
+  const [pendingSend, setPendingSend] = useState<FormValues | null>(null);
   const [forms, setForms] = useState<
     Array<{
       id: string;
@@ -103,7 +106,12 @@ export function FormRecipientsSender() {
     }
   };
 
-  const onSubmit = async (data: FormValues) => {
+  // 발송은 취소할 수 없고 건당 요금이 든다 — 확인창을 거친 뒤에 보낸다
+  const onSubmit = (data: FormValues) => setPendingSend(data);
+
+  const send = async (data: FormValues) => {
+    // 확인창의 "발송"이 겹쳐 눌려도 한 번만 나가게 한다(발송은 취소할 수 없다)
+    if (isLoading) return;
     try {
       setIsLoading(true);
 
@@ -254,6 +262,20 @@ export function FormRecipientsSender() {
             </Button>
           </form>
         </Form>
+
+        <ConfirmDialog
+          open={pendingSend !== null}
+          onOpenChange={(open) => {
+            if (!open) setPendingSend(null);
+          }}
+          title="SMS 발송 확인"
+          description={`폼 응답자 ${selectedFormInfo?.validPhoneCount ?? 0}명에게 즉시 발송됩니다. 이 작업은 취소할 수 없고 건당 요금이 부과됩니다.`}
+          confirmText="발송"
+          cancelText="취소"
+          onConfirm={() => {
+            if (pendingSend) void send(pendingSend);
+          }}
+        />
       </CardContent>
     </Card>
   );
