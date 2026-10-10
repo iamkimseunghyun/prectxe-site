@@ -31,7 +31,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **PostgreSQL** via **Prisma** ORM (Neon), **Iron Session** (cookie auth, 7-day expiry)
 - **Biome v2** for lint/format — line width 80, single quotes (JS), double quotes (JSX), auto-organizes imports
   - Key rules: `noUnusedImports: warn`, `noExplicitAny: warn`, `useImportType: warn`, `noUnusedVariables: warn`, `useExhaustiveDependencies: warn`
-- **Tailwind CSS v3** + **shadcn/ui** (Radix) + **CVA**
+- **Tailwind CSS v4** + **shadcn/ui** (Radix) + **CVA**
 - **TanStack Query** (client state — `refetchOnFocus: false`, `retry: 3`), **React Hook Form** + **Zod** (validation)
 - **TipTap** (rich text), **@dnd-kit** (drag-drop), **react-day-picker** (calendar)
 - **Cloudflare Images/Stream** (media hosting), **PortOne V2** (payments)
@@ -183,6 +183,14 @@ src/
 - 구독 시 `contacts.create` + `contacts.segments.add` 동시 수행 — 이미 구독된 사용자도 segment에 없으면 자동 편입(idempotent)
 - 어드민 `/admin/email` > **뉴스레터 발송** 탭에서 `broadcasts.create({send:true})` 호출. 발송 기록은 `EmailCampaign.broadcastId`에 저장(수신자 목록은 Resend가 관리, `EmailRecipient` 미사용)
 - 템플릿 푸터에 `{{{RESEND_UNSUBSCRIBE_URL}}}` 플레이스홀더 — Resend가 수신자별로 자동 치환
+
+### Archive 갤러리 (Program 공개 화면)
+- 공개 `/programs`는 메뉴·제목 모두 **Archive**. URL·모델명(`Program`)은 그대로 — 이름 바꾸기는 참조 45개 + prod 수동 마이그레이션이라 효과 대비 비싸서 미뤘다. **Archive = 행사의 기록**(이미지·크레딧·공식 소개문), **Journal = 직접 쓴 글**. `Program.description`은 보도자료 원문이라 저널로 옮기지 않고 상세 하단 "소개"에 둔다(길면 `ExpandableText`로 접음).
+- 목록은 연도 섹션 + 유형 필터(`?type=`), 대표 이미지를 **원본 비율대로** 한 줄씩 채운다. 배치는 `components/image/justified-grid.tsx`(순수 CSS flex — 항목마다 `flex-grow: 비율`, `flex-basis: 비율 × 행 높이`, 컨테이너 끝 `after:grow-[999]`로 마지막 줄이 늘어나지 않게). 상세 갤러리도 같은 프리미티브를 쓴다.
+- 비율을 알려면 크기가 필요하다: `ProgramImage.width/height`, `Program.heroWidth/heroHeight`(전부 nullable — 모르면 4:3 폴백, 비율은 0.7~2.4로 clamp). 어드민 업로드 때 브라우저가 `readImageSize`로 읽어 보낸다(HEIC 등 못 읽으면 null, 업로드는 막지 않는다). 기존 행은 `bun scripts/archive-backfill-dimensions.ts`(기본 dry-run, `--apply`)로 채운다.
+- **편집 저장은 `deleteMany` + `createMany`**라 어드민 폼이 `width/height/caption`을 끝까지 통과시켜야 한다(편집 페이지 `initial.images` 매핑 → 훅 → 페이로드). 하나라도 빠지면 저장하는 순간 크기·캡션이 지워진다.
+- 사진 설명·촬영자는 별도 필드 없이 `ProgramImage.caption` 한 칸(라이트박스에 표시). `alt`는 업로드 파일명이라 화면에서 쓰지 않는다.
+- 공개 목록 쿼리는 `modules/programs/server/queries.ts`(`getArchiveItems`, 인수 없는 단일 캐시 키 — 필터·연도 묶기는 호출부 메모리). 수백 건을 넘으면 연도 단위로 나눌 것. (무한스크롤 전용이던 `/api/programs/list`는 호출처가 없어져 삭제했다.)
 
 ### OG Images
 - Programs, Journal, Drops all have `opengraph-image.tsx` route handlers

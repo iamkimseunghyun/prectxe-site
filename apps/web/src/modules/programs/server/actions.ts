@@ -234,6 +234,8 @@ export async function createProgram(input: unknown, _userId: string) {
       endAt: data.endAt ? parseKstDateInput(data.endAt) : null,
       city: data.city ?? null,
       heroUrl: data.heroUrl ?? null,
+      heroWidth: data.heroWidth ?? null,
+      heroHeight: data.heroHeight ?? null,
       venue: data.venue ?? null,
       venueId: data.venueId ?? null,
       organizer: data.organizer ?? null,
@@ -294,6 +296,7 @@ export async function updateProgram(id: string, input: unknown) {
   }
 
   const hasNewCredits = data.credits && data.credits.length > 0;
+  const heroChanged = (data.heroUrl ?? null) !== existing.heroUrl;
 
   const updated = await prisma.program.update({
     where: { id },
@@ -308,6 +311,21 @@ export async function updateProgram(id: string, input: unknown) {
       endAt: data.endAt ? parseKstDateInput(data.endAt) : null,
       city: data.city ?? null,
       heroUrl: data.heroUrl ?? null,
+      // 대표 이미지 크기: 요청에 명시된 값을 우선하고, 생략했으면 이미지가 그대로일
+      // 때만 기존 값을 유지한다(undefined = 변경 없음). 이미지를 바꿨는데 새 크기를
+      // 모르면 이전 이미지의 크기가 남지 않도록 비운다(목록은 4:3 폴백).
+      heroWidth:
+        data.heroWidth !== undefined
+          ? data.heroWidth
+          : heroChanged
+            ? null
+            : undefined,
+      heroHeight:
+        data.heroHeight !== undefined
+          ? data.heroHeight
+          : heroChanged
+            ? null
+            : undefined,
       venue: data.venue ?? null,
       venueId: data.venueId ?? null,
       organizer: data.organizer ?? null,

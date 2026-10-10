@@ -22,6 +22,9 @@ interface BaseImage {
   imageUrl: string;
   alt: string;
   order: number;
+  width?: number | null;
+  height?: number | null;
+  caption?: string | null;
 }
 
 interface ImagePreview extends BaseImage {
@@ -46,6 +49,8 @@ interface MultiImageSectionProps {
   handleMultiImageChange: (e: ChangeEvent<HTMLInputElement>) => Promise<void>;
   removeMultiImage: (index: number) => void;
   onRetryUpload?: (index: number) => Promise<void>;
+  /** 주면 이미지마다 설명(캡션) 입력칸을 보여 준다. 촬영자 표기도 여기에 적는다. */
+  onCaptionChange?: (index: number, caption: string) => void;
 }
 
 // Sub-components
@@ -140,30 +145,44 @@ const MultiImageBox = ({
   handleMultiImageChange,
   removeMultiImage,
   onRetryUpload,
+  onCaptionChange,
 }: MultiImageSectionProps) => {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
         {previews.map((preview, index) => (
-          <div key={preview.preview} className="relative">
-            <ImagePreviewItem
-              preview={preview}
-              index={index}
-              register={register}
-              onRemove={() => removeMultiImage(index)}
-            />
-            {preview.error && onRetryUpload && (
-              <div className="absolute bottom-2 right-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  className="h-7 px-2"
-                  onClick={() => onRetryUpload(index)}
-                >
-                  <RotateCcw className="mr-1 h-3 w-3" /> 재시도
-                </Button>
-              </div>
+          <div key={preview.preview}>
+            <div className="relative">
+              <ImagePreviewItem
+                preview={preview}
+                index={index}
+                register={register}
+                onRemove={() => removeMultiImage(index)}
+              />
+              {preview.error && onRetryUpload && (
+                <div className="absolute bottom-2 right-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="h-7 px-2"
+                    onClick={() => onRetryUpload(index)}
+                  >
+                    <RotateCcw className="mr-1 h-3 w-3" /> 재시도
+                  </Button>
+                </div>
+              )}
+            </div>
+            {onCaptionChange && (
+              <input
+                type="text"
+                value={preview.caption ?? ''}
+                maxLength={300}
+                placeholder="설명 · 촬영자 (선택)"
+                aria-label={`${index + 1}번째 이미지 설명`}
+                onChange={(e) => onCaptionChange(index, e.target.value)}
+                className="mt-2 w-full rounded-md border border-neutral-200 px-2 py-1.5 text-xs placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-hidden"
+              />
             )}
           </div>
         ))}

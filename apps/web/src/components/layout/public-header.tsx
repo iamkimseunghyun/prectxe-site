@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
  */
 const NAV_ITEMS = [
   { href: '/drops', label: 'Drops' },
-  { href: '/programs', label: 'Programs' },
+  { href: '/programs', label: 'Archive' },
   { href: '/journal', label: 'Journal' },
 ];
 

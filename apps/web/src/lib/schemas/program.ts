@@ -27,6 +27,8 @@ export const programBaseSchema = z.object({
     .url('유효한 이미지 URL이어야 합니다.')
     .optional()
     .nullable(),
+  heroWidth: z.number().int().positive().optional().nullable(),
+  heroHeight: z.number().int().positive().optional().nullable(),
   venue: z.string().optional().nullable(),
   venueId: z.string().optional().nullable(),
   organizer: z.string().optional().nullable(),
@@ -47,6 +49,10 @@ export const programCreateSchema = programBaseSchema.extend({
       z.object({
         imageUrl: z.string().url(),
         alt: z.string().default(''),
+        // 갤러리 비율 배치용 원본 크기. 읽지 못한 이미지(HEIC 등)는 null.
+        width: z.number().int().positive().optional().nullable(),
+        height: z.number().int().positive().optional().nullable(),
+        caption: z.string().trim().max(300).optional().nullable(),
         order: z.number().default(0),
       })
     )

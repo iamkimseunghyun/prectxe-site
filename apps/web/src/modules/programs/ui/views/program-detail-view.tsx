@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import ProgramSchema from '@/components/seo/program-schema';
 import { BackButton } from '@/components/shared/back-button';
 import { CopyUrlButton } from '@/components/shared/copy-url-button';
+import { ExpandableText } from '@/components/shared/expandable-text';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   artistInitials,
@@ -13,8 +14,18 @@ import {
   getImageUrl,
 } from '@/lib/utils';
 import { listArticlesByProgram } from '@/modules/journal/server/actions';
+import {
+  isProgramType,
+  kstYear,
+  PROGRAM_TYPE_LABEL,
+} from '@/modules/programs/constants';
 import { getProgramBySlug } from '@/modules/programs/server/actions';
 import ProgramGallery from '@/modules/programs/ui/components/program-gallery';
+
+// 대표 이미지는 가로로 넓게 — 세로 사진이 화면을 다 차지하지 않도록 비율을 제한한다.
+const HERO_MIN_RATIO = 1.5;
+const HERO_MAX_RATIO = 2.4;
+const HERO_FALLBACK_RATIO = 16 / 9;
 
 export async function ProgramDetailView({ slug }: { slug: string }) {
   const program = await getProgramBySlug(slug);
@@ -26,8 +37,23 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
   const start = program.startAt ? new Date(program.startAt) : null;
   const end = program.endAt ? new Date(program.endAt) : (start ?? undefined);
 
+  const kicker = [
+    isProgramType(program.type) ? PROGRAM_TYPE_LABEL[program.type] : null,
+    program.startAt ? kstYear(program.startAt) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  const heroRatio =
+    program.heroWidth && program.heroHeight
+      ? Math.min(
+          HERO_MAX_RATIO,
+          Math.max(HERO_MIN_RATIO, program.heroWidth / program.heroHeight)
+        )
+      : HERO_FALLBACK_RATIO;
+
   return (
-    <article className="relative mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <article className="relative mx-auto max-w-6xl px-6 py-10 md:px-10 md:py-14">
       <BackButton fallbackHref="/programs" />
       <ProgramSchema
         program={{
@@ -43,22 +69,20 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
           slug: program.slug,
         }}
       />
-      {program.heroUrl && (
-        <div className="relative mb-6 aspect-video w-full overflow-hidden rounded-lg">
-          <Image
-            src={getImageUrl(program.heroUrl, 'public')}
-            alt={program.title}
-            fill
-            className="object-cover"
-          />
-        </div>
-      )}
-      <header className="mb-8">
+
+      <header className="mb-8 mt-6 md:mb-10">
+        {kicker && (
+          <p className="mb-3 text-xs font-medium uppercase tracking-[0.25em] text-neutral-400">
+            {kicker}
+          </p>
+        )}
         <div className="flex items-start justify-between gap-4">
-          <h1 className="text-3xl font-bold sm:text-4xl">{program.title}</h1>
-          <CopyUrlButton className="mt-1.5 shrink-0 text-neutral-400 transition-colors hover:text-neutral-600" />
+          <h1 className="text-3xl font-light leading-tight tracking-tight text-neutral-900 sm:text-5xl">
+            {program.title}
+          </h1>
+          <CopyUrlButton className="mt-2 shrink-0 text-neutral-400 transition-colors hover:text-neutral-600" />
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-neutral-500">
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-500">
           {start && end && <span>{formatKstDateRange(start, end)}</span>}
           {(program.city || program.venue) && (
             <span>
@@ -68,61 +92,107 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
         </div>
       </header>
 
-      {program.description && (
-        <p className="mb-12 whitespace-pre-line break-words leading-relaxed text-neutral-700">
-          {program.description}
-        </p>
-      )}
+      <div className="mb-16 space-y-3">
+        {program.heroUrl && (
+          <div
+            className="relative w-full overflow-hidden bg-neutral-100"
+            style={{ aspectRatio: heroRatio }}
+          >
+            <Image
+              src={getImageUrl(program.heroUrl, 'public')}
+              alt={program.title}
+              fill
+              priority
+              sizes="(min-width: 1152px) 1072px, 100vw"
+              className="object-cover"
+            />
+          </div>
+        )}
 
-      {program.credits?.length ? (
-        <section className="mb-12">
-          <ul className="flex flex-wrap gap-4">
-            {program.credits.map((c) => {
-              const kr = c.artist?.nameKr || null;
-              const en = c.artist?.name || null;
-              const name = formatArtistName(kr, en);
-              const img = c.artist?.mainImageUrl || undefined;
-              const initials = artistInitials(en || undefined, kr || undefined);
-              return (
-                <li key={`${c.programId}-${c.artistId}`}>
-                  <Link
-                    href={`/artists/${c.artistId}`}
-                    className="flex items-center gap-2 text-sm text-neutral-600 transition-colors hover:text-neutral-900"
-                  >
-                    <Avatar className="h-8 w-8">
-                      {img ? (
-                        <AvatarImage
-                          src={getImageUrl(img, 'thumbnail')}
-                          alt={name}
-                        />
-                      ) : (
-                        <AvatarFallback className="text-xs">
-                          {initials}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                    <span>{name}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
+        {program.images?.length ? (
+          <section aria-label="갤러리">
+            <ProgramGallery
+              title={program.title}
+              images={program.images.map((i) => ({
+                id: i.id,
+                imageUrl: i.imageUrl,
+                width: i.width,
+                height: i.height,
+                caption: i.caption,
+              }))}
+            />
+          </section>
+        ) : null}
+      </div>
 
-      {program.images?.length ? (
-        <section className="mb-10">
-          <ProgramGallery
-            images={program.images.map((i) => ({
-              id: i.id,
-              imageUrl: i.imageUrl,
-              alt: i.alt,
-            }))}
-          />
-        </section>
-      ) : null}
+      <div className="grid gap-12 md:grid-cols-[minmax(0,1fr)_16rem] md:gap-16">
+        <div>
+          {program.description && (
+            <section aria-labelledby="program-about" className="mb-12">
+              <h2
+                id="program-about"
+                className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-neutral-400"
+              >
+                소개
+              </h2>
+              <ExpandableText text={program.description} />
+            </section>
+          )}
+          <RelatedArticles programId={program.id} />
+        </div>
 
-      <RelatedArticles programId={program.id} />
+        {program.credits?.length ? (
+          <aside aria-labelledby="program-credits">
+            <h2
+              id="program-credits"
+              className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-neutral-400"
+            >
+              크레딧
+            </h2>
+            <ul className="space-y-3">
+              {program.credits.map((c) => {
+                const kr = c.artist?.nameKr || null;
+                const en = c.artist?.name || null;
+                const name = formatArtistName(kr, en);
+                const img = c.artist?.mainImageUrl || undefined;
+                const initials = artistInitials(
+                  en || undefined,
+                  kr || undefined
+                );
+                return (
+                  <li key={`${c.programId}-${c.artistId}`}>
+                    <Link
+                      href={`/artists/${c.artistId}`}
+                      className="flex items-center gap-3 text-sm text-neutral-600 transition-colors hover:text-neutral-900"
+                    >
+                      <Avatar className="h-9 w-9">
+                        {img ? (
+                          <AvatarImage
+                            src={getImageUrl(img, 'thumbnail')}
+                            alt={name}
+                          />
+                        ) : (
+                          <AvatarFallback className="text-xs">
+                            {initials}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <span className="min-w-0">
+                        <span className="block truncate">{name}</span>
+                        {c.role && (
+                          <span className="block truncate text-xs text-neutral-400">
+                            {c.role}
+                          </span>
+                        )}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </aside>
+        ) : null}
+      </div>
     </article>
   );
 }
@@ -132,14 +202,19 @@ async function RelatedArticles({ programId }: { programId: string }) {
   if (!articles.length) return null;
 
   return (
-    <section className="mb-12">
-      <h2 className="mb-4 text-lg font-semibold">관련 글</h2>
+    <section aria-labelledby="program-journal">
+      <h2
+        id="program-journal"
+        className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-neutral-400"
+      >
+        저널에서 읽기
+      </h2>
       <ul className="space-y-2">
         {articles.map((a) => (
           <li key={a.slug}>
             <Link
               href={`/journal/${a.slug}`}
-              className="text-neutral-600 underline-offset-4 transition-colors hover:text-neutral-900 hover:underline"
+              className="text-neutral-700 underline-offset-4 transition-colors hover:text-neutral-900 hover:underline"
             >
               {a.title}
             </Link>

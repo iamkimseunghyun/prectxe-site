@@ -68,3 +68,21 @@ export function validateImageFile(file: File) {
   }
   return null;
 }
+
+/**
+ * 업로드 전에 브라우저에서 이미지 원본 크기를 읽는다(갤러리 비율 배치용).
+ * 브라우저가 디코딩하지 못하는 형식(HEIC 등)은 null — 크기 없이 저장하고
+ * 갤러리는 4:3으로 폴백한다. 업로드를 막지 않도록 절대 throw하지 않는다.
+ */
+export async function readImageSize(
+  file: File
+): Promise<{ width: number; height: number } | null> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const { width, height } = bitmap;
+    bitmap.close();
+    return width > 0 && height > 0 ? { width, height } : null;
+  } catch {
+    return null;
+  }
+}

@@ -38,6 +38,7 @@ export {
   stripHtml,
 } from './text';
 export {
+  readImageSize,
   uploadGalleryImages,
   uploadImage,
   uploadSingleImage,
