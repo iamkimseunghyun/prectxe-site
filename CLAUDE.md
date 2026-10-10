@@ -103,6 +103,19 @@ src/
 - Auth check: `canManage(sessionId, authorId?)` — ADMIN or resource owner
 - **Important**: `'use server'` files cannot export synchronous functions — move utility functions to `@/lib/utils`
 
+### 어드민 폼 규칙 (저장 · 진행 표시 · 알림)
+어드민 폼 9개(program·journal·drop·artist·venue·artwork·ticket-tier·goods-variant·form-builder)가 저장 버튼·진행 표시·토스트를 제각각 구현해 불일치(진행 표시 없음, 성공 토스트 없음, 에러가 중립색, 예외 시 버튼이 영구 비활성화)가 생겼다. 아래 공용 부품으로 통일했다. **새 어드민 폼은 이 부품만 쓰고, 개별 폼에서 `isSubmitting` state·try/finally·토스트를 직접 만들지 말 것.**
+
+- **부품**: `hooks/use-form-submit.ts`(`useFormSubmit`) · `components/shared/form-action-bar.tsx`(`FormActionBar`) · `components/layout/form-submit-button.tsx`(`FormSubmitButton`). `components/admin/`이 아니라 shared/layout에 있는 이유: `artist·venue·artwork` 폼이 `ui/views/`에 있어 admin 폴더를 import할 수 없다(어드민 import 경계).
+- **버튼 구성**: 하단은 `[취소] [미리보기] [저장 ▾]` 이상으로 늘리지 않는다. 저장 외 동작("저장 후 계속 편집"·"저장 후 새로 작성")은 ▾ 메뉴(`extraIntents`)에만 넣는다 — 버튼을 나란히 늘리지 말 것. 메뉴가 필요 없는 폼(단일 저장)은 `extraIntents`를 생략. 사이드바처럼 막대를 못 쓰는 곳은 `FormSubmitButton`을 직접 쓴다(삭제 버튼도 `variant="destructive"` + `loading`).
+- **제출은 반드시 `run()`**: `run(async (intent) => ({ success, error?, redirect? }), { successMessage })`. 동기 ref 가드가 더블클릭·엔터 연타를 막는다(state는 렌더 뒤에야 바뀌어 못 막고, 이미지 업로드 URL은 1회용이라 재사용하면 깨진다). 예외는 훅이 잡아 토스트로 알리고 `finally`로 잠금을 푼다.
+- **진행 중 동작**: 저장·이동 중(`isSubmitting`)엔 폼의 **모든 버튼 비활성화**, **눌린 버튼에만 스피너 + "저장 중…"**(메뉴로 고른 동작은 ▾ 자리에 스피너), `aria-busy`. 스피너는 `motion-safe:animate-spin`. 성공 후 이동하는 동안(`useTransition`)도 잠금을 유지해 이동 전 재제출을 막는다 — 진행 상태는 `running || isNavigating`에서 **파생**한다(이동 완료를 effect로 감지해 푸는 방식은 `isNavigating`이 안 변하면 버튼이 영구히 잠긴다). 다이얼로그 폼은 저장 중 ESC·바깥 클릭으로 닫히지 않게 한다. 업로드 재시도처럼 저장과 별개인 비동기 동작은 저장 버튼도 막는다(`disabled`).
+- **결과 알림은 토스트 한 채널**(필드별 오류만 인라인): 성공 = 대상을 넣은 완결 문장 `프로그램을 저장했습니다.`(삭제는 `삭제했습니다.`, 대상이 정해진 곳은 `폼을 삭제했습니다.`) · 실패 = destructive, 제목 `저장하지 못했습니다`(삭제는 `삭제하지 못했습니다`) + 원인을 description에 · 검증 실패 = `notifyInvalid(무엇이 문제인지)` → destructive `입력 값을 확인해주세요`. **react-hook-form 폼은 `handleSubmit(onValid, () => notifyInvalid('표시된 항목을 확인해주세요.'))`로 둘 것** — 안 달면 긴 폼에서 필드 오류가 화면 밖에 있을 때 저장이 아무 반응 없이 멈춘다. **variant 없는 오류 토스트(중립색)와 폼 하단 인라인 `root` 에러는 쓰지 않는다.** 영어 예외 메시지(`Failed to upload…`)는 사용자 문구로 바꿔 `{ success: false, error }`로 돌려줄 것.
+- **서버 액션은 `{ success, error?, redirect? }`를 반환**하고 이동은 클라이언트(`run`)가 한다. 서버에서 `redirect()`를 던지면 성공 토스트를 띄울 수 없고 `isRedirectError` 재throw 핵을 써야 한다.
+- **업로드는 성공 여부를 확인하고 진행**한다(`uploadImage`는 boolean 반환 — 무시하고 저장하면 깨진 URL이 저장된다). 실패하면 `{ success: false, error }`.
+- **`e.currentTarget`은 첫 `await` 전에 변수로 잡아 둔다** — 핸들러가 끝나면 null이 되어 업로드 뒤에 `new FormData(e.currentTarget)`을 읽으면 깨진다.
+- **`FormActionBar`는 반드시 `<form>` 안에**: `[저장 ▾]` 메뉴 항목은 `form.requestSubmit()`로 제출한다. 메뉴에서 고른 의도(`selectIntent`)가 검증 실패로 `run`까지 못 가면 다음 제출에 새므로, 주 버튼 클릭과 `notifyInvalid`가 의도를 `default`로 되돌린다 — 이 둘을 빼지 말 것.
+
 ### React 19 + Radix UI Compatibility
 - Radix Select `name` prop causes infinite re-render inside `<form>` — use controlled state + hidden `<input>` instead
 - Inline callback functions in hook deps cause infinite loops — use `useRef` pattern

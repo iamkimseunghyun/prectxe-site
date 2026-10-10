@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 import SingleImageBox from '@/components/image/single-image-box';
+import { FormActionBar } from '@/components/shared/form-action-bar';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -40,8 +41,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useFormSubmit } from '@/hooks/use-form-submit';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
-import { useToast } from '@/hooks/use-toast';
 import type { FormFieldInput, FormInput } from '@/lib/schemas/form';
 import { formSchema } from '@/lib/schemas/form';
 import { getImageUrl, uploadImage } from '@/lib/utils';
@@ -87,8 +88,7 @@ export function FormBuilderView({
   fieldResponseCounts,
 }: FormBuilderViewProps) {
   const router = useRouter();
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { run, notifyInvalid, activeIntent, isSubmitting } = useFormSubmit();
   const [showPreview, setShowPreview] = useState(false);
 
   // 저장된 원래 라벨·유형. 편집 중 값과 비교해 변경 여부를 판단한다.
@@ -195,68 +195,44 @@ export function FormBuilderView({
     }
   };
 
-  const handleFormSubmit = async (data: FormInput) => {
+  const handleFormSubmit = (data: FormInput) => {
     // 게시 상태일 때만 필드 필수 검증
     if (data.status === 'published' && fields.length === 0) {
-      toast({
-        title: '필드 추가 필요',
-        description: '게시하려면 최소 1개의 필드를 추가해주세요',
-        variant: 'destructive',
-      });
+      notifyInvalid('게시하려면 최소 1개의 필드를 추가해주세요.');
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      // Upload cover image if new image selected
-      if (imageFile) {
-        const uploadSuccess = await uploadImage(imageFile, uploadURL);
-        if (!uploadSuccess) {
-          toast({
-            title: '이미지 업로드 실패',
-            description: '이미지를 업로드하는 중 오류가 발생했습니다.',
-            variant: 'destructive',
-          });
-          return;
+    return run(
+      async () => {
+        // Upload cover image if new image selected
+        if (imageFile) {
+          const uploadSuccess = await uploadImage(imageFile, uploadURL);
+          if (!uploadSuccess) {
+            return {
+              success: false,
+              error: '커버 이미지를 업로드하지 못했습니다.',
+            };
+          }
+          finalizeUpload();
         }
-        finalizeUpload();
-      }
 
-      const fieldsToSubmit = toFieldPayload(fields);
-
-      const result = await onSubmit({ ...data, fields: fieldsToSubmit });
-      if (result.success) {
-        toast({
-          title: '저장 완료',
-          description: '폼이 성공적으로 저장되었습니다',
+        const result = await onSubmit({
+          ...data,
+          fields: toFieldPayload(fields),
         });
-        router.push('/admin/forms');
-      } else {
-        console.error('Form save error:', result.error);
-        toast({
-          title: '저장 실패',
-          description: result.error || '알 수 없는 오류가 발생했습니다',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('Form submit error:', error);
-      toast({
-        title: '저장 실패',
-        description:
-          error instanceof Error
-            ? error.message
-            : '폼 저장 중 오류가 발생했습니다',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+        return result.success
+          ? { success: true, redirect: '/admin/forms' }
+          : result;
+      },
+      { successMessage: '폼을 저장했습니다.' }
+    );
   };
 
   return (
     <form
-      onSubmit={handleSubmit(handleFormSubmit)}
+      onSubmit={handleSubmit(handleFormSubmit, () =>
+        notifyInvalid('표시된 항목을 확인해주세요.')
+      )}
       className="mx-auto max-w-4xl space-y-8"
     >
       {/* Basic Info */}
@@ -405,27 +381,13 @@ export function FormBuilderView({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.back()}
-          disabled={isSubmitting}
-        >
-          취소
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setShowPreview(true)}
-          disabled={isSubmitting}
-        >
-          미리보기
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? '저장 중...' : submitLabel}
-        </Button>
-      </div>
+      <FormActionBar
+        isSubmitting={isSubmitting}
+        activeIntent={activeIntent}
+        submitLabel={submitLabel}
+        onCancel={() => router.back()}
+        onPreview={() => setShowPreview(true)}
+      />
 
       {/* Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { FormActionBar } from '@/components/shared/form-action-bar';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import {
   Dialog,
@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { useFormSubmit } from '@/hooks/use-form-submit';
 import type { TicketTierInput } from '@/lib/schemas/ticket';
 import { toKstDateInputValue } from '@/lib/utils/date';
 import {
@@ -50,8 +50,7 @@ export function TicketTierForm({
   onOpenChange,
   onSuccess,
 }: TicketTierFormProps) {
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { run, activeIntent, isSubmitting } = useFormSubmit();
   const [saleStart, setSaleStart] = useState('');
   const [saleEnd, setSaleEnd] = useState('');
   const isEdit = !!tier;
@@ -66,7 +65,7 @@ export function TicketTierForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setIsSubmitting(true);
+    if (isSubmitting) return;
 
     const fd = new FormData(e.currentTarget);
     const data: TicketTierInput = {
@@ -80,25 +79,31 @@ export function TicketTierForm({
       order: Number(fd.get('order')) || 0,
     };
 
-    const result = isEdit
-      ? await updateTicketTier(tier.id, data)
-      : await createTicketTier(dropId, data);
-
-    setIsSubmitting(false);
-
-    if (result.success) {
-      toast({
-        title: isEdit ? '등급이 수정되었습니다.' : '등급이 추가되었습니다.',
-      });
+    const saved = await run(
+      () =>
+        isEdit
+          ? updateTicketTier(tier.id, data)
+          : createTicketTier(dropId, data),
+      {
+        successMessage: isEdit
+          ? '티켓 등급을 수정했습니다.'
+          : '티켓 등급을 추가했습니다.',
+      }
+    );
+    if (saved) {
       onOpenChange(false);
       onSuccess();
-    } else {
-      toast({ title: result.error, variant: 'destructive' });
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    // 저장 중에는 ESC·바깥 클릭으로 닫히지 않게 한다(요청은 계속 진행되므로)
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!isSubmitting) onOpenChange(next);
+      }}
+    >
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
@@ -193,18 +198,13 @@ export function TicketTierForm({
 
           <input type="hidden" name="order" value={tier?.order ?? 0} />
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              취소
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? '저장 중...' : isEdit ? '수정' : '추가'}
-            </Button>
-          </div>
+          <FormActionBar
+            className="pt-2"
+            isSubmitting={isSubmitting}
+            activeIntent={activeIntent}
+            submitLabel={isEdit ? '수정' : '추가'}
+            onCancel={() => onOpenChange(false)}
+          />
         </form>
       </DialogContent>
     </Dialog>

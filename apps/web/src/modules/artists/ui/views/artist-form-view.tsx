@@ -7,10 +7,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 import SingleImageBox from '@/components/image/single-image-box';
-import FormSubmitButton from '@/components/layout/form-submit-button';
 import { SortableMediaList } from '@/components/media/sortable-media-list';
+import { FormActionBar } from '@/components/shared/form-action-bar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -29,9 +28,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useFormSubmit } from '@/hooks/use-form-submit';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import { useSortableImages } from '@/hooks/use-sortable-images';
-import { useToast } from '@/hooks/use-toast';
 import {
   type CreateArtistInput,
   createArtistSchema,
@@ -48,8 +47,7 @@ type ArtistFormProps = {
 
 const ArtistFormView = ({ mode, initialData, artistId }: ArtistFormProps) => {
   const router = useRouter();
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { run, notifyInvalid, activeIntent, isSubmitting } = useFormSubmit();
   const [tagInput, setTagInput] = useState('');
 
   const defaultValues = {
@@ -106,44 +104,46 @@ const ArtistFormView = ({ mode, initialData, artistId }: ArtistFormProps) => {
     uploadPending: uploadGallery,
   } = useSortableImages(initialData?.images ?? []);
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    setIsSubmitting(true);
-    try {
-      // 1. 메인 이미지 업로드
-      if (imageFile) {
-        await uploadSingleImage(imageFile, uploadURL);
-        finalizeUpload();
-      }
+  const onSubmit = form.handleSubmit(
+    (data) =>
+      run(
+        async () => {
+          // 1. 메인 이미지 업로드
+          if (imageFile) {
+            try {
+              await uploadSingleImage(imageFile, uploadURL);
+            } catch {
+              return {
+                success: false,
+                error: '대표 이미지를 업로드하지 못했습니다.',
+              };
+            }
+            finalizeUpload();
+          }
 
-      // 2. 갤러리 pending 업로드
-      const uploaded = await uploadGallery();
-      if (!uploaded.ok) {
-        toast({
-          title: '이미지 업로드 실패',
-          description: '일부 파일을 다시 시도해 주세요.',
-          variant: 'destructive',
-        });
-        return;
-      }
+          // 2. 갤러리 pending 업로드
+          const uploaded = await uploadGallery();
+          if (!uploaded.ok) {
+            return {
+              success: false,
+              error: '일부 이미지를 업로드하지 못했습니다. 다시 시도해 주세요.',
+            };
+          }
 
-      // 3. 서버 액션 호출
-      const payload = { ...data, images: uploaded.images };
-      const result =
-        mode === 'edit'
-          ? await updateArtist(payload, artistId as string)
-          : await createArtist(payload);
+          // 3. 서버 액션 호출
+          const payload = { ...data, images: uploaded.images };
+          const result =
+            mode === 'edit'
+              ? await updateArtist(payload, artistId as string)
+              : await createArtist(payload);
 
-      if (!result.success) throw new Error(result.error);
-      router.push(`/artists/${result.data?.id}`);
-    } catch (error) {
-      console.error('Error: ', error);
-      form.setError('root', {
-        message: error instanceof Error ? error.message : '아티스트 등록 실패',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  });
+          if (!result.success) return { success: false, error: result.error };
+          return { success: true, redirect: `/artists/${result.data?.id}` };
+        },
+        { successMessage: '아티스트를 저장했습니다.' }
+      ),
+    () => notifyInvalid('표시된 항목을 확인해주세요.')
+  );
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -495,27 +495,15 @@ const ArtistFormView = ({ mode, initialData, artistId }: ArtistFormProps) => {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-end gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-              >
-                취소
-              </Button>
-              <FormSubmitButton
-                type="submit"
-                loading={isSubmitting}
-                loadingText={mode === 'edit' ? '수정하기' : '등록하기'}
-              >
-                {mode === 'edit' ? '수정하기' : '등록하기'}
-              </FormSubmitButton>
+            <CardFooter>
+              <FormActionBar
+                className="w-full"
+                isSubmitting={isSubmitting}
+                activeIntent={activeIntent}
+                submitLabel={mode === 'edit' ? '수정하기' : '등록하기'}
+                onCancel={() => router.back()}
+              />
             </CardFooter>
-            {form.formState.errors.root && (
-              <p className="text-sm text-red-500">
-                {form.formState.errors.root.message}
-              </p>
-            )}
           </form>
         </Form>
       </Card>

@@ -6,10 +6,9 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
-import FormSubmitButton from '@/components/layout/form-submit-button';
 import { SortableMediaList } from '@/components/media/sortable-media-list';
+import { FormActionBar } from '@/components/shared/form-action-bar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -28,8 +27,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useFormSubmit } from '@/hooks/use-form-submit';
 import { useSortableImages } from '@/hooks/use-sortable-images';
-import { useToast } from '@/hooks/use-toast';
 import { type CreateVenueInput, createVenueSchema } from '@/lib/schemas';
 import { createVenue, updateVenue } from '@/modules/venues/server/actions';
 
@@ -59,8 +58,7 @@ type VenueFormProps = {
 
 const VenueFormView = ({ mode, initialData, venueId }: VenueFormProps) => {
   const router = useRouter();
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { run, notifyInvalid, activeIntent, isSubmitting } = useFormSubmit();
   const [tagInput, setTagInput] = useState('');
 
   const defaultValues: CreateVenueInput = {
@@ -89,36 +87,31 @@ const VenueFormView = ({ mode, initialData, venueId }: VenueFormProps) => {
   const { items, setItems, addImages, removeMedia, uploadPending } =
     useSortableImages(initialData?.images ?? []);
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    setIsSubmitting(true);
-    try {
-      const result = await uploadPending();
-      if (!result.ok) {
-        toast({
-          title: '이미지 업로드 실패',
-          description: '일부 파일을 다시 시도해 주세요.',
-          variant: 'destructive',
-        });
-        return;
-      }
+  const onSubmit = form.handleSubmit(
+    (data) =>
+      run(
+        async () => {
+          const result = await uploadPending();
+          if (!result.ok) {
+            return {
+              success: false,
+              error: '일부 이미지를 업로드하지 못했습니다. 다시 시도해 주세요.',
+            };
+          }
 
-      const payload = { ...data, images: result.images };
-      const saved =
-        mode === 'edit'
-          ? await updateVenue(payload, venueId as string)
-          : await createVenue(payload);
+          const payload = { ...data, images: result.images };
+          const saved =
+            mode === 'edit'
+              ? await updateVenue(payload, venueId as string)
+              : await createVenue(payload);
 
-      if (!saved.success) throw new Error(saved.error);
-      router.push(`/venues/${saved.data?.id}`);
-    } catch (error) {
-      console.error('Error:', error);
-      form.setError('root', {
-        message: error instanceof Error ? error.message : '장소 등록 실패',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  });
+          if (!saved.success) return { success: false, error: saved.error };
+          return { success: true, redirect: `/venues/${saved.data?.id}` };
+        },
+        { successMessage: '장소를 저장했습니다.' }
+      ),
+    () => notifyInvalid('표시된 항목을 확인해주세요.')
+  );
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -355,29 +348,15 @@ const VenueFormView = ({ mode, initialData, venueId }: VenueFormProps) => {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-end gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-                disabled={isSubmitting}
-              >
-                취소
-              </Button>
-              <FormSubmitButton
-                type="submit"
-                loading={isSubmitting}
-                loadingText={mode === 'edit' ? '수정하기' : '등록하기'}
-                disabled={isSubmitting}
-              >
-                {mode === 'edit' ? '수정하기' : '등록하기'}
-              </FormSubmitButton>
+            <CardFooter>
+              <FormActionBar
+                className="w-full"
+                isSubmitting={isSubmitting}
+                activeIntent={activeIntent}
+                submitLabel={mode === 'edit' ? '수정하기' : '등록하기'}
+                onCancel={() => router.back()}
+              />
             </CardFooter>
-            {form.formState.errors.root && (
-              <p className="px-6 pb-4 text-sm text-red-500">
-                {form.formState.errors.root.message}
-              </p>
-            )}
           </form>
         </Form>
       </Card>

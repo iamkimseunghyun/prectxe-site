@@ -2,10 +2,14 @@
 
 import { X } from 'lucide-react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import MultiImageBox from '@/components/image/multi-image-box';
 import SingleImageBox from '@/components/image/single-image-box';
+import {
+  FormActionBar,
+  SAVE_AND_CONTINUE,
+  SAVE_AND_NEW,
+} from '@/components/shared/form-action-bar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -24,9 +28,9 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { type SubmitIntent, useFormSubmit } from '@/hooks/use-form-submit';
 import { useMultiImageUpload } from '@/hooks/use-multi-image-upload';
 import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
-import { toast } from '@/hooks/use-toast';
 import {
   type ProgramCreateInput,
   ProgramTypeEnum,
@@ -80,8 +84,6 @@ type ProgramImageInput = {
   order: number;
 };
 
-type Intent = 'default' | 'continue' | 'new';
-
 type ProgramFormInitial = Omit<
   Partial<ProgramCreateInput>,
   'credits' | 'images'
@@ -94,7 +96,7 @@ type ProgramFormInitial = Omit<
 type ProgramFormPayload = Partial<ProgramCreateInput> & {
   images: ProgramImageInput[];
   credits: { artistId: string; role: string }[];
-  intent: Intent;
+  intent: SubmitIntent;
 };
 
 export function ProgramFormView({
@@ -115,7 +117,6 @@ export function ProgramFormView({
     { success: boolean; redirect?: string; error?: string } | undefined
   >;
 }) {
-  const router = useRouter();
   const [form, setForm] = useState<Partial<ProgramCreateInput>>({
     title: initial?.title ?? '',
     slug: initial?.slug ?? '',
@@ -141,9 +142,9 @@ export function ProgramFormView({
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [slugChecking, setSlugChecking] = useState(false);
   const slugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [intent, setIntent] = useState<Intent>('default');
+  const { run, notifyInvalid, selectIntent, activeIntent, isSubmitting } =
+    useFormSubmit();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   // 슬러그 수동 편집 여부 추적 (편집 모드거나 사용자가 직접 수정한 경우)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(
     Boolean(initial?.slug)
@@ -237,10 +238,9 @@ export function ProgramFormView({
     setSlugManuallyEdited(true);
   };
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    if (slugAvailable === false) return;
+    if (isSubmitting || slugAvailable === false) return;
     // Client-side validation
     const errs: Record<string, string> = {};
     if (!String(form.title || '').trim()) errs.title = '제목을 입력하세요';
@@ -259,52 +259,46 @@ export function ProgramFormView({
     }
     setFieldErrors(errs);
     if (Object.keys(errs).length > 0) {
-      toast({
-        title: '입력 값을 확인해주세요',
-        description: '필수 항목을 채워주세요.',
-      });
+      notifyInvalid('필수 항목을 채워주세요.');
       return;
     }
-    setIsSubmitting(true);
-    try {
-      // upload hero image if picked
-      if (imageFile) {
-        await uploadImage(imageFile, uploadURL);
-        finalizeUpload();
-      }
+    return run(
+      async (intent) => {
+        // upload hero image if picked
+        if (imageFile) {
+          const uploaded = await uploadImage(imageFile, uploadURL);
+          if (!uploaded) {
+            return {
+              success: false,
+              error: '대표 이미지를 업로드하지 못했습니다.',
+            };
+          }
+          finalizeUpload();
+        }
 
-      // upload gallery images if any (only ones with a file to avoid re-uploads)
-      const { failCount, images: uploadedImages } =
-        await uploadPendingWithProgress();
-      if (failCount > 0) {
-        toast({
-          title: '일부 이미지 업로드 실패',
-          description: `${failCount}개 실패, 재시도해 주세요.`,
-          variant: 'destructive',
-        });
-        return;
-      }
+        // upload gallery images if any (only ones with a file to avoid re-uploads)
+        const { failCount, images: uploadedImages } =
+          await uploadPendingWithProgress();
+        if (failCount > 0) {
+          return {
+            success: false,
+            error: `이미지 ${failCount}개를 업로드하지 못했습니다. 재시도해 주세요.`,
+          };
+        }
 
-      const payload: ProgramFormPayload = {
-        ...form,
-        images: uploadedImages,
-        credits: credits.map((c) => ({ artistId: c.artistId, role: c.role })),
-        intent,
-      };
-      const res = await onSubmit(payload);
-      if (res?.success && res.redirect) {
-        router.push(res.redirect);
-        return;
-      }
-      if (res && !res.success) {
-        toast({
-          title: '오류',
-          description: res.error || '저장 중 오류가 발생했습니다.',
-        });
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
+        const payload: ProgramFormPayload = {
+          ...form,
+          images: uploadedImages,
+          credits: credits.map((c) => ({
+            artistId: c.artistId,
+            role: c.role,
+          })),
+          intent,
+        };
+        return onSubmit(payload);
+      },
+      { successMessage: '프로그램을 저장했습니다.' }
+    );
   };
 
   // Slug uniqueness check (debounced)
@@ -697,38 +691,14 @@ export function ProgramFormView({
         </CardContent>
       </Card>
 
-      <div className="flex justify-end gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setShowPreview(true)}
-        >
-          미리보기
-        </Button>
-        <Button
-          type="submit"
-          variant="outline"
-          onClick={() => setIntent('new')}
-          disabled={isSubmitting || slugAvailable === false}
-        >
-          저장 후 새로 작성
-        </Button>
-        <Button
-          type="submit"
-          variant="outline"
-          onClick={() => setIntent('continue')}
-          disabled={isSubmitting || slugAvailable === false}
-        >
-          저장 후 계속 편집
-        </Button>
-        <Button
-          type="submit"
-          onClick={() => setIntent('default')}
-          disabled={isSubmitting || slugAvailable === false}
-        >
-          저장
-        </Button>
-      </div>
+      <FormActionBar
+        isSubmitting={isSubmitting}
+        activeIntent={activeIntent}
+        disabled={slugAvailable === false}
+        extraIntents={[SAVE_AND_CONTINUE, SAVE_AND_NEW]}
+        onSelectIntent={selectIntent}
+        onPreview={() => setShowPreview(true)}
+      />
 
       {/* 미리보기 모달 */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
