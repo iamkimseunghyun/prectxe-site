@@ -12,6 +12,8 @@ type Props = {
   label?: string;
   /** 아이콘 크기 등 커스터마이즈 (기본 h-5 w-5) */
   iconClassName?: string;
+  /** 공유 URL에서 뺄 쿼리 파라미터 — 초대 코드처럼 남에게 넘기면 안 되는 값 */
+  omitParams?: string[];
 };
 
 /**
@@ -25,13 +27,16 @@ export function ShareButton({
   className,
   label,
   iconClassName = 'h-5 w-5',
+  omitParams,
 }: Props) {
   const [sharing, setSharing] = useState(false);
 
   const handleShare = useCallback(async () => {
     try {
       setSharing(true);
-      const url = typeof window !== 'undefined' ? window.location.href : '';
+      const current = new URL(window.location.href);
+      for (const param of omitParams ?? []) current.searchParams.delete(param);
+      const url = current.toString();
 
       if (navigator.share) {
         // 네이티브 공유 시트 자체가 결과를 알려주므로 별도 toast 없음
@@ -56,7 +61,7 @@ export function ShareButton({
     } finally {
       setSharing(false);
     }
-  }, [title, text]);
+  }, [title, text, omitParams]);
 
   return (
     <button

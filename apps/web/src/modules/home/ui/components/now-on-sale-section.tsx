@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { SaleCountdown } from '@/components/shared/sale-countdown';
 import { prisma } from '@/lib/db/prisma';
+import { publicTierWhere } from '@/lib/db/public-tier';
 import { cn, getImageUrl } from '@/lib/utils';
 import {
   type EffectiveDropStatus,
@@ -68,6 +69,8 @@ const getNowOnSaleDrops = next_cache(
           select: { url: true },
         },
         ticketTiers: {
+          // 비공개 등급은 홈의 최저가·판매 윈도에서 제외
+          where: publicTierWhere,
           select: {
             price: true,
             saleStart: true,

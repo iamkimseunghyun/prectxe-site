@@ -66,6 +66,7 @@ type DropData = {
     saleStart: Date | null;
     saleEnd: Date | null;
     order: number;
+    accessCode: string | null;
   }[];
   variants: {
     id: string;
@@ -306,6 +307,7 @@ export function DropDetailView({ dropId }: { dropId: string }) {
               <CardContent className="p-6">
                 <TicketTierList
                   dropId={drop.id}
+                  dropSlug={drop.slug}
                   tiers={drop.ticketTiers}
                   onRefresh={loadData}
                   eventDate={drop.eventDate}

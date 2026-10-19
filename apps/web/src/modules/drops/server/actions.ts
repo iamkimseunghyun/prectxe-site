@@ -10,6 +10,7 @@ import {
   deleteCloudflareVideo,
 } from '@/lib/cdn/cloudflare';
 import { prisma } from '@/lib/db/prisma';
+import { publicTierWhere } from '@/lib/db/public-tier';
 import { salesOrderWhere } from '@/lib/db/sales-order';
 import { dropCreateSchema, dropUpdateSchema } from '@/lib/schemas/drop';
 import { extractImageId, extractVideoId, parseKstDateInput } from '@/lib/utils';
@@ -271,13 +272,20 @@ export async function getDrop(id: string) {
   });
 }
 
-export async function getDropBySlug(slug: string) {
+// 공개 화면용 — 비공개 등급은 초대 코드가 일치할 때만 포함된다.
+// 코드 없이 부르는 곳(메타데이터·OG 이미지)은 공개 등급만 본다.
+export async function getDropBySlug(slug: string, accessCode?: string) {
   return prisma.drop.findUnique({
     where: { slug },
     include: {
       media: { orderBy: { order: 'asc' } },
       credits: { include: { artist: true } },
-      ticketTiers: { orderBy: { order: 'asc' } },
+      ticketTiers: {
+        where: accessCode
+          ? { OR: [publicTierWhere, { accessCode }] }
+          : publicTierWhere,
+        orderBy: { order: 'asc' },
+      },
       variants: { orderBy: { order: 'asc' } },
     },
   });
@@ -304,6 +312,8 @@ export async function listDrops(
           take: 1,
         },
         ticketTiers: {
+          // 비공개 등급은 목록의 최저가·판매 상태에서 빠진다
+          where: publicTierWhere,
           select: {
             price: true,
             saleStart: true,
@@ -464,6 +474,8 @@ export async function listAdminDrops(page = 1, pageSize = 20) {
         createdAt: true,
         updatedAt: true,
         ticketTiers: {
+          // 어드민 목록의 '판매 상태'도 공개 화면과 같은 기준(비공개 등급 제외)
+          where: publicTierWhere,
           select: {
             saleStart: true,
             saleEnd: true,

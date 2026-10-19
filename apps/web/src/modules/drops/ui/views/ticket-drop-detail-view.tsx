@@ -40,6 +40,7 @@ type TicketTier = {
   maxPerOrder: number;
   saleStart: Date | null;
   saleEnd: Date | null;
+  accessCode: string | null;
 };
 
 type DropMedia = {
@@ -78,7 +79,17 @@ type TicketDrop = {
   ticketTiers: TicketTier[];
 };
 
-export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
+// 공유 시트에 초대 코드(`?code=`)가 실려 나가면 받은 사람이 비공개 등급을 살 수 있다
+const SHARE_OMIT_PARAMS = ['code'];
+
+export function TicketDropDetailView({
+  drop,
+  accessCode,
+}: {
+  drop: TicketDrop;
+  /** 초대 링크(`?code=`)로 들어온 경우의 코드 */
+  accessCode?: string;
+}) {
   const t = useTranslations('drops');
   const locale = useLocale() as Locale;
   const fmtPrice = (n: number) =>
@@ -188,6 +199,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
           <ShareButton
             title={drop.title}
             text={drop.summary}
+            omitParams={SHARE_OMIT_PARAMS}
             className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/50"
           />
         </div>
@@ -398,6 +410,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                     dropId={drop.id}
                     title={drop.title}
                     tiers={visibleTiers}
+                    accessCode={accessCode}
                   />
                 )}
               </div>

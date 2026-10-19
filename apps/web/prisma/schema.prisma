@@ -493,6 +493,9 @@ model TicketTier {
   maxPerOrder Int         @default(4)
   saleStart   DateTime?
   saleEnd     DateTime?
+  // 비공개 등급 — 값이 있으면 `?code=` 가 일치하는 방문자에게만 보이고 주문할 수 있다.
+  // null이면 공개 등급. 공개 집계(상태·최저가·홈·OG)에서는 항상 빠진다.
+  accessCode  String?
   order       Int         @default(0)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

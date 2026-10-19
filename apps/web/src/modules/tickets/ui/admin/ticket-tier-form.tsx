@@ -32,6 +32,7 @@ interface TicketTierFormProps {
     saleStart: Date | null;
     saleEnd: Date | null;
     order: number;
+    accessCode: string | null;
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -77,6 +78,7 @@ export function TicketTierForm({
       saleStart: saleStart || undefined,
       saleEnd: saleEnd || undefined,
       order: Number(fd.get('order')) || 0,
+      isPrivate: fd.get('isPrivate') === 'on',
     };
 
     const saved = await run(
@@ -195,6 +197,23 @@ export function TicketTierForm({
               />
             </div>
           </div>
+
+          <label className="flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-sm">
+            <input
+              type="checkbox"
+              name="isPrivate"
+              defaultChecked={!!tier?.accessCode}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-300 accent-neutral-900"
+            />
+            <span>
+              <span className="font-medium">비공개 등급 (초대 링크)</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                링크로 들어온 사람에게만 보이고 주문할 수 있습니다. 끄면 이
+                등급이 공개 판매 등급이 되어 누구나 볼 수 있고 기존 링크는
+                폐기됩니다. 다시 켜면 새 링크가 발급됩니다.
+              </span>
+            </span>
+          </label>
 
           <input type="hidden" name="order" value={tier?.order ?? 0} />
 

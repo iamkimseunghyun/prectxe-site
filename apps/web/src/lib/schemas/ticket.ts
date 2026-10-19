@@ -25,6 +25,10 @@ export const ticketTierSchema = z.object({
   saleStart: z.string().optional(),
   saleEnd: z.string().optional(),
   order: z.coerce.number().int().default(0),
+  // 코드 자체는 서버가 만든다(관리자가 정하면 추측 가능) — 폼은 여부만 보낸다.
+  // 생략하면 수정 시 현재 상태를 유지한다(default를 두면 필드가 없는 옛 번들의
+  // 저장 요청이 비공개 등급을 조용히 공개로 돌린다)
+  isPrivate: z.boolean().optional(),
 });
 
 export type TicketTierInput = z.infer<typeof ticketTierSchema>;
@@ -55,6 +59,8 @@ export const orderFormSchema = z.object({
       })
     )
     .min(1, '최소 1개 이상의 티켓을 선택해주세요.'),
+  // 비공개 등급 초대 코드 — 일치하는 등급만 주문할 수 있다
+  accessCode: z.string().max(64).optional(),
 });
 
 export type OrderFormInput = z.infer<typeof orderFormSchema>;
@@ -95,6 +101,7 @@ export const bankTransferOrderFormSchema = z.object({
       })
     )
     .min(1, '최소 1개 이상의 티켓을 선택해주세요.'),
+  accessCode: z.string().max(64).optional(),
 });
 
 export type BankTransferOrderFormInput = z.infer<
