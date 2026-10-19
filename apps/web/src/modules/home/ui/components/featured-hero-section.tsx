@@ -3,6 +3,7 @@ import { unstable_cache as next_cache } from 'next/cache';
 import Image from 'next/image';
 import Link from 'next/link';
 import { prisma } from '@/lib/db/prisma';
+import { publicTierWhere } from '@/lib/db/public-tier';
 import { cn, getImageUrl } from '@/lib/utils';
 import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
 
@@ -70,7 +71,7 @@ const getFeaturedHero = next_cache(
           },
           ticketTiers: {
             // 비공개 등급은 홈의 판매 상태에서 제외
-            where: { accessCode: null },
+            where: publicTierWhere,
             select: {
               saleStart: true,
               saleEnd: true,

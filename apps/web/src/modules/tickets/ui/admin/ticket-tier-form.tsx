@@ -208,8 +208,9 @@ export function TicketTierForm({
             <span>
               <span className="font-medium">비공개 등급 (초대 링크)</span>
               <span className="mt-0.5 block text-xs text-muted-foreground">
-                링크로 들어온 사람에게만 보이고 주문할 수 있습니다. 끄면 링크가
-                폐기되고, 다시 켜면 새 링크가 발급됩니다.
+                링크로 들어온 사람에게만 보이고 주문할 수 있습니다. 끄면 이
+                등급이 공개 판매 등급이 되어 누구나 볼 수 있고 기존 링크는
+                폐기됩니다. 다시 켜면 새 링크가 발급됩니다.
               </span>
             </span>
           </label>

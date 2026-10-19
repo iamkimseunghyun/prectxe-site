@@ -79,6 +79,9 @@ type TicketDrop = {
   ticketTiers: TicketTier[];
 };
 
+// 공유 시트에 초대 코드(`?code=`)가 실려 나가면 받은 사람이 비공개 등급을 살 수 있다
+const SHARE_OMIT_PARAMS = ['code'];
+
 export function TicketDropDetailView({
   drop,
   accessCode,
@@ -196,6 +199,7 @@ export function TicketDropDetailView({
           <ShareButton
             title={drop.title}
             text={drop.summary}
+            omitParams={SHARE_OMIT_PARAMS}
             className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/50"
           />
         </div>

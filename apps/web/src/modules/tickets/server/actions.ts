@@ -224,9 +224,12 @@ export async function updateTicketTier(tierId: string, data: TicketTierInput) {
   await prisma.ticketTier.update({
     where: { id: tierId },
     data: {
-      accessCode: parsed.data.isPrivate
-        ? (current.accessCode ?? generateTierAccessCode())
-        : null,
+      accessCode:
+        parsed.data.isPrivate === undefined
+          ? current.accessCode
+          : parsed.data.isPrivate
+            ? (current.accessCode ?? generateTierAccessCode())
+            : null,
       name: parsed.data.name,
       description: parsed.data.description,
       price: parsed.data.price,
