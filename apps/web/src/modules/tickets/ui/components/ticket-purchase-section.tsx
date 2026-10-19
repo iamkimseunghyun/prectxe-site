@@ -46,12 +46,16 @@ type AvailableTier = {
   maxPerOrder: number;
   remaining: number;
   status: EffectiveTierStatus;
+  /** 값이 있으면 초대 링크로만 보이는 비공개 등급 */
+  accessCode: string | null;
 };
 
 interface TicketPurchaseSectionProps {
   dropId: string;
   title: string;
   tiers: AvailableTier[];
+  /** 초대 링크(`?code=`)로 들어왔을 때의 코드 — 주문 시 서버가 다시 검증한다 */
+  accessCode?: string;
 }
 
 type BankTransferSuccess = {
@@ -74,6 +78,7 @@ export function TicketPurchaseSection({
   dropId,
   title,
   tiers,
+  accessCode,
 }: TicketPurchaseSectionProps) {
   const { toast } = useToast();
   const t = useTranslations();
@@ -152,6 +157,7 @@ export function TicketPurchaseSection({
             ticketTierId: item.tier.id,
             quantity: item.quantity,
           })),
+          accessCode,
         });
         if (!orderResult.success) {
           toast({ title: orderResult.error, variant: 'destructive' });
@@ -200,6 +206,7 @@ export function TicketPurchaseSection({
           ticketTierId: item.tier.id,
           quantity: item.quantity,
         })),
+        accessCode,
       });
 
       if (!result.success) {
@@ -328,6 +335,11 @@ export function TicketPurchaseSection({
                         Closed
                       </span>
                     ) : null}
+                    {tier.accessCode && (
+                      <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-[10px] font-semibold uppercase text-white">
+                        Invite Only
+                      </span>
+                    )}
                   </div>
                   {tier.description && (
                     <p className="mt-1 text-sm leading-relaxed text-neutral-500">

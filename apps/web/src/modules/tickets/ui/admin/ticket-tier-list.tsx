@@ -1,6 +1,6 @@
 'use client';
 
-import { Edit2, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
+import { Edit2, Link2, Lock, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { BUSINESS_INFO } from '@/lib/constants/business-info';
 import { getEffectiveTierStatus } from '@/lib/utils/ticket-status';
 import { deleteTicketTier } from '@/modules/tickets/server/actions';
 import { TicketTierForm } from './ticket-tier-form';
@@ -27,10 +28,13 @@ type Tier = {
   saleStart: Date | null;
   saleEnd: Date | null;
   order: number;
+  accessCode: string | null;
 };
 
 interface TicketTierListProps {
   dropId: string;
+  /** 초대 링크(`/drops/[slug]?code=`) 생성용 */
+  dropSlug: string;
   tiers: Tier[];
   onRefresh: () => void;
   /** 행사 일시 — 행사가 끝난 뒤에는 매진 등급도 '판매 종료'로 표시된다 */
@@ -53,6 +57,7 @@ const STATUS_LABELS: Record<
 
 export function TicketTierList({
   dropId,
+  dropSlug,
   tiers,
   onRefresh,
   eventDate,
@@ -71,6 +76,21 @@ export function TicketTierList({
   function handleEdit(tier: Tier) {
     setEditTier(tier);
     setFormOpen(true);
+  }
+
+  async function handleCopyInviteLink(tier: Tier) {
+    if (!tier.accessCode) return;
+    const url = `${BUSINESS_INFO.serviceUrl}/drops/${dropSlug}?code=${encodeURIComponent(tier.accessCode)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: '초대 링크를 복사했습니다.' });
+    } catch {
+      toast({
+        title: '링크를 복사하지 못했습니다.',
+        description: url,
+        variant: 'destructive',
+      });
+    }
   }
 
   async function handleDelete() {
@@ -138,6 +158,12 @@ export function TicketTierList({
                       <Badge variant={statusInfo.variant}>
                         {statusInfo.label}
                       </Badge>
+                      {tier.accessCode && (
+                        <Badge variant="outline">
+                          <Lock className="mr-1 h-3 w-3" />
+                          비공개
+                        </Badge>
+                      )}
                     </div>
                     {tier.description && (
                       <p className="mt-0.5 text-sm text-muted-foreground">
@@ -170,6 +196,14 @@ export function TicketTierList({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      {tier.accessCode && (
+                        <DropdownMenuItem
+                          onClick={() => handleCopyInviteLink(tier)}
+                        >
+                          <Link2 className="mr-2 h-4 w-4" />
+                          초대 링크 복사
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => handleEdit(tier)}>
                         <Edit2 className="mr-2 h-4 w-4" />
                         수정

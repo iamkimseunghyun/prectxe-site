@@ -150,6 +150,10 @@ src/
   - 홈 `NowOnSaleSection` / `FeaturedHeroSection` — `revalidate: 300`(5분). 홈 티저라 5분 오차 허용(의도된 선택)
   - 아티스트 상세의 Drops 섹션 — `revalidate: 7200`(2시간). **판매 상태 배지를 넣지 말 것**(제목/날짜/장소 등 사실만 표시 중)
   - `tickets/server/actions.ts`는 주문 생성 시 `getEffectiveTierStatus() === 'on_sale'`을 **서버에서 재검증**한다 — 늙은 배지를 보고 들어와도 결제는 막힌다
+- **비공개 등급(초대 링크)**: `TicketTier.accessCode`가 있으면 `/drops/[slug]?code=<코드>`로 들어온 방문자에게만 보이고 주문할 수 있다. 할인 쿠폰 대신 둔 것 — 가격이 등급에 박혀 있어 주문·정산 로직을 건드리지 않고, 인원 상한은 등급 `quantity`가 맡는다. 코드는 서버가 `generateTierAccessCode()`로 만든다(어드민은 "비공개" 체크만). 비공개를 껐다 켜면 새 코드가 발급돼 유출된 링크를 폐기할 수 있다
+  - **공개 집계 쿼리는 반드시 `ticketTiers: { where: { accessCode: null } }`** — 안 걸면 비공개 등급이 목록 최저가·홈 판매 상태·`getEffectiveDropStatus`에 섞여 공개 등급이 매진인데 "판매 중"으로 보인다. 적용됨: `listDrops`, `listAdminDrops`, 홈 `NowOnSaleSection`/`FeaturedHeroSection`, `getDropBySlug`(코드 없을 때 — OG 이미지·메타데이터). 새 공개 쿼리에서 `ticketTiers`를 읽으면 같은 조건을 붙일 것
+  - 주문은 `createOrder`/`createBankTransferOrder`가 서버에서 `assertTierAccess`로 코드를 다시 검증한다(틀리면 "없는 등급"과 같은 메시지). 화면 숨김만으로는 tierId를 아는 사람이 직접 주문할 수 있다
+  - 코드가 URL에 실리므로 초대 링크로 연 페이지는 `noindex`. 메타데이터·OG는 코드를 받지 않는다. 스키마 변경 SQL: `prisma/manual-migrations/2026-10-19_ticket_tier_access_code.sql`
 - **Media**: images and videos unified in `DropMedia` model (`type: image | video`, `order` for DnD sort). No separate `DropImage`/`heroUrl`/`videoUrl` fields — first media by `order` acts as hero. Image `url` = Cloudflare Images URL; video `url` = Cloudflare Stream ID (HLS via `hls.js`).
 
 ### Tickets & QR 입장 시스템

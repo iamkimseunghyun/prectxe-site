@@ -69,6 +69,8 @@ const getFeaturedHero = next_cache(
             select: { artist: { select: { name: true, nameKr: true } } },
           },
           ticketTiers: {
+            // 비공개 등급은 홈의 판매 상태에서 제외
+            where: { accessCode: null },
             select: {
               saleStart: true,
               saleEnd: true,

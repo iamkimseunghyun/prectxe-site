@@ -40,6 +40,7 @@ type TicketTier = {
   maxPerOrder: number;
   saleStart: Date | null;
   saleEnd: Date | null;
+  accessCode: string | null;
 };
 
 type DropMedia = {
@@ -78,7 +79,14 @@ type TicketDrop = {
   ticketTiers: TicketTier[];
 };
 
-export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
+export function TicketDropDetailView({
+  drop,
+  accessCode,
+}: {
+  drop: TicketDrop;
+  /** 초대 링크(`?code=`)로 들어온 경우의 코드 */
+  accessCode?: string;
+}) {
   const t = useTranslations('drops');
   const locale = useLocale() as Locale;
   const fmtPrice = (n: number) =>
@@ -398,6 +406,7 @@ export function TicketDropDetailView({ drop }: { drop: TicketDrop }) {
                     dropId={drop.id}
                     title={drop.title}
                     tiers={visibleTiers}
+                    accessCode={accessCode}
                   />
                 )}
               </div>

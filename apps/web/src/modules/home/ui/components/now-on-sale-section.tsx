@@ -68,6 +68,8 @@ const getNowOnSaleDrops = next_cache(
           select: { url: true },
         },
         ticketTiers: {
+          // 비공개 등급은 홈의 최저가·판매 윈도에서 제외
+          where: { accessCode: null },
           select: {
             price: true,
             saleStart: true,

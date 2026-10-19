@@ -40,6 +40,7 @@ import {
   generateAccessToken,
   generateOrderNo,
   generateTicketToken,
+  generateTierAccessCode,
 } from '@/lib/utils/ticket-token';
 import { getOrderTicketsUrl } from '@/lib/utils/ticket-url';
 import {
@@ -163,6 +164,16 @@ async function sendOrderConfirmationMail(params: {
   }
 }
 
+// 비공개 등급은 초대 코드가 일치할 때만 주문할 수 있다. 코드가 없거나 틀리면
+// "없는 등급"과 같은 메시지를 내서 등급이 존재하는지 알 수 없게 한다.
+function assertTierAccess(
+  tier: { accessCode: string | null },
+  accessCode: string | undefined
+) {
+  if (tier.accessCode && tier.accessCode !== accessCode)
+    throw new Error('티켓 등급을 찾을 수 없습니다.');
+}
+
 // ─── TicketTier CRUD (Admin) ─────────────────────────
 
 export async function createTicketTier(dropId: string, data: TicketTierInput) {
@@ -187,6 +198,7 @@ export async function createTicketTier(dropId: string, data: TicketTierInput) {
         ? parseKstDateInput(parsed.data.saleEnd)
         : null,
       order: parsed.data.order,
+      accessCode: parsed.data.isPrivate ? generateTierAccessCode() : null,
     },
   });
 
@@ -201,9 +213,20 @@ export async function updateTicketTier(tierId: string, data: TicketTierInput) {
   const parsed = parseInput(ticketTierSchema, data);
   if (!parsed.success) return parsed;
 
+  // 비공개 유지 중이면 기존 코드를 그대로 둔다(이미 뿌린 링크가 깨지지 않게).
+  // 공개로 돌렸다가 다시 비공개로 켜면 새 코드가 발급된다 — 유출된 링크 폐기용.
+  const current = await prisma.ticketTier.findUnique({
+    where: { id: tierId },
+    select: { accessCode: true },
+  });
+  if (!current) return { success: false, error: '등급을 찾을 수 없습니다.' };
+
   await prisma.ticketTier.update({
     where: { id: tierId },
     data: {
+      accessCode: parsed.data.isPrivate
+        ? (current.accessCode ?? generateTierAccessCode())
+        : null,
       name: parsed.data.name,
       description: parsed.data.description,
       price: parsed.data.price,
@@ -394,12 +417,13 @@ export async function createOrder(
     buyerEmail: string;
     buyerPhone: string;
     items: { ticketTierId: string; quantity: number }[];
+    accessCode?: string;
   }
 ) {
   const parsed = parseInput(orderFormSchema, input);
   if (!parsed.success) return parsed;
 
-  const { buyerName, buyerEmail, buyerPhone, items } = parsed.data;
+  const { buyerName, buyerEmail, buyerPhone, items, accessCode } = parsed.data;
   // 구매자 로케일 저장 — 이후 어드민이 보내는 확인 메일도 구매자 언어로
   const locale = (await getLocale()) as Locale;
 
@@ -429,6 +453,7 @@ export async function createOrder(
         include: { drop: { select: { eventDate: true, eventEndDate: true } } },
       });
       if (!tier) throw new Error('티켓 등급을 찾을 수 없습니다.');
+      assertTierAccess(tier, accessCode);
       if (getEffectiveTierStatus(tier, tier.drop) !== 'on_sale')
         throw new Error(`${tier.name}은(는) 현재 판매 중이 아닙니다.`);
       if (item.quantity > tier.maxPerOrder)
@@ -487,6 +512,7 @@ export async function createBankTransferOrder(
     buyerPhone: string;
     depositorName: string;
     items: { ticketTierId: string; quantity: number }[];
+    accessCode?: string;
   }
 ) {
   // 구매자 요청 컨텍스트의 로케일 — 에러 응답·안내 메일 언어 결정
@@ -501,6 +527,7 @@ export async function createBankTransferOrder(
     buyerPhone,
     depositorName: depositorBaseName,
     items,
+    accessCode,
   } = parsed.data;
 
   try {
@@ -526,6 +553,7 @@ export async function createBankTransferOrder(
           },
         });
         if (!tier) throw new Error('티켓 등급을 찾을 수 없습니다.');
+        assertTierAccess(tier, accessCode);
         if (getEffectiveTierStatus(tier, tier.drop) !== 'on_sale')
           throw new Error(`${tier.name}은(는) 현재 판매 중이 아닙니다.`);
         if (item.quantity > tier.maxPerOrder)
