@@ -128,7 +128,11 @@ export async function ProgramDetailView({ slug }: { slug: string }) {
       <div className="grid gap-12 md:grid-cols-[minmax(0,1fr)_16rem] md:gap-16">
         <div>
           {program.description && (
-            <section aria-labelledby="program-about" className="mb-12">
+            // 크레딧이 없으면 본문이 열 전체를 쓰게 되어 줄이 너무 길어진다 — 읽기 좋은 폭으로 제한
+            <section
+              aria-labelledby="program-about"
+              className="mb-12 max-w-[65ch]"
+            >
               <h2
                 id="program-about"
                 className="mb-4 text-xs font-medium uppercase tracking-[0.25em] text-neutral-400"

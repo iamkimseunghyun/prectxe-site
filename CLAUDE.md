@@ -114,6 +114,8 @@ src/
 - **서버 액션은 `{ success, error?, redirect? }`를 반환**하고 이동은 클라이언트(`run`)가 한다. 서버에서 `redirect()`를 던지면 성공 토스트를 띄울 수 없고 `isRedirectError` 재throw 핵을 써야 한다.
 - **업로드는 성공 여부를 확인하고 진행**한다(`uploadImage`는 boolean 반환 — 무시하고 저장하면 깨진 URL이 저장된다). 실패하면 `{ success: false, error }`.
 - **`e.currentTarget`은 첫 `await` 전에 변수로 잡아 둔다** — 핸들러가 끝나면 null이 되어 업로드 뒤에 `new FormData(e.currentTarget)`을 읽으면 깨진다.
+- **되돌릴 수 없는 단체 발송(SMS·이메일)은 반드시 확인창을 거친다**: 대상 수 + "취소할 수 없음"(SMS는 "건당 요금")을 적고, **확인 전에는 서버 액션이 한 번도 호출되지 않아야 한다**(제출 핸들러는 검증 후 `pendingSend` 상태만 세팅하고, 확인창의 "발송"이 실제 발송 함수를 부른다). 이메일은 `SendControls`, SMS는 `ConfirmDialog`. 예전에 이메일에만 붙이고 SMS 두 곳이 빠져 한 번 클릭으로 전체 발송되던 구멍이 있었다 — 새 발송 화면을 만들면 같은 기준으로 확인창부터 붙일 것.
+- **이 규칙(`useFormSubmit`)의 적용 범위는 "폼 저장·삭제"**다. 게스트 추가·스태프 배정·입장 취소처럼 폼이 아닌 액션 버튼은 개별 구현을 허용하되 최소 기준을 지킨다: 진행 중 `disabled`, 실패는 `variant: 'destructive'` 토스트, 되돌리기 어려운 동작은 `ConfirmDialog`.
 - **`FormActionBar`는 반드시 `<form>` 안에**: `[저장 ▾]` 메뉴 항목은 `form.requestSubmit()`로 제출한다. 메뉴에서 고른 의도(`selectIntent`)가 검증 실패로 `run`까지 못 가면 다음 제출에 새므로, 주 버튼 클릭과 `notifyInvalid`가 의도를 `default`로 되돌린다 — 이 둘을 빼지 말 것.
 
 ### React 19 + Radix UI Compatibility
