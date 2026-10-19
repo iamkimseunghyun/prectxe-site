@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -65,6 +65,7 @@ interface Recipient {
 export function PersonalizedSMSSender() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const sendingRef = useRef(false);
   // 확인창에서 "발송"을 누르기 전까지 보류 중인 입력값
   const [pendingSend, setPendingSend] = useState<FormValues | null>(null);
   const [selectedRecipient, setSelectedRecipient] = useState<Recipient | null>(
@@ -171,8 +172,10 @@ export function PersonalizedSMSSender() {
   }
 
   async function send(data: FormValues) {
-    // 확인창의 "발송"이 겹쳐 눌려도 한 번만 나가게 한다(발송은 취소할 수 없다)
-    if (isSubmitting) return;
+    // 확인창의 "발송"이 겹쳐 눌려도 한 번만 나가게 한다(발송은 취소할 수 없다).
+    // state는 렌더 뒤에야 바뀌어 연타를 못 막으므로 동기 ref로 잠근다.
+    if (sendingRef.current) return;
+    sendingRef.current = true;
 
     const phones = data.phoneList
       .split('\n')
@@ -217,6 +220,7 @@ export function PersonalizedSMSSender() {
         variant: 'destructive',
       });
     } finally {
+      sendingRef.current = false;
       setIsSubmitting(false);
     }
   }

@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Send, Users } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -51,8 +51,16 @@ type FormValues = z.infer<typeof formSchema>;
 export function FormRecipientsSender() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  // 확인창에서 "발송"을 누르기 전까지 보류 중인 입력값
-  const [pendingSend, setPendingSend] = useState<FormValues | null>(null);
+  // 확인창 직전에 수신자 목록을 다시 읽는 중
+  const [isPreparing, setIsPreparing] = useState(false);
+  // 확인창에서 "발송"을 누르기 전까지 보류 중인 입력값과, 그때 확정한 수신자 목록.
+  // 확인창에 보인 인원과 실제 발송 대상이 같도록 발송은 이 목록만 쓴다.
+  const [pendingSend, setPendingSend] = useState<{
+    values: FormValues;
+    phones: string[];
+  } | null>(null);
+  // state는 렌더 뒤에야 바뀌어 확인창 "발송"을 연타하면 두 번 나간다 — 동기 ref로 막는다
+  const sendingRef = useRef(false);
   const [forms, setForms] = useState<
     Array<{
       id: string;
@@ -106,29 +114,59 @@ export function FormRecipientsSender() {
     }
   };
 
-  // 발송은 취소할 수 없고 건당 요금이 든다 — 확인창을 거친 뒤에 보낸다
-  const onSubmit = (data: FormValues) => setPendingSend(data);
-
-  const send = async (data: FormValues) => {
-    // 확인창의 "발송"이 겹쳐 눌려도 한 번만 나가게 한다(발송은 취소할 수 없다)
-    if (isLoading) return;
+  // 발송은 취소할 수 없고 건당 요금이 든다 — 확인창을 거친 뒤에 보낸다.
+  // 폼 선택 뒤 새 응답이 들어왔을 수 있어, 확인창을 띄우기 직전에 목록을 다시 읽어
+  // 그 인원을 확인받고 같은 목록으로 발송한다.
+  const onSubmit = async (data: FormValues) => {
+    setIsPreparing(true);
     try {
-      setIsLoading(true);
-
-      // 전화번호 목록 가져오기
       const phoneResult = await getFormRespondentsPhones(data.formId);
       if (!phoneResult.success || !phoneResult.data) {
         throw new Error(phoneResult.error);
       }
+      const { phones, validPhoneCount, totalSubmissions } = phoneResult.data;
+      setSelectedFormInfo({ validPhoneCount, totalSubmissions });
+      if (phones.length === 0) {
+        toast({
+          title: '발송 대상이 없습니다',
+          description: '유효한 전화번호가 있는 응답이 없습니다.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setPendingSend({ values: data, phones });
+    } catch (error) {
+      toast({
+        title: '수신자를 확인하지 못했습니다',
+        description: error instanceof Error ? error.message : '알 수 없는 오류',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPreparing(false);
+    }
+  };
+
+  const send = async ({
+    values: data,
+    phones,
+  }: {
+    values: FormValues;
+    phones: string[];
+  }) => {
+    // 확인창의 "발송"이 겹쳐 눌려도 한 번만 나가게 한다(발송은 취소할 수 없다)
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+    try {
+      setIsLoading(true);
 
       const selectedForm = forms.find((f) => f.id === data.formId);
       const title = `${selectedForm?.title || 'Form'} 응답자 발송`;
 
-      // SMS 발송
+      // SMS 발송 — 확인창에서 확정한 목록 그대로
       const result = await createAndSendSMSCampaign({
         title,
         message: data.message,
-        phones: phoneResult.data.phones,
+        phones,
         formId: data.formId,
       });
 
@@ -149,6 +187,7 @@ export function FormRecipientsSender() {
         variant: 'destructive',
       });
     } finally {
+      sendingRef.current = false;
       setIsLoading(false);
     }
   };
@@ -243,7 +282,7 @@ export function FormRecipientsSender() {
 
             <Button
               type="submit"
-              disabled={isLoading || !selectedFormInfo}
+              disabled={isLoading || isPreparing || !selectedFormInfo}
               className="w-full"
             >
               {isLoading ? (
@@ -269,7 +308,7 @@ export function FormRecipientsSender() {
             if (!open) setPendingSend(null);
           }}
           title="SMS 발송 확인"
-          description={`폼 응답자 ${selectedFormInfo?.validPhoneCount ?? 0}명에게 즉시 발송됩니다. 이 작업은 취소할 수 없고 건당 요금이 부과됩니다.`}
+          description={`폼 응답자 ${pendingSend?.phones.length ?? 0}명에게 즉시 발송됩니다. 이 작업은 취소할 수 없고 건당 요금이 부과됩니다.`}
           confirmText="발송"
           cancelText="취소"
           onConfirm={() => {
