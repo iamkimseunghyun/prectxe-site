@@ -15,6 +15,8 @@ export function FilterChip({ href, active, children }: FilterChipProps) {
   return (
     <Link
       href={href}
+      // 색으로만 표시하면 스크린리더가 현재 필터를 알 수 없다
+      aria-current={active ? 'true' : undefined}
       className={cn(
         'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
         active
