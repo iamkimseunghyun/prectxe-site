@@ -290,8 +290,9 @@ export function TicketPurchaseSection({
         {tiers.map((tier) => {
           const qty = quantities[tier.id] || 0;
           const maxQty = tier.maxSelectable;
-          // 매진: 재고 소진(현재 세션 실시간 포함). 판매종료: 판매기간 마감.
-          const isSoldOut = tier.status === 'sold_out' || maxQty <= 0;
+          // 매진/판매종료는 서버가 판정한 status를 그대로 따른다(종료가 매진을 이긴다 —
+          // 판매기간이 끝난 재고 0 등급은 '매진'이 아니라 '종료'로 보인다).
+          const isSoldOut = tier.status === 'sold_out';
           const isClosed = tier.status === 'closed';
           const isInactive = isSoldOut || isClosed;
           const isSelected = qty > 0;
@@ -338,7 +339,7 @@ export function TicketPurchaseSection({
                   </p>
                   {/* 잔여는 적을 때만 알린다 — 넉넉할 땐 판매 속도가 드러나지 않게 숨김 */}
                   {!isInactive && tier.lowStockRemaining !== null && (
-                    <p className="mt-0.5 text-xs font-medium text-amber-600">
+                    <p className="mt-0.5 text-xs font-medium text-amber-700">
                       {t('drops.remaining', { count: tier.lowStockRemaining })}
                     </p>
                   )}

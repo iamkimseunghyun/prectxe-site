@@ -412,7 +412,7 @@ export function GoodsDropDetailView({
 
                   {/* 잔여는 적을 때만 알린다 — 넉넉할 땐 판매 속도가 드러나지 않게 숨김 */}
                   {selected.lowStockRemaining !== null && (
-                    <p className="mt-2 text-right text-xs font-medium text-amber-600">
+                    <p className="mt-2 text-right text-xs font-medium text-amber-700">
                       잔여 {selected.lowStockRemaining}개
                     </p>
                   )}

@@ -35,7 +35,11 @@ import {
   getBankTransferExpiryHours,
 } from '@/lib/utils/bank-transfer';
 import { parseKstDateInput } from '@/lib/utils/date';
-import { getEffectiveTierStatus, isEventOver } from '@/lib/utils/ticket-status';
+import {
+  GOODS_MAX_PER_ORDER,
+  getEffectiveTierStatus,
+  isEventOver,
+} from '@/lib/utils/ticket-status';
 import {
   generateAccessToken,
   generateOrderNo,
@@ -740,6 +744,12 @@ export async function createGoodsOrder(
         where: { id: item.goodsVariantId },
       });
       if (!variant) throw new Error('옵션을 찾을 수 없습니다.');
+      // 화면의 수량 상한과 같은 규칙을 서버에서도 건다(티켓의 maxPerOrder처럼).
+      // 같은 옵션을 여러 줄로 쪼개 보내도 위에서 합산했으므로 우회할 수 없다.
+      if (item.quantity > GOODS_MAX_PER_ORDER)
+        throw new Error(
+          `${variant.name}은(는) 최대 ${GOODS_MAX_PER_ORDER}개까지 구매 가능합니다.`
+        );
 
       // 원자적 재고 차감 — 동시 주문 초과판매 방지(검사+증가를 한 쿼리로)
       const updated = await tx.goodsVariant.updateMany({

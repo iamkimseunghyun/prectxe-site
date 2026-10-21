@@ -154,7 +154,6 @@ export type PublicTier = {
   name: string;
   description: string | null;
   price: number;
-  maxPerOrder: number;
   saleStart: Date | null;
   saleEnd: Date | null;
   /** 값이 있으면 초대 링크로만 보이는 비공개 등급 */
@@ -213,7 +212,6 @@ export function toPublicTier(
     name: tier.name,
     description: tier.description,
     price: tier.price,
-    maxPerOrder: tier.maxPerOrder,
     saleStart: tier.saleStart,
     saleEnd: tier.saleEnd,
     accessCode: tier.accessCode,
@@ -226,7 +224,7 @@ export function toPublicTier(
 /**
  * 굿즈 옵션의 1회 구매 상한. 굿즈엔 등급의 `maxPerOrder` 같은 컬럼이 없는데, 화면의 수량
  * 버튼 상한이 곧 재고(잔여)였다 — 숨긴 잔여를 버튼을 끝까지 눌러 알아낼 수 있어서
- * 잔여 대신 이 값으로 상한을 둔다. 서버 주문 검증에는 없는 화면 상한이다.
+ * 잔여 대신 이 값으로 상한을 둔다. 화면과 `createGoodsOrder`가 같은 값을 쓴다.
  */
 export const GOODS_MAX_PER_ORDER = 10;
 

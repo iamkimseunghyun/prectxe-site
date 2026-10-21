@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import {
-  getEffectiveDropStatus,
-  toPublicTier,
-  toPublicVariant,
-} from '@/lib/utils/ticket-status';
+import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
 import { getDropBySlug } from '@/modules/drops/server/actions';
+import {
+  toPublicGoodsDrop,
+  toPublicTicketDrop,
+} from '@/modules/drops/server/public-drop';
 import { GoodsDropDetailView } from '@/modules/drops/ui/views/goods-drop-detail-view';
 import { TicketDropDetailView } from '@/modules/drops/ui/views/ticket-drop-detail-view';
 
@@ -66,26 +66,20 @@ export default async function Page({ params, searchParams }: PageProps) {
   }
 
   if (drop.type === 'ticket') {
-    // 정확한 판매·잔여 수량(quantity·soldCount)은 클라이언트로 내려보내지 않는다.
-    // 상태·구매 가능 수량·임박 표시 같은 파생값만 서버에서 계산해 넘긴다.
-    const { ticketTiers, variants: _variants, ...rest } = drop;
+    // 정확한 판매·잔여 수량은 클라이언트로 내려보내지 않는다 — 뷰가 쓰는 필드만
+    // 골라 담고(allow-list) 상태·구매 가능 수량·임박 표시 같은 파생값만 넘긴다.
     return (
       <TicketDropDetailView
-        drop={{
-          ...rest,
-          ticketTiers: ticketTiers.map((tier) => toPublicTier(tier, drop)),
-        }}
+        drop={toPublicTicketDrop(drop)}
         status={getEffectiveDropStatus(drop)}
         accessCode={accessCode}
       />
     );
   }
 
-  // 굿즈도 정확한 재고(stock·soldCount)는 클라이언트로 내려보내지 않는다
-  const { variants, ticketTiers: _ticketTiers, ...rest } = drop;
   return (
     <GoodsDropDetailView
-      drop={{ ...rest, variants: variants.map(toPublicVariant) }}
+      drop={toPublicGoodsDrop(drop)}
       status={getEffectiveDropStatus(drop)}
     />
   );
