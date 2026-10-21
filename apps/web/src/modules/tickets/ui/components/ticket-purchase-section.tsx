@@ -24,7 +24,7 @@ import {
   trackMetaPurchase,
 } from '@/lib/analytics/meta-pixel';
 import { getSalesTerms } from '@/lib/constants/sales-terms';
-import type { EffectiveTierStatus } from '@/lib/utils/ticket-status';
+import type { PublicTier } from '@/lib/utils/ticket-status';
 import { subscribeNewsletter } from '@/modules/email/server/actions';
 import {
   createBankTransferOrder,
@@ -36,24 +36,11 @@ import {
   FreeOrderSuccess,
 } from '@/modules/tickets/ui/components/ticket-order-success';
 
-type AvailableTier = {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  quantity: number;
-  soldCount: number;
-  maxPerOrder: number;
-  remaining: number;
-  status: EffectiveTierStatus;
-  /** 값이 있으면 초대 링크로만 보이는 비공개 등급 */
-  accessCode: string | null;
-};
-
 interface TicketPurchaseSectionProps {
   dropId: string;
   title: string;
-  tiers: AvailableTier[];
+  /** 서버에서 변환한 공개용 등급 — 정확한 판매·잔여 수량은 없다 */
+  tiers: PublicTier[];
   /** 초대 링크(`?code=`)로 들어왔을 때의 코드 — 주문 시 서버가 다시 검증한다 */
   accessCode?: string;
 }
@@ -302,9 +289,9 @@ export function TicketPurchaseSection({
       <div className="space-y-3">
         {tiers.map((tier) => {
           const qty = quantities[tier.id] || 0;
-          const maxQty = Math.min(tier.maxPerOrder, tier.remaining);
+          const maxQty = tier.maxSelectable;
           // 매진: 재고 소진(현재 세션 실시간 포함). 판매종료: 판매기간 마감.
-          const isSoldOut = tier.status === 'sold_out' || tier.remaining <= 0;
+          const isSoldOut = tier.status === 'sold_out' || maxQty <= 0;
           const isClosed = tier.status === 'closed';
           const isInactive = isSoldOut || isClosed;
           const isSelected = qty > 0;
@@ -349,9 +336,10 @@ export function TicketPurchaseSection({
                   <p className="mt-2 text-lg font-bold text-neutral-900">
                     {tier.price === 0 ? t('common.free') : fmtPrice(tier.price)}
                   </p>
-                  {!isInactive && (
-                    <p className="mt-0.5 text-xs text-neutral-400">
-                      {t('drops.remaining', { count: tier.remaining })}
+                  {/* 잔여는 적을 때만 알린다 — 넉넉할 땐 판매 속도가 드러나지 않게 숨김 */}
+                  {!isInactive && tier.lowStockRemaining !== null && (
+                    <p className="mt-0.5 text-xs font-medium text-amber-600">
+                      {t('drops.remaining', { count: tier.lowStockRemaining })}
                     </p>
                   )}
                 </div>

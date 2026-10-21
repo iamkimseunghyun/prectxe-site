@@ -20,20 +20,13 @@ import { trackViewItem } from '@/lib/analytics/gtag';
 import { trackMetaViewContent } from '@/lib/analytics/meta-pixel';
 import { SALES_TERMS } from '@/lib/constants/sales-terms';
 import { artistInitials, cn, formatArtistName, getImageUrl } from '@/lib/utils';
-import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
+import type {
+  EffectiveDropStatus,
+  PublicVariant,
+} from '@/lib/utils/ticket-status';
 import { GoodsPurchaseSection } from '@/modules/drops/ui/components/goods-purchase-section';
 import { MediaLightbox } from '@/modules/drops/ui/components/media-lightbox';
 import { MobilePurchaseBar } from '@/modules/drops/ui/components/mobile-purchase-bar';
-
-type GoodsVariant = {
-  id: string;
-  name: string;
-  price: number;
-  stock: number;
-  soldCount: number;
-  options: unknown;
-  order: number;
-};
 
 type DropMedia = {
   id: string;
@@ -67,10 +60,18 @@ type GoodsDrop = {
   eventEndDate?: Date | null;
   media: DropMedia[];
   credits: DropCredit[];
-  variants: GoodsVariant[];
+  // 서버에서 변환한 공개용 옵션 — 정확한 재고(stock·soldCount)는 없다
+  variants: PublicVariant[];
 };
 
-export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
+export function GoodsDropDetailView({
+  drop,
+  status,
+}: {
+  drop: GoodsDrop;
+  /** 드랍 전체 판매 상태 — 재고가 클라이언트에 없어 서버에서 계산해 받는다 */
+  status: EffectiveDropStatus;
+}) {
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
@@ -104,19 +105,14 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
   const showingVideo = activeMedia?.type === 'video';
 
   const selected = drop.variants.find((v) => v.id === selectedVariant);
-  const remaining = selected ? selected.stock - selected.soldCount : 0;
-  // 옵션이 없으면 effectiveStatus='upcoming' → 구매 섹션 비활성(오동작 방지).
+  // 한 번에 고를 수 있는 수량(서버 계산: min(잔여, 1회 구매 상한))
+  const maxQty = selected?.maxSelectable ?? 0;
+  // 옵션이 없으면 status='upcoming' → 구매 섹션 비활성(오동작 방지).
   // on_sale일 때만 구매 가능, 재고 소진 시 sold_out.
-  const effectiveStatus = getEffectiveDropStatus({
-    type: 'goods',
-    eventDate: drop.eventDate,
-    eventEndDate: drop.eventEndDate,
-    variants: drop.variants,
-  });
-  const isSoldOut = effectiveStatus === 'sold_out';
+  const isSoldOut = status === 'sold_out';
   // 행사가 끝난 굿즈(픽업 행사 등)는 '준비 중'이 아니라 '종료'다
-  const isClosed = effectiveStatus === 'closed';
-  const isSaleActive = effectiveStatus === 'on_sale';
+  const isClosed = status === 'closed';
+  const isSaleActive = status === 'on_sale';
 
   return (
     <div className="min-h-screen bg-white">
@@ -344,8 +340,7 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {drop.variants.map((variant) => {
-                        const varRemaining = variant.stock - variant.soldCount;
-                        const isSoldOut = varRemaining <= 0;
+                        const isSoldOut = variant.soldOut;
                         const isSelected = selectedVariant === variant.id;
 
                         return (
@@ -406,18 +401,21 @@ export function GoodsDropDetailView({ drop }: { drop: GoodsDrop }) {
                         aria-label="수량 증가"
                         className="flex h-10 w-10 items-center justify-center text-neutral-500 transition-colors hover:text-neutral-900 disabled:opacity-30"
                         onClick={() =>
-                          setQuantity((q) => Math.min(remaining, q + 1))
+                          setQuantity((q) => Math.min(maxQty, q + 1))
                         }
-                        disabled={quantity >= remaining}
+                        disabled={quantity >= maxQty}
                       >
                         <Plus className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
 
-                  <p className="mt-2 text-right text-xs text-neutral-400">
-                    잔여 {remaining}개
-                  </p>
+                  {/* 잔여는 적을 때만 알린다 — 넉넉할 땐 판매 속도가 드러나지 않게 숨김 */}
+                  {selected.lowStockRemaining !== null && (
+                    <p className="mt-2 text-right text-xs font-medium text-amber-600">
+                      잔여 {selected.lowStockRemaining}개
+                    </p>
+                  )}
 
                   {/* Total */}
                   <div className="mt-4 flex items-center justify-between">

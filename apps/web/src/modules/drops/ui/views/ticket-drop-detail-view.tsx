@@ -22,26 +22,13 @@ import {
   getImageUrl,
 } from '@/lib/utils';
 import {
+  type EffectiveDropStatus,
   getDropSaleWindow,
-  getEffectiveDropStatus,
-  getEffectiveTierStatus,
+  type PublicTier,
 } from '@/lib/utils/ticket-status';
 import { MediaLightbox } from '@/modules/drops/ui/components/media-lightbox';
 import { MobilePurchaseBar } from '@/modules/drops/ui/components/mobile-purchase-bar';
 import { TicketPurchaseSection } from '@/modules/tickets/ui/components/ticket-purchase-section';
-
-type TicketTier = {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  quantity: number;
-  soldCount: number;
-  maxPerOrder: number;
-  saleStart: Date | null;
-  saleEnd: Date | null;
-  accessCode: string | null;
-};
 
 type DropMedia = {
   id: string;
@@ -76,7 +63,8 @@ type TicketDrop = {
   notice: string | null;
   media: DropMedia[];
   credits: DropCredit[];
-  ticketTiers: TicketTier[];
+  // 서버에서 변환한 공개용 등급 — 정확한 판매·잔여 수량(quantity·soldCount)은 없다
+  ticketTiers: PublicTier[];
 };
 
 // 공유 시트에 초대 코드(`?code=`)가 실려 나가면 받은 사람이 비공개 등급을 살 수 있다
@@ -84,9 +72,12 @@ const SHARE_OMIT_PARAMS = ['code'];
 
 export function TicketDropDetailView({
   drop,
+  status,
   accessCode,
 }: {
   drop: TicketDrop;
+  /** 드랍 전체 판매 상태 — 판매·잔여 수량이 클라이언트에 없어 서버에서 계산해 받는다 */
+  status: EffectiveDropStatus;
   /** 초대 링크(`?code=`)로 들어온 경우의 코드 */
   accessCode?: string;
 }) {
@@ -121,13 +112,8 @@ export function TicketDropDetailView({
     });
   }, [drop.id, drop.title, drop.ticketTiers]);
 
-  const tiersWithStatus = drop.ticketTiers.map((t) => ({
-    ...t,
-    status: getEffectiveTierStatus(t, drop),
-    remaining: t.quantity - t.soldCount,
-  }));
   // 가격 미리보기·티켓 개수는 실제 판매중 티어 기준
-  const onSaleTiers = tiersWithStatus.filter((t) => t.status === 'on_sale');
+  const onSaleTiers = drop.ticketTiers.filter((t) => t.status === 'on_sale');
   // 가격이 실제로 다를 때만 "~"(부터) 표기 — 동일가 티어에선 오해 방지
   const onSalePrices = onSaleTiers.map((tier) => tier.price);
   const hasPriceRange =
@@ -135,7 +121,7 @@ export function TicketDropDetailView({
     Math.max(...onSalePrices) > Math.min(...onSalePrices);
   // 구매 섹션에 노출할 티어: 판매중 + 매진 + 판매종료 (오픈예정은 숨김).
   // 살아있는(on_sale) 티어를 맨 위로, 종료/매진은 회색으로 아래에.
-  const visibleTiers = tiersWithStatus
+  const visibleTiers = drop.ticketTiers
     .filter((t) => t.status !== 'scheduled')
     .sort((a, b) => {
       if (a.status === 'on_sale' && b.status !== 'on_sale') return -1;
@@ -143,14 +129,8 @@ export function TicketDropDetailView({
       return 0;
     });
 
-  const effectiveStatus = getEffectiveDropStatus({
-    type: 'ticket',
-    eventDate: drop.eventDate,
-    eventEndDate: drop.eventEndDate,
-    ticketTiers: drop.ticketTiers,
-  });
-  const isClosed = effectiveStatus === 'closed';
-  const isSoldOut = effectiveStatus === 'sold_out';
+  const isClosed = status === 'closed';
+  const isSoldOut = status === 'sold_out';
   const saleWindow = getDropSaleWindow(drop.ticketTiers);
 
   return (
@@ -427,7 +407,7 @@ export function TicketDropDetailView({
       />
 
       {/* 모바일 전용 하단 예매 바 — 판매중일 때만 (종료/매진/오픈예정은 히어로·하단 카드가 안내) */}
-      {effectiveStatus === 'on_sale' && onSaleTiers.length > 0 && (
+      {status === 'on_sale' && onSaleTiers.length > 0 && (
         <MobilePurchaseBar
           targetId="ticket-purchase"
           eyebrow="Tickets"
