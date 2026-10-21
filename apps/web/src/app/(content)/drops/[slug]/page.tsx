@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
 import { getDropBySlug } from '@/modules/drops/server/actions';
+import {
+  toPublicGoodsDrop,
+  toPublicTicketDrop,
+} from '@/modules/drops/server/public-drop';
 import { GoodsDropDetailView } from '@/modules/drops/ui/views/goods-drop-detail-view';
 import { TicketDropDetailView } from '@/modules/drops/ui/views/ticket-drop-detail-view';
 
@@ -61,8 +66,21 @@ export default async function Page({ params, searchParams }: PageProps) {
   }
 
   if (drop.type === 'ticket') {
-    return <TicketDropDetailView drop={drop} accessCode={accessCode} />;
+    // 정확한 판매·잔여 수량은 클라이언트로 내려보내지 않는다 — 뷰가 쓰는 필드만
+    // 골라 담고(allow-list) 상태·구매 가능 수량·임박 표시 같은 파생값만 넘긴다.
+    return (
+      <TicketDropDetailView
+        drop={toPublicTicketDrop(drop)}
+        status={getEffectiveDropStatus(drop)}
+        accessCode={accessCode}
+      />
+    );
   }
 
-  return <GoodsDropDetailView drop={drop} />;
+  return (
+    <GoodsDropDetailView
+      drop={toPublicGoodsDrop(drop)}
+      status={getEffectiveDropStatus(drop)}
+    />
+  );
 }

@@ -135,3 +135,125 @@ export function getDropSaleWindow(
 
   return { saleStart, saleEnd };
 }
+
+/**
+ * 잔여 수량을 화면에 보여주는 경계. 잔여가 이 값 이하(또는 인당 구매 제한 이하)일 때만
+ * "잔여 N장"을 알린다 — 넉넉할 땐 숨겨서 판매 속도(= 정확한 판매량)가 공개 페이지에서
+ * 계산되지 않게 한다.
+ */
+export const LOW_STOCK_THRESHOLD = 10;
+
+/**
+ * 공개 화면(클라이언트)에 내려보내는 티켓 등급. **`quantity`·`soldCount`를 일부러 뺐다** —
+ * 화면에서만 숨기면 props로 내려간 정확한 판매량을 페이지 소스에서 읽을 수 있다.
+ * 클라이언트가 필요로 하는 파생값(`status`·`maxSelectable`·`lowStockRemaining`)은
+ * 서버에서 `toPublicTier`로 계산해 넘긴다.
+ */
+export type PublicTier = {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  saleStart: Date | null;
+  saleEnd: Date | null;
+  /** 값이 있으면 초대 링크로만 보이는 비공개 등급 */
+  accessCode: string | null;
+  status: EffectiveTierStatus;
+  /** 한 번에 고를 수 있는 최대 수량 = min(잔여, 인당 구매 제한) */
+  maxSelectable: number;
+  /** 잔여가 적을 때만 실제 값, 넉넉하면 null(숨김) */
+  lowStockRemaining: number | null;
+};
+
+/**
+ * 한 번에 고를 수 있는 수량과 "잔여 N" 노출 여부를 정한다(티켓·굿즈 공용).
+ * - 선택 상한 `maxSelectable` = min(잔여, 1회 구매 상한)
+ * - 잔여가 `max(LOW_STOCK_THRESHOLD, 1회 구매 상한)` 이하일 때만 `lowStockRemaining`에 값을 준다.
+ *   상한이 잔여에 걸리는 구간(잔여 < 1회 구매 상한)은 항상 알려서, 수량 버튼이 왜 멈추는지
+ *   보이게 한다. 반대로 잔여가 넉넉하면 상한은 1회 구매 상한이라 잔여를 유추할 수 없다
+ *   (수량 버튼을 끝까지 눌러 재고를 알아내는 우회로를 막는다).
+ */
+function getStockDisplay(remaining: number, maxPerOrder: number) {
+  const left = Math.max(0, remaining);
+  const showRemaining =
+    left > 0 && left <= Math.max(LOW_STOCK_THRESHOLD, maxPerOrder);
+  return {
+    maxSelectable: Math.min(maxPerOrder, left),
+    lowStockRemaining: showRemaining ? left : null,
+  };
+}
+
+/** DB 등급 → 공개 화면용 등급. 잔여 수량·판매 상태 판정은 모두 여기서(서버에서) 끝낸다. */
+export function toPublicTier(
+  tier: {
+    id: string;
+    name: string;
+    description: string | null;
+    price: number;
+    quantity: number;
+    soldCount: number;
+    maxPerOrder: number;
+    saleStart: Date | null;
+    saleEnd: Date | null;
+    accessCode: string | null;
+  },
+  event?: {
+    eventDate?: Date | string | null;
+    eventEndDate?: Date | string | null;
+  } | null
+): PublicTier {
+  const { maxSelectable, lowStockRemaining } = getStockDisplay(
+    tier.quantity - tier.soldCount,
+    tier.maxPerOrder
+  );
+
+  return {
+    id: tier.id,
+    name: tier.name,
+    description: tier.description,
+    price: tier.price,
+    saleStart: tier.saleStart,
+    saleEnd: tier.saleEnd,
+    accessCode: tier.accessCode,
+    status: getEffectiveTierStatus(tier, event),
+    maxSelectable,
+    lowStockRemaining,
+  };
+}
+
+/**
+ * 굿즈 옵션의 1회 구매 상한. 굿즈엔 등급의 `maxPerOrder` 같은 컬럼이 없는데, 화면의 수량
+ * 버튼 상한이 곧 재고(잔여)였다 — 숨긴 잔여를 버튼을 끝까지 눌러 알아낼 수 있어서
+ * 잔여 대신 이 값으로 상한을 둔다. 화면과 `createGoodsOrder`가 같은 값을 쓴다.
+ */
+export const GOODS_MAX_PER_ORDER = 10;
+
+/** 공개 화면(클라이언트)에 내려보내는 굿즈 옵션. `stock`·`soldCount`를 일부러 뺐다. */
+export type PublicVariant = {
+  id: string;
+  name: string;
+  price: number;
+  soldOut: boolean;
+  /** 한 번에 고를 수 있는 최대 수량 = min(잔여, GOODS_MAX_PER_ORDER) */
+  maxSelectable: number;
+  /** 잔여가 적을 때만 실제 값, 넉넉하면 null(숨김) */
+  lowStockRemaining: number | null;
+};
+
+/** DB 굿즈 옵션 → 공개 화면용 옵션. 재고 판정은 서버에서 끝낸다. */
+export function toPublicVariant(variant: {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+  soldCount: number;
+}): PublicVariant {
+  const remaining = variant.stock - variant.soldCount;
+  return {
+    id: variant.id,
+    name: variant.name,
+    price: variant.price,
+    soldOut: remaining <= 0,
+    ...getStockDisplay(remaining, GOODS_MAX_PER_ORDER),
+  };
+}
