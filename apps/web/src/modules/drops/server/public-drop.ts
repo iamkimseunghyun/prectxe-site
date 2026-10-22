@@ -35,6 +35,24 @@ function pickCredits(drop: DropWithRelations) {
   }));
 }
 
+/**
+ * 초대 링크로 들어왔을 때(`drop.ticketTiers`에 비공개 등급이 섞여 있을 때)의 노출 규칙:
+ * 초대받은 사람을 위한 전용 화면이라 **비공개 등급만** 보여 준다. 단, 비공개 등급이
+ * 하나도 판매 중이 아니면(매진·종료·오픈 전) 화면이 비어 구매할 곳이 없어지므로
+ * 공개 등급도 함께 보여 준다. 코드 없이 들어오면 처음부터 공개 등급뿐이라 그대로다.
+ *
+ * 드랍 전체 상태(`getEffectiveDropStatus`)는 전체 등급으로 계산해도 보이는 등급으로
+ * 계산한 것과 같다 — 전용 모드는 비공개 등급 중 판매 중인 것이 있을 때만 켜지고,
+ * 그러면 두 쪽 모두 'on_sale'이다.
+ */
+function pickVisibleTiers<
+  T extends { accessCode: string | null; status: string },
+>(tiers: T[]) {
+  const invited = tiers.filter((t) => t.accessCode !== null);
+  const exclusive = invited.some((t) => t.status === 'on_sale');
+  return exclusive ? invited : tiers;
+}
+
 export function toPublicTicketDrop(drop: DropWithRelations) {
   return {
     id: drop.id,
@@ -49,7 +67,9 @@ export function toPublicTicketDrop(drop: DropWithRelations) {
     notice: drop.notice,
     media: pickMedia(drop),
     credits: pickCredits(drop),
-    ticketTiers: drop.ticketTiers.map((tier) => toPublicTier(tier, drop)),
+    ticketTiers: pickVisibleTiers(
+      drop.ticketTiers.map((tier) => toPublicTier(tier, drop))
+    ),
   };
 }
 
