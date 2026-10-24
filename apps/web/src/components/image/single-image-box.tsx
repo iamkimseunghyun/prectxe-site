@@ -27,7 +27,7 @@ interface SingleImageSectionProps {
   error?: string;
   handleImageChange: (e: ChangeEvent<HTMLInputElement>) => void;
   inputId?: string;
-  aspectRatio?: 'square' | 'video';
+  aspectRatio?: AspectRatio;
   placeholder?: string;
 }
 
@@ -44,8 +44,16 @@ const ErrorMessage = ({ message }: { message: string }) => (
   <div className="mt-2 text-sm text-red-500">{message}</div>
 );
 
-const getAspectRatioClass = (ratio: 'square' | 'video') =>
-  ratio === 'square' ? 'aspect-square' : 'aspect-video';
+// Tailwind가 클래스를 스캔할 수 있게 전체 문자열로 둔다.
+const ASPECT_RATIO_CLASS = {
+  square: 'aspect-square',
+  video: 'aspect-video',
+  landscape: 'aspect-3/2',
+} as const;
+
+type AspectRatio = keyof typeof ASPECT_RATIO_CLASS;
+
+const getAspectRatioClass = (ratio: AspectRatio) => ASPECT_RATIO_CLASS[ratio];
 
 const SingleImageBox = ({
   register,
