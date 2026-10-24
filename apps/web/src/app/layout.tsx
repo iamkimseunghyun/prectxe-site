@@ -25,10 +25,10 @@ export const metadata: Metadata = {
     template: '%s | PRECTXE',
   },
   description:
-    '음악과 예술의 순간을 큐레이션하는 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠로 경험을 설계합니다.',
+    'PRECTXE는 서울에서 전자음악·미디어 아트 공연과 전시를 기획하고, 현장의 기록을 아카이브와 저널로 남깁니다.',
   keywords: [
     'PRECTXE',
-    '아트 플랫폼',
+    '음악·예술 기획',
     '음악',
     '예술',
     '큐레이션',
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     url: BUSINESS_INFO.serviceUrl,
     title: 'Music and Art, curated by PRECTXE',
     description:
-      '음악과 예술의 순간을 큐레이션하는 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠로 경험을 설계합니다.',
+      'PRECTXE는 서울에서 전자음악·미디어 아트 공연과 전시를 기획하고, 현장의 기록을 아카이브와 저널로 남깁니다.',
     siteName: '프렉티스',
     images: [
       {
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Music and Art, curated by PRECTXE',
     description:
-      '음악과 예술의 순간을 큐레이션하는 아트 플랫폼 PRECTXE. 공연·전시·콘텐츠로 경험을 설계합니다.',
+      'PRECTXE는 서울에서 전자음악·미디어 아트 공연과 전시를 기획하고, 현장의 기록을 아카이브와 저널로 남깁니다.',
     images: [
       {
         url: '/twitter-card.jpg', // metadataBase와 결합되어 절대 URL로 변환됨

@@ -33,7 +33,7 @@ export function Footer() {
               </p>
             </Link>
             <p className="mt-6 max-w-md text-sm leading-relaxed text-neutral-500">
-              동시대 음악과 예술의 순간을 큐레이션하는 아트 플랫폼.
+              소리와 빛, 공간이 만나는 순간을 기획하고 기록합니다.
             </p>
           </div>
 
