@@ -6,11 +6,11 @@ import YoutubeIcon from '@/components/icons/youtube';
 export const metadata: Metadata = {
   title: 'About',
   description:
-    'PRECTXE는 서울에서 전자음악·미디어 아트 공연과 전시를 기획하고, 현장의 기록을 아카이브와 저널로 남깁니다.',
+    'PRECTXE는 전자음악·미디어 아트 공연과 전시를 기획하고, 현장의 기록을 아카이브와 저널로 남깁니다.',
   openGraph: {
     title: 'About | PRECTXE',
     description:
-      'PRECTXE는 서울에서 전자음악·미디어 아트 공연과 전시를 기획하고, 현장의 기록을 아카이브와 저널로 남깁니다.',
+      'PRECTXE는 전자음악·미디어 아트 공연과 전시를 기획하고, 현장의 기록을 아카이브와 저널로 남깁니다.',
     type: 'website',
   },
   keywords: [
@@ -40,9 +40,8 @@ export default function Page() {
           <br />그 경험을 기록합니다.
         </h1>
         <p className="mt-8 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-          PRECTXE는 서울을 기반으로 활동합니다. 미디어 아트, 오디오비주얼
-          퍼포먼스, 사운드 중심의 프로그램을 기획하고, 그 과정을 디지털
-          아카이브로 남깁니다.
+          PRECTXE는 미디어 아트, 오디오비주얼 퍼포먼스, 사운드 중심의 프로그램을
+          기획하고, 그 과정을 디지털 아카이브로 남깁니다.
         </p>
       </section>
 
