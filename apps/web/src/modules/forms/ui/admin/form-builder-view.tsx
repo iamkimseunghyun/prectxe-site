@@ -46,6 +46,7 @@ import { useSingleImageUpload } from '@/hooks/use-single-image-upload';
 import type { FormFieldInput, FormInput } from '@/lib/schemas/form';
 import { formSchema } from '@/lib/schemas/form';
 import { getImageUrl, uploadImage } from '@/lib/utils';
+import { FORM_COVER } from '../../constants';
 import { FormFieldEditor } from './form-field-editor';
 
 /** 빌더에서 새로 추가한(아직 DB에 없는) 필드의 임시 id 접두사. */
@@ -295,7 +296,11 @@ export function FormBuilderView({
           <div>
             <Label>커버 이미지 (선택)</Label>
             <p className="mb-2 text-sm text-neutral-500">
-              권장 사이즈: 1920x600px (16:9 비율) 또는 1200x400px (3:1 비율)
+              권장 사이즈: {FORM_COVER.recommendedWidth}×
+              {FORM_COVER.recommendedHeight}px (가로:세로 ={' '}
+              {FORM_COVER.ratioLabel}). 모바일·PC 모두 이 비율 그대로 표시되어
+              이미지가 잘리지 않습니다. 제목과 설명이 이미지 아래쪽에 겹쳐
+              보이니 중요한 내용은 위쪽 2/3 안에 두세요.
             </p>
             <SingleImageBox
               register={{ name: 'coverImage', onBlur: () => {}, ref: () => {} }}
@@ -303,7 +308,7 @@ export function FormBuilderView({
               displayUrl={displayUrl}
               error={imageError}
               handleImageChange={handleImageChange}
-              aspectRatio="video"
+              aspectRatio="landscape"
             />
             {imageError && (
               <p className="mt-2 text-sm text-red-600">{imageError}</p>
@@ -399,7 +404,9 @@ export function FormBuilderView({
           <div className="space-y-6">
             {/* Cover Image */}
             {(displayUrl || initialData?.coverImage) && (
-              <div className="relative aspect-16/5 w-full overflow-hidden rounded-lg">
+              <div
+                className={`relative mx-auto w-full overflow-hidden rounded-lg ${FORM_COVER.aspectClass} ${FORM_COVER.maxWidthClass}`}
+              >
                 <Image
                   src={
                     displayUrl ||

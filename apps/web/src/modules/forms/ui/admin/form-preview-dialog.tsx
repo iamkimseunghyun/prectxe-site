@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { getImageUrl } from '@/lib/utils';
+import { FORM_COVER } from '../../constants';
 
 interface PreviewField {
   id: string;
@@ -56,7 +57,9 @@ export function FormPreviewDialog({
 
         <div className="space-y-6">
           {form.coverImage && (
-            <div className="relative h-64 w-full overflow-hidden rounded-lg">
+            <div
+              className={`relative mx-auto w-full overflow-hidden rounded-lg ${FORM_COVER.aspectClass} ${FORM_COVER.maxWidthClass}`}
+            >
               <Image
                 src={getImageUrl(form.coverImage, 'public')}
                 alt={form.title}

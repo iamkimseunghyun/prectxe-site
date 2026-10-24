@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getImageUrl } from '@/lib/utils';
+import { FORM_COVER } from '@/modules/forms/constants';
 import { submitFormResponse } from '@/modules/forms/server/actions';
 import { getFormBySlug } from '@/modules/forms/server/queries';
 import { FormRenderer } from '@/modules/forms/ui/components/form-renderer';
@@ -39,22 +40,34 @@ export default async function FormSubmitPage({ params }: PageProps) {
     <div>
       {/* Cover Image Banner */}
       {form.coverImage && (
-        <div className="relative mb-12 h-[300px] w-full overflow-hidden md:h-[400px] lg:h-[500px]">
-          <Image
-            src={getImageUrl(form.coverImage, 'public')}
-            alt={form.title}
-            fill
-            priority
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-8">
-            <div className="mx-auto max-w-3xl">
-              <h1 className="mb-2 text-3xl font-bold text-white md:text-4xl">
+        <div
+          className={`mx-auto mb-12 w-full md:px-4 md:pt-8 ${FORM_COVER.maxWidthClass}`}
+        >
+          {/* overflow-hidden은 이미지 레이어에만 둔다. 바깥 박스에 걸면 글이 길 때
+              min-height:auto가 0이 돼 제목이 잘리고, 안 걸면 박스가 글 높이만큼
+              늘어난다(비율은 최소 높이로 유지). */}
+          <div
+            className={`relative flex w-full flex-col justify-end ${FORM_COVER.aspectClass}`}
+          >
+            <div className="absolute inset-0 overflow-hidden md:rounded-lg">
+              <Image
+                src={getImageUrl(form.coverImage, 'public')}
+                alt={form.title}
+                fill
+                priority
+                sizes="(min-width: 768px) 768px, 100vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
+            </div>
+            <div className="relative p-4 md:p-8">
+              <h1 className="mb-1 text-2xl font-bold text-white md:mb-2 md:text-4xl">
                 {form.title}
               </h1>
               {form.description && (
-                <p className="text-lg text-white/90">{form.description}</p>
+                <p className="text-base text-white/90 md:text-lg">
+                  {form.description}
+                </p>
               )}
             </div>
           </div>
