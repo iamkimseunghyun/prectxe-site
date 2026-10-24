@@ -43,19 +43,24 @@ export default async function FormSubmitPage({ params }: PageProps) {
         <div
           className={`mx-auto mb-12 w-full md:px-4 md:pt-8 ${FORM_COVER.maxWidthClass}`}
         >
+          {/* overflow-hidden은 이미지 레이어에만 둔다. 바깥 박스에 걸면 글이 길 때
+              min-height:auto가 0이 돼 제목이 잘리고, 안 걸면 박스가 글 높이만큼
+              늘어난다(비율은 최소 높이로 유지). */}
           <div
-            className={`relative w-full overflow-hidden md:rounded-lg ${FORM_COVER.aspectClass}`}
+            className={`relative flex w-full flex-col justify-end ${FORM_COVER.aspectClass}`}
           >
-            <Image
-              src={getImageUrl(form.coverImage, 'public')}
-              alt={form.title}
-              fill
-              priority
-              sizes="(min-width: 768px) 768px, 100vw"
-              className="object-cover"
-            />
-            <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8">
+            <div className="absolute inset-0 overflow-hidden md:rounded-lg">
+              <Image
+                src={getImageUrl(form.coverImage, 'public')}
+                alt={form.title}
+                fill
+                priority
+                sizes="(min-width: 768px) 768px, 100vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
+            </div>
+            <div className="relative p-4 md:p-8">
               <h1 className="mb-1 text-2xl font-bold text-white md:mb-2 md:text-4xl">
                 {form.title}
               </h1>
