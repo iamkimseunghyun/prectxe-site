@@ -16,6 +16,14 @@ import { sendTestEmail } from '../../server/actions';
 
 const LAST_ADDRESS_KEY = 'prectxe:email-test-address';
 
+/**
+ * 보낼 내용이 있는지. 태그를 모두 걷어낸 텍스트만 보면 포스터 이미지나
+ * YouTube(썸네일 이미지로 변환됨)만 있는 메일이 빈 본문으로 판정된다.
+ */
+function hasContent(html: string): boolean {
+  return stripHtml(html) !== '' || /<(img|iframe|video)\b/i.test(html);
+}
+
 function readLastAddress(): string {
   try {
     return sessionStorage.getItem(LAST_ADDRESS_KEY) ?? '';
@@ -77,7 +85,7 @@ export function TestSendButton({
     }
 
     const { subject, body } = getTestPayload();
-    if (!subject.trim() || !stripHtml(body)) {
+    if (!subject.trim() || !hasContent(body)) {
       toast({
         title: '제목과 내용을 먼저 입력해주세요',
         variant: 'destructive',

@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Megaphone } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import {
@@ -69,6 +69,8 @@ export function NewsletterBroadcastSender({
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const [isTesting, setIsTesting] = useState(false);
+  // isLoading은 handleSubmit의 비동기 검증 뒤에야 켜져 연타를 못 막는다 — ref로 동기 가드
+  const sendingRef = useRef(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -82,6 +84,8 @@ export function NewsletterBroadcastSender({
   );
 
   const onSubmit = async (data: FormValues) => {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
     try {
       setIsLoading(true);
       const emailHTML = getEmailHTML(data.body);
@@ -109,6 +113,7 @@ export function NewsletterBroadcastSender({
         variant: 'destructive',
       });
     } finally {
+      sendingRef.current = false;
       setIsLoading(false);
       setConfirmOpen(false);
     }
@@ -196,7 +201,14 @@ export function NewsletterBroadcastSender({
                 onPendingChange={setIsTesting}
               />
 
-              <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+              <AlertDialog
+                open={confirmOpen}
+                // 발송 중엔 ESC·바깥 클릭으로 닫히지 않게 한다
+                onOpenChange={(open) => {
+                  if (!open && isLoading) return;
+                  setConfirmOpen(open);
+                }}
+              >
                 <AlertDialogTrigger asChild>
                   <Button
                     type="submit"

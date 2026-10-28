@@ -1,7 +1,7 @@
 'use client';
 
 import { Loader2, Send } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,11 +49,20 @@ export function SendControls({
 }: SendControlsProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  // isSending은 폼 검증(비동기)이 끝나야 켜져서, 그 사이 "발송"을 연타하면
+  // 같은 메일이 전원에게 두 번 나간다. state는 렌더 뒤에야 바뀌므로 ref로 막는다.
+  const confirmingRef = useRef(false);
+  const [confirming, setConfirming] = useState(false);
 
   const handleConfirm = async () => {
+    if (confirmingRef.current) return;
+    confirmingRef.current = true;
+    setConfirming(true);
     try {
       await onConfirm();
     } finally {
+      confirmingRef.current = false;
+      setConfirming(false);
       setConfirmOpen(false);
     }
   };
@@ -62,7 +71,8 @@ export function SendControls({
     if (await validate()) setConfirmOpen(true);
   };
 
-  const disabled = isSending || isTesting;
+  const sendingBusy = isSending || confirming;
+  const disabled = sendingBusy || isTesting;
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row">
@@ -91,7 +101,14 @@ export function SendControls({
         )}
       </Button>
 
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialog
+        open={confirmOpen}
+        // 발송 중엔 ESC·바깥 클릭으로 닫히지 않게 한다(진행 상태를 잃고 재작성하게 됨)
+        onOpenChange={(open) => {
+          if (!open && sendingBusy) return;
+          setConfirmOpen(open);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>발송 확인</AlertDialogTitle>
@@ -101,9 +118,9 @@ export function SendControls({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSending}>취소</AlertDialogCancel>
+            <AlertDialogCancel disabled={sendingBusy}>취소</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isSending}
+              disabled={sendingBusy}
               onClick={(e) => {
                 // 기본 동작은 즉시 닫는다 — 발송이 끝난 뒤 닫도록 직접 제어
                 e.preventDefault();
