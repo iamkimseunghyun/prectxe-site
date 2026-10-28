@@ -55,7 +55,14 @@ function parseEmailList(value: string): string[] {
     .filter(Boolean);
 }
 
-export function IndependentEmailSender() {
+interface IndependentEmailSenderProps {
+  /** 발송이 끝났을 때 — 대시보드가 발송 이력으로 이동시킨다 */
+  onSent?: () => void;
+}
+
+export function IndependentEmailSender({
+  onSent,
+}: IndependentEmailSenderProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [emailCount, setEmailCount] = useState(0);
@@ -143,12 +150,20 @@ export function IndependentEmailSender() {
       });
 
       if (result.success && result.data) {
+        // 전원 실패는 success:true로 돌아오지만 보낸 게 없으니 성공으로 다루지 않는다.
+        // 초안·수신자 목록을 지우거나 이력으로 넘어가면 다시 모을 수 없다.
+        if (result.data.sentCount === 0) {
+          throw new Error(
+            '발송에 성공한 건이 없습니다. 발송 이력에서 실패 내역을 확인해주세요.'
+          );
+        }
         toast({
           title: '발송 완료',
           description: `${result.data.sentCount}건 발송 성공, ${result.data.failedCount}건 실패`,
         });
         reset();
         setEmailCount(0);
+        onSent?.();
       } else {
         throw new Error(result.error);
       }

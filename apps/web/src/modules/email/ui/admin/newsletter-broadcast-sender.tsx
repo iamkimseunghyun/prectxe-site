@@ -1,8 +1,8 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Megaphone, TestTube2 } from 'lucide-react';
-import { useState } from 'react';
+import { Loader2, Megaphone } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import {
@@ -40,11 +40,9 @@ import {
   EmailEditor,
   getEmailHTML,
 } from '@/modules/email/ui/admin/email-editor';
-import {
-  createAndSendNewsletterBroadcast,
-  sendTestEmail,
-} from '../../server/actions';
+import { createAndSendNewsletterBroadcast } from '../../server/actions';
 import { DraftRestoredNotice } from './draft-restored-notice';
+import { TestSendButton } from './test-send-button';
 import { useEmailDraft } from './use-email-draft';
 
 const formSchema = z.object({
@@ -58,12 +56,21 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function NewsletterBroadcastSender() {
+interface NewsletterBroadcastSenderProps {
+  /** 발송이 끝났을 때 — 대시보드가 발송 이력으로 이동시킨다 */
+  onSent?: () => void;
+}
+
+export function NewsletterBroadcastSender({
+  onSent,
+}: NewsletterBroadcastSenderProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const [isTesting, setIsTesting] = useState(false);
+  // isLoading은 handleSubmit의 비동기 검증 뒤에야 켜져 연타를 못 막는다 — ref로 동기 가드
+  const sendingRef = useRef(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -76,34 +83,9 @@ export function NewsletterBroadcastSender() {
     (v) => !(v.title || v.subject || stripHtml(v.body))
   );
 
-  const handleTest = async () => {
-    const subject = form.getValues('subject');
-    const body = getEmailHTML(form.getValues('body'));
-    if (!subject.trim() || !stripHtml(body)) {
-      toast({
-        title: '제목과 내용을 먼저 입력해주세요',
-        variant: 'destructive',
-      });
-      return;
-    }
-    setIsTesting(true);
-    const result = await sendTestEmail({ subject, body });
-    setIsTesting(false);
-    if (!result.success) {
-      toast({
-        title: '테스트 발송 실패',
-        description: result.error,
-        variant: 'destructive',
-      });
-      return;
-    }
-    toast({
-      title: '테스트 발송 완료',
-      description: `${result.data.to} 로 보냈습니다.`,
-    });
-  };
-
   const onSubmit = async (data: FormValues) => {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
     try {
       setIsLoading(true);
       const emailHTML = getEmailHTML(data.body);
@@ -120,6 +102,7 @@ export function NewsletterBroadcastSender() {
           description: 'Resend 브로드캐스트가 발송 대기열에 등록됐습니다.',
         });
         reset();
+        onSent?.();
       } else {
         throw new Error(result.error);
       }
@@ -130,6 +113,7 @@ export function NewsletterBroadcastSender() {
         variant: 'destructive',
       });
     } finally {
+      sendingRef.current = false;
       setIsLoading(false);
       setConfirmOpen(false);
     }
@@ -208,22 +192,23 @@ export function NewsletterBroadcastSender() {
             />
 
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleTest}
-                disabled={isLoading || isTesting}
-                className="sm:w-48"
-              >
-                {isTesting ? (
-                  <Loader2 className="mr-2 h-4 w-4 motion-safe:animate-spin" />
-                ) : (
-                  <TestTube2 className="mr-2 h-4 w-4" />
-                )}
-                내게 테스트 발송
-              </Button>
+              <TestSendButton
+                getTestPayload={() => ({
+                  subject: form.getValues('subject'),
+                  body: getEmailHTML(form.getValues('body')),
+                })}
+                disabled={isLoading}
+                onPendingChange={setIsTesting}
+              />
 
-              <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+              <AlertDialog
+                open={confirmOpen}
+                // 발송 중엔 ESC·바깥 클릭으로 닫히지 않게 한다
+                onOpenChange={(open) => {
+                  if (!open && isLoading) return;
+                  setConfirmOpen(open);
+                }}
+              >
                 <AlertDialogTrigger asChild>
                   <Button
                     type="submit"
