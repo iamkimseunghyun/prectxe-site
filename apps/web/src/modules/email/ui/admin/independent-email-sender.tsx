@@ -55,7 +55,14 @@ function parseEmailList(value: string): string[] {
     .filter(Boolean);
 }
 
-export function IndependentEmailSender() {
+interface IndependentEmailSenderProps {
+  /** 발송이 끝났을 때 — 대시보드가 발송 이력으로 이동시킨다 */
+  onSent?: () => void;
+}
+
+export function IndependentEmailSender({
+  onSent,
+}: IndependentEmailSenderProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [emailCount, setEmailCount] = useState(0);
@@ -149,6 +156,7 @@ export function IndependentEmailSender() {
         });
         reset();
         setEmailCount(0);
+        onSent?.();
       } else {
         throw new Error(result.error);
       }

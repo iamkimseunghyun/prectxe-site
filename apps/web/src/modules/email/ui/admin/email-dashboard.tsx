@@ -10,6 +10,9 @@ import { NewsletterBroadcastSender } from './newsletter-broadcast-sender';
 
 export function EmailDashboard() {
   const [activeTab, setActiveTab] = useState('newsletter');
+  // 발송을 마치면 작성 화면에 머물지 않고 발송 이력으로 넘어간다
+  // (작성 화면이 비워져 있으면 보냈는지 알 수 없어 혼란스럽다)
+  const showHistory = () => setActiveTab('history');
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -26,15 +29,15 @@ export function EmailDashboard() {
       </TabsContent>
 
       <TabsContent value="newsletter" className="space-y-4">
-        <NewsletterBroadcastSender />
+        <NewsletterBroadcastSender onSent={showHistory} />
       </TabsContent>
 
       <TabsContent value="form" className="space-y-4">
-        <FormRecipientsEmailSender />
+        <FormRecipientsEmailSender onSent={showHistory} />
       </TabsContent>
 
       <TabsContent value="independent" className="space-y-4">
-        <IndependentEmailSender />
+        <IndependentEmailSender onSent={showHistory} />
       </TabsContent>
 
       <TabsContent value="history" className="space-y-4">

@@ -55,7 +55,14 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function FormRecipientsEmailSender() {
+interface FormRecipientsEmailSenderProps {
+  /** 발송이 끝났을 때 — 대시보드가 발송 이력으로 이동시킨다 */
+  onSent?: () => void;
+}
+
+export function FormRecipientsEmailSender({
+  onSent,
+}: FormRecipientsEmailSenderProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [forms, setForms] = useState<
@@ -158,6 +165,7 @@ export function FormRecipientsEmailSender() {
         });
         reset();
         setSelectedFormInfo(null);
+        onSent?.();
       } else {
         throw new Error(result.error);
       }

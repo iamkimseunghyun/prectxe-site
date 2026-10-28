@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2, Send, TestTube2 } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 import { useState } from 'react';
 import {
   AlertDialog,
@@ -13,15 +13,18 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { sendTestEmail } from '../../server/actions';
+import { TestSendButton } from './test-send-button';
 
 interface SendControlsProps {
   /** 발송 대상 수. 0이면 발송 버튼이 잠긴다 */
   recipientCount: number;
   isSending: boolean;
-  /** 확인 다이얼로그에서 "발송"을 눌렀을 때 */
-  onConfirm: () => void;
+  /**
+   * 확인 다이얼로그에서 "발송"을 눌렀을 때.
+   * 끝날 때까지 다이얼로그를 열어 두고, 끝나면 닫는다
+   * (성공이든 실패든 — 결과는 호출 쪽 토스트가 알린다).
+   */
+  onConfirm: () => Promise<unknown>;
   /** 폼 검증을 통과했는지 확인하고 통과 시 true. 실패하면 필드 에러가 표시된다 */
   validate: () => Promise<boolean>;
   /** 테스트 발송에 쓸 현재 제목·본문 */
@@ -44,36 +47,15 @@ export function SendControls({
   getTestPayload,
   targetLabel,
 }: SendControlsProps) {
-  const { toast } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
 
-  const handleTest = async () => {
-    const { subject, body } = getTestPayload();
-    if (!subject.trim() || !body.trim()) {
-      toast({
-        title: '제목과 내용을 먼저 입력해주세요',
-        variant: 'destructive',
-      });
-      return;
+  const handleConfirm = async () => {
+    try {
+      await onConfirm();
+    } finally {
+      setConfirmOpen(false);
     }
-
-    setIsTesting(true);
-    const result = await sendTestEmail({ subject, body });
-    setIsTesting(false);
-
-    if (!result.success) {
-      toast({
-        title: '테스트 발송 실패',
-        description: result.error,
-        variant: 'destructive',
-      });
-      return;
-    }
-    toast({
-      title: '테스트 발송 완료',
-      description: `${result.data.to} 로 보냈습니다. 실제 발송과 같은 템플릿입니다.`,
-    });
   };
 
   const handleSendClick = async () => {
@@ -84,20 +66,11 @@ export function SendControls({
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row">
-      <Button
-        type="button"
-        variant="outline"
-        onClick={handleTest}
-        disabled={disabled}
-        className="sm:w-48"
-      >
-        {isTesting ? (
-          <Loader2 className="mr-2 h-4 w-4 motion-safe:animate-spin" />
-        ) : (
-          <TestTube2 className="mr-2 h-4 w-4" />
-        )}
-        내게 테스트 발송
-      </Button>
+      <TestSendButton
+        getTestPayload={getTestPayload}
+        disabled={isSending}
+        onPendingChange={setIsTesting}
+      />
 
       <Button
         type="button"
@@ -124,7 +97,7 @@ export function SendControls({
             <AlertDialogTitle>발송 확인</AlertDialogTitle>
             <AlertDialogDescription>
               {targetLabel}에게 즉시 발송됩니다. 이 작업은 취소할 수 없습니다.
-              보내기 전에 "내게 테스트 발송"으로 실물을 확인하는 것을 권합니다.
+              보내기 전에 "테스트 발송"으로 실물을 확인하는 것을 권합니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -132,8 +105,9 @@ export function SendControls({
             <AlertDialogAction
               disabled={isSending}
               onClick={(e) => {
+                // 기본 동작은 즉시 닫는다 — 발송이 끝난 뒤 닫도록 직접 제어
                 e.preventDefault();
-                onConfirm();
+                void handleConfirm();
               }}
             >
               발송
