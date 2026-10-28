@@ -18,7 +18,7 @@ const LAST_ADDRESS_KEY = 'prectxe:email-test-address';
 
 function readLastAddress(): string {
   try {
-    return localStorage.getItem(LAST_ADDRESS_KEY) ?? '';
+    return sessionStorage.getItem(LAST_ADDRESS_KEY) ?? '';
   } catch {
     // 시크릿 모드·저장소 차단 — 직접 입력하면 된다
     return '';
@@ -27,7 +27,7 @@ function readLastAddress(): string {
 
 function writeLastAddress(value: string): void {
   try {
-    localStorage.setItem(LAST_ADDRESS_KEY, value);
+    sessionStorage.setItem(LAST_ADDRESS_KEY, value);
   } catch {
     // no-op
   }
@@ -46,7 +46,8 @@ interface TestSendButtonProps {
  *
  * 예전에는 "내게 발송"이라 로그인 계정의 주소로 고정돼, 계정 주소와 실제로
  * 확인하려는 받은편지함이 다르면 테스트를 볼 수 없었다. 마지막에 쓴 주소는
- * 이 브라우저에 기억해 매번 다시 치지 않게 한다.
+ * 이 탭에서만 기억해 매번 다시 치지 않게 한다. localStorage가 아닌 이유:
+ * 로그아웃해도 남아, 같은 브라우저를 쓰는 다음 어드민에게 이전 주소가 보인다.
  */
 export function TestSendButton({
   getTestPayload,
@@ -100,7 +101,7 @@ export function TestSendButton({
       setOpen(false);
       toast({
         title: '테스트 발송 완료',
-        description: `${result.data.to} 로 보냈습니다. 실제 발송과 같은 템플릿입니다.`,
+        description: `${result.data.to} 로 보냈습니다.`,
       });
     } catch {
       toast({
@@ -144,7 +145,7 @@ export function TestSendButton({
             onChange={(e) => setAddress(e.target.value)}
             // 포털 안이라 폼 제출은 일어나지 않지만, Enter로 보낼 수 있게 한다
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                 e.preventDefault();
                 if (!isTesting) void handleSend();
               }
