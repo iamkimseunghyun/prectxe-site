@@ -908,21 +908,31 @@ export async function confirmBankTransfer(orderId: string) {
     } as const;
 
   const now = new Date();
-  const { accessToken, ticketCount } = await prisma.$transaction(async (tx) => {
-    await tx.bankTransfer.update({
-      where: { orderId: order.id },
+  const issued = await prisma.$transaction(async (tx) => {
+    // 위에서 읽은 status는 그 뒤 만료 정리가 바꿨을 수 있다. 'pending'일 때만 선점해야
+    // 정리와 동시에 돌아도 한쪽만 이긴다(안 그러면 취소돼 재고가 복구된 주문에 티켓이 발급된다)
+    const claimed = await tx.bankTransfer.updateMany({
+      where: { orderId: order.id, status: 'pending' },
       data: {
         status: 'confirmed',
         confirmedAt: now,
         confirmedBy: auth.userId,
       },
     });
+    if (claimed.count === 0) return null;
     await tx.order.update({
       where: { id: order.id },
       data: { status: 'paid' },
     });
     return issueTicketsForOrder(tx, order);
   });
+  if (!issued)
+    return {
+      success: false,
+      error:
+        '입금 대기 상태가 아닙니다. 방금 만료·취소됐을 수 있으니 새로고침해 확인해 주세요.',
+    } as const;
+  const { accessToken, ticketCount } = issued;
 
   revalidatePath('/admin/drops');
   revalidatePath('/admin/tickets/orders');
@@ -1012,6 +1022,9 @@ export async function resendOrderConfirmation(orderId: string) {
 
 // ─── 만료된 무통장 주문 일괄 정리 (Admin / lazy) ───
 
+/** 만료 정리 중 대상 주문 상태가 바뀐 것을 알리는 내부 신호 — 트랜잭션을 되돌린다 */
+class ExpiredStateChanged extends Error {}
+
 export async function cleanupExpiredBankTransferOrders() {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;
@@ -1039,42 +1052,64 @@ export async function cleanupExpiredBankTransferOrders() {
   if (expired.length === 0)
     return { success: true, expiredCount: 0, orphanCount } as const;
 
-  await prisma.$transaction([
-    // 재고 복구 (티켓)
-    ...expired.flatMap((bt) =>
-      bt.order.items
-        .filter((item) => item.ticketTierId)
-        .map((item) =>
-          prisma.ticketTier.update({
-            where: { id: item.ticketTierId! },
-            data: { soldCount: { decrement: item.quantity } },
-          })
-        )
-    ),
-    // 재고 복구 (굿즈 — 현재 무통장 미지원이지만 안전망)
-    ...expired.flatMap((bt) =>
-      bt.order.items
-        .filter((item) => item.goodsVariantId)
-        .map((item) =>
-          prisma.goodsVariant.update({
-            where: { id: item.goodsVariantId! },
-            data: { soldCount: { decrement: item.quantity } },
-          })
-        )
-    ),
-    prisma.bankTransfer.updateMany({
-      where: { id: { in: expired.map((bt) => bt.id) } },
-      data: {
-        status: 'expired',
-        cancelledAt: now,
-        cancelReason: 'auto_expired',
-      },
-    }),
-    prisma.order.updateMany({
-      where: { id: { in: expired.map((bt) => bt.orderId) } },
-      data: { status: 'cancelled' },
-    }),
-  ]);
+  // 재고는 같은 등급·옵션끼리 합쳐 한 번에 복구한다. 락 순서를 id로 고정해 데드락을 막는다.
+  const tierRestore = new Map<string, number>();
+  const variantRestore = new Map<string, number>();
+  for (const bt of expired) {
+    for (const item of bt.order.items) {
+      if (item.ticketTierId)
+        tierRestore.set(
+          item.ticketTierId,
+          (tierRestore.get(item.ticketTierId) ?? 0) + item.quantity
+        );
+      // 굿즈 — 현재 무통장 미지원이지만 안전망
+      if (item.goodsVariantId)
+        variantRestore.set(
+          item.goodsVariantId,
+          (variantRestore.get(item.goodsVariantId) ?? 0) + item.quantity
+        );
+    }
+  }
+  const byId = (a: [string, number], b: [string, number]) =>
+    a[0].localeCompare(b[0]);
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 'pending'인 것만 만료로 선점한다. 조회 뒤 입금 확인(confirmBankTransfer)이 먼저
+      // 끝난 건이 있으면 개수가 모자란다 — 그 주문은 취소·재고 복구하면 안 되므로
+      // 전체를 되돌리고 다음 방문에 다시 시도한다.
+      const claimed = await tx.bankTransfer.updateMany({
+        where: { id: { in: expired.map((bt) => bt.id) }, status: 'pending' },
+        data: {
+          status: 'expired',
+          cancelledAt: now,
+          cancelReason: 'auto_expired',
+        },
+      });
+      if (claimed.count !== expired.length) throw new ExpiredStateChanged();
+
+      await tx.order.updateMany({
+        where: { id: { in: expired.map((bt) => bt.orderId) } },
+        data: { status: 'cancelled' },
+      });
+      for (const [id, qty] of [...tierRestore].sort(byId)) {
+        await tx.ticketTier.update({
+          where: { id },
+          data: { soldCount: { decrement: qty } },
+        });
+      }
+      for (const [id, qty] of [...variantRestore].sort(byId)) {
+        await tx.goodsVariant.update({
+          where: { id },
+          data: { soldCount: { decrement: qty } },
+        });
+      }
+    });
+  } catch (e) {
+    if (e instanceof ExpiredStateChanged)
+      return { success: true, expiredCount: 0, orphanCount } as const;
+    throw e;
+  }
 
   revalidatePath('/admin/drops');
   revalidatePath('/admin/tickets/orders');

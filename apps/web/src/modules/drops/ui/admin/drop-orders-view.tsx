@@ -122,15 +122,26 @@ export function DropOrdersView({
   );
 
   // silent: 이미 목록이 떠 있을 때 스켈레톤으로 되돌리지 않고 조용히 갱신
+  // 요청마다 순번을 매겨 가장 최근 요청의 응답만 반영한다. 정리 뒤 조용한 재조회와
+  // 필터 변경이 겹칠 때 오래된 응답이 나중에 도착해 최신 상태를 덮어쓰는 것을 막는다.
+  const requestSeqRef = useRef(0);
   const loadOrders = useCallback(
     async ({ silent = false }: { silent?: boolean } = {}) => {
+      const seq = ++requestSeqRef.current;
       if (!silent) setLoading(true);
-      const result = await getDropOrders(dropId, page, pageSize, { status, q });
-      if (result.success && result.data) {
-        setOrders(result.data.items as Order[]);
-        setTotal(result.data.total);
+      try {
+        const result = await getDropOrders(dropId, page, pageSize, {
+          status,
+          q,
+        });
+        if (seq !== requestSeqRef.current) return;
+        if (result.success && result.data) {
+          setOrders(result.data.items as Order[]);
+          setTotal(result.data.total);
+        }
+      } finally {
+        if (seq === requestSeqRef.current) setLoading(false);
       }
-      setLoading(false);
     },
     [dropId, page, status, q]
   );
