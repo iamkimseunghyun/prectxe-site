@@ -1016,22 +1016,25 @@ export async function cleanupExpiredBankTransferOrders() {
   const auth = await requireAdmin();
   if (!auth.success) return { success: false, error: auth.error } as const;
 
-  // 무통장 외 orphan pending 주문(결제 없는 재고 점유)도 함께 회수
-  const orphanCount = await reclaimStaleOrphanOrders().catch((e) => {
-    console.error('[reclaimStaleOrphanOrders] 재고 회수 실패:', e);
-    return 0;
-  });
-
   const now = new Date();
-  const expired = await prisma.bankTransfer.findMany({
-    where: {
-      status: 'pending',
-      expiresAt: { lt: now },
-    },
-    include: {
-      order: { include: { items: true } },
-    },
-  });
+  // 두 조회는 서로 무관하다(orphan은 무통장 없는 주문, 아래는 무통장 주문) —
+  // 직렬로 쓰면 DB 왕복이 그대로 더해져 어드민 주문 화면 로딩이 길어진다.
+  const [orphanCount, expired] = await Promise.all([
+    // 무통장 외 orphan pending 주문(결제 없는 재고 점유)도 함께 회수
+    reclaimStaleOrphanOrders().catch((e) => {
+      console.error('[reclaimStaleOrphanOrders] 재고 회수 실패:', e);
+      return 0;
+    }),
+    prisma.bankTransfer.findMany({
+      where: {
+        status: 'pending',
+        expiresAt: { lt: now },
+      },
+      include: {
+        order: { include: { items: true } },
+      },
+    }),
+  ]);
 
   if (expired.length === 0)
     return { success: true, expiredCount: 0, orphanCount } as const;

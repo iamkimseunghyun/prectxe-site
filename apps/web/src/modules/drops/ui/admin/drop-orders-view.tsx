@@ -121,36 +121,55 @@ export function DropOrdersView({
     [pathname, status, q]
   );
 
-  const loadOrders = useCallback(async () => {
-    setLoading(true);
-    const result = await getDropOrders(dropId, page, pageSize, { status, q });
-    if (result.success && result.data) {
-      setOrders(result.data.items as Order[]);
-      setTotal(result.data.total);
-    }
-    setLoading(false);
-  }, [dropId, page, status, q]);
-
-  // 만료된 무통장 주문 정리는 최초 1회만(필터/페이지 변경 시 재호출 방지),
-  // 그 후 목록 로드. 이후엔 loadOrders 변경(필터·페이지)마다 목록만 재로드.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!cleanedRef.current) {
-        cleanedRef.current = true;
-        const cleanup = await cleanupExpiredBankTransferOrders();
-        if (cancelled) return;
-        if (cleanup.success && cleanup.expiredCount > 0) {
-          toast({
-            title: `만료된 무통장 주문 ${cleanup.expiredCount}건 자동 취소`,
-          });
-        }
+  // silent: 이미 목록이 떠 있을 때 스켈레톤으로 되돌리지 않고 조용히 갱신
+  const loadOrders = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}) => {
+      if (!silent) setLoading(true);
+      const result = await getDropOrders(dropId, page, pageSize, { status, q });
+      if (result.success && result.data) {
+        setOrders(result.data.items as Order[]);
+        setTotal(result.data.total);
       }
-      loadOrders();
-    })();
+      setLoading(false);
+    },
+    [dropId, page, status, q]
+  );
+  // 정리 응답은 필터가 바뀐 뒤에 도착할 수 있다 — 항상 최신 loadOrders를 부른다
+  const loadOrdersRef = useRef(loadOrders);
+  loadOrdersRef.current = loadOrders;
+  const aliveRef = useRef(true);
+  useEffect(() => {
+    aliveRef.current = true;
     return () => {
-      cancelled = true;
+      aliveRef.current = false;
     };
+  }, []);
+
+  // 만료된 무통장 주문 정리는 최초 1회만(필터/페이지 변경 시 재호출 방지).
+  // 목록과 무관하므로 기다리지 않고 같이 시작한다 — 정리를 먼저 기다리면 새로고침마다
+  // 정리 쿼리(관리자 확인 + 조회 여러 번) 시간만큼 로딩이 길어진다.
+  // 정리로 바뀐 주문이 있을 때만 목록을 조용히 다시 읽는다.
+  useEffect(() => {
+    if (!cleanedRef.current) {
+      cleanedRef.current = true;
+      cleanupExpiredBankTransferOrders()
+        .then((cleanup) => {
+          if (!aliveRef.current || !cleanup.success) return;
+          if (cleanup.expiredCount > 0) {
+            toast({
+              title: `만료된 무통장 주문 ${cleanup.expiredCount}건 자동 취소`,
+            });
+          }
+          if (cleanup.expiredCount > 0 || cleanup.orphanCount > 0) {
+            void loadOrdersRef.current({ silent: true });
+          }
+        })
+        .catch((e) => {
+          // 정리 실패가 목록 표시를 막으면 안 된다. 다음 방문이나 주문 생성 때 다시 시도된다.
+          console.error('[cleanupExpiredBankTransferOrders]', e);
+        });
+    }
+    void loadOrders();
   }, [loadOrders, toast]);
 
   async function handleCancel() {
