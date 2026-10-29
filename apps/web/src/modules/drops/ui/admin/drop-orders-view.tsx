@@ -134,9 +134,12 @@ export function DropOrdersView({
     },
     [dropId, page, status, q]
   );
-  // 정리 응답은 필터가 바뀐 뒤에 도착할 수 있다 — 항상 최신 loadOrders를 부른다
+  // 정리 응답은 필터가 바뀐 뒤에 도착할 수 있다 — 항상 최신 loadOrders를 부른다.
+  // ref는 렌더 중이 아니라 커밋 뒤 effect에서 갱신한다(커밋되지 않은 렌더의 값이 남지 않게)
   const loadOrdersRef = useRef(loadOrders);
-  loadOrdersRef.current = loadOrders;
+  useEffect(() => {
+    loadOrdersRef.current = loadOrders;
+  }, [loadOrders]);
   const aliveRef = useRef(true);
   useEffect(() => {
     aliveRef.current = true;
@@ -146,30 +149,39 @@ export function DropOrdersView({
   }, []);
 
   // 만료된 무통장 주문 정리는 최초 1회만(필터/페이지 변경 시 재호출 방지).
-  // 목록과 무관하므로 기다리지 않고 같이 시작한다 — 정리를 먼저 기다리면 새로고침마다
-  // 정리 쿼리(관리자 확인 + 조회 여러 번) 시간만큼 로딩이 길어진다.
+  // Next.js는 클라이언트의 서버 액션 호출을 한 번에 하나씩 순서대로 처리한다 — 같이
+  // 시작해도 병렬이 아니라 먼저 부른 쪽이 먼저 실행된다. 그래서 목록을 먼저 부르고
+  // 정리는 그 뒤에 부른다(정리를 먼저 부르면 목록이 정리 쿼리 시간만큼 기다린다).
   // 정리로 바뀐 주문이 있을 때만 목록을 조용히 다시 읽는다.
   useEffect(() => {
-    if (!cleanedRef.current) {
-      cleanedRef.current = true;
-      cleanupExpiredBankTransferOrders()
-        .then((cleanup) => {
-          if (!aliveRef.current || !cleanup.success) return;
-          if (cleanup.expiredCount > 0) {
-            toast({
-              title: `만료된 무통장 주문 ${cleanup.expiredCount}건 자동 취소`,
-            });
-          }
-          if (cleanup.expiredCount > 0 || cleanup.orphanCount > 0) {
-            void loadOrdersRef.current({ silent: true });
-          }
-        })
-        .catch((e) => {
-          // 정리 실패가 목록 표시를 막으면 안 된다. 다음 방문이나 주문 생성 때 다시 시도된다.
-          console.error('[cleanupExpiredBankTransferOrders]', e);
-        });
-    }
     void loadOrders();
+    if (cleanedRef.current) return;
+    cleanedRef.current = true;
+    cleanupExpiredBankTransferOrders()
+      .then((cleanup) => {
+        if (!aliveRef.current || !cleanup.success) return;
+        if (cleanup.expiredCount > 0) {
+          toast({
+            title: `만료된 무통장 주문 ${cleanup.expiredCount}건 자동 취소`,
+          });
+        }
+        if (cleanup.expiredCount > 0 || cleanup.orphanCount > 0) {
+          // 반환해서 아래 catch가 갱신 실패도 받게 한다
+          return loadOrdersRef.current({ silent: true });
+        }
+      })
+      .catch((e) => {
+        // 정리 실패가 목록 표시를 막으면 안 되지만, 조용히 넘어가면 만료 주문이
+        // 재고를 잡고 있어도 알 수 없다. 갱신 실패도 같은 안내를 쓴다.
+        console.error('[cleanupExpiredBankTransferOrders]', e);
+        if (!aliveRef.current) return;
+        toast({
+          title: '만료 주문 정리를 마치지 못했습니다',
+          description:
+            '표시된 주문이 최신이 아닐 수 있습니다. 새로고침해 주세요.',
+          variant: 'destructive',
+        });
+      });
   }, [loadOrders, toast]);
 
   async function handleCancel() {
