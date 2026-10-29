@@ -121,36 +121,78 @@ export function DropOrdersView({
     [pathname, status, q]
   );
 
-  const loadOrders = useCallback(async () => {
-    setLoading(true);
-    const result = await getDropOrders(dropId, page, pageSize, { status, q });
-    if (result.success && result.data) {
-      setOrders(result.data.items as Order[]);
-      setTotal(result.data.total);
-    }
-    setLoading(false);
-  }, [dropId, page, status, q]);
-
-  // 만료된 무통장 주문 정리는 최초 1회만(필터/페이지 변경 시 재호출 방지),
-  // 그 후 목록 로드. 이후엔 loadOrders 변경(필터·페이지)마다 목록만 재로드.
+  // silent: 이미 목록이 떠 있을 때 스켈레톤으로 되돌리지 않고 조용히 갱신
+  // 요청마다 순번을 매겨 가장 최근 요청의 응답만 반영한다. 정리 뒤 조용한 재조회와
+  // 필터 변경이 겹칠 때 오래된 응답이 나중에 도착해 최신 상태를 덮어쓰는 것을 막는다.
+  const requestSeqRef = useRef(0);
+  const loadOrders = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}) => {
+      const seq = ++requestSeqRef.current;
+      if (!silent) setLoading(true);
+      try {
+        const result = await getDropOrders(dropId, page, pageSize, {
+          status,
+          q,
+        });
+        if (seq !== requestSeqRef.current) return;
+        if (result.success && result.data) {
+          setOrders(result.data.items as Order[]);
+          setTotal(result.data.total);
+        }
+      } finally {
+        if (seq === requestSeqRef.current) setLoading(false);
+      }
+    },
+    [dropId, page, status, q]
+  );
+  // 정리 응답은 필터가 바뀐 뒤에 도착할 수 있다 — 항상 최신 loadOrders를 부른다.
+  // ref는 렌더 중이 아니라 커밋 뒤 effect에서 갱신한다(커밋되지 않은 렌더의 값이 남지 않게)
+  const loadOrdersRef = useRef(loadOrders);
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!cleanedRef.current) {
-        cleanedRef.current = true;
-        const cleanup = await cleanupExpiredBankTransferOrders();
-        if (cancelled) return;
-        if (cleanup.success && cleanup.expiredCount > 0) {
+    loadOrdersRef.current = loadOrders;
+  }, [loadOrders]);
+  const aliveRef = useRef(true);
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+    };
+  }, []);
+
+  // 만료된 무통장 주문 정리는 최초 1회만(필터/페이지 변경 시 재호출 방지).
+  // Next.js는 클라이언트의 서버 액션 호출을 한 번에 하나씩 순서대로 처리한다 — 같이
+  // 시작해도 병렬이 아니라 먼저 부른 쪽이 먼저 실행된다. 그래서 목록을 먼저 부르고
+  // 정리는 그 뒤에 부른다(정리를 먼저 부르면 목록이 정리 쿼리 시간만큼 기다린다).
+  // 정리로 바뀐 주문이 있을 때만 목록을 조용히 다시 읽는다.
+  useEffect(() => {
+    void loadOrders();
+    if (cleanedRef.current) return;
+    cleanedRef.current = true;
+    cleanupExpiredBankTransferOrders()
+      .then((cleanup) => {
+        if (!aliveRef.current || !cleanup.success) return;
+        if (cleanup.expiredCount > 0) {
           toast({
             title: `만료된 무통장 주문 ${cleanup.expiredCount}건 자동 취소`,
           });
         }
-      }
-      loadOrders();
-    })();
-    return () => {
-      cancelled = true;
-    };
+        if (cleanup.expiredCount > 0 || cleanup.orphanCount > 0) {
+          // 반환해서 아래 catch가 갱신 실패도 받게 한다
+          return loadOrdersRef.current({ silent: true });
+        }
+      })
+      .catch((e) => {
+        // 정리 실패가 목록 표시를 막으면 안 되지만, 조용히 넘어가면 만료 주문이
+        // 재고를 잡고 있어도 알 수 없다. 갱신 실패도 같은 안내를 쓴다.
+        console.error('[cleanupExpiredBankTransferOrders]', e);
+        if (!aliveRef.current) return;
+        toast({
+          title: '만료 주문 정리를 마치지 못했습니다',
+          description:
+            '표시된 주문이 최신이 아닐 수 있습니다. 새로고침해 주세요.',
+          variant: 'destructive',
+        });
+      });
   }, [loadOrders, toast]);
 
   async function handleCancel() {
