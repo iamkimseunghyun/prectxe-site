@@ -2,10 +2,11 @@ import { ArrowUpRight } from 'lucide-react';
 import { unstable_cache as next_cache } from 'next/cache';
 import Image from 'next/image';
 import Link from 'next/link';
+import { CACHE_TIMES } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 import { getImageUrl } from '@/lib/utils';
 
-// 홈 read-path 캐시(초). 발행 변경은 최대 이 시간 후 반영.
+// 홈 read-path 캐시(초). 편집은 태그 무효화로 즉시 반영.
 const getRecentArticles = next_cache(
   async () =>
     prisma.article.findMany({
@@ -21,7 +22,7 @@ const getRecentArticles = next_cache(
       },
     }),
   ['home-recent-journal'],
-  { revalidate: 300, tags: ['journal'] }
+  { revalidate: CACHE_TIMES.HOME, tags: ['journal'] }
 );
 
 export async function RecentJournalSection() {

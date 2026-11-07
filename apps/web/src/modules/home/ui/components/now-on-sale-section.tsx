@@ -3,6 +3,7 @@ import { unstable_cache as next_cache } from 'next/cache';
 import Image from 'next/image';
 import Link from 'next/link';
 import { SaleCountdown } from '@/components/shared/sale-countdown';
+import { CACHE_TIMES } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 import { publicTierWhere } from '@/lib/db/public-tier';
 import { cn, getImageUrl } from '@/lib/utils';
@@ -112,7 +113,7 @@ const getNowOnSaleDrops = next_cache(
       .slice(0, 3);
   },
   ['home-now-on-sale'],
-  { revalidate: 300, tags: ['drops'] }
+  { revalidate: CACHE_TIMES.HOME, tags: ['drops'] }
 );
 
 export async function NowOnSaleSection() {

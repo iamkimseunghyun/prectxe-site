@@ -149,7 +149,7 @@ src/
 - **원칙**: 사실(`saleStart`/`saleEnd`/`quantity`/`soldCount`/`publishedAt`/`eventDate`)은 컬럼, 시간 경과로 바뀌는 상태는 파생. 수동 개입(취소·판매 중단)이 필요해지면 status enum이 아니라 `cancelledAt`/`salesPausedAt` 같은 nullable 타임스탬프를 두고 파생 함수가 최우선으로 읽게 할 것.
 - **파생 상태 × 캐시 주의**: 파생값은 **렌더 시점** 기준이라 캐시된 페이지에서는 늙는다. 현재 노출 지점과 신선도:
   - `/drops` 목록, `/drops/[slug]` 상세 — **무캐시**(매 요청 동적). 결제 경로라 항상 최신
-  - 홈 `NowOnSaleSection` / `FeaturedHeroSection` — `revalidate: 300`(5분). 홈 티저라 5분 오차 허용(의도된 선택)
+  - 홈 4개 섹션(`FeaturedHero`·`NowOnSale`·`ArchivePrograms`·`RecentJournal`) — `CACHE_TIMES.HOME`(1시간). 편집은 `updateTag`로 즉시 반영되고, 시간 경과로 바뀌는 상태(판매 시작·마감 배지)만 최대 1시간 늦다. 홈 티저라 허용. **5분으로 되돌리지 말 것** — Neon 절전(5분)과 같아져 DB가 24시간 깨어 있게 된다(아래 Database 참고)
   - 아티스트 상세의 Drops 섹션 — `revalidate: 7200`(2시간). **판매 상태 배지를 넣지 말 것**(제목/날짜/장소 등 사실만 표시 중)
   - `tickets/server/actions.ts`는 주문 생성 시 `getEffectiveTierStatus() === 'on_sale'`을 **서버에서 재검증**한다 — 늙은 배지를 보고 들어와도 결제는 막힌다
 - **잔여 수량은 평소엔 숨긴다**(`LOW_STOCK_THRESHOLD` = 10 — 잔여가 10장 이하이거나 인당 구매 제한 이하일 때만 "잔여 N장"). 넉넉할 때 보이면 판매 속도(= 정확한 판매량)가 공개 페이지에서 계산돼 판매가 느려 보이고, 공연장·아티스트와 분배를 협상할 때도 노출된다. **화면에서만 숨기면 안 된다** — 클라이언트 컴포넌트 props로 내려간 `quantity`·`soldCount`는 페이지 소스에서 읽힌다. 그래서 티켓·굿즈 상세는 서버(`page.tsx` → `modules/drops/server/public-drop.ts`의 `toPublicTicketDrop()`/`toPublicGoodsDrop()`)에서 **뷰가 쓰는 필드만 골라 담고**(allow-list — DB 행을 `...rest`로 통째로 넘기지 말 것, 쿼리에 필드가 늘면 그대로 샌다) 등급·옵션은 `toPublicTier()`/`toPublicVariant()`(`lib/utils/ticket-status.ts`)로 변환해 **원본 수치를 뺀 `PublicTier`/`PublicVariant`**(`status`·`soldOut`·`maxSelectable`·`lowStockRemaining`)와 드랍 `status`만 클라이언트에 넘긴다. 클라이언트로 가는 공개 데이터에 `quantity`/`stock`/`soldCount`를 다시 넣지 말 것. **수량 버튼 상한을 잔여로 두면 끝까지 눌러 재고를 알아낼 수 있다** — 상한은 `min(잔여, 1회 구매 상한)`이고 티켓은 `maxPerOrder`, 굿즈는 `GOODS_MAX_PER_ORDER`(10 — 화면과 `createGoodsOrder`가 같은 값으로 검증)를 쓴다
@@ -232,6 +232,7 @@ src/
 - **Schema**: `prisma/schema.prisma`
 - **Key models**: Program, Article, Artist, Venue, Artwork, Form/FormField/FormSubmission, Drop, TicketTier, GoodsVariant, Order/OrderItem, Payment, BankTransfer, Ticket, User
 - **Migration caveat**: Neon에 `main`(prod) + `program-model-v1`(dev) 2개 브랜치. `bunx prisma db push`는 **dev에서만 안전**. main에는 Neon MCP `run_sql_transaction`으로 부분 마이그레이션. legacy 테이블 정리 후 enum 타입은 별도 `DROP TYPE` 필요 (자동 안 됨). 자세한 패턴은 메모리 `project_db_branches` 참고.
+- **Neon 무료 플랜 한도 (2026-11-07 전환)**: 컴퓨트 월 **100 CU-시간**(≈360,000 CU-초, 하루 평균 15,000 CU-초 이하여야 월말까지 버틴다). 초과하면 컴퓨트가 다음 달까지 **정지**돼 예매·결제가 멈춘다(데이터는 안 지워짐). 절전(5분)은 끌 수 없다. **공개 읽기 캐시 TTL을 5분 안팎으로 두지 말 것** — 방문·봇이 5~10분에 한 번만 와도 DB가 24시간 깨어 있어 한도를 17일 만에 쓴다(홈 캐시 300초일 때 실제로 하루 ≈21,000 CU-초). 사용량은 무료 플랜에서 일별 API가 막혀 있어 `describe_project`의 `compute_time_seconds`(이번 기간 누적)로 본다. 사용량이 한도의 80%에 가까우면 Launch(사용량 과금, 월 최소 없음)로 올릴 것. 행사 판매를 열기 전에는 사용량부터 확인.
 - **Prisma client**: Singleton pattern in `src/lib/db/prisma.ts` (global ref to prevent multiple instances in dev)
 - **FK 인덱스**: Prisma는 PostgreSQL **외래키에 인덱스를 자동 생성하지 않음** → 새 모델/관계 추가 시 자주 조회하는 FK 컬럼에 `@@index([fkColumn])` 직접 추가할 것(없으면 부모→자식 `include`가 seq scan). 2026-06-19에 핫/성장 테이블 FK 26개 인덱스 일괄 추가(prod + schema 동기화).
 
