@@ -2,6 +2,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { unstable_cache as next_cache } from 'next/cache';
 import Image from 'next/image';
 import Link from 'next/link';
+import { CACHE_TIMES } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 import { formatKstDateRange, getImageUrl } from '@/lib/utils';
 
@@ -41,7 +42,7 @@ const getArchivePrograms = next_cache(
     }));
   },
   ['home-archive-programs'],
-  { revalidate: 300, tags: ['programs'] }
+  { revalidate: CACHE_TIMES.HOME, tags: ['programs'] }
 );
 
 export async function ArchiveProgramsSection() {

@@ -2,13 +2,15 @@ import { ArrowUpRight } from 'lucide-react';
 import { unstable_cache as next_cache } from 'next/cache';
 import Image from 'next/image';
 import Link from 'next/link';
+import { CACHE_TIMES } from '@/lib/constants/constants';
 import { prisma } from '@/lib/db/prisma';
 import { publicTierWhere } from '@/lib/db/public-tier';
 import { cn, getImageUrl } from '@/lib/utils';
 import { getEffectiveDropStatus } from '@/lib/utils/ticket-status';
 
-// 홈 read-path 캐시(초). featured 토글/발행 변경은 최대 이 시간 후 반영.
-const HOME_REVALIDATE = 300;
+// 홈 read-path 캐시(초). 관리자 편집은 태그 무효화로 즉시 반영되고,
+// 시간 경과(판매 시작·마감)·재고 변동(매진)은 최대 이 시간 늦게 반영.
+const HOME_REVALIDATE = CACHE_TIMES.HOME;
 
 // Drop 상태별 CTA 라벨/활성 여부.
 // active=true → 흰색 실 버튼(전환 유도), false → 안내성 라벨.
